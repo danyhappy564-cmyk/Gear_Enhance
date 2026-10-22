@@ -1,13 +1,18 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
 <rect width="256" height="256" fill="#000"/>
-<g transform="translate(0,-6)">
+<g transform="translate(-12,-2)">
 <g fill="none" stroke="#fff" stroke-width="13" stroke-linecap="round" stroke-linejoin="round">
  <path d="M90 30 L108 30 L108 40 Q108 62 128 62 Q148 62 148 40 L148 30 L166 30 L166 46 Q166 66 190 72 L190 178 Q190 190 178 190 L78 190 Q66 190 66 178 L66 72 Q90 66 90 46 Z"/>
  <path d="M100 100 L156 100"/>
 </g>
-<g transform="translate(130,184) rotate(-18) scale(1.06) translate(-85,-29)" stroke-linecap="round" stroke-linejoin="round">
+<g transform="translate(140,186) rotate(-18) scale(1.06) translate(-85,-29)" stroke-linecap="round" stroke-linejoin="round">
  <path d="M0 6 L36 12 L36 6 L118 6 L118 11 L170 11 L170 21 L118 21 L112 27 L98 27 L94 52 L80 52 L82 27 L68 27 L62 46 L50 46 L54 27 L36 27 L36 24 L2 32 Z" fill="#000" stroke="#000" stroke-width="26"/>
  <path d="M0 6 L36 12 L36 6 L118 6 L118 11 L170 11 L170 21 L118 21 L112 27 L98 27 L94 52 L80 52 L82 27 L68 27 L62 46 L50 46 L54 27 L36 27 L36 24 L2 32 Z" fill="#000" stroke="#fff" stroke-width="11"/>
+</g>
+<g transform="translate(210,56)" stroke-linecap="round" stroke-linejoin="round">
+ <circle r="32" fill="#000" stroke="#000" stroke-width="22"/>
+ <circle r="32" fill="#000" stroke="#fff" stroke-width="11"/>
+ <path d="M-13 0 L0 -13 L13 0 M-13 16 L0 3 L13 16" fill="none" stroke="#fff" stroke-width="10"/>
 </g>
 </g>
 </svg>
