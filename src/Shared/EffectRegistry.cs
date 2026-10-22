@@ -27,7 +27,7 @@ public sealed class EffectRegistry
             if (string.IsNullOrEmpty(item.ItemId) || item.Level < 1 || item.Level > 100
                 || !Enum.IsDefined(typeof(EnhancePath), item.Path)) continue;
             if (!next.TryGetValue(item.ItemId, out var tracks)) next[item.ItemId] = tracks = new Dictionary<EnhancePath, EnhanceRecord>();
-            tracks[item.Path] = new EnhanceRecord { ItemId = item.ItemId, Level = item.Level, Path = item.Path };
+            tracks[item.Path] = new EnhanceRecord { ItemId = item.ItemId, Level = item.Level, Path = item.Path, Evolved = item.Evolved };
         }
         records = next; ProfileId = expectedProfile;
     }
@@ -50,7 +50,13 @@ public sealed class EffectRegistry
     public string Badge(string id)
     {
         var total = TotalLevel(id);
-        return total > 0 ? (IsComplete(id) ? $"✦ 완성 +{total}" : $"★ +{total}") : "";
+        return total > 0 ? (IsEvolved(id) ? $"★★ 진화 +{total}" : $"★ +{total}") : "";
+    }
+    public bool IsEvolved(string id)
+    {
+        if (!records.TryGetValue(id, out var tracks)) return false;
+        foreach (var track in tracks.Values) if (track.Evolved) return true;
+        return false;
     }
     public bool IsComplete(string id) => records.TryGetValue(id, out var tracks) && Complete(tracks, tuning);
     private static bool Complete(Dictionary<EnhancePath, EnhanceRecord> tracks, EffectTuning config)
@@ -65,18 +71,28 @@ public sealed class EffectRegistry
         var next = ProfileId == expectedProfile
             ? new Dictionary<string, Dictionary<EnhancePath, EnhanceRecord>>(records, StringComparer.Ordinal)
             : new Dictionary<string, Dictionary<EnhancePath, EnhanceRecord>>(StringComparer.Ordinal);
-        if (receipt.Success)
+        if (receipt.Success && receipt.IsEvolution)
+        {
+            if (next.TryGetValue(receipt.ItemId, out var existingTracks))
+            {
+                var evolved = new Dictionary<EnhancePath, EnhanceRecord>();
+                foreach (var entry in existingTracks)
+                    evolved[entry.Key] = new EnhanceRecord { ItemId = entry.Value.ItemId, Path = entry.Key, Level = entry.Value.Level, Evolved = true };
+                next[receipt.ItemId] = evolved;
+            }
+        }
+        else if (receipt.Success)
         {
             var tracks = next.TryGetValue(receipt.ItemId, out var current)
                 ? new Dictionary<EnhancePath, EnhanceRecord>(current) : new Dictionary<EnhancePath, EnhanceRecord>();
-            tracks[receipt.Path] = new EnhanceRecord { ItemId = receipt.ItemId, Path = receipt.Path, Level = receipt.Level };
+            tracks[receipt.Path] = new EnhanceRecord { ItemId = receipt.ItemId, Path = receipt.Path, Level = receipt.Level, Evolved = receipt.Evolved };
             next[receipt.ItemId] = tracks;
         }
         else if (receipt.FailureMode == FailureMode.Downgrade && next.TryGetValue(receipt.ItemId, out var existing))
         {
             var tracks = new Dictionary<EnhancePath, EnhanceRecord>(existing);
             if (receipt.Level > 0)
-                tracks[receipt.Path] = new EnhanceRecord { ItemId = receipt.ItemId, Path = receipt.Path, Level = receipt.Level };
+                tracks[receipt.Path] = new EnhanceRecord { ItemId = receipt.ItemId, Path = receipt.Path, Level = receipt.Level, Evolved = receipt.Evolved };
             else tracks.Remove(receipt.Path);
             if (tracks.Count == 0) next.Remove(receipt.ItemId); else next[receipt.ItemId] = tracks;
         }
@@ -87,6 +103,6 @@ public sealed class EffectRegistry
     {
         var config = tuning;
         if (!records.TryGetValue(id, out var tracks) || !tracks.TryGetValue(path, out var item)) return 0;
-        return EnhanceEffects.Amount(path, item.Level, config, Complete(tracks, config));
+        return EnhanceEffects.Amount(path, item.Level, config, item.Evolved);
     }
 }

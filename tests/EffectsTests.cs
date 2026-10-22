@@ -86,26 +86,32 @@ public sealed class EffectsTests
     }
 
     [Fact]
-    public void Completion_bonus_requires_all_weapon_tracks_and_disappears_on_downgrade()
+    public void Evolution_bonus_requires_a_separate_success_and_survives_later_level_changes()
     {
         var registry = new EffectRegistry();
         foreach (var path in new[] { EnhancePath.Recoil, EnhancePath.Ergonomics })
             registry.ApplyReceipt(new() { Success = true, ItemId = "gun", Path = path, Level = 10 }, "a");
         Assert.False(registry.IsComplete("gun"));
+        Assert.False(registry.IsEvolved("gun"));
         Assert.Equal(15, registry.Amount("gun", EnhancePath.Recoil));
         registry.ApplyReceipt(new() { Success = true, ItemId = "gun", Path = EnhancePath.Precision, Level = 10 }, "a");
         Assert.True(registry.IsComplete("gun"));
+        Assert.False(registry.IsEvolved("gun"));
+        Assert.Equal(15, registry.Amount("gun", EnhancePath.Recoil));
+        registry.ApplyReceipt(new() { Success = true, ItemId = "gun", IsEvolution = true, Evolved = true }, "a");
+        Assert.True(registry.IsEvolved("gun"));
         Assert.Equal(18, registry.Amount("gun", EnhancePath.Recoil));
         Assert.Equal(12, registry.Amount("gun", EnhancePath.Ergonomics));
         Assert.Equal(12, registry.Amount("gun", EnhancePath.Precision));
-        Assert.Equal("✦ 완성 +30", registry.Badge("gun"));
-        registry.ApplyReceipt(new() { ItemId = "gun", Path = EnhancePath.Precision, Level = 9, FailureMode = FailureMode.Downgrade }, "a");
+        Assert.Equal("★★ 진화 +30", registry.Badge("gun"));
+        registry.ApplyReceipt(new() { ItemId = "gun", Path = EnhancePath.Precision, Level = 9, FailureMode = FailureMode.Downgrade, Evolved = true }, "a");
         Assert.False(registry.IsComplete("gun"));
-        Assert.Equal(15, registry.Amount("gun", EnhancePath.Recoil));
+        Assert.True(registry.IsEvolved("gun"));
+        Assert.Equal(18, registry.Amount("gun", EnhancePath.Recoil));
         Assert.Equal(10, registry.Find("gun", EnhancePath.Recoil)!.Level);
         Assert.Equal(9, registry.Find("gun", EnhancePath.Precision)!.Level);
-        Assert.Equal("★ +29", registry.Badge("gun"));
-        registry.ApplyReceipt(new() { ItemId = "gun", Path = EnhancePath.Precision, Level = 0, FailureMode = FailureMode.Downgrade }, "a");
+        Assert.Equal("★★ 진화 +29", registry.Badge("gun"));
+        registry.ApplyReceipt(new() { ItemId = "gun", Path = EnhancePath.Precision, Level = 0, FailureMode = FailureMode.Downgrade, Evolved = true }, "a");
         Assert.Null(registry.Find("gun", EnhancePath.Precision));
         Assert.NotNull(registry.Find("gun", EnhancePath.Recoil));
     }
@@ -115,8 +121,8 @@ public sealed class EffectsTests
     {
         var registry = new EffectRegistry();
         var snapshot = new EnhanceSnapshot { ProfileId = "a", Items = [
-            new() { ItemId = "vest", Path = EnhancePath.ArmorDurability, Level = 10 },
-            new() { ItemId = "vest", Path = EnhancePath.Mobility, Level = 10 }] };
+            new() { ItemId = "vest", Path = EnhancePath.ArmorDurability, Level = 10, Evolved = true },
+            new() { ItemId = "vest", Path = EnhancePath.Mobility, Level = 10, Evolved = true }] };
         registry.Replace(snapshot, "a");
         Assert.True(registry.IsComplete("vest"));
         Assert.Equal(36, registry.Amount("vest", EnhancePath.ArmorDurability));

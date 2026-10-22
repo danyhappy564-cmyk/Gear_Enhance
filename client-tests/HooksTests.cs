@@ -158,17 +158,20 @@ public sealed class HooksTests : IDisposable
     {
         foreach (var path in new[] { EnhancePath.Recoil, EnhancePath.Ergonomics, EnhancePath.Precision })
             StatPatches.Registry.ApplyReceipt(new() { Success = true, ItemId = "gun", Level = 10, Path = path }, "pmc");
+        Assert.False(StatPatches.Registry.IsEvolved("gun"));
+        Assert.Equal(15, StatPatches.Registry.Amount("gun", EnhancePath.Recoil));
+        StatPatches.Registry.ApplyReceipt(new() { Success = true, ItemId = "gun", IsEvolution = true, Evolved = true }, "pmc");
         var gun = new TestItem("gun");
         Assert.Equal(-0.508f, Run("Recoil", gun, -0.4f), 5);
         Assert.Equal(62, Run("Ergonomics", gun, 50));
         Assert.Equal(0.88f, Run("Precision", gun, 1), 5);
         var args = new object[] { new MarkerView(gun), "K2" };
         typeof(ItemMarkers).GetMethod("Name", BindingFlags.Static | BindingFlags.NonPublic)!.Invoke(null, args);
-        Assert.Equal("K2 <color=#B989F5>✦ 완성 +30</color>", args[1]);
-        StatPatches.Registry.ApplyReceipt(new() { ItemId = "gun", Path = EnhancePath.Recoil, Level = 9, FailureMode = FailureMode.Downgrade }, "pmc");
+        Assert.Equal("K2 <color=#B989F5>★★ 진화 +30</color>", args[1]);
+        StatPatches.Registry.ApplyReceipt(new() { ItemId = "gun", Path = EnhancePath.Recoil, Level = 9, FailureMode = FailureMode.Downgrade, Evolved = true }, "pmc");
         args[1] = "K2";
         typeof(ItemMarkers).GetMethod("Name", BindingFlags.Static | BindingFlags.NonPublic)!.Invoke(null, args);
-        Assert.Equal("K2 <color=#D9B66F>★ +29</color>", args[1]);
+        Assert.Equal("K2 <color=#B989F5>★★ 진화 +29</color>", args[1]);
     }
 
     public record MarkerView(TestItem Item) { public bool Examined => true; }
@@ -178,6 +181,7 @@ public sealed class HooksTests : IDisposable
     {
         foreach (var path in new[] { EnhancePath.Recoil, EnhancePath.Ergonomics, EnhancePath.Precision })
             StatPatches.Registry.ApplyReceipt(new() { Success = true, ItemId = "gun", Level = 10, Path = path }, "pmc");
+        StatPatches.Registry.ApplyReceipt(new() { Success = true, ItemId = "gun", IsEvolution = true, Evolved = true }, "pmc");
         for (var warmup = 0; warmup < 100; warmup++) StatPatches.Registry.Amount("gun", EnhancePath.Recoil);
         var before = GC.GetAllocatedBytesForCurrentThread();
         var amount = 0.0;

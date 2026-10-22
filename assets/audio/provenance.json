@@ -1,0 +1,91 @@
+{
+  "origin": "User attachments, 2026-10-22",
+  "license": "Not supplied by the user; separate from source code MIT license",
+  "conversion": "First four and star2: plain PCM16 decode. Evolution charge: user-requested crop of heartbeat tail and blend with original charge; details per asset.",
+  "assets": [
+    {
+      "name": "failure",
+      "originalName": "강화실패.mp3",
+      "source": "assets/audio/source/failure.mp3",
+      "sourceSha256": "744e68716ba7aef617e65d03db889acca219853737f2eae431ddea851c935ad8",
+      "output": "src/Client/Audio/failure.wav",
+      "sha256": "0207580ea45ea1a9b9c5b95e917955fc7f4bc76680878baa1f3afbe649275df6",
+      "channels": 2,
+      "sampleRate": 48000,
+      "frames": 108288,
+      "durationSeconds": 2.256,
+      "sampleBits": 16
+    },
+    {
+      "name": "success",
+      "originalName": "강화 성공할때.mp3",
+      "source": "assets/audio/source/success.mp3",
+      "sourceSha256": "ef28bc236b48862296dcc04e2b207d9f52555029f47b8b64d047e234ba6d0f85",
+      "output": "src/Client/Audio/success.wav",
+      "sha256": "028e08883b7740dd9f881f56baee7348ac7ba4741f9b74ceaece4494ffbb9dcb",
+      "channels": 2,
+      "sampleRate": 44100,
+      "frames": 44100,
+      "durationSeconds": 1.0,
+      "sampleBits": 16
+    },
+    {
+      "name": "charge",
+      "originalName": "강화중소리.mp3",
+      "source": "assets/audio/source/charge.mp3",
+      "sourceSha256": "8905a40fc4847e9daf856ba1895e46d48c6a4cacb1922d712a5598918192df88",
+      "output": "src/Client/Audio/charge.wav",
+      "sha256": "e614d77ca16f837821e4b50c502464cfb693ba5e5028645fea36967de03e140b",
+      "channels": 2,
+      "sampleRate": 48000,
+      "frames": 211766,
+      "durationSeconds": 4.411791666666667,
+      "sampleBits": 16
+    },
+    {
+      "name": "destroy",
+      "originalName": "파괴될때.mp3",
+      "source": "assets/audio/source/destroy.mp3",
+      "sourceSha256": "0e374f53ba333a6a899b5946351e73dbd33343a17aba931aad0bb12cd0d48062",
+      "output": "src/Client/Audio/destroy.wav",
+      "sha256": "409e4225a5a81b7cdce88e1398c27bacebf72e3acfd8febe2a9e717d0abb2a51",
+      "channels": 1,
+      "sampleRate": 48000,
+      "frames": 51577,
+      "durationSeconds": 1.0745208333333334,
+      "sampleBits": 16
+    },
+    {
+      "name": "star2",
+      "originalName": "스타 2 달성 시.mp3",
+      "source": "assets/audio/source/star2.mp3",
+      "sourceSha256": "189f2a2036df55e813d43772c6a8a47cb12dfabac84da10d0f3e9cea23b495d7",
+      "output": "src/Client/Audio/star2.wav",
+      "sha256": "83ef2077a8fc4b4df187a4dd9bedd32af9d89c8270443729d4835b4d121da3b6",
+      "channels": 2,
+      "sampleRate": 44100,
+      "frames": 183764,
+      "durationSeconds": 4.166984126984127,
+      "sampleBits": 16
+    },
+    {
+      "name": "evolution_charge",
+      "originalName": "heart-beat-speeds-up.mp3",
+      "source": "assets/audio/source/heartbeat.mp3",
+      "sourceSha256": "f2c225fe8abde5fad8a28e0f0cfe62bd6683e761bc503e51604423cda69c19dd",
+      "output": "src/Client/Audio/evolution_charge.wav",
+      "sha256": "13a0ec246a4edd5fcd2e832cd4764f6bac8c8720f9ef5b14f826848a385ddd07",
+      "channels": 2,
+      "sampleRate": 48000,
+      "frames": 211766,
+      "durationSeconds": 4.411791666666667,
+      "sampleBits": 16,
+      "transform": "User requested crop and mix, evolution only",
+      "heartbeatDecodedDuration": 31.716916099773243,
+      "heartbeatCropStart": 27.305124433106577,
+      "heartbeatCropDuration": 4.411791666666667,
+      "ffmpegFilter": "[0:a]volume=0.8[charge];[1:a]atrim=start=27.305124433107:duration=4.411791666667,asetpts=PTS-STARTPTS,aresample=48000,aformat=channel_layouts=stereo,volume=0.45,afade=t=in:d=0.04,afade=t=out:st=4.341791666667:d=0.07[heart];[charge][heart]amix=inputs=2:duration=first:normalize=0,atrim=end_sample=211766[mix]",
+      "otherInput": "src/Client/Audio/charge.wav"
+    }
+  ]
+}

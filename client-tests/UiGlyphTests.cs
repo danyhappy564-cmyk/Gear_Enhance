@@ -28,5 +28,7 @@ public sealed class UiGlyphTests
         Assert.Equal("RepairComplete", GameFeedback.SoundName(FeedbackCue.Success));
         Assert.Equal("ErrorMessage", GameFeedback.SoundName(FeedbackCue.Failure));
         Assert.Equal("MenuWeaponDisassemble", GameFeedback.SoundName(FeedbackCue.Destroy));
+        Assert.Equal("QuestCompleted", GameFeedback.SoundName(FeedbackCue.Complete));
+        Assert.Equal("ErrorMessage", GameFeedback.SoundName(FeedbackCue.Downgrade));
     }
 }

@@ -10,19 +10,52 @@ public sealed partial class Plugin
     private FeedbackCue resultCue;
     private Sprite resultSprite;
     private bool resultComplete;
+    private bool resultVisible;
+    private EnhanceReceipt resultReceipt;
 
     private void ShowResultFeedback(EnhanceReceipt receipt)
     {
+        resultReceipt = receipt;
+        resultVisible = true;
+        resultComplete = receipt.Success && receipt.IsEvolution;
         // A cosmetic failure must never turn a confirmed payment into an unknown result.
         try
         {
             resultCue = receipt.Success ? FeedbackCue.Success
                 : receipt.FailureMode == FailureMode.Destroy ? FeedbackCue.Destroy : FeedbackCue.Failure;
             resultSprite = GameBridge.Get(itemIcon, "Sprite") as Sprite;
-            resultComplete = receipt.Success && StatPatches.Registry.IsComplete(receipt.ItemId);
             resultStarted = Clock;
         }
         catch (Exception ex) { Logger.LogWarning("강화 결과 연출 생략: " + ex.GetBaseException().Message); }
+    }
+
+    private void DismissResult()
+    {
+        if (busy) return;
+        resultVisible = false; resultReceipt = null;
+        if (itemId == null) Close();
+    }
+    private void DrawResultPanel()
+    {
+        if (resultReceipt == null) return;
+        var receipt = resultReceipt;
+        var tint = receipt.Success ? resultComplete ? Purple : new Color(0.36f, 0.86f, 0.58f)
+            : receipt.DestructionPrevented || receipt.DowngradePrevented ? Gold : Danger;
+        Fill(new Rect(1, 55, WindowWidth - 2, ActiveWindowHeight - 56), new Color(0, 0, 0, 0.65f));
+        Surface(new Rect(70, 295, 620, 305), cardGradient, tint);
+        Fill(new Rect(72, 297, 616, 5), tint);
+        var previous = GUI.color;
+        GUI.color = tint;
+        Label(90, 315, 580, 70, ResultText.Title(receipt, resultComplete), resultTitleStyle);
+        GUI.color = previous;
+        Label(100, 393, 560, 66, ResultText.Detail(receipt), resultDetailStyle);
+        Label(100, 467, 560, 27, $"{EnhanceEffects.Name(receipt.Path)} · 이번 시도 총 {receipt.Paid:N0} ₽ 소모", centeredSmall);
+        if (resultComplete) Label(100, 493, 560, 27, $"★★ 진화 보너스 +{completionBonus.Value:0.##}% · 보라색 표식 적용", centeredSmall);
+        GUI.enabled = !busy;
+        var button = new Rect(215, 536, 330, 46);
+        Surface(button, goldGradient, tint);
+        if (GUI.Button(button, busy ? "기록 동기화 중…" : "확인", primary)) main.Enqueue(DismissResult);
+        GUI.enabled = true;
     }
 
     private void DrawResultEffect(Rect area)

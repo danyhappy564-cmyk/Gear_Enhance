@@ -6,7 +6,7 @@ namespace GearEnhance;
 
 public sealed partial class Plugin
 {
-    private const float WindowWidth = 760, WindowHeight = 870;
+    private const float WindowWidth = 760, WindowHeight = 950;
     private static readonly Color Gold = new Color(0.84f, 0.74f, 0.55f);
     private static readonly Color Purple = new Color(0.73f, 0.54f, 0.96f);
     private static readonly Color Danger = new Color(0.94f, 0.30f, 0.24f);
@@ -19,17 +19,19 @@ public sealed partial class Plugin
     private static readonly EnhancePath[] WeaponTracks = { EnhancePath.Recoil, EnhancePath.Ergonomics, EnhancePath.Precision };
     private static readonly EnhancePath[] ArmorTracks = { EnhancePath.ArmorDurability, EnhancePath.Mobility };
     private GUIStyle noteStyle, statusStyle;
-    private GUI.WindowFunction drawWindow;
+    private GUIStyle resultTitleStyle, resultDetailStyle;
+    private GUI.WindowFunction drawWindow, drawEvolutionWindow;
+    private float ActiveWindowHeight => evolutionMode ? 870 : WindowHeight;
     private GUIStyle heading, body, small, centeredSmall, pathHeading, large, value, selectedValue, chanceValue, costValue;
     private GUIStyle card, primary, secondary, frame;
     private float UiScale => Mathf.Max(0.1f, Mathf.Min(1.1f,
-        Mathf.Min((Screen.height - 64f) / WindowHeight, (Screen.width - 48f) / WindowWidth)));
+        Mathf.Min((Screen.height - 64f) / ActiveWindowHeight, (Screen.width - 48f) / WindowWidth)));
 
     private void ResetWindow()
     {
         var scale = UiScale;
         window = new Rect(Math.Max(0, (Screen.width / scale - WindowWidth) / 2),
-            Math.Max(0, (Screen.height / scale - WindowHeight) / 2), WindowWidth, WindowHeight);
+            Math.Max(0, (Screen.height / scale - ActiveWindowHeight) / 2), WindowWidth, ActiveWindowHeight);
     }
 
     private void EnsureSkin()
@@ -37,6 +39,7 @@ public sealed partial class Plugin
         if (windowSkin != null) return;
         windowSkin = Instantiate(GUI.skin);
         drawWindow = DrawWindow;
+        drawEvolutionWindow = DrawEvolutionWindow;
         windowSkin.hideFlags = HideFlags.HideAndDontSave;
         uiFont = Font.CreateDynamicFontFromOSFont(
             new[] { "Malgun Gothic", "맑은 고딕", "Noto Sans CJK KR", "Arial Unicode MS" }, 16);
@@ -47,6 +50,8 @@ public sealed partial class Plugin
         centeredSmall = TextStyle(13, Muted, alignment: TextAnchor.MiddleCenter);
         noteStyle = TextStyle(13, Gold); noteStyle.wordWrap = true;
         statusStyle = TextStyle(13, Muted); statusStyle.wordWrap = true;
+        resultTitleStyle = TextStyle(40, Color.white, FontStyle.Bold, TextAnchor.MiddleCenter);
+        resultDetailStyle = TextStyle(17, Color.white, alignment: TextAnchor.MiddleCenter); resultDetailStyle.wordWrap = true;
         pathHeading = TextStyle(16, Color.white, FontStyle.Bold, TextAnchor.MiddleCenter);
         large = TextStyle(39, Gold, FontStyle.Bold);
         value = TextStyle(26, Color.white, FontStyle.Bold, TextAnchor.MiddleCenter);
@@ -149,8 +154,8 @@ public sealed partial class Plugin
             var scale = UiScale;
             GUI.matrix = Matrix4x4.TRS(Vector3.zero, Quaternion.identity, Vector3.one * scale);
             window.x = Mathf.Clamp(window.x, 0, Math.Max(0, Screen.width / scale - WindowWidth));
-            window.y = Mathf.Clamp(window.y, 0, Math.Max(0, Screen.height / scale - WindowHeight));
-            window = GUI.Window(GetInstanceID(), window, drawWindow, "", frame);
+            window.y = Mathf.Clamp(window.y, 0, Math.Max(0, Screen.height / scale - ActiveWindowHeight));
+            window = GUI.Window(GetInstanceID() + (evolutionMode ? 1 : 0), window, evolutionMode ? drawEvolutionWindow : drawWindow, "", frame);
         }
         finally
         {
@@ -179,7 +184,7 @@ public sealed partial class Plugin
         Fill(new Rect(WindowWidth - 1, WindowHeight - 14, 1, 14), accent);
         Label(23, 9, 200, 36, "장비 강화", heading);
         Label(162, 16, 190, 24, "Gear Enhance · " + EnhanceProtocol.ModVersion, small);
-        GUI.enabled = !busy;
+        GUI.enabled = !busy && !resultVisible;
         if (!uncertain && itemId != null && GUI.Button(new Rect(608, 13, 92, 29), "새로고침", secondary)) main.Enqueue(RefreshQuote);
         if (GUI.Button(new Rect(712, 10, 32, 32), "×", secondary)) main.Enqueue(Close);
         GUI.enabled = true;
@@ -190,8 +195,9 @@ public sealed partial class Plugin
         var width = (712f - (options.Length - 1) * 12) / options.Length;
         for (var index = 0; index < options.Length; index++)
             DrawPath(new Rect(24 + index * (width + 12), 276, width, 76), options[index]);
-        DrawEffects(); DrawCosts(); DrawActions();
-        GUI.DragWindow(new Rect(0, 0, 598, 54));
+        DrawEffects(); DrawCosts(); DrawProtection(); DrawActions();
+        if (!resultVisible) GUI.DragWindow(new Rect(0, 0, 598, 54));
+        if (resultVisible) DrawResultPanel();
     }
 
     private void DrawPreview()
@@ -214,22 +220,22 @@ public sealed partial class Plugin
             Label(62, 127, 380, 30, itemId == null ? "장비가 파괴되었습니다" : "장비 이미지를 불러오는 중…", small);
         DrawResultEffect(area);
         Label(517, 76, 217, 38, itemName ?? "장비", heading);
-        Label(518, 112, 216, 25, EnhanceEffects.Name(selectedPath) + " 강화", small);
+        Label(518, 112, 216, 25, evolutionMode ? "1차 스타 올 강화 → 진화" : EnhanceEffects.Name(selectedPath) + " 강화", small);
         var current = preview?.CurrentLevel ?? StatPatches.Registry.Find(itemId ?? "", selectedPath)?.Level ?? 0;
         var next = preview?.NextLevel ?? Math.Max(current, Math.Min(current + 1, maxLevel.Value));
-        Label(513, 145, 225, 64, itemId == null ? "파괴됨" : $"+{current} → +{next}", current >= 100 || next >= 100
+        Label(513, 145, 225, 64, itemId == null ? "파괴됨" : evolutionMode ? StatPatches.Registry.IsEvolved(itemId) ? "★★" : "★ → ★★" : $"+{current} → +{next}", current >= 100 || next >= 100
             ? selectedValue : large);
-        var complete = StatPatches.Registry.IsComplete(itemId ?? "");
-        Label(517, 207, 217, 22, itemId == null ? "본체·부착물·탄약 소실" : complete ? $"전 항목 완성 · 효과 +{completionBonus.Value:0.##}%"
-            : preview?.CompletesOnSuccess == true ? $"성공 시 완성 · 효과 +{completionBonus.Value:0.##}%" : "전 항목 완성 시 보너스", small);
+        var complete = StatPatches.Registry.IsEvolved(itemId ?? "");
+        Label(517, 207, 217, 22, itemId == null ? "본체·부착물·탄약 소실" : complete ? $"★★ 진화 완료 · 효과 +{completionBonus.Value:0.##}%"
+            : evolutionMode ? $"진화 성공 시 효과 +{completionBonus.Value:0.##}%" : "1차 스타 완성 후 진화 가능", small);
         if (complete) Fill(new Rect(517, 230, 217, 2), Purple);
         Fill(new Rect(24, 231, 712, 1), Line);
     }
 
     private void DrawPath(Rect rect, EnhancePath path)
     {
-        var selected = path == selectedPath;
-        GUI.enabled = !busy && !uncertain && itemId != null;
+        var selected = path == selectedPath && !evolutionMode;
+        GUI.enabled = !evolutionMode && !busy && !resultVisible && !uncertain && itemId != null;
         var hovered = GUI.enabled && rect.Contains(Event.current.mousePosition);
         Surface(rect, selected ? selectedGradient : cardGradient, selected ? Gold : hovered ? Muted : Line);
         if (selected) Fill(new Rect(rect.x + 2, rect.y + 1, rect.width - 4, 1), new Color(0.96f, 0.86f, 0.66f));
@@ -296,57 +302,84 @@ public sealed partial class Plugin
         Label(45, 558, 300, 28, "성공률", body);
         Label(44, 585, 300, 49, preview == null ? "—" : $"{preview.SuccessPercent:0.##}%", chanceValue);
         Bar(new Rect(48, 643, 296, 9), preview?.SuccessPercent ?? 0, 100, Gold);
-        Label(405, 558, 310, 28, "강화 비용", body);
+        Label(405, 558, 310, 28, evolutionMode ? "진화 비용" : "총 강화 비용", body);
         Label(406, 587, 310, 40, preview == null ? "—" : $"{preview.Cost:N0} ₽", costValue);
         Label(407, 628, 309, 25, preview == null ? "" : $"보유 {preview.AvailableRoubles:N0} ₽", small);
         Label(24, 670, 515, 23, "가격 기준: " + (preview?.PriceSource ?? "견적 확인 중") + " · 장비 본체", small);
-        Label(562, 670, 174, 23, "F12에서 수치 조절", centeredSmall);
+        Label(562, 670, 174, 23, evolutionMode ? "진화 전용 판정" : "보호 옵션 선택 가능", centeredSmall);
     }
 
     private void DrawActions()
     {
-        Box(new Rect(24, 704, 712, 44), new Color(0.10f, 0.085f, 0.055f), new Color(0.61f, 0.46f, 0.22f));
-        Label(38, 711, 24, 27, "!", selectedValue);
+        Box(new Rect(24, 784, 712, 44), new Color(0.10f, 0.085f, 0.055f), new Color(0.61f, 0.46f, 0.22f));
+        Label(38, 791, 24, 27, "!", selectedValue);
         var note = preview?.BindLegacy == true ? "기존 단계 유지 · 첫 효과 선택은 무료 · 100% 적용"
-
-            : preview?.HighRisk == true ? $"고위험 실패 시: 파괴 {preview.DestructionPercent:0.##}% / 선택 항목 -1 {100 - preview.DestructionPercent:0.##}% · 이번 시도 파괴 {(100 - preview.SuccessPercent) * preview.DestructionPercent / 100:0.##}%"
+            : preview?.HighRisk == true ? RiskNote(preview)
+            : preview?.Protection.Destruction == true ? "파괴 방지 적용 · 실패 시 비용만 소모"
+            : preview?.Protection.Downgrade == true ? "단계 하락 방지 적용 · 실패 시 비용만 소모"
             : "실패 시: " + FailureText(preview?.FailureMode ?? failure.Value);
-        Label(75, 709, 643, 34, note, noteStyle);
+        Label(75, 789, 643, 34, note, noteStyle);
         if (attemptTimeline.Active)
         {
-            var fraction = attemptTimeline.Fraction(Clock);
-            Label(28, 750, 704, 27, fraction < 1 ? $"강화 진행 중… {fraction * 100:0}%" : "강화 판정 중…", statusStyle);
-            Bar(new Rect(28, 784, 704, 9), fraction, 1, Gold);
+            var fraction = attemptTimeline.Fraction(AttemptClock);
+            Label(28, 830, 704, 27, fraction < 1 ? $"강화 진행 중… {fraction * 100:0}%" : "강화 판정 중…", statusStyle);
+            Bar(new Rect(28, 864, 704, 9), fraction, 1, Gold);
         }
         else if (quote?.CanDestroy == true)
         {
-            Label(28, 750, 704, 22, message, statusStyle);
-            destructionConfirmed = GUI.Toggle(new Rect(28, 774, 704, 25), destructionConfirmed,
+            Label(28, 830, 704, 22, message, statusStyle);
+            GUI.enabled = !busy && !resultVisible;
+            destructionConfirmed = GUI.Toggle(new Rect(28, 854, 704, 25), destructionConfirmed,
                 $" 본체와 부착물 {quote.AttachedItems}개(탄약 포함)가 삭제될 수 있음을 확인했습니다.");
+            GUI.enabled = true;
         }
         else
         {
             var seconds = quote == null ? "" : $"견적 유효 시간: {Math.Max(0, quote.ExpiresUnixSeconds - DateTimeOffset.UtcNow.ToUnixTimeSeconds())}초";
-            Label(28, 753, 704, 43, string.IsNullOrEmpty(message) ? seconds : message, statusStyle);
+            Label(28, 833, 704, 43, string.IsNullOrEmpty(message) ? seconds : message, statusStyle);
         }
-        GUI.enabled = !busy;
-        var closeRect = new Rect(24, 803, 233, 48);
+        GUI.enabled = !busy && !resultVisible;
+        var closeRect = new Rect(24, 883, 233, 48);
         Surface(closeRect, cardGradient, Line);
         if (GUI.Button(closeRect, "닫기", secondary)) main.Enqueue(Close);
         var expired = quote != null && DateTimeOffset.UtcNow.ToUnixTimeSeconds() >= quote.ExpiresUnixSeconds;
         var canPay = quote != null && quote.AvailableRoubles >= quote.Cost && !expired
             && (!quote.CanDestroy || destructionConfirmed);
         var atMaximum = (StatPatches.Registry.Find(itemId ?? "", selectedPath)?.Level ?? 0) >= maxLevel.Value;
-        GUI.enabled = !busy && !uncertain && itemId != null && !atMaximum && (quote == null || expired || canPay);
-        var actionRect = new Rect(273, 803, 463, 48);
+        var canEvolve = itemId != null && StatPatches.Registry.IsComplete(itemId) && !StatPatches.Registry.IsEvolved(itemId);
+        GUI.enabled = !busy && !resultVisible && !uncertain && itemId != null && (canEvolve || !atMaximum && (quote == null || expired || canPay));
+        var actionRect = new Rect(273, 883, 463, 48);
         Surface(actionRect, goldGradient, new Color(0.95f, 0.85f, 0.64f));
-        var caption = busy ? attemptTimeline.Active ? "강화 진행 중…" : "처리 중…" : atMaximum ? "이 항목은 최대 단계입니다" : quote == null || expired ? "견적 다시 불러오기"
+        var caption = busy ? attemptTimeline.Active ? "강화 진행 중…" : "처리 중…" : canEvolve ? "스타 강화 진화 열기  ★ → ★★" : atMaximum ? "이 항목은 최대 단계입니다" : quote == null || expired ? "견적 다시 불러오기"
             : quote.BindLegacy ? "기존 단계에 효과 적용 · 무료" : $"강화 시도  {quote.Cost:N0} ₽";
         if (GUI.Button(actionRect, caption, primary))
         {
-            if (quote == null || expired) main.Enqueue(RefreshQuote);
+            if (canEvolve) main.Enqueue(OpenEvolution);
+            else if (quote == null || expired) main.Enqueue(RefreshQuote);
             else main.Enqueue(Execute);
         }
         GUI.enabled = true;
+    }
+
+    private void DrawProtection()
+    {
+        Surface(new Rect(24, 700, 712, 64), cardGradient, Line);
+        GUI.enabled = !busy && !resultVisible && !uncertain && quote?.DestructionProtectionAvailable == true;
+        var destruction = GUI.Toggle(new Rect(38, 705, 335, 27), protectDestruction,
+            $" 파괴 방지 (+{preview?.DestructionProtectionFee ?? 0:N0} ₽)");
+        if (destruction != protectDestruction) main.Enqueue(() => SetProtection(true, destruction));
+        GUI.enabled = !busy && !resultVisible && !uncertain && quote?.DowngradeProtectionAvailable == true;
+        var downgrade = GUI.Toggle(new Rect(390, 705, 335, 27), protectDowngrade,
+            $" 단계 하락 방지 (+{preview?.DowngradeProtectionFee ?? 0:N0} ₽)");
+        if (downgrade != protectDowngrade) main.Enqueue(() => SetProtection(false, downgrade));
+        GUI.enabled = true;
+        Label(38, 734, 684, 24, preview == null ? "보호 적용 비용은 견적에서 확인합니다."
+            : $"기본 {preview.BaseCost:N0} ₽ + 보호 {preview.ProtectionCost:N0} ₽ = 총 {preview.Cost:N0} ₽ · 선택한 보호비도 매 시도 소모", small);
+    }
+    private static string RiskNote(EnhanceQuote view)
+    {
+        var destroy = view.Protection.Destruction ? 0 : view.DestructionPercent;
+        var downgrade = view.Protection.Downgrade ? 0 : 100 - view.DestructionPercent;
+        return $"고위험 실패 시: 파괴 {destroy:0.##}% · 하락 {downgrade:0.##}% · 보호 {100 - destroy - downgrade:0.##}% / 이번 시도 파괴 {(100 - view.SuccessPercent) * destroy / 100:0.##}%";
     }
 }

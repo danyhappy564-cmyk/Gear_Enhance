@@ -4,24 +4,45 @@ using HarmonyLib;
 
 namespace GearEnhance;
 
-internal enum FeedbackCue { Attempt, Success, Failure, Destroy }
+internal enum FeedbackCue { Attempt, Success, Failure, Destroy, Complete, Downgrade, EvolutionAttempt }
 internal static class GameFeedback
 {
-    private static Type soundType, singletonType;
-    private static MethodInfo play;
-    internal static string SoundName(FeedbackCue cue) => cue == FeedbackCue.Attempt ? "MenuInstallModFunc"
-        : cue == FeedbackCue.Success ? "RepairComplete" : cue == FeedbackCue.Destroy ? "MenuWeaponDisassemble" : "ErrorMessage";
+    private static Type soundType, singletonType, guiType;
+    private static MethodInfo play, mixerGroup;
+    internal static string SoundName(FeedbackCue cue) => cue == FeedbackCue.Attempt || cue == FeedbackCue.EvolutionAttempt ? "MenuInstallModFunc"
+        : cue == FeedbackCue.Success ? "RepairComplete" : cue == FeedbackCue.Destroy ? "MenuWeaponDisassemble"
+        : cue == FeedbackCue.Complete ? "QuestCompleted" : "ErrorMessage";
+    internal static FeedbackCue Result(EnhanceReceipt receipt, bool complete) => receipt.Success
+        ? complete ? FeedbackCue.Complete : FeedbackCue.Success
+        : receipt.FailureMode == FailureMode.Destroy ? FeedbackCue.Destroy
+        : receipt.FailureMode == FailureMode.Downgrade ? FeedbackCue.Downgrade : FeedbackCue.Failure;
+
+    private static object Gui()
+    {
+        if (guiType == null)
+        {
+            var resolvedGui = GameBridge.RuntimeType("EFT.UI.GUISounds") ?? throw new TypeLoadException("GUISounds");
+            var resolvedSingleton = (GameBridge.RuntimeType("Comfort.Common.Singleton`1")
+                ?? throw new TypeLoadException("Comfort.Common.Singleton")).MakeGenericType(resolvedGui);
+            guiType = resolvedGui; singletonType = resolvedSingleton;
+        }
+        return GameBridge.Get(singletonType, "Instance") ?? throw new InvalidOperationException("게임 UI 소리가 아직 준비되지 않았습니다.");
+    }
+
+    internal static object MixerGroup()
+    {
+        var instance = Gui();
+        if (mixerGroup == null) mixerGroup = GameBridge.RequiredMethod(guiType, "GetCommonSoundsMixerGroup", 0);
+        return mixerGroup.Invoke(instance, null) ?? throw new InvalidOperationException("게임 UI 믹서가 아직 준비되지 않았습니다.");
+    }
     internal static void Play(FeedbackCue cue)
     {
+        var instance = Gui();
         if (play == null)
         {
-            var gui = GameBridge.RuntimeType("EFT.UI.GUISounds") ?? throw new TypeLoadException("GUISounds");
-            play = GameBridge.RequiredMethod(gui, "PlayUISound", 1);
+            play = GameBridge.RequiredMethod(guiType, "PlayUISound", 1);
             soundType = play.GetParameters()[0].ParameterType;
-            singletonType = (GameBridge.RuntimeType("Comfort.Common.Singleton`1")
-                ?? throw new TypeLoadException("Comfort.Common.Singleton" )).MakeGenericType(gui);
         }
-        var instance = GameBridge.Get(singletonType, "Instance");
-        if (instance != null) play.Invoke(instance, new[] { Enum.Parse(soundType, SoundName(cue)) });
+        play.Invoke(instance, new[] { Enum.Parse(soundType, SoundName(cue)) });
     }
 }

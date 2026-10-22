@@ -3,6 +3,16 @@ namespace GearEnhance;
 // Pure rules shared by the real SPT adapter and the executable tests.
 public static class EnhanceRules
 {
+    public static int EvolutionCost(double basePrice, EnhanceSettings settings)
+    {
+        settings.Validate();
+        if (!double.IsFinite(basePrice) || basePrice <= 0)
+            throw new InvalidOperationException("가격을 찾을 수 없는 아이템은 진화할 수 없습니다.");
+        var cost = Math.Ceiling(Math.Max(settings.MinimumCost, basePrice * settings.EvolutionCostPercent / 100));
+        if (!double.IsFinite(cost) || cost > 100000000)
+            throw new InvalidOperationException("진화 비용이 1억 루블을 초과합니다. F12 설정을 낮춰 주세요.");
+        return (int)cost;
+    }
     public static int Cost(double basePrice, int level, EnhanceSettings settings)
     {
         settings.Validate();

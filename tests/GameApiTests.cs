@@ -84,8 +84,10 @@ public sealed class GameApiTests
         var play = Assert.Single(sounds.Methods, m => m.Name == "PlayUISound" && m.Parameters.Count == 1);
         Assert.Equal("EFT.UI.EUISoundType", play.Parameters[0].ParameterType.FullName);
         var cues = game.MainModule.GetType("EFT.UI.EUISoundType");
-        foreach (var name in new[] { "MenuInstallModFunc", "RepairComplete", "ErrorMessage", "MenuWeaponDisassemble" })
+        foreach (var name in new[] { "MenuInstallModFunc", "RepairComplete", "ErrorMessage", "MenuWeaponDisassemble", "QuestCompleted" })
             Assert.Contains(cues.Fields, field => field.Name == name && field.HasConstant);
+        Assert.Equal("UnityEngine.Audio.AudioMixerGroup",
+            Assert.Single(sounds.Methods, m => m.Name == "GetCommonSoundsMixerGroup" && m.Parameters.Count == 0).ReturnType.FullName);
         var grid = game.MainModule.GetType("EFT.UI.DragAndDrop.GridItemView");
         Assert.Single(grid.Methods, m => m.Name == "GetItemName" && m.Parameters.Count == 1);
         AssertCalls(grid.Methods.Single(m => m.Name == "UpdateInfo" && m.Parameters.Count == 0), "UpdateColor");
