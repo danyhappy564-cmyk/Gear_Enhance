@@ -89,6 +89,8 @@ public sealed class EnhanceQuote
     public double BoostPoints => SuccessPercent - BaseSuccessPercent;
     public bool ChanceBoostAvailable => !BindLegacy && BaseSuccessPercent < 100;
     public bool CanPay => AvailableRoubles >= Cost && AvailableBitcoins >= BoostBitcoins;
+    // The charge gauge runs before submission; the server must still accept the quote then.
+    public bool ExpiresWithin(long nowUnixSeconds, double seconds) => ExpiresUnixSeconds - nowUnixSeconds < seconds;
     public EnhanceProtection Protection { get; set; } = new EnhanceProtection();
     public bool IsEvolution { get; set; }
     public int CurrentStars { get; set; } = 1;

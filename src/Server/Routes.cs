@@ -59,6 +59,10 @@ public sealed class EnhanceQueries(JsonUtil json, EnhanceService service) : Stat
         try { response = new() { Ok = true, Data = action() }; }
         catch (Exception ex) when (ex is ArgumentException or InvalidOperationException)
         { response = new() { Error = ex.Message }; }
+        // Quote/state/receipt never pay. Report anything else as text so the
+        // client shows and logs the cause instead of an unreadable response.
+        catch (Exception ex)
+        { response = new() { Error = "Gear Enhance 서버 오류(" + ex.GetType().Name + "): " + ex.Message }; }
         return json.Serialize(response)!;
     }
 }

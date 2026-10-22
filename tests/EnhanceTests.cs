@@ -289,6 +289,27 @@ public sealed class EnhanceTests
     }
 
     [Fact]
+    public async Task Unexpected_state_errors_reach_the_client_as_text_without_a_quote()
+    {
+        var rig = new Rig();
+        // A hand-edited or corrupted profile entry throws JsonException, not InvalidOperationException.
+        rig.Backend.Saved.ExtensionData = new() { ["rfGearEnhance"] = System.Text.Json.JsonDocument.Parse("{\"Levels\":\"broken\"}").RootElement };
+        var router = new EnhanceQueries(Json, rig.Service);
+        var request = "{\"ProtocolVersion\":" + EnhanceProtocol.Version + ",\"ItemId\":\"" + Target + "\",\"Settings\":{}}";
+        var reply = Json.Deserialize<ApiReply<EnhanceQuote>>((string)await router.HandleStaticAsync("/rf/gear-enhance/quote", request, Session, ""))!;
+        Assert.False(reply.Ok);
+        Assert.Null(reply.Data);
+        Assert.StartsWith("Gear Enhance 서버 오류(", reply.Error);
+    }
+
+    [Theory]
+    [InlineData(100, 10, false)]
+    [InlineData(100, 91, true)]
+    [InlineData(100, 95, true)]
+    public void Quote_expiry_margin_covers_the_charge_gauge_and_submission(long expires, long now, bool refresh) =>
+        Assert.Equal(refresh, new EnhanceQuote { ExpiresUnixSeconds = expires }.ExpiresWithin(now, 4.4 + 5));
+
+    [Fact]
     public async Task Client_JsonNet_and_server_enum_converters_agree()
     {
         var rig = new Rig();

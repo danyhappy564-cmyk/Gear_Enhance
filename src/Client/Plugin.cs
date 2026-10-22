@@ -50,6 +50,9 @@ public sealed partial class Plugin : BaseUnityPlugin
     // dspTime stops while the audio device is paused or lost. Submit after the
     // clip length plus this grace on the monotonic clock so busy is never stuck.
     private const double AudioStallGrace = 3;
+    // Network round trip after the gauge, on top of the gauge itself.
+    private const double QuoteSubmitMargin = 5;
+    private const string UncertainNotice = "결과 미확정: 재시도하지 말고 게임 종료 후 재접속하여 장비·루블을 확인해 주세요.";
     private double attemptWallStart;
     private Rect window;
     private GameObject blocker;
@@ -210,7 +213,7 @@ public sealed partial class Plugin : BaseUnityPlugin
 
     private void Open(object context, object item)
     {
-        if (busy || uncertain || resultVisible) return;
+        if (busy || resultVisible) return;
         try
         {
             session = GameBridge.Get(context, "ClientSession") ?? throw new InvalidOperationException("PMC 세션이 없습니다.");
@@ -229,7 +232,8 @@ public sealed partial class Plugin : BaseUnityPlugin
             CreateBlocker(); ResetWindow();
             visible = true; PlayInteraction(UiInteraction.Open); quote = null; preview = null; firstQuote = true; destructionConfirmed = false; generation++;
             protectDestruction = protectDowngrade = chanceBoost = false;
-            RefreshQuote();
+            if (uncertain) message = UncertainNotice;
+            else RefreshQuote();
         }
         catch (Exception ex) { Logger.LogError(ex); Close(); }
     }
@@ -318,6 +322,12 @@ public sealed partial class Plugin : BaseUnityPlugin
     {
         if (busy || resultVisible || quote == null || uncertain) return;
         if (attemptTimeline.Active) return;
+        var duration = evolutionMode ? evolutionAttemptDuration : attemptDuration;
+        if (quote.ExpiresWithin(DateTimeOffset.UtcNow.ToUnixTimeSeconds(), duration + QuoteSubmitMargin))
+        {
+            LoadQuote("견적 유효 시간이 얼마 남지 않아 새로 불러왔습니다. 비용을 확인하고 다시 눌러 주세요.");
+            return;
+        }
         var started = Clock;
         attemptUsesAudioClock = false;
         if (soundsEnabled.Value && providedSounds.Value && feedbackAudio != null && !providedFeedbackUnavailable)
@@ -327,7 +337,7 @@ public sealed partial class Plugin : BaseUnityPlugin
         }
         if (!soundsEnabled.Value) LogDetailed("강화 충전음 생략: F12 효과음 OFF");
         if (!attemptUsesAudioClock && soundsEnabled.Value) PlayFeedback(evolutionMode ? FeedbackCue.EvolutionAttempt : FeedbackCue.Attempt, false);
-        if (!attemptTimeline.Begin(started, evolutionMode ? evolutionAttemptDuration : attemptDuration)) return;
+        if (!attemptTimeline.Begin(started, duration)) return;
         attemptWallStart = Clock;
         pendingAttempt = quote; pendingDestructionConfirmation = destructionConfirmed; pendingGeneration = generation;
         busy = true; quote = null; message = "강화 진행 중…";
@@ -383,7 +393,7 @@ public sealed partial class Plugin : BaseUnityPlugin
         {
             uncertain = submitted;
             message = ex.GetBaseException().Message + (submitted
-                ? "\n결과 미확정: 재시도하지 말고 게임 종료 후 재접속하여 장비·루블을 확인해 주세요."
+                ? "\n" + UncertainNotice
                 : "\n아직 강화를 전송하지 않았습니다.");
             Logger.LogError(ex);
         }
