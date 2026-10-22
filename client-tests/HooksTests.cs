@@ -125,6 +125,17 @@ public sealed class HooksTests : IDisposable
     }
 
     [Fact]
+    public void Static_raid_status_supports_a_field_or_property_without_harmony_lookup_warnings()
+    {
+        Assert.False((bool)GameBridge.Get(typeof(FieldRaidStatus), "InRaid"));
+        Assert.True((bool)GameBridge.Get(typeof(PropertyRaidStatus), "InRaid"));
+        Assert.Null(GameBridge.Get(typeof(FieldRaidStatus), "Missing"));
+    }
+
+    public static class FieldRaidStatus { public static bool InRaid = false; }
+    public static class PropertyRaidStatus { public static bool InRaid => true; }
+
+    [Fact]
     public async Task Native_callback_binding_and_flush_result_are_compatible_with_typed_delegate()
     {
         var session = new TestSession();

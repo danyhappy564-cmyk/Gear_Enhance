@@ -17,7 +17,7 @@ internal static class GameBridge
     internal static object Get(object instance, string name)
     {
         if (instance == null) return null;
-        var type = instance.GetType();
+        var type = instance as Type ?? instance.GetType();
         if (!members.TryGetValue((type, name), out var member))
         {
             const BindingFlags flags = BindingFlags.Public | BindingFlags.NonPublic
@@ -28,8 +28,9 @@ internal static class GameBridge
                 member = (MemberInfo)current.GetProperty(name, flags) ?? current.GetField(name, flags);
             if (member != null) members.TryAdd((type, name), member);
         }
-        return member is PropertyInfo property ? property.GetValue(instance)
-            : member is FieldInfo field ? field.GetValue(instance) : null;
+        var target = instance is Type ? null : instance;
+        return member is PropertyInfo property ? property.GetValue(target)
+            : member is FieldInfo field ? field.GetValue(target) : null;
     }
 
     internal static MethodInfo RequiredMethod(Type type, string name, int count) =>
@@ -40,8 +41,7 @@ internal static class GameBridge
     internal static bool InStash(object context)
     {
         var status = AccessTools.TypeByName("EFT.InGameStatus");
-        var inRaid = status == null ? null : AccessTools.Property(status, "InRaid")?.GetValue(null)
-            ?? AccessTools.Field(status, "InRaid")?.GetValue(null);
+        var inRaid = Get(status, "InRaid");
         return inRaid is false && AccessTools.TypeByName("EFT.InventoryLogic.BackEndInventoryController")
             ?.IsInstanceOfType(Get(context, "_inventoryController")) == true;
     }

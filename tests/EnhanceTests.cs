@@ -1,5 +1,7 @@
 using System.Text.Json;
 using GearEnhance;
+using Microsoft.Extensions.DependencyInjection;
+using SPTarkov.DI;
 using SPTarkov.Server.Core.Helpers.Profile;
 using SPTarkov.Server.Core.Models.Common;
 using SPTarkov.Server.Core.Models.Eft.Common;
@@ -79,6 +81,37 @@ public sealed class EnhanceTests
             Id = Part, Template = new("777777777777777777777777"), ParentId = Target,
             SlotId = slot, Upd = new() { Repairable = new() { Durability = 50, MaxDurability = 75 } }
         });
+    }
+
+    [Fact]
+    public async Task Actual_spt_di_keeps_quote_available_to_a_separately_resolved_event_router()
+    {
+        var rig = new Rig();
+        var services = new ServiceCollection();
+        services.AddSingleton<SptEnhanceBackend>(rig.Backend);
+        services.AddSingleton(Json);
+        services.AddSingleton(new HttpResponseUtil(Json, null!));
+        var injector = new DependencyInjectionHandler(services);
+        injector.AddInjectableTypesFromTypeList([typeof(EnhanceService), typeof(EnhanceQueries), typeof(EnhanceEvents)]);
+        injector.InjectAll();
+        using var provider = services.BuildServiceProvider();
+        var queries = provider.GetRequiredService<EnhanceQueries>();
+        var request = Json.Serialize(new QuoteRequest
+            { ItemId = Target.ToString(), Settings = new() { AlwaysSucceed = true } })!;
+        var response = await queries.HandleStaticAsync("/rf/gear-enhance/quote", request, Session, "");
+        var quote = Json.Deserialize<ApiReply<EnhanceQuote>>((string)response)!.Data!;
+        // Resolve the event router independently, exactly as SPT's two router graphs do.
+        var events = provider.GetRequiredService<EnhanceEvents>();
+        var operation = Json.Deserialize<EnhanceOperation>(
+            Newtonsoft.Json.JsonConvert.SerializeObject(new { Action = "GearEnhance", quoteId = quote.QuoteId }))!;
+        await events.HandleItemEvent("GearEnhance", rig.Pmc, operation, Session, rig.Output);
+        Assert.Equal(90000, rig.Money);
+        var receiptResponse = await provider.GetRequiredService<EnhanceQueries>().HandleStaticAsync(
+            "/rf/gear-enhance/receipt", Json.Serialize(new ReceiptRequest { QuoteId = quote.QuoteId })!, Session, "");
+        var receipt = Json.Deserialize<ApiReply<EnhanceReceipt>>((string)receiptResponse)!;
+        Assert.True(receipt.Ok, receipt.Error);
+        Assert.Equal(1, receipt.Data!.Level);
+        Assert.Same(provider.GetRequiredService<EnhanceService>(), provider.GetRequiredService<EnhanceService>());
     }
 
     [Fact]

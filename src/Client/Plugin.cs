@@ -9,7 +9,7 @@ using UnityEngine;
 
 namespace GearEnhance;
 
-[BepInPlugin("rf.gearenhance", "Gear Enhance", "0.2.0")]
+[BepInPlugin("rf.gearenhance", "Gear Enhance", "0.2.1")]
 public sealed partial class Plugin : BaseUnityPlugin
 {
     internal static Plugin Instance;
@@ -66,7 +66,7 @@ public sealed partial class Plugin : BaseUnityPlugin
             StatPatches.Install(harmony);
             var target = GameBridge.RequiredMethod(AccessTools.TypeByName("EFT.UI.ItemUiContext"), "GetItemContextInteractions", 2);
             harmony.Patch(target, postfix: new HarmonyMethod(typeof(Plugin), nameof(MenuPostfix)));
-            Logger.LogInfo("Gear Enhance 0.2.0: 강화 방향 5종과 아이템별 효과 로드");
+            Logger.LogInfo("Gear Enhance 0.2.1: 강화 방향 5종과 아이템별 효과 로드");
         }
         catch (Exception ex)
         {
@@ -268,6 +268,8 @@ public sealed partial class Plugin : BaseUnityPlugin
         Close(); harmony?.UnpatchSelf(); StatPatches.Registry.Clear();
         if (windowSkin != null) Destroy(windowSkin);
         if (uiFont != null) Destroy(uiFont);
+        foreach (var texture in skinTextures) if (texture != null) Destroy(texture);
+        skinTextures.Clear();
         if (Instance == this) Instance = null;
     }
 }

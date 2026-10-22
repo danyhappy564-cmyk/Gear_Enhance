@@ -22,7 +22,9 @@ public sealed class EnhanceState
     public Dictionary<string, EnhancePath> Paths { get; set; } = new();
 }
 
-[Injectable]
+// The query router and item-event router are resolved separately by SPT.
+// Quotes and their lock must belong to the same server-wide instance.
+[Injectable(InjectionType.Singleton)]
 public sealed class EnhanceService(SptEnhanceBackend backend, JsonUtil serializer)
 {
     private const string StateKey = "rfGearEnhance";
