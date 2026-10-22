@@ -77,6 +77,25 @@ public sealed class GameApiTests
     }
 
     [GameAssemblyFact]
+    public void Native_sound_and_gold_item_marker_bindings_exist_in_the_real_game()
+    {
+        using var game = Game();
+        var sounds = game.MainModule.GetType("EFT.UI.GUISounds");
+        var play = Assert.Single(sounds.Methods, m => m.Name == "PlayUISound" && m.Parameters.Count == 1);
+        Assert.Equal("EFT.UI.EUISoundType", play.Parameters[0].ParameterType.FullName);
+        var cues = game.MainModule.GetType("EFT.UI.EUISoundType");
+        foreach (var name in new[] { "MenuInstallModFunc", "RepairComplete", "ErrorMessage" })
+            Assert.Contains(cues.Fields, field => field.Name == name && field.HasConstant);
+        var grid = game.MainModule.GetType("EFT.UI.DragAndDrop.GridItemView");
+        Assert.Single(grid.Methods, m => m.Name == "GetItemName" && m.Parameters.Count == 1);
+        AssertCalls(grid.Methods.Single(m => m.Name == "UpdateInfo" && m.Parameters.Count == 0), "UpdateColor");
+        var basic = game.MainModule.GetType("EFT.UI.DragAndDrop.ItemView");
+        Assert.Equal("UnityEngine.Color", basic.Fields.Single(f => f.Name == "BackgroundColor").FieldType.FullName);
+        Assert.Single(basic.Methods, m => m.Name == "Kill" && m.Parameters.Count == 0);
+        Assert.Single(basic.Methods, m => m.Name == "UpdateColor" && m.Parameters.Count == 0);
+    }
+
+    [GameAssemblyFact]
     public void Armor_hooks_cover_actual_durability_subtraction_and_equipment_penalties()
     {
         using var game = Game();

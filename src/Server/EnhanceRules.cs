@@ -3,12 +3,12 @@ namespace GearEnhance;
 // Pure rules shared by the real SPT adapter and the executable tests.
 public static class EnhanceRules
 {
-    public static int Cost(double basePrice, int level, EnhanceSettings settings, bool changingPath = false)
+    public static int Cost(double basePrice, int level, EnhanceSettings settings)
     {
         settings.Validate();
         if (!double.IsFinite(basePrice) || basePrice <= 0)
             throw new InvalidOperationException("가격을 찾을 수 없는 아이템은 강화할 수 없습니다.");
-        if (level < 0 || level > 100 || (!changingPath && level >= settings.MaxLevel))
+        if (level < 0 || level > 100 || level >= settings.MaxLevel)
             throw new InvalidOperationException("최대 강화 단계입니다.");
         var cost = Math.Ceiling(Math.Max(settings.MinimumCost,
             basePrice * settings.CostPercent / 100 * Math.Pow(settings.CostPerLevel, level)));

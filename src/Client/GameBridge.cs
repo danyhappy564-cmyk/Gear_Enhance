@@ -13,6 +13,14 @@ namespace GearEnhance;
 // or copies of another mod's interaction implementation are shipped.
 internal static class GameBridge
 {
+    private static readonly ConcurrentDictionary<string, Type> runtimeTypes = new ConcurrentDictionary<string, Type>();
+    internal static Type RuntimeType(string name)
+    {
+        if (runtimeTypes.TryGetValue(name, out var type)) return type;
+        type = AccessTools.TypeByName(name);
+        if (type != null) runtimeTypes.TryAdd(name, type);
+        return type;
+    }
     private static readonly ConcurrentDictionary<(Type, string), MemberInfo> members = new ConcurrentDictionary<(Type, string), MemberInfo>();
     internal static object Get(object instance, string name)
     {
@@ -40,9 +48,9 @@ internal static class GameBridge
 
     internal static bool InStash(object context)
     {
-        var status = AccessTools.TypeByName("EFT.InGameStatus");
+        var status = RuntimeType("EFT.InGameStatus");
         var inRaid = Get(status, "InRaid");
-        return inRaid is false && AccessTools.TypeByName("EFT.InventoryLogic.BackEndInventoryController")
+        return inRaid is false && RuntimeType("EFT.InventoryLogic.BackEndInventoryController")
             ?.IsInstanceOfType(Get(context, "_inventoryController")) == true;
     }
 
@@ -62,7 +70,7 @@ internal static class GameBridge
         return false;
     }
 
-    internal static bool IsWeapon(object item) => AccessTools.TypeByName("EFT.InventoryLogic.Weapon")?.IsInstanceOfType(item) == true;
+    internal static bool IsWeapon(object item) => RuntimeType("EFT.InventoryLogic.Weapon")?.IsInstanceOfType(item) == true;
     internal static string ProfileId(object session) => Get(Get(session, "Profile"), "Id")?.ToString() ?? "";
 
     internal static object ParentItem(object item)
@@ -73,15 +81,15 @@ internal static class GameBridge
 
     internal static void RefreshGameplay()
     {
-        var worldType = AccessTools.TypeByName("EFT.GameWorld");
+        var worldType = RuntimeType("EFT.GameWorld");
         if (worldType == null) return;
-        var singleton = AccessTools.TypeByName("Comfort.Common.Singleton`1")?.MakeGenericType(worldType);
+        var singleton = RuntimeType("Comfort.Common.Singleton`1")?.MakeGenericType(worldType);
         var world = singleton == null ? null : AccessTools.Property(singleton, "Instance")?.GetValue(null);
         var player = Get(world, "MainPlayer");
         if (player == null) return;
         RequiredMethod(player.GetType(), "RecalculateEquipmentParams", 0).Invoke(player, null);
         var hands = Get(player, "HandsController");
-        if (hands != null && AccessTools.TypeByName("EFT.Player+FirearmController")?.IsInstanceOfType(hands) == true)
+        if (hands != null && RuntimeType("EFT.Player+FirearmController")?.IsInstanceOfType(hands) == true)
             RequiredMethod(hands.GetType(), "WeaponModified", 0).Invoke(hands, null);
         var shot = Get(Get(player, "ProceduralWeaponAnimation"), "Shootingg");
         if (shot != null) RequiredMethod(shot.GetType(), "OnWeaponParametersChanged", 0).Invoke(shot, null);
@@ -89,7 +97,7 @@ internal static class GameBridge
 
     internal static void AddInteraction(object interactions, Action action)
     {
-        var type = AccessTools.TypeByName("EFT.UI.DynamicContextInteraction")
+        var type = RuntimeType("EFT.UI.DynamicContextInteraction")
             ?? throw new TypeLoadException("SPT 4.1 DynamicContextInteraction");
         var ctor = type.GetConstructors().Single(c => c.GetParameters().Length == 4);
         const string caption = "장비 강화";
@@ -138,7 +146,7 @@ internal static class GameBridge
         var json = JsonConvert.SerializeObject(body);
         var raw = await Task.Run(() =>
         {
-            var type = AccessTools.TypeByName("SPT.Common.Http.RequestHandler")
+            var type = RuntimeType("SPT.Common.Http.RequestHandler")
                 ?? throw new TypeLoadException("SPT.Common.Http.RequestHandler가 없습니다.");
             var method = type.GetMethods(BindingFlags.Public | BindingFlags.Static).SingleOrDefault(m =>
                 m.Name == "PostJson" && m.GetParameters().Length >= 2

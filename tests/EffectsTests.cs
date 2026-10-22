@@ -38,14 +38,15 @@ public sealed class EffectsTests
     }
 
     [Fact]
-    public void Receipt_switches_specialization_and_destruction_clears_effects()
+    public void Receipt_adds_independent_tracks_and_destruction_clears_all_effects()
     {
         var registry = new EffectRegistry();
         registry.ApplyReceipt(new() { Success = true, ItemId = "gun", Level = 5, Path = EnhancePath.Recoil }, "a");
         Assert.Equal(7.5, registry.Amount("gun", EnhancePath.Recoil));
         registry.ApplyReceipt(new() { Success = true, ItemId = "gun", Level = 5, Path = EnhancePath.Ergonomics }, "a");
-        Assert.Equal(0, registry.Amount("gun", EnhancePath.Recoil));
+        Assert.Equal(7.5, registry.Amount("gun", EnhancePath.Recoil));
         Assert.Equal(5, registry.Amount("gun", EnhancePath.Ergonomics));
+        Assert.Equal("★ +10", registry.Badge("gun"));
         registry.ApplyReceipt(new() { ItemId = "gun", FailureMode = FailureMode.Destroy }, "a");
         Assert.Null(registry.Find("gun"));
     }

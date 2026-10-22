@@ -9,12 +9,12 @@ using UnityEngine;
 
 namespace GearEnhance;
 
-[BepInPlugin("rf.gearenhance", "Gear Enhance", "0.2.1")]
+[BepInPlugin("rf.gearenhance", "Gear Enhance", EnhanceProtocol.ModVersion)]
 public sealed partial class Plugin : BaseUnityPlugin
 {
     internal static Plugin Instance;
     private Harmony harmony;
-    private ConfigEntry<bool> menuEnabled, always;
+    private ConfigEntry<bool> menuEnabled, always, soundsEnabled;
     private ConfigEntry<float> chance, percent, growth;
     private ConfigEntry<int> maxLevel, minimum;
     private ConfigEntry<PriceBasis> price;
@@ -28,6 +28,8 @@ public sealed partial class Plugin : BaseUnityPlugin
     private bool visible, busy, destructionConfirmed, uncertain, weapon, firstQuote;
     private int generation, syncGeneration;
     private string message = "";
+    private long repaintCount, repaintTicks, maximumRepaintTicks;
+    private bool feedbackUnavailable;
     private Rect window;
     private GameObject blocker;
     private GUISkin windowSkin;
@@ -40,7 +42,7 @@ public sealed partial class Plugin : BaseUnityPlugin
         menuEnabled = Config.Bind("1. 기본", "강화 메뉴 사용", true, "창고의 무기·방어구 우클릭에 장비 강화를 표시합니다.");
         chance = Config.Bind("2. 확률", "성공률 (%)", 75f, new ConfigDescription("다음 견적부터 적용됩니다.", new AcceptableValueRange<float>(0, 100)));
         always = Config.Bind("2. 확률", "항상 성공 (100%)", false, "켜면 성공률 설정 대신 100%를 적용합니다. 비용은 소모됩니다.");
-        maxLevel = Config.Bind("2. 확률", "최대 강화 단계", 10, new ConfigDescription("효과별 상한은 별도로 적용합니다.", new AcceptableValueRange<int>(1, 100)));
+        maxLevel = Config.Bind("2. 확률", "최대 강화 단계", 10, new ConfigDescription("각 항목의 최대 단계입니다. 효과별 수치 상한은 별도로 적용합니다.", new AcceptableValueRange<int>(1, 100)));
         price = Config.Bind("3. 비용", "기준 가격", PriceBasis.Handbook, "Handbook = 북밸류, Flea = SPT 플리 기준가. 장비 본체만 계산합니다.");
         percent = Config.Bind("3. 비용", "기준 가격 대비 비용 (%)", 10f, new ConfigDescription("0이면 최소 비용만 적용됩니다.", new AcceptableValueRange<float>(0, 1000)));
         growth = Config.Bind("3. 비용", "단계별 비용 배수", 1.25f, new ConfigDescription("기준가 × 비용 비율 × 배수^현재단계. 최대 1억 루블.", new AcceptableValueRange<float>(1, 3)));
@@ -52,6 +54,7 @@ public sealed partial class Plugin : BaseUnityPlugin
         BindEffect(EnhancePath.Precision, "5. 무기 효과", 1, 10);
         BindEffect(EnhancePath.ArmorDurability, "6. 방어구 효과", 3, 30);
         BindEffect(EnhancePath.Mobility, "6. 방어구 효과", 2, 20);
+        soundsEnabled = Config.Bind("7. 피드백", "강화 효과음", true, "시도·성공·실패에 게임 UI 효과음을 재생합니다. 게임의 소리 설정을 따릅니다.");
         StatPatches.Registry.Configure(Tuning());
         Config.SettingChanged += (_, _) => main.Enqueue(() =>
         {
@@ -63,10 +66,14 @@ public sealed partial class Plugin : BaseUnityPlugin
         try
         {
             harmony = new Harmony("rf.gearenhance");
+            // Resolve hot status types during plugin startup, before a window is opened.
+            GameBridge.RuntimeType("EFT.InGameStatus");
+            GameBridge.RuntimeType("EFT.InventoryLogic.BackEndInventoryController");
             StatPatches.Install(harmony);
-            var target = GameBridge.RequiredMethod(AccessTools.TypeByName("EFT.UI.ItemUiContext"), "GetItemContextInteractions", 2);
+            ItemMarkers.Install(harmony);
+            var target = GameBridge.RequiredMethod(GameBridge.RuntimeType("EFT.UI.ItemUiContext"), "GetItemContextInteractions", 2);
             harmony.Patch(target, postfix: new HarmonyMethod(typeof(Plugin), nameof(MenuPostfix)));
-            Logger.LogInfo("Gear Enhance 0.2.1: 강화 방향 5종과 아이템별 효과 로드");
+            Logger.LogInfo("Gear Enhance " + EnhanceProtocol.ModVersion + ": 독립 강화·장비 표식·효과음 로드");
         }
         catch (Exception ex)
         {
@@ -124,11 +131,11 @@ public sealed partial class Plugin : BaseUnityPlugin
             weapon = GameBridge.IsWeapon(item);
             selectedPath = StatPatches.Registry.Find(itemId)?.Path ?? (weapon ? EnhancePath.Recoil : EnhancePath.ArmorDurability);
             itemName = GameBridge.Get(item, "ShortName")?.ToString() ?? itemId;
-            var manager = AccessTools.TypeByName("EFT.LocalizationManager");
+            var manager = GameBridge.RuntimeType("EFT.LocalizationManager");
             var localizer = manager?.GetMethod("LocalizedValue", new[] { typeof(string) });
             var instance = manager == null ? null : AccessTools.Property(manager, "Instance")?.GetValue(null);
             if (instance != null && localizer != null) itemName = localizer.Invoke(instance, new object[] { itemName })?.ToString() ?? itemName;
-            itemIcon = GameBridge.RequiredMethod(AccessTools.TypeByName("EFT.UI.DragAndDrop.ItemViewFactory"), "LoadItemIcon", 3)
+            itemIcon = GameBridge.RequiredMethod(GameBridge.RuntimeType("EFT.UI.DragAndDrop.ItemViewFactory"), "LoadItemIcon", 3)
                 .Invoke(null, new[] { item, (object)1, false });
             CreateBlocker(); ResetWindow();
             visible = true; quote = null; preview = null; firstQuote = true; destructionConfirmed = false; generation++;
@@ -144,7 +151,7 @@ public sealed partial class Plugin : BaseUnityPlugin
         if (expected.Length == 0) { StatPatches.Registry.Clear(); return false; }
         try
         {
-            var snapshot = await GameBridge.WithTimeout(GameBridge.Query<EnhanceSnapshot>("/rf/gear-enhance/state", new { }));
+            var snapshot = await GameBridge.WithTimeout(GameBridge.Query<EnhanceSnapshot>("/rf/gear-enhance/state", new { ProtocolVersion = EnhanceProtocol.Version }));
             if (request != syncGeneration || expected != GameBridge.ProfileId(activeSession)) return false;
             StatPatches.Registry.Replace(snapshot, expected);
             main.Enqueue(RefreshGameplay);
@@ -165,14 +172,16 @@ public sealed partial class Plugin : BaseUnityPlugin
         {
             if (selectedItem != null) GameBridge.RequiredMethod(selectedItem.GetType(), "UpdateAttributes", 0).Invoke(selectedItem, null);
             GameBridge.RefreshGameplay();
+            ItemMarkers.Refresh(itemId);
         }
         catch (Exception ex) { Logger.LogWarning("강화 능력치 재계산: " + ex.GetBaseException().Message); }
     }
 
-    private async void RefreshQuote()
+    private void RefreshQuote() => LoadQuote(null);
+    private async void LoadQuote(string resultMessage)
     {
         if (busy || uncertain || itemId == null) return;
-        busy = true; quote = null; message = "견적을 불러오는 중입니다…";
+        busy = true; quote = null; message = resultMessage ?? "견적을 불러오는 중입니다…";
         var current = generation;
         try
         {
@@ -184,10 +193,16 @@ public sealed partial class Plugin : BaseUnityPlugin
                 selectedPath = StatPatches.Registry.Find(itemId)?.Path ?? selectedPath;
                 firstQuote = false;
             }
+            if ((StatPatches.Registry.Find(itemId, selectedPath)?.Level ?? 0) >= maxLevel.Value)
+            {
+                preview = null;
+                message = resultMessage ?? "이 항목은 최대 단계입니다. 다른 항목을 선택해 주세요.";
+                return;
+            }
             var response = await GameBridge.WithTimeout(GameBridge.Query<EnhanceQuote>(
-                "/rf/gear-enhance/quote", new { ItemId = itemId, Path = selectedPath, Settings = Settings() }));
+                "/rf/gear-enhance/quote", new { ProtocolVersion = EnhanceProtocol.Version, ItemId = itemId, Path = selectedPath, Settings = Settings() }));
             if (current != generation) { message = "설정이 바뀌었습니다. 견적을 다시 불러와 주세요."; return; }
-            quote = preview = response; weapon = response.IsWeapon; message = ""; destructionConfirmed = false;
+            quote = preview = response; weapon = response.IsWeapon; message = resultMessage ?? ""; destructionConfirmed = false;
         }
         catch (Exception ex) { message = ex.GetBaseException().Message; Logger.LogWarning(ex); }
         finally { busy = false; }
@@ -205,17 +220,21 @@ public sealed partial class Plugin : BaseUnityPlugin
         var attempt = quote;
         busy = true; quote = null; message = "강화 결과를 확인하는 중입니다…";
         var submitted = false;
+        var completed = false;
         try
         {
             await GameBridge.Flush(session);
+            QueueFeedback(FeedbackCue.Attempt);
             submitted = true;
             var ok = await GameBridge.WithTimeout(GameBridge.Execute(session, attempt.QuoteId, destructionConfirmed), 30000);
             if (!ok) { message = "강화가 거절됐습니다. 서버 오류 안내를 확인하고 견적을 다시 불러와 주세요."; return; }
-            var receipt = await GameBridge.WithTimeout(GameBridge.Query<EnhanceReceipt>("/rf/gear-enhance/receipt", new { attempt.QuoteId }));
+            var receipt = await GameBridge.WithTimeout(GameBridge.Query<EnhanceReceipt>("/rf/gear-enhance/receipt", new { ProtocolVersion = EnhanceProtocol.Version, attempt.QuoteId }));
             message = receipt.Success
-                ? $"{(attempt.BindLegacy ? "효과 선택 완료" : attempt.ChangePath ? "방향 변경 완료" : "강화 성공")}! {EnhanceEffects.Name(receipt.Path)} +{receipt.Level} · {receipt.Paid:N0} ₽ 소모"
+                ? $"{(attempt.BindLegacy ? "기존 단계 복원 완료" : "강화 성공")}! {EnhanceEffects.Name(receipt.Path)} +{receipt.Level} · {receipt.Paid:N0} ₽ 소모"
                 : $"강화 실패 · {receipt.Paid:N0} ₽ 소모\n{FailureText(receipt.FailureMode)}";
             StatPatches.Registry.ApplyReceipt(receipt, GameBridge.ProfileId(session));
+            completed = true;
+            QueueFeedback(receipt.Success ? FeedbackCue.Success : FeedbackCue.Failure);
             RefreshGameplay();
             await SyncEffects(session);
             if (!receipt.Success && receipt.FailureMode == FailureMode.Destroy) { itemId = null; selectedItem = null; itemIcon = null; }
@@ -228,7 +247,29 @@ public sealed partial class Plugin : BaseUnityPlugin
                 : "\n아직 강화를 전송하지 않았습니다.");
             Logger.LogError(ex);
         }
-        finally { busy = false; destructionConfirmed = false; }
+        finally
+        {
+            busy = false; destructionConfirmed = false;
+            if (completed && itemId != null && !uncertain)
+            {
+                var result = message;
+                main.Enqueue(() => LoadQuote(result));
+            }
+        }
+    }
+
+    private void QueueFeedback(FeedbackCue cue)
+    {
+        if (!soundsEnabled.Value || feedbackUnavailable) return;
+        main.Enqueue(() =>
+        {
+            try { GameFeedback.Play(cue); }
+            catch (Exception ex)
+            {
+                feedbackUnavailable = true;
+                Logger.LogWarning("강화 효과음 연결 실패(강화 결과에는 영향 없음): " + ex.GetBaseException().Message);
+            }
+        });
     }
 
     private static string FailureText(FailureMode mode) => mode == FailureMode.Destroy
@@ -244,8 +285,8 @@ public sealed partial class Plugin : BaseUnityPlugin
     private void CreateBlocker()
     {
         if (blocker != null) return;
-        var raycaster = AccessTools.TypeByName("UnityEngine.UI.GraphicRaycaster");
-        var image = AccessTools.TypeByName("UnityEngine.UI.Image");
+        var raycaster = GameBridge.RuntimeType("UnityEngine.UI.GraphicRaycaster");
+        var image = GameBridge.RuntimeType("UnityEngine.UI.Image");
         if (raycaster == null || image == null) throw new TypeLoadException("Unity UI를 찾을 수 없습니다.");
         blocker = new GameObject("GearEnhance.InputBlocker", typeof(RectTransform), typeof(Canvas), raycaster, image);
         DontDestroyOnLoad(blocker);
@@ -258,14 +299,18 @@ public sealed partial class Plugin : BaseUnityPlugin
     }
     private void Close()
     {
+        if (visible && repaintCount > 0)
+            Logger.LogInfo($"강화 창 UI CPU: Repaint {repaintCount}회, 평균 {repaintTicks * 1000.0 / System.Diagnostics.Stopwatch.Frequency / repaintCount:0.00}ms, 최대 {maximumRepaintTicks * 1000.0 / System.Diagnostics.Stopwatch.Frequency:0.00}ms (GPU/FPS 측정 아님)");
+        repaintCount = repaintTicks = maximumRepaintTicks = 0;
         visible = false; quote = preview = null; session = uiContext = selectedItem = itemIcon = null; generation++;
+        itemId = null;
         if (blocker != null) Destroy(blocker);
         blocker = null;
     }
     private void OnDestroy()
     {
         syncGeneration++;
-        Close(); harmony?.UnpatchSelf(); StatPatches.Registry.Clear();
+        Close(); harmony?.UnpatchSelf(); StatPatches.Registry.Clear(); ItemMarkers.Clear();
         if (windowSkin != null) Destroy(windowSkin);
         if (uiFont != null) Destroy(uiFont);
         foreach (var texture in skinTextures) if (texture != null) Destroy(texture);

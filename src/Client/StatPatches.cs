@@ -40,7 +40,7 @@ internal static class StatPatches
             harmony.Patch(method, transpiler: Hook(nameof(PenaltyDisplay)));
     }
 
-    private static Type RequiredType(string name) => AccessTools.TypeByName(name) ?? throw new TypeLoadException(name);
+    private static Type RequiredType(string name) => GameBridge.RuntimeType(name) ?? throw new TypeLoadException(name);
     private static HarmonyMethod Hook(string name) => new HarmonyMethod(typeof(StatPatches), name);
     private static void PatchGetter(Harmony harmony, Type type, string name, string hook) =>
         harmony.Patch(AccessTools.PropertyGetter(type, name) ?? throw new MissingMemberException(type.FullName, name),
@@ -54,7 +54,7 @@ internal static class StatPatches
         {
             var id = GameBridge.Get(item, "Id")?.ToString();
             if (id == null) return 0;
-            var record = Registry.Find(id);
+            var record = Registry.Find(id, path);
             if (record != null) return Registry.Amount(id, path);
             var parent = GameBridge.ParentItem(item);
             if (ReferenceEquals(item, parent)) break;
@@ -88,7 +88,7 @@ internal static class StatPatches
         var amount = Amount(GameBridge.Get(__instance, "Item"), EnhancePath.ArmorDurability, true);
         if (amount > 0 && __0 > 0) __0 = EnhanceEffects.Reduce(__0, amount);
     }
-    private static void ProfilesPrefix() => Registry.Clear();
+    private static void ProfilesPrefix() { Registry.Clear(); ItemMarkers.Clear(); }
     private static void ProfilesPostfix(object __instance, ref Task __result) => __result = AfterProfiles(__result, __instance);
     private static async Task AfterProfiles(Task original, object session)
     {

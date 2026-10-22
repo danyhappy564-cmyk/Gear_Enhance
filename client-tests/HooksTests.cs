@@ -125,6 +125,53 @@ public sealed class HooksTests : IDisposable
     }
 
     [Fact]
+    public void All_three_weapon_effects_are_applied_together_without_replacing_each_other()
+    {
+        StatPatches.Registry.Replace(new EnhanceSnapshot { ProfileId = "pmc", Items = new[] {
+            new EnhanceRecord { ItemId = "gun", Path = EnhancePath.Recoil, Level = 10 },
+            new EnhanceRecord { ItemId = "gun", Path = EnhancePath.Ergonomics, Level = 4 },
+            new EnhanceRecord { ItemId = "gun", Path = EnhancePath.Precision, Level = 7 }
+        } }, "pmc");
+        var item = new TestItem("gun");
+        Assert.Equal(-0.49f, Run("Recoil", item, -0.4f), 5);
+        Assert.Equal(54, Run("Ergonomics", item, 50));
+        Assert.Equal(0.93f, Run("Precision", item, 1), 5);
+        Assert.Equal("★ +21", StatPatches.Registry.Badge("gun"));
+    }
+
+    [Fact]
+    public void Both_armor_effects_work_together_and_inherit_by_the_requested_stat()
+    {
+        StatPatches.Registry.Replace(new EnhanceSnapshot { ProfileId = "pmc", Items = new[] {
+            new EnhanceRecord { ItemId = "vest", Path = EnhancePath.ArmorDurability, Level = 10 },
+            new EnhanceRecord { ItemId = "vest", Path = EnhancePath.Mobility, Level = 5 },
+            new EnhanceRecord { ItemId = "plate", Path = EnhancePath.ArmorDurability, Level = 1 }
+        } }, "pmc");
+        var vest = new TestItem("vest");
+        var plate = new TestItem("plate") { CurrentAddress = new(new(vest)) };
+        Assert.Equal(9.7f, Run("Durability", new TestArmor(plate), 10), 4);
+        Assert.Equal(-9, Run("Mobility", new TestArmor(plate), -10));
+    }
+
+    [Fact]
+    public void Cached_runtime_type_reads_do_not_scan_assemblies_or_allocate_in_the_frame_loop()
+    {
+        var cache = (System.Collections.Concurrent.ConcurrentDictionary<string, Type>)typeof(GameBridge)
+            .GetField("runtimeTypes", BindingFlags.Static | BindingFlags.NonPublic)!.GetValue(null)!;
+        const string key = "GearEnhance.Tests.CachedStatus";
+        cache[key] = typeof(FieldRaidStatus);
+        for (var warmup = 0; warmup < 100; warmup++) GameBridge.RuntimeType(key);
+        var before = GC.GetAllocatedBytesForCurrentThread();
+        Type? last = null;
+        for (var frame = 0; frame < 10000; frame++) last = GameBridge.RuntimeType(key);
+        var allocated = GC.GetAllocatedBytesForCurrentThread() - before;
+        Assert.Equal(typeof(FieldRaidStatus), last);
+        Assert.Equal(0, allocated);
+        // A cache miss would initialize Harmony's Mono-specific resolver in this
+        // .NET host; this also proves the assembly scan was never reached.
+    }
+
+    [Fact]
     public void Static_raid_status_supports_a_field_or_property_without_harmony_lookup_warnings()
     {
         Assert.False((bool)GameBridge.Get(typeof(FieldRaidStatus), "InRaid"));

@@ -11,6 +11,7 @@ namespace GearEnhance;
 
 public sealed class QuoteRequest : IRequestData
 {
+    public int ProtocolVersion { get; set; }
     public string ItemId { get; set; } = "";
     public EnhanceSettings Settings { get; set; } = new();
     public EnhancePath? Path { get; set; }
@@ -18,7 +19,13 @@ public sealed class QuoteRequest : IRequestData
 
 public sealed class ReceiptRequest : IRequestData
 {
+    public int ProtocolVersion { get; set; }
     public string QuoteId { get; set; } = "";
+}
+
+public sealed class StateRequest : IRequestData
+{
+    public int ProtocolVersion { get; set; }
 }
 
 public sealed record EnhanceOperation : BaseInteractionRequestData
@@ -33,12 +40,14 @@ public sealed record EnhanceOperation : BaseInteractionRequestData
 public sealed class EnhanceQueries(JsonUtil json, EnhanceService service) : StaticRouter(json,
 [
     new RouteAction<QuoteRequest>("/rf/gear-enhance/quote", (_, body, session, _, _) =>
-        ValueTask.FromResult(Reply(() => service.Quote(session, body.ItemId, body.Settings, body.Path), json))),
-    new RouteAction<EmptyRequestData>("/rf/gear-enhance/state", (_, _, session, _, _) =>
-        ValueTask.FromResult(Reply(() => service.Snapshot(session), json))),
+        ValueTask.FromResult(Reply(() => { EnhanceProtocol.Validate(body.ProtocolVersion);
+            return service.Quote(session, body.ItemId, body.Settings, body.Path); }, json))),
+    new RouteAction<StateRequest>("/rf/gear-enhance/state", (_, body, session, _, _) =>
+        ValueTask.FromResult(Reply(() => { EnhanceProtocol.Validate(body.ProtocolVersion); return service.Snapshot(session); }, json))),
     new RouteAction<ReceiptRequest>("/rf/gear-enhance/receipt", (_, body, session, _, _) =>
-        ValueTask.FromResult(Reply(() => service.Receipt(session, body.QuoteId)
-            ?? throw new InvalidOperationException("완료 기록이 없습니다. 연결 상태와 서버 로그를 확인해 주세요."), json)))
+        ValueTask.FromResult(Reply(() => { EnhanceProtocol.Validate(body.ProtocolVersion);
+            return service.Receipt(session, body.QuoteId)
+            ?? throw new InvalidOperationException("완료 기록이 없습니다. 연결 상태와 서버 로그를 확인해 주세요."); }, json)))
 ])
 {
     private static string Reply<T>(Func<T> action, JsonUtil json) where T : class

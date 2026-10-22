@@ -97,7 +97,7 @@ public sealed class EnhanceTests
         using var provider = services.BuildServiceProvider();
         var queries = provider.GetRequiredService<EnhanceQueries>();
         var request = Json.Serialize(new QuoteRequest
-            { ItemId = Target.ToString(), Settings = new() { AlwaysSucceed = true } })!;
+            { ProtocolVersion = EnhanceProtocol.Version, ItemId = Target.ToString(), Settings = new() { AlwaysSucceed = true } })!;
         var response = await queries.HandleStaticAsync("/rf/gear-enhance/quote", request, Session, "");
         var quote = Json.Deserialize<ApiReply<EnhanceQuote>>((string)response)!.Data!;
         // Resolve the event router independently, exactly as SPT's two router graphs do.
@@ -107,7 +107,7 @@ public sealed class EnhanceTests
         await events.HandleItemEvent("GearEnhance", rig.Pmc, operation, Session, rig.Output);
         Assert.Equal(90000, rig.Money);
         var receiptResponse = await provider.GetRequiredService<EnhanceQueries>().HandleStaticAsync(
-            "/rf/gear-enhance/receipt", Json.Serialize(new ReceiptRequest { QuoteId = quote.QuoteId })!, Session, "");
+            "/rf/gear-enhance/receipt", Json.Serialize(new ReceiptRequest { ProtocolVersion = EnhanceProtocol.Version, QuoteId = quote.QuoteId })!, Session, "");
         var receipt = Json.Deserialize<ApiReply<EnhanceReceipt>>((string)receiptResponse)!;
         Assert.True(receipt.Ok, receipt.Error);
         Assert.Equal(1, receipt.Data!.Level);
@@ -262,7 +262,7 @@ public sealed class EnhanceTests
     {
         var rig = new Rig();
         var router = new EnhanceQueries(Json, rig.Service);
-        var request = "{\"ItemId\":\"" + Target + "\",\"Settings\":{\"AlwaysSucceed\":true,\"SuccessPercent\":0}}";
+        var request = "{\"ProtocolVersion\":2,\"ItemId\":\"" + Target + "\",\"Settings\":{\"AlwaysSucceed\":true,\"SuccessPercent\":0}}";
         var result = await router.HandleStaticAsync("/rf/gear-enhance/quote", request, Session, "");
         var reply = Json.Deserialize<ApiReply<EnhanceQuote>>((string)result)!;
         Assert.True(reply.Ok, reply.Error);
@@ -277,7 +277,7 @@ public sealed class EnhanceTests
         var router = new EnhanceQueries(Json, rig.Service);
         var request = Newtonsoft.Json.JsonConvert.SerializeObject(new
         {
-            ItemId = Target.ToString(), Settings = new EnhanceSettings
+            ProtocolVersion = EnhanceProtocol.Version, ItemId = Target.ToString(), Settings = new EnhanceSettings
             { FailureMode = FailureMode.Destroy, PriceBasis = PriceBasis.Flea, AlwaysSucceed = true }
         });
         var result = await router.HandleStaticAsync("/rf/gear-enhance/quote", request, Session, "");
@@ -322,22 +322,24 @@ public sealed class EnhanceTests
     }
 
     [Fact]
-    public void Specialization_change_keeps_level_charges_a_separate_cost_and_always_succeeds()
+    public void Three_weapon_tracks_upgrade_independently_and_keep_all_paid_levels()
     {
         var rig = new Rig();
         rig.Execute(rig.Quote());
-        var quote = rig.Service.Quote(Session, Target.ToString(),
-            new() { SuccessPercent = 0, FailureMode = FailureMode.Destroy }, EnhancePath.Ergonomics);
-        Assert.True(quote.ChangePath);
+        var quote = rig.Service.Quote(Session, Target.ToString(), new() { AlwaysSucceed = true }, EnhancePath.Ergonomics);
+        Assert.Equal(0, quote.CurrentLevel);
         Assert.Equal(1, quote.NextLevel);
-        Assert.Equal(100, quote.SuccessPercent);
-        Assert.Equal(FailureMode.KeepItem, quote.FailureMode);
+        Assert.Equal(10000, quote.Cost);
         Assert.Equal(0, quote.CurrentEffect);
         Assert.Equal(1, quote.NextEffect);
         rig.Execute(quote);
-        Assert.Equal(77500, rig.Money);
-        Assert.Equal(EnhancePath.Ergonomics, rig.Service.Snapshot(Session).Items.Single().Path);
-        Assert.Equal(1, rig.Service.Snapshot(Session).Items.Single().Level);
+        rig.Execute(rig.Service.Quote(Session, Target.ToString(), new() { AlwaysSucceed = true }, EnhancePath.Precision));
+        rig.Execute(rig.Quote());
+        var tracks = rig.Service.Snapshot(Session).Items.ToDictionary(i => i.Path, i => i.Level);
+        Assert.Equal(2, tracks[EnhancePath.Recoil]);
+        Assert.Equal(1, tracks[EnhancePath.Ergonomics]);
+        Assert.Equal(1, tracks[EnhancePath.Precision]);
+        Assert.Equal(57500, rig.Money);
     }
 
     [Fact]
@@ -354,7 +356,9 @@ public sealed class EnhanceTests
         Assert.Equal(100000, rig.Money);
         Assert.Equal(EnhancePath.Precision, rig.Service.Snapshot(Session).Items.Single().Path);
         Assert.Throws<InvalidOperationException>(() => rig.Service.Quote(Session, Target.ToString(), new(), EnhancePath.Precision));
-        Assert.True(rig.Service.Quote(Session, Target.ToString(), new(), EnhancePath.Recoil).ChangePath);
+        var other = rig.Service.Quote(Session, Target.ToString(), new(), EnhancePath.Recoil);
+        Assert.Equal(0, other.CurrentLevel);
+        Assert.Equal(10000, other.Cost);
     }
 
     [Fact]
@@ -400,11 +404,76 @@ public sealed class EnhanceTests
         var rig = new Rig();
         rig.Execute(rig.Quote());
         var router = new EnhanceQueries(Json, rig.Service);
-        var result = await router.HandleStaticAsync("/rf/gear-enhance/state", "{}", Session, "");
+        var result = await router.HandleStaticAsync("/rf/gear-enhance/state", "{\"ProtocolVersion\":2}", Session, "");
         var client = Newtonsoft.Json.JsonConvert.DeserializeObject<ApiReply<EnhanceSnapshot>>((string)result)!;
         Assert.True(client.Ok, client.Error);
         Assert.Equal(EnhancePath.Recoil, client.Data!.Items.Single().Path);
         rig.Pmc.Inventory!.Items!.Remove(rig.Item);
         Assert.Empty(rig.Service.Snapshot(Session).Items);
+    }
+
+    [Fact]
+    public void Legacy_specialization_migrates_once_without_cost_or_other_track_levels()
+    {
+        var rig = new Rig();
+        rig.Backend.Saved.ExtensionData = new() { ["rfGearEnhance"] = new EnhanceState
+            { Levels = new() { [Target.ToString()] = 10 }, Paths = new() { [Target.ToString()] = EnhancePath.Precision } } };
+        rig.Backend.Saved = Json.Deserialize<SptProfile>(Json.Serialize(rig.Backend.Saved))!;
+        var state = rig.Service.Snapshot(Session);
+        Assert.Equal(10, state.Items.Single().Level);
+        Assert.Equal(EnhancePath.Precision, state.Items.Single().Path);
+        Assert.Equal(100000, rig.Money);
+        var other = rig.Service.Quote(Session, Target.ToString(), new() { AlwaysSucceed = true }, EnhancePath.Recoil);
+        Assert.Equal(0, other.CurrentLevel);
+        Assert.Equal(10000, other.Cost);
+        // The loaded profile was deserialized; native execution must use that PMC.
+        rig.Service.Execute(Session, rig.Backend.Saved.CharacterData!.PmcData!, other.QuoteId, false, rig.Output);
+        rig.Backend.Saved = Json.Deserialize<SptProfile>(Json.Serialize(rig.Backend.Saved))!;
+        var restored = rig.Service.Snapshot(Session).Items.ToDictionary(i => i.Path, i => i.Level);
+        Assert.Equal(10, restored[EnhancePath.Precision]);
+        Assert.Equal(1, restored[EnhancePath.Recoil]);
+        Assert.Equal(2, restored.Count);
+    }
+
+    [Fact]
+    public void Independent_tracks_still_use_failure_chance_and_destruction_clears_all_tracks()
+    {
+        var rig = new Rig();
+        rig.Execute(rig.Quote());
+        rig.Execute(rig.Service.Quote(Session, Target.ToString(), new() { AlwaysSucceed = true }, EnhancePath.Ergonomics));
+        var failed = rig.Service.Quote(Session, Target.ToString(), new() { SuccessPercent = 0 }, EnhancePath.Precision);
+        Assert.Equal(0, failed.SuccessPercent);
+        rig.Execute(failed);
+        Assert.Equal(2, rig.Service.Snapshot(Session).Items.Length);
+        var destroyed = rig.Service.Quote(Session, Target.ToString(),
+            new() { SuccessPercent = 0, FailureMode = FailureMode.Destroy }, EnhancePath.Precision);
+        rig.Execute(destroyed, true);
+        Assert.Empty(rig.Service.Snapshot(Session).Items);
+        Assert.DoesNotContain(rig.Pmc.Inventory!.Items!, i => i.Id == Target);
+    }
+
+    [Fact]
+    public void Both_armor_tracks_keep_separate_progress_after_profile_roundtrip()
+    {
+        var rig = new Rig(); rig.Backend.WeaponCategory = false;
+        foreach (var path in new[] { EnhancePath.ArmorDurability, EnhancePath.Mobility, EnhancePath.ArmorDurability })
+            rig.Execute(rig.Service.Quote(Session, Target.ToString(), new() { AlwaysSucceed = true }, path));
+        rig.Backend.Saved = Json.Deserialize<SptProfile>(Json.Serialize(rig.Backend.Saved))!;
+        var tracks = rig.Service.Snapshot(Session).Items.ToDictionary(i => i.Path, i => i.Level);
+        Assert.Equal(2, tracks[EnhancePath.ArmorDurability]);
+        Assert.Equal(1, tracks[EnhancePath.Mobility]);
+    }
+
+    [Fact]
+    public async Task Previous_client_protocol_is_rejected_before_issuing_a_paid_quote()
+    {
+        var rig = new Rig();
+        var router = new EnhanceQueries(Json, rig.Service);
+        var response = await router.HandleStaticAsync("/rf/gear-enhance/quote",
+            Json.Serialize(new QuoteRequest { ItemId = Target.ToString() })!, Session, "");
+        var reply = Json.Deserialize<ApiReply<EnhanceQuote>>((string)response)!;
+        Assert.False(reply.Ok);
+        Assert.Contains("업데이트", reply.Error);
+        Assert.Equal(100000, rig.Money);
     }
 }

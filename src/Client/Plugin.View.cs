@@ -12,7 +12,12 @@ public sealed partial class Plugin
     private static readonly Color Line = new Color(0.25f, 0.28f, 0.30f);
     private static readonly Color Panel = new Color(0.045f, 0.055f, 0.065f, 0.98f);
     private readonly List<Texture2D> skinTextures = new List<Texture2D>();
-    private Texture2D panelGradient, headerGradient, selectedGradient, cardGradient, goldGradient;
+    private Texture2D panelGradient, headerGradient, selectedGradient, cardGradient, goldGradient, previewGrid;
+    private readonly Dictionary<EnhancePath, Texture2D> glyphs = new Dictionary<EnhancePath, Texture2D>();
+    private static readonly EnhancePath[] WeaponTracks = { EnhancePath.Recoil, EnhancePath.Ergonomics, EnhancePath.Precision };
+    private static readonly EnhancePath[] ArmorTracks = { EnhancePath.ArmorDurability, EnhancePath.Mobility };
+    private GUIStyle noteStyle, statusStyle;
+    private GUI.WindowFunction drawWindow;
     private GUIStyle heading, body, small, centeredSmall, pathHeading, large, value, selectedValue, chanceValue, costValue;
     private GUIStyle card, primary, secondary, frame;
     private float UiScale => Mathf.Max(0.1f, Mathf.Min(1.1f,
@@ -29,6 +34,7 @@ public sealed partial class Plugin
     {
         if (windowSkin != null) return;
         windowSkin = Instantiate(GUI.skin);
+        drawWindow = DrawWindow;
         windowSkin.hideFlags = HideFlags.HideAndDontSave;
         uiFont = Font.CreateDynamicFontFromOSFont(
             new[] { "Malgun Gothic", "맑은 고딕", "Noto Sans CJK KR", "Arial Unicode MS" }, 16);
@@ -37,6 +43,8 @@ public sealed partial class Plugin
         body = TextStyle(17, new Color(0.88f, 0.89f, 0.90f));
         small = TextStyle(13, Muted);
         centeredSmall = TextStyle(13, Muted, alignment: TextAnchor.MiddleCenter);
+        noteStyle = TextStyle(13, Gold); noteStyle.wordWrap = true;
+        statusStyle = TextStyle(13, Muted); statusStyle.wordWrap = true;
         pathHeading = TextStyle(16, Color.white, FontStyle.Bold, TextAnchor.MiddleCenter);
         large = TextStyle(39, Gold, FontStyle.Bold);
         value = TextStyle(26, Color.white, FontStyle.Bold, TextAnchor.MiddleCenter);
@@ -60,6 +68,24 @@ public sealed partial class Plugin
             frame.onNormal, frame.onHover, frame.onActive, frame.onFocused }) state.background = null;
         windowSkin.toggle.fontSize = 13;
         windowSkin.toggle.wordWrap = true;
+        var gridPixels = new Color32[24 * 24];
+        for (var pixel = 0; pixel < gridPixels.Length; pixel++)
+            gridPixels[pixel] = new Color32(87, 100, 107, (byte)(pixel % 24 == 0 || pixel / 24 == 0 ? 14 : 0));
+        previewGrid = new Texture2D(24, 24, TextureFormat.RGBA32, false)
+            { hideFlags = HideFlags.HideAndDontSave, wrapMode = TextureWrapMode.Repeat };
+        previewGrid.SetPixels32(gridPixels); previewGrid.Apply(false, true); skinTextures.Add(previewGrid);
+        foreach (EnhancePath path in Enum.GetValues(typeof(EnhancePath)))
+        {
+            var mask = UiGlyphs.Rasterize(path);
+            var pixels = new Color32[mask.Length];
+            for (var pixel = 0; pixel < pixels.Length; pixel++)
+                pixels[(UiGlyphs.Size - 1 - pixel / UiGlyphs.Size) * UiGlyphs.Size + pixel % UiGlyphs.Size]
+                    = new Color32(255, 255, 255, mask[pixel]);
+            var texture = new Texture2D(UiGlyphs.Size, UiGlyphs.Size, TextureFormat.RGBA32, false)
+                { hideFlags = HideFlags.HideAndDontSave, wrapMode = TextureWrapMode.Clamp };
+            texture.SetPixels32(pixels); texture.Apply(false, true);
+            glyphs[path] = texture; skinTextures.Add(texture);
+        }
     }
 
     private Texture2D Gradient(Color top, Color bottom)
@@ -86,6 +112,7 @@ public sealed partial class Plugin
     }
     private static void Fill(Rect rect, Color color)
     {
+        if (Event.current.type != EventType.Repaint) return;
         var old = GUI.color; GUI.color = color;
         GUI.DrawTexture(rect, Texture2D.whiteTexture); GUI.color = old;
     }
@@ -93,27 +120,22 @@ public sealed partial class Plugin
     {
         Fill(rect, border); Fill(new Rect(rect.x + 1, rect.y + 1, rect.width - 2, rect.height - 2), fill);
     }
-    private static void Stroke(Vector2 start, Vector2 end, float thickness, Color color)
-    {
-        var previous = GUI.matrix;
-        try
-        {
-            GUIUtility.RotateAroundPivot(Mathf.Atan2(end.y - start.y, end.x - start.x) * Mathf.Rad2Deg, start);
-            Fill(new Rect(start.x, start.y - thickness / 2, Vector2.Distance(start, end), thickness), color);
-        }
-        finally { GUI.matrix = previous; }
-    }
     private void Surface(Rect rect, Texture2D texture, Color border)
     {
+        if (Event.current.type != EventType.Repaint) return;
         Fill(rect, border);
         GUI.DrawTexture(new Rect(rect.x + 1, rect.y + 1, rect.width - 2, rect.height - 2), texture);
     }
-    private void Label(float x, float y, float width, float height, string text, GUIStyle style) =>
-        GUI.Label(new Rect(x, y, width, height), new GUIContent(text, text), style);
+    private void Label(float x, float y, float width, float height, string text, GUIStyle style)
+    {
+        // Labels retain their control IDs on every event; Unity draws them only on Repaint.
+        GUI.Label(new Rect(x, y, width, height), text, style);
+    }
 
     private void OnGUI()
     {
         if (!visible) return;
+        var started = Event.current.type == EventType.Repaint ? System.Diagnostics.Stopwatch.GetTimestamp() : 0;
         EnsureSkin();
         var matrix = GUI.matrix; var skin = GUI.skin; var depth = GUI.depth;
         var active = GUI.enabled; var color = GUI.color;
@@ -126,35 +148,43 @@ public sealed partial class Plugin
             GUI.matrix = Matrix4x4.TRS(Vector3.zero, Quaternion.identity, Vector3.one * scale);
             window.x = Mathf.Clamp(window.x, 0, Math.Max(0, Screen.width / scale - WindowWidth));
             window.y = Mathf.Clamp(window.y, 0, Math.Max(0, Screen.height / scale - WindowHeight));
-            window = GUI.Window(GetInstanceID(), window, DrawWindow, "", frame);
+            window = GUI.Window(GetInstanceID(), window, drawWindow, "", frame);
         }
-        finally { GUI.matrix = matrix; GUI.skin = skin; GUI.depth = depth; GUI.enabled = active; GUI.color = color; }
+        finally
+        {
+            GUI.matrix = matrix; GUI.skin = skin; GUI.depth = depth; GUI.enabled = active; GUI.color = color;
+            if (started != 0)
+            {
+                var elapsed = System.Diagnostics.Stopwatch.GetTimestamp() - started;
+                repaintCount++; repaintTicks += elapsed;
+                maximumRepaintTicks = Math.Max(maximumRepaintTicks, elapsed);
+            }
+        }
     }
 
     private void DrawWindow(int id)
     {
         Surface(new Rect(0, 0, WindowWidth, WindowHeight), panelGradient, Line);
-        GUI.DrawTexture(new Rect(1, 1, WindowWidth - 2, 53), headerGradient);
+        if (Event.current.type == EventType.Repaint)
+            GUI.DrawTexture(new Rect(1, 1, WindowWidth - 2, 53), headerGradient);
         Fill(new Rect(1, 54, WindowWidth - 2, 1), Line);
         // Small metal corner accents follow the approved mockup's frame.
         var accent = new Color(0.55f, 0.58f, 0.59f);
-        foreach (var corner in new[] { new Vector2(0, 0), new Vector2(WindowWidth, 0),
-            new Vector2(0, WindowHeight), new Vector2(WindowWidth, WindowHeight) })
-        {
-            Stroke(corner, corner + new Vector2(corner.x == 0 ? 14 : -14, 0), 1, accent);
-            Stroke(corner, corner + new Vector2(0, corner.y == 0 ? 14 : -14), 1, accent);
-        }
+        Fill(new Rect(0, 0, 14, 1), accent); Fill(new Rect(0, 0, 1, 14), accent);
+        Fill(new Rect(WindowWidth - 14, 0, 14, 1), accent); Fill(new Rect(WindowWidth - 1, 0, 1, 14), accent);
+        Fill(new Rect(0, WindowHeight - 1, 14, 1), accent); Fill(new Rect(0, WindowHeight - 14, 1, 14), accent);
+        Fill(new Rect(WindowWidth - 14, WindowHeight - 1, 14, 1), accent);
+        Fill(new Rect(WindowWidth - 1, WindowHeight - 14, 1, 14), accent);
         Label(23, 9, 200, 36, "장비 강화", heading);
-        Label(162, 16, 190, 24, "Gear Enhance · 0.2.1", small);
+        Label(162, 16, 190, 24, "Gear Enhance · " + EnhanceProtocol.ModVersion, small);
         GUI.enabled = !busy;
         if (!uncertain && itemId != null && GUI.Button(new Rect(608, 13, 92, 29), "새로고침", secondary)) main.Enqueue(RefreshQuote);
         if (GUI.Button(new Rect(712, 10, 32, 32), "×", secondary)) main.Enqueue(Close);
         GUI.enabled = true;
 
         DrawPreview();
-        Label(24, 239, 300, 29, "강화 방향", body);
-        var options = weapon ? new[] { EnhancePath.Recoil, EnhancePath.Ergonomics, EnhancePath.Precision }
-            : new[] { EnhancePath.ArmorDurability, EnhancePath.Mobility };
+        Label(24, 239, 300, 29, "강화 항목 · 각각 강화 가능", body);
+        var options = weapon ? WeaponTracks : ArmorTracks;
         var width = (712f - (options.Length - 1) * 12) / options.Length;
         for (var index = 0; index < options.Length; index++)
             DrawPath(new Rect(24 + index * (width + 12), 276, width, 76), options[index]);
@@ -164,13 +194,11 @@ public sealed partial class Plugin
 
     private void DrawPreview()
     {
-        // A quiet grid behind the native item icon adds depth without a flat green tile.
-        var grid = new Color(0.34f, 0.39f, 0.42f, 0.055f);
-        for (var column = 24; column <= 504; column += 24) Fill(new Rect(column, 62, 1, 166), grid);
-        for (var row = 62; row <= 228; row += 24) Fill(new Rect(24, row, 480, 1), grid);
+        if (Event.current.type == EventType.Repaint)
+            GUI.DrawTextureWithTexCoords(new Rect(24, 62, 480, 166), previewGrid, new Rect(0, 0, 20, 166f / 24));
         var area = new Rect(38, 69, 449, 151);
         var sprite = GameBridge.Get(itemIcon, "Sprite") as Sprite;
-        if (sprite != null && sprite.texture != null)
+        if (sprite != null && sprite.texture != null && Event.current.type == EventType.Repaint)
         {
             var source = sprite.rect;
             var fit = Math.Min(area.width / source.width, area.height / source.height);
@@ -179,11 +207,11 @@ public sealed partial class Plugin
             GUI.DrawTextureWithTexCoords(rect, sprite.texture, new Rect(source.x / sprite.texture.width,
                 source.y / sprite.texture.height, source.width / sprite.texture.width, source.height / sprite.texture.height));
         }
-        else Label(62, 127, 380, 30, "장비 이미지를 불러오는 중…", small);
+        if (sprite == null || sprite.texture == null) Label(62, 127, 380, 30, "장비 이미지를 불러오는 중…", small);
         Label(517, 76, 217, 38, itemName ?? "장비", heading);
-        Label(518, 112, 216, 25, weapon ? "무기 강화" : "방어구 강화", small);
-        var current = preview?.CurrentLevel ?? StatPatches.Registry.Find(itemId ?? "")?.Level ?? 0;
-        var next = preview?.NextLevel ?? Math.Min(current + 1, maxLevel.Value);
+        Label(518, 112, 216, 25, EnhanceEffects.Name(selectedPath) + " 강화", small);
+        var current = preview?.CurrentLevel ?? StatPatches.Registry.Find(itemId ?? "", selectedPath)?.Level ?? 0;
+        var next = preview?.NextLevel ?? Math.Max(current, Math.Min(current + 1, maxLevel.Value));
         Label(513, 145, 225, 64, $"+{current} → +{next}", current >= 100 || next >= 100
             ? selectedValue : large);
         Fill(new Rect(24, 231, 712, 1), Line);
@@ -200,7 +228,7 @@ public sealed partial class Plugin
         DrawPathIcon(new Vector2(rect.x + 34, rect.y + 38), path, selected ? Gold : Muted);
         var textX = rect.x + 63;
         var textWidth = rect.width - 73;
-        Label(textX, rect.y + 12, textWidth, 26, EnhanceEffects.Name(path), pathHeading);
+        Label(textX, rect.y + 12, textWidth, 26, EnhanceEffects.Name(path) + " +" + (StatPatches.Registry.Find(itemId ?? "", path)?.Level ?? 0), pathHeading);
         var description = path == EnhancePath.Recoil ? "수직·수평 반동 감소"
             : path == EnhancePath.Ergonomics ? "인체공학 증가" : path == EnhancePath.Precision ? "탄 퍼짐 감소"
             : path == EnhancePath.ArmorDurability ? "피격 시 내구도 소모 감소" : "장비 페널티 완화";
@@ -208,62 +236,13 @@ public sealed partial class Plugin
         GUI.enabled = true;
     }
 
-    private static void DrawPathIcon(Vector2 center, EnhancePath path, Color color)
+    private void DrawPathIcon(Vector2 center, EnhancePath path, Color color)
     {
-        if (path == EnhancePath.Recoil)
-        {
-            Arrow(center + new Vector2(-12, 13), center + new Vector2(-12, -9), color);
-            Arrow(center + new Vector2(0, 19), center + new Vector2(0, -19), color);
-            Arrow(center + new Vector2(12, 13), center + new Vector2(12, -9), color);
-        }
-        else if (path == EnhancePath.Precision)
-        {
-            var previous = center + new Vector2(16, 0);
-            for (var point = 1; point <= 32; point++)
-            {
-                var angle = point * Mathf.PI * 2 / 32;
-                var next = center + new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * 16;
-                Stroke(previous, next, 1.5f, color); previous = next;
-            }
-            Stroke(center + new Vector2(-23, 0), center + new Vector2(-8, 0), 2, color);
-            Stroke(center + new Vector2(8, 0), center + new Vector2(23, 0), 2, color);
-            Stroke(center + new Vector2(0, -23), center + new Vector2(0, -8), 2, color);
-            Stroke(center + new Vector2(0, 8), center + new Vector2(0, 23), 2, color);
-            Fill(new Rect(center.x - 2, center.y - 2, 4, 4), color);
-        }
-        else if (path == EnhancePath.Ergonomics)
-        {
-            // Palm and five fingers; drawn locally rather than relying on an OS glyph.
-            Box(new Rect(center.x - 11, center.y - 1, 23, 20), color, color);
-            for (var finger = 0; finger < 4; finger++)
-                Stroke(center + new Vector2(-9 + finger * 6, 4),
-                    center + new Vector2(-12 + finger * 7, finger == 0 || finger == 3 ? -13 : -20), 4, color);
-            Stroke(center + new Vector2(-6, 13), center + new Vector2(-21, -1), 5, color);
-        }
-        else if (path == EnhancePath.ArmorDurability)
-        {
-            var points = new[] { new Vector2(-18, -16), new Vector2(0, -22), new Vector2(18, -16),
-                new Vector2(15, 7), new Vector2(0, 22), new Vector2(-15, 7), new Vector2(-18, -16) };
-            for (var edge = 1; edge < points.Length; edge++) Stroke(center + points[edge - 1], center + points[edge], 2, color);
-            Stroke(center + new Vector2(-8, 0), center + new Vector2(8, 0), 2, color);
-            Stroke(center + new Vector2(0, -8), center + new Vector2(0, 8), 2, color);
-        }
-        else
-        {
-            for (var chevron = 0; chevron < 2; chevron++)
-            {
-                var x = -12 + chevron * 15;
-                Stroke(center + new Vector2(x, -15), center + new Vector2(x + 12, 0), 3, color);
-                Stroke(center + new Vector2(x + 12, 0), center + new Vector2(x, 15), 3, color);
-            }
-        }
-    }
-
-    private static void Arrow(Vector2 from, Vector2 to, Color color)
-    {
-        Stroke(from, to, 3, color);
-        Stroke(to, to + new Vector2(-4, 7), 2, color);
-        Stroke(to, to + new Vector2(4, 7), 2, color);
+        if (Event.current.type != EventType.Repaint) return;
+        var previous = GUI.color;
+        GUI.color = color;
+        GUI.DrawTexture(new Rect(center.x - 24, center.y - 24, 48, 48), glyphs[path]);
+        GUI.color = previous;
     }
 
     private void DrawEffects()
@@ -271,20 +250,20 @@ public sealed partial class Plugin
         Box(new Rect(24, 367, 712, 170), Panel, Line);
         Fill(new Rect(25, 368, 710, 34), new Color(0.12f, 0.135f, 0.15f, 0.65f));
         Label(40, 370, 280, 29, "강화 효과", body);
-        Label(379, 370, 122, 29, $"현재 +{preview?.CurrentLevel ?? 0}", centeredSmall);
-        Label(594, 370, 126, 29, $"{(preview?.ChangePath == true ? "변경 시" : "성공 시")} +{preview?.NextLevel ?? 1}", centeredSmall);
+        Label(379, 370, 122, 29, $"현재 +{preview?.CurrentLevel ?? StatPatches.Registry.Find(itemId ?? "", selectedPath)?.Level ?? 0}", centeredSmall);
+        Label(594, 370, 126, 29,  $"성공 시 +{preview?.NextLevel ?? Math.Max(StatPatches.Registry.Find(itemId ?? "", selectedPath)?.Level ?? 0, Math.Min(maxLevel.Value, (StatPatches.Registry.Find(itemId ?? "", selectedPath)?.Level ?? 0) + 1))}", centeredSmall);
         Fill(new Rect(25, 402, 710, 1), Line);
         Label(48, 412, 290, 36, EnhanceEffects.StatName(selectedPath), body);
-        var current = preview?.CurrentEffect ?? 0;
-        var next = preview?.NextEffect ?? 0;
+        var current = preview?.CurrentEffect ?? StatPatches.Registry.Amount(itemId ?? "", selectedPath);
+        var next = preview?.NextEffect ?? current;
         var cap = preview?.EffectCap ?? EnhanceEffects.Cap(selectedPath, Tuning());
         Label(379, 408, 122, 42, EnhanceEffects.Format(selectedPath, current), value);
         Label(532, 410, 40, 38, "→", value);
         Label(594, 408, 126, 42, EnhanceEffects.Format(selectedPath, next), selectedValue);
         Bar(new Rect(155, 467, 400, 10), current, cap, new Color(0.43f, 0.46f, 0.48f));
         Bar(new Rect(155, 492, 400, 10), next, cap, Gold);
-        Label(48, 458, 102, 27, $"현재 +{preview?.CurrentLevel ?? 0}", small);
-        Label(48, 483, 102, 27, $"성공 시 +{preview?.NextLevel ?? 1}", small);
+        Label(48, 458, 102, 27, $"현재 +{preview?.CurrentLevel ?? StatPatches.Registry.Find(itemId ?? "", selectedPath)?.Level ?? 0}", small);
+        Label(48, 483, 102, 27, $"성공 시 +{preview?.NextLevel ?? Math.Max(StatPatches.Registry.Find(itemId ?? "", selectedPath)?.Level ?? 0, Math.Min(maxLevel.Value, (StatPatches.Registry.Find(itemId ?? "", selectedPath)?.Level ?? 0) + 1))}", small);
         Label(575, 458, 143, 27, EnhanceEffects.Format(selectedPath, current), small);
         Label(575, 483, 143, 27, EnhanceEffects.Format(selectedPath, next), small);
         Label(155, 511, 563, 22, EnhanceEffects.Description(selectedPath), small);
@@ -320,16 +299,14 @@ public sealed partial class Plugin
         Box(new Rect(24, 704, 712, 44), new Color(0.10f, 0.085f, 0.055f), new Color(0.61f, 0.46f, 0.22f));
         Label(38, 711, 24, 27, "!", selectedValue);
         var note = preview?.BindLegacy == true ? "기존 단계 유지 · 첫 효과 선택은 무료 · 100% 적용"
-            : preview?.ChangePath == true ? $"방향 변경: 기존 {EnhanceEffects.Name(preview.PreviousPath.Value)} 효과 대체 · 단계 유지 · 100% 적용"
+
             : "실패 시: " + FailureText(preview?.FailureMode ?? failure.Value);
-        var noteStyle = new GUIStyle(small) { wordWrap = true }; noteStyle.normal.textColor = Gold;
         Label(75, 709, 643, 34, note, noteStyle);
         if (quote != null && quote.FailureMode == FailureMode.Destroy && quote.SuccessPercent < 100)
             destructionConfirmed = GUI.Toggle(new Rect(28, 759, 704, 35), destructionConfirmed,
                 $" 본체와 부착물 {quote.AttachedItems}개(탄약 포함)가 삭제될 수 있음을 확인했습니다.");
         else
         {
-            var statusStyle = new GUIStyle(small) { wordWrap = true };
             var seconds = quote == null ? "" : $"견적 유효 시간: {Math.Max(0, quote.ExpiresUnixSeconds - DateTimeOffset.UtcNow.ToUnixTimeSeconds())}초";
             Label(28, 753, 704, 43, string.IsNullOrEmpty(message) ? seconds : message, statusStyle);
         }
@@ -340,11 +317,12 @@ public sealed partial class Plugin
         var expired = quote != null && DateTimeOffset.UtcNow.ToUnixTimeSeconds() >= quote.ExpiresUnixSeconds;
         var canPay = quote != null && quote.AvailableRoubles >= quote.Cost && !expired
             && (quote.FailureMode != FailureMode.Destroy || quote.SuccessPercent == 100 || destructionConfirmed);
-        GUI.enabled = !busy && !uncertain && itemId != null && (quote == null || expired || canPay);
+        var atMaximum = (StatPatches.Registry.Find(itemId ?? "", selectedPath)?.Level ?? 0) >= maxLevel.Value;
+        GUI.enabled = !busy && !uncertain && itemId != null && !atMaximum && (quote == null || expired || canPay);
         var actionRect = new Rect(273, 803, 463, 48);
         Surface(actionRect, goldGradient, new Color(0.95f, 0.85f, 0.64f));
-        var caption = busy ? "처리 중…" : quote == null || expired ? "견적 다시 불러오기"
-            : quote.BindLegacy ? "기존 단계에 효과 적용 · 무료" : quote.ChangePath ? $"방향 변경  {quote.Cost:N0} ₽" : $"강화 시도  {quote.Cost:N0} ₽";
+        var caption = busy ? "처리 중…" : atMaximum ? "이 항목은 최대 단계입니다" : quote == null || expired ? "견적 다시 불러오기"
+            : quote.BindLegacy ? "기존 단계에 효과 적용 · 무료" : $"강화 시도  {quote.Cost:N0} ₽";
         if (GUI.Button(actionRect, caption, primary))
         {
             if (quote == null || expired) main.Enqueue(RefreshQuote);

@@ -7,6 +7,17 @@ public enum PriceBasis { Handbook, Flea }
 public enum FailureMode { KeepItem, ZeroDurability, Destroy }
 public enum EnhancePath { Recoil, Ergonomics, Precision, ArmorDurability, Mobility }
 
+public static class EnhanceProtocol
+{
+    public const int Version = 2;
+    public const string ModVersion = "0.3.0";
+    public static void Validate(int version)
+    {
+        if (version != Version)
+            throw new ArgumentException("Gear Enhance 클라이언트와 서버를 모두 0.3.0 이상으로 업데이트해 주세요.");
+    }
+}
+
 public sealed class EnhanceSettings
 {
     public double SuccessPercent { get; set; } = 75;
@@ -52,8 +63,6 @@ public sealed class EnhanceQuote
     public EnhancePath Path { get; set; }
     public bool IsWeapon { get; set; }
     public bool BindLegacy { get; set; }
-    public bool ChangePath { get; set; }
-    public EnhancePath? PreviousPath { get; set; }
     public double CurrentEffect { get; set; }
     public double NextEffect { get; set; }
     public double EffectCap { get; set; }

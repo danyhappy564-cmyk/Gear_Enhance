@@ -47,7 +47,7 @@ public static class EnhanceEffects
         EnhancePath.Precision => tuning.PrecisionCap,
         EnhancePath.ArmorDurability => tuning.ArmorDurabilityCap,
         EnhancePath.Mobility => tuning.MobilityCap,
-        _ => throw new ArgumentException("강화 방향이 올바르지 않습니다.")
+        _ => throw new ArgumentException("강화 항목이 올바르지 않습니다.")
     };
 
     public static double Amount(EnhancePath path, int level, EffectTuning tuning)
@@ -59,7 +59,7 @@ public static class EnhanceEffects
             EnhancePath.Precision => tuning.PrecisionPerLevel,
             EnhancePath.ArmorDurability => tuning.ArmorDurabilityPerLevel,
             EnhancePath.Mobility => tuning.MobilityPerLevel,
-            _ => throw new ArgumentException("강화 방향이 올바르지 않습니다.")
+            _ => throw new ArgumentException("강화 항목이 올바르지 않습니다.")
         };
         return Math.Min(Cap(path, tuning), step * Math.Max(0, Math.Min(100, level)));
     }
