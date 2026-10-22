@@ -85,13 +85,13 @@ public sealed partial class Plugin : BaseUnityPlugin
         soundsEnabled = Config.Bind("7. 피드백", "강화 효과음", true, "강화 중·결과·버튼·항목·체크박스·창 여닫기에 효과음을 재생합니다. 끄더라도 게이지 시간은 유지합니다.");
         providedSounds = Config.Bind("7. 피드백", "전용 강화 음원 사용", true, "사용자 제공 음원6개 사용. 끄면 기존 게임 UI 소리를 사용합니다. 전용 음원 오류 시에도 기본음으로 대체합니다.");
         soundVolume = Config.Bind("7. 피드백", "전용 음원 음량 (%)", 70f, new ConfigDescription("게임의 마스터/인터페이스 음량에 추가로 곱합니다. 0이면 전용 음원 무음. 기본 게임음 모드에서는 게임 소리 설정을 사용합니다.", new AcceptableValueRange<float>(0, 100)));
-        completionBonus = BindDeveloper("8. 완성 보너스", "전 항목 완성 추가 효과 (%)", 20f, new ConfigDescription("모든 항목 최대 달성 후 별도 스타 강화 진화에 성공한 장비에만 추가 배율. 예: 반동15%→18%, ★★ 보라색. 자동 적용이 아닙니다.", new AcceptableValueRange<float>(0, 100)));
+        completionBonus = BindDeveloper("8. 완성 보너스", "전 항목 완성 추가 효과 (%)", (float)StarEvolution.SecondDefaultBonus, new ConfigDescription("2차 스타 성공 시 기본 강화 효과의2배(+100%). 반동15%→30%, 인체공학+10→+20. 감소율80%/추가인체공학50 상한. 일반 최대 단계만으로 자동 적용되지 않습니다.", new AcceptableValueRange<float>(0, 300)));
         destructionProtectionPrice = BindDeveloper("9. 강화 보호", "파괴 방지 비용 계수 (%)", 50f, new ConfigDescription("추가 비용 = 기본 강화 비용 × 이 값/100 × 시도 단계². 해당 파괴 위험이 있을 때만 부과합니다.", new AcceptableValueRange<float>(0, 1000)));
         downgradeProtectionPrice = BindDeveloper("9. 강화 보호", "단계 하락 방지 비용 계수 (%)", 35f, new ConfigDescription("추가 비용 = 기본 강화 비용 × 이 값/100 × 시도 단계². 하락 위험이 있을 때만 부과합니다. 보호비도 성공/실패와 관계없이 소모됩니다.", new AcceptableValueRange<float>(0, 1000)));
         evolutionChance = BindDeveloper("10. 스타 강화 진화", "진화 성공률 (%)", 30f, new ConfigDescription("1차 스타 전 항목 최대 달성 후 별도 진화 창에서 사용합니다. 실패 시 파괴, 보호 불가.", new AcceptableValueRange<float>(0, 100)));
         evolutionPrice = BindDeveloper("10. 스타 강화 진화", "진화 기준가 대비 비용 (%)", 300f, new ConfigDescription("진화 비용 = 최소 200만 루블과 본체 기준가 × 이 값/100 중 큰 값. 기본3배, 1회 최대1억 루블.", new AcceptableValueRange<float>(0, 10000)));
         thirdStarChance = BindDeveloper("11. 3차 스타 진화", "3차 스타 성공률 (%)", 10f, new ConfigDescription("2차 스타 성공 및 전 항목 최대인 장비만 시도. 실패 시 보호 없이 파괴합니다.", new AcceptableValueRange<float>(0, 100)));
-        thirdStarBonus = BindDeveloper("11. 3차 스타 진화", "3차 스타 총 추가 효과 (%)", 35f, new ConfigDescription("기본 강화 효과 대비 총 추가 배율. 2차20%에 중첩하지 않고 총35%로 대체합니다. 성공 표식은 빨간색 ★★★.", new AcceptableValueRange<float>(0, 100)));
+        thirdStarBonus = BindDeveloper("11. 3차 스타 진화", "3차 스타 총 추가 효과 (%)", (float)StarEvolution.ThirdDefaultBonus, new ConfigDescription("3차 스타 성공 시 기본 강화 효과의3배(+200%). 2차 배율에 중첩하지 않습니다. 반동15%→45%, 인체공학+10→+30. 감소율80%/추가인체공학50 상한, 빨간색 ★★★.", new AcceptableValueRange<float>(0, 300)));
         // Migrate the previous shipped default once; preserve custom developer odds.
         var balanceVersion = Config.Bind("0. 내부", "밸런스 설정 버전", 0,
             new ConfigDescription("내부 설정 이전용", null, new ConfigurationManagerAttributes { Browsable = false }));
@@ -99,6 +99,12 @@ public sealed partial class Plugin : BaseUnityPlugin
         {
             if (evolutionChance.Value == 50f) evolutionChance.Value = 30f;
             balanceVersion.Value = 1;
+        }
+        if (balanceVersion.Value < 2)
+        {
+            completionBonus.Value = (float)StarEvolution.UpgradeLegacyBonus(2, completionBonus.Value);
+            thirdStarBonus.Value = (float)StarEvolution.UpgradeLegacyBonus(3, thirdStarBonus.Value);
+            balanceVersion.Value = 2;
         }
         PrepareFeedback();
         LogDetailed($"강화 효과음 설정: 사용={soundsEnabled.Value}, 전용={providedSounds.Value}, 음량={soundVolume.Value:0.##}%, 준비={feedbackAudio != null}, 충전={attemptDuration:0.000}초");

@@ -100,14 +100,14 @@ public sealed class EffectsTests
         Assert.Equal(15, registry.Amount("gun", EnhancePath.Recoil));
         registry.ApplyReceipt(new() { Success = true, ItemId = "gun", IsEvolution = true, Evolved = true }, "a");
         Assert.True(registry.IsEvolved("gun"));
-        Assert.Equal(18, registry.Amount("gun", EnhancePath.Recoil));
-        Assert.Equal(12, registry.Amount("gun", EnhancePath.Ergonomics));
-        Assert.Equal(12, registry.Amount("gun", EnhancePath.Precision));
+        Assert.Equal(30, registry.Amount("gun", EnhancePath.Recoil));
+        Assert.Equal(20, registry.Amount("gun", EnhancePath.Ergonomics));
+        Assert.Equal(20, registry.Amount("gun", EnhancePath.Precision));
         Assert.Equal("★★ 진화 +30", registry.Badge("gun"));
         registry.ApplyReceipt(new() { ItemId = "gun", Path = EnhancePath.Precision, Level = 9, FailureMode = FailureMode.Downgrade, Evolved = true }, "a");
         Assert.False(registry.IsComplete("gun"));
         Assert.True(registry.IsEvolved("gun"));
-        Assert.Equal(18, registry.Amount("gun", EnhancePath.Recoil));
+        Assert.Equal(30, registry.Amount("gun", EnhancePath.Recoil));
         Assert.Equal(10, registry.Find("gun", EnhancePath.Recoil)!.Level);
         Assert.Equal(9, registry.Find("gun", EnhancePath.Precision)!.Level);
         Assert.Equal("★★ 진화 +29", registry.Badge("gun"));
@@ -125,8 +125,8 @@ public sealed class EffectsTests
             new() { ItemId = "vest", Path = EnhancePath.Mobility, Level = 10, Evolved = true }] };
         registry.Replace(snapshot, "a");
         Assert.True(registry.IsComplete("vest"));
-        Assert.Equal(36, registry.Amount("vest", EnhancePath.ArmorDurability));
-        Assert.Equal(24, registry.Amount("vest", EnhancePath.Mobility));
+        Assert.Equal(60, registry.Amount("vest", EnhancePath.ArmorDurability));
+        Assert.Equal(40, registry.Amount("vest", EnhancePath.Mobility));
         registry.Configure(new() { CompletionBonusPercent = 100, ArmorDurabilityPerLevel = 10, ArmorDurabilityCap = 80 });
         Assert.Equal(80, registry.Amount("vest", EnhancePath.ArmorDurability));
         registry.Configure(new() { MaxLevel = 11 });
@@ -134,4 +134,31 @@ public sealed class EffectsTests
         registry.Clear();
         Assert.False(registry.IsComplete("vest"));
     }
+    [Theory]
+    [InlineData(EnhancePath.Recoil, 30, 45)]
+    [InlineData(EnhancePath.Ergonomics, 20, 30)]
+    [InlineData(EnhancePath.Precision, 20, 30)]
+    [InlineData(EnhancePath.ArmorDurability, 60, 80)]
+    [InlineData(EnhancePath.Mobility, 40, 60)]
+    public void Star_defaults_double_and_triple_each_base_effect_with_existing_safety_caps(EnhancePath path, double second, double third)
+    {
+        var tuning = new EffectTuning(); tuning.Validate();
+        Assert.Equal(second, EnhanceEffects.Amount(path, 10, tuning, 2));
+        Assert.Equal(third, EnhanceEffects.Amount(path, 10, tuning, 3));
+        Assert.Equal(80, EnhanceEffects.Amount(EnhancePath.ArmorDurability, 10, new() { ThirdStarBonusPercent = 300 }, 3));
+        Assert.Equal(50, EnhanceEffects.Amount(EnhancePath.Ergonomics, 10, new() { ErgonomicsPerLevel = 10, ErgonomicsCap = 50 }, 3));
+    }
+
+    [Theory]
+    [InlineData(2, 20, 100)]
+    [InlineData(3, 35, 200)]
+    [InlineData(2, 35, 35)]
+    [InlineData(3, 20, 20)]
+    [InlineData(2, 70, 70)]
+    [InlineData(3, 300, 300)]
+    public void First_upgrade_replaces_only_old_shipped_bonus_defaults_and_preserves_custom_tuning(int stars, double old, double expected)
+    {
+        Assert.Equal(expected, StarEvolution.UpgradeLegacyBonus(stars, old));
+    }
+
 }

@@ -24,7 +24,7 @@ public sealed partial class Plugin
     }
     private const float WindowWidth = 760, WindowHeight = 950;
     private static readonly Color Gold = new Color(0.84f, 0.74f, 0.55f);
-    private double StarBonus(int stars) => stars >= 3 ? thirdStarBonus.Value : completionBonus.Value;
+    private double StarMultiplier(int stars) => 1 + (stars >= 3 ? thirdStarBonus.Value : completionBonus.Value) / 100;
     private static Color StarTint(int stars) => stars >= 3 ? new Color(0.94f, 0.34f, 0.34f) : Purple;
     private static readonly Color Purple = new Color(0.73f, 0.54f, 0.96f);
     private static readonly Color Danger = new Color(0.94f, 0.30f, 0.24f);
@@ -248,8 +248,8 @@ public sealed partial class Plugin
             : $"+{current} → +{next}", evolutionMode || current >= 100 || next >= 100 ? selectedValue : large);
         var complete = stars >= 2;
         Label(517, 207, 217, 22, itemId == null ? "본체·부착물·탄약 소실" : evolutionMode && !finishedEvolution
-            ? $"진화 성공 시 총 효과 +{StarBonus(evolutionTargetStars):0.##}%" : complete
-            ? $"{StarEvolution.Stars(stars)} 진화 완료 · 효과 +{StarBonus(stars):0.##}%" : "1차 스타 완성 후 진화 가능", small);
+            ? $"진화 성공 시 효과 ×{StarMultiplier(evolutionTargetStars):0.##}" : complete
+            ? $"{StarEvolution.Stars(stars)} 진화 완료 · 효과 ×{StarMultiplier(stars):0.##}" : "1차 스타 완성 후 진화 가능", small);
         if (complete) Fill(new Rect(517, 230, 217, 2), StarTint(stars));
         Fill(new Rect(24, 231, 712, 1), Line);
     }

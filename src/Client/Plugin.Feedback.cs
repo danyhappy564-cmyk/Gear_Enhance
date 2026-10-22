@@ -50,7 +50,7 @@ public sealed partial class Plugin
         GUI.color = previous;
         Label(100, 393, 560, 66, ResultText.Detail(receipt), resultDetailStyle);
         Label(100, 467, 560, 27, $"{EnhanceEffects.Name(receipt.Path)} · {receipt.Paid:N0} ₽ + BTC {receipt.BitcoinsPaid}개 소모", centeredSmall);
-        if (resultComplete) Label(100, 493, 560, 27, $"{StarEvolution.Stars(receipt.StarLevel)} 진화 총 보너스 +{StarBonus(receipt.StarLevel):0.##}% · {StarEvolution.ColorName(receipt.StarLevel)} 표식 적용", centeredSmall);
+        if (resultComplete) Label(100, 493, 560, 27, $"{StarEvolution.Stars(receipt.StarLevel)} 진화 효과 ×{StarMultiplier(receipt.StarLevel):0.##} · {StarEvolution.ColorName(receipt.StarLevel)} 표식 적용", centeredSmall);
         GUI.enabled = !busy;
         var button = new Rect(215, 536, 330, 46);
         Surface(button, goldGradient, tint);

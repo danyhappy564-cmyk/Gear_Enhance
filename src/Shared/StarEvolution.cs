@@ -3,6 +3,10 @@ namespace GearEnhance;
 public static class StarEvolution
 {
     public const int Maximum = 3;
+    public const double SecondDefaultBonus = 100;
+    public const double ThirdDefaultBonus = 200;
+    public static double UpgradeLegacyBonus(int stars, double value) => stars == 2 && value == 20 ? SecondDefaultBonus
+        : stars == 3 && value == 35 ? ThirdDefaultBonus : value;
     // Before StarLevel was stored, Evolved=true represented exactly two stars.
     public static int Level(bool evolved, int stored) => stored == 3 ? 3 : evolved || stored == 2 ? 2 : 1;
     public static string Stars(int level) => level >= 3 ? "★★★" : level == 2 ? "★★" : "★";

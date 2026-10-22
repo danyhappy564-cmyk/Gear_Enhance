@@ -40,7 +40,7 @@ public sealed partial class Plugin
             DrawPath(new Rect(24 + index * (width + 12), 276, width, 76), paths[index]);
 
         Box(new Rect(24, 367, 712, 170), Panel, starTint);
-        Label(40, 370, 330, 29, $"진화 총 보너스 +{StarBonus(evolutionTargetStars):0.##}%", body);
+        Label(40, 370, 330, 29, $"진화 효과 ×{StarMultiplier(evolutionTargetStars):0.##}", body);
         Label(379, 370, 122, 29, $"현재 {StarEvolution.Stars(Math.Min(StatPatches.Registry.StarLevel(itemId ?? ""), evolutionTargetStars))}", centeredSmall);
         Label(594, 370, 126, 29, $"진화 후 {StarEvolution.Stars(evolutionTargetStars)}", centeredSmall);
         Fill(new Rect(25, 402, 710, 1), Line);

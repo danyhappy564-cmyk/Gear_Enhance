@@ -280,7 +280,7 @@ public sealed class EnhanceTests
     {
         var rig = new Rig();
         var router = new EnhanceQueries(Json, rig.Service);
-        var request = "{\"ProtocolVersion\":6,\"ItemId\":\"" + Target + "\",\"Settings\":{\"AlwaysSucceed\":true,\"SuccessPercent\":0}}";
+        var request = "{\"ProtocolVersion\":7,\"ItemId\":\"" + Target + "\",\"Settings\":{\"AlwaysSucceed\":true,\"SuccessPercent\":0}}";
         var result = await router.HandleStaticAsync("/rf/gear-enhance/quote", request, Session, "");
         var reply = Json.Deserialize<ApiReply<EnhanceQuote>>((string)result)!;
         Assert.True(reply.Ok, reply.Error);
@@ -422,7 +422,7 @@ public sealed class EnhanceTests
         var rig = new Rig();
         rig.Execute(rig.Quote());
         var router = new EnhanceQueries(Json, rig.Service);
-        var result = await router.HandleStaticAsync("/rf/gear-enhance/state", "{\"ProtocolVersion\":6}", Session, "");
+        var result = await router.HandleStaticAsync("/rf/gear-enhance/state", "{\"ProtocolVersion\":7}", Session, "");
         var client = Newtonsoft.Json.JsonConvert.DeserializeObject<ApiReply<EnhanceSnapshot>>((string)result)!;
         Assert.True(client.Ok, client.Error);
         Assert.Equal(EnhancePath.Recoil, client.Data!.Items.Single().Path);
@@ -712,6 +712,7 @@ public sealed class EnhanceTests
     [InlineData(3)]
     [InlineData(4)]
     [InlineData(5)]
+    [InlineData(6)]
     public async Task Previous_protocol_clients_are_rejected_before_a_destructive_quote_can_be_issued(int protocol)
     {
         var rig = new Rig();
@@ -952,7 +953,7 @@ public sealed class EnhanceTests
         Assert.Equal(0, quote.ProtectionCost);
         Assert.False(quote.CanDestroy);
         Assert.Equal(15, quote.CurrentEffect);
-        Assert.Equal(18, quote.NextEffect);
+        Assert.Equal(30, quote.NextEffect);
         rig.Execute(quote);
         var receipt = rig.Service.Receipt(Session, quote.QuoteId)!;
         Assert.True(receipt.IsEvolution); Assert.True(receipt.Success); Assert.True(receipt.Evolved);
@@ -960,13 +961,13 @@ public sealed class EnhanceTests
         Assert.All(rig.Service.Snapshot(Session).Items, i => { Assert.Equal(10, i.Level); Assert.True(i.Evolved); });
         before.ApplyReceipt(receipt, Session.ToString());
         Assert.Equal("★★ 진화 +30", before.Badge(Target.ToString()));
-        Assert.Equal(18, before.Amount(Target.ToString(), EnhancePath.Recoil));
+        Assert.Equal(30, before.Amount(Target.ToString(), EnhancePath.Recoil));
         rig.Backend.Saved = Json.Deserialize<SptProfile>(Json.Serialize(rig.Backend.Saved))!;
         var restored = new EnhanceService(rig.Backend, Json);
         var registry = new EffectRegistry(); registry.Replace(restored.Snapshot(Session), Session.ToString());
         Assert.True(registry.IsEvolved(Target.ToString()));
-        Assert.Equal(18, registry.Amount(Target.ToString(), EnhancePath.Recoil));
-        Assert.Equal(12, registry.Amount(Target.ToString(), EnhancePath.Ergonomics));
+        Assert.Equal(30, registry.Amount(Target.ToString(), EnhancePath.Recoil));
+        Assert.Equal(20, registry.Amount(Target.ToString(), EnhancePath.Ergonomics));
         Assert.Throws<InvalidOperationException>(() => restored.Quote(Session, Target.ToString(), new(), action: EnhanceAction.Evolve));
         Assert.Throws<InvalidOperationException>(() => rig.Execute(quote));
         Assert.Equal(8000000, rig.Money);
@@ -1041,8 +1042,8 @@ public sealed class EnhanceTests
             protection: new() { Destruction = true, Downgrade = true }, action: EnhanceAction.EvolveThird);
         Assert.False(quote.Protection.Destruction); Assert.False(quote.Protection.Downgrade);
         Assert.Equal(0, quote.ProtectionCost);
-        Assert.Equal(weapon ? 18 : 36, quote.CurrentEffect);
-        Assert.Equal(weapon ? 20.25 : 40.5, quote.NextEffect, 10);
+        Assert.Equal(weapon ? 30 : 60, quote.CurrentEffect);
+        Assert.Equal(weapon ? 45 : 80, quote.NextEffect, 10);
         service.Execute(Session, rig.Pmc, quote.QuoteId, false, rig.Output);
         var receipt = service.Receipt(Session, quote.QuoteId)!;
         Assert.True(receipt.Success); Assert.True(receipt.IsEvolution); Assert.True(receipt.Evolved);
@@ -1055,7 +1056,7 @@ public sealed class EnhanceTests
         var restored = new EnhanceService(rig.Backend, Json);
         before.Replace(restored.Snapshot(Session), Session.ToString());
         before.Replace(restored.Snapshot(Session), Session.ToString());
-        Assert.Equal(weapon ? 20.25 : 40.5, before.Amount(Target.ToString(), paths[0]), 10);
+        Assert.Equal(weapon ? 45 : 80, before.Amount(Target.ToString(), paths[0]), 10);
         Assert.Throws<InvalidOperationException>(() => restored.Quote(Session, Target.ToString(), new(), action: EnhanceAction.EvolveThird));
         Assert.Throws<InvalidOperationException>(() => restored.Quote(Session, Target.ToString(), new(), action: EnhanceAction.Evolve));
         Assert.Throws<InvalidOperationException>(() => restored.Execute(Session, rig.Pmc, quote.QuoteId, false, rig.Output));

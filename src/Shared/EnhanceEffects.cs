@@ -6,8 +6,8 @@ namespace GearEnhance;
 public sealed class EffectTuning
 {
     public int MaxLevel { get; set; } = 10;
-    public double ThirdStarBonusPercent { get; set; } = 35;
-    public double CompletionBonusPercent { get; set; } = 20;
+    public double ThirdStarBonusPercent { get; set; } = StarEvolution.ThirdDefaultBonus;
+    public double CompletionBonusPercent { get; set; } = StarEvolution.SecondDefaultBonus;
     public double RecoilPerLevel { get; set; } = 1.5;
     public double RecoilCap { get; set; } = 15;
     public double ErgonomicsPerLevel { get; set; } = 1;
@@ -22,7 +22,7 @@ public sealed class EffectTuning
     public void Validate()
     {
         if (MaxLevel < 1 || MaxLevel > 100) throw new ArgumentException("최대 강화 단계를 확인해 주세요.");
-        Check(CompletionBonusPercent, 100); Check(ThirdStarBonusPercent, 100);
+        Check(CompletionBonusPercent, 300); Check(ThirdStarBonusPercent, 300);
         Check(RecoilPerLevel, 10); Check(RecoilCap, 80);
         Check(ErgonomicsPerLevel, 10); Check(ErgonomicsCap, 50);
         Check(PrecisionPerLevel, 10); Check(PrecisionCap, 80);
