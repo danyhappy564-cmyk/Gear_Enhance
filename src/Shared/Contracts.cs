@@ -11,11 +11,11 @@ public enum EnhanceAction { Upgrade, Evolve, EvolveThird }
 public static class EnhanceProtocol
 {
     public const int Version = 7;
-    public const string ModVersion = "0.7.1";
+    public const string ModVersion = "1.0.0";
     public static void Validate(int version)
     {
         if (version != Version)
-            throw new ArgumentException("Gear Enhance 클라이언트와 서버를 모두 0.7.1로 업데이트해 주세요.");
+            throw new ArgumentException("Gear Enhance 클라이언트와 서버를 모두 1.0.0으로 업데이트해 주세요.");
     }
 }
 
