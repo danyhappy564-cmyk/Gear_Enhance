@@ -306,7 +306,7 @@ public sealed partial class Plugin
         Label(406, 587, 310, 40, preview == null ? "—" : $"{preview.Cost:N0} ₽", costValue);
         Label(407, 628, 309, 25, preview == null ? "" : $"보유 {preview.AvailableRoubles:N0} ₽", small);
         Label(24, 670, 515, 23, "가격 기준: " + (preview?.PriceSource ?? "견적 확인 중") + " · 장비 본체", small);
-        Label(562, 670, 174, 23, evolutionMode ? "진화 전용 판정" : "선택 항목 현재 +6부터 보호", centeredSmall);
+        Label(562, 670, 174, 23, evolutionMode ? "진화 전용 판정" : "선택 항목 +6 시도부터 보호", centeredSmall);
     }
 
     private void DrawActions()

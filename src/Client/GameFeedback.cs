@@ -8,7 +8,7 @@ internal enum FeedbackCue { Attempt, Success, Failure, Destroy, Complete, Downgr
 internal static class GameFeedback
 {
     private static Type soundType, singletonType, guiType;
-    private static MethodInfo play, mixerGroup;
+    private static MethodInfo play, mixerGroup, playClip;
     internal static string SoundName(FeedbackCue cue) => cue == FeedbackCue.Attempt || cue == FeedbackCue.EvolutionAttempt ? "MenuInstallModFunc"
         : cue == FeedbackCue.Success ? "RepairComplete" : cue == FeedbackCue.Destroy ? "MenuWeaponDisassemble"
         : cue == FeedbackCue.Complete ? "QuestCompleted" : "ErrorMessage";
@@ -34,6 +34,13 @@ internal static class GameFeedback
         var instance = Gui();
         if (mixerGroup == null) mixerGroup = GameBridge.RequiredMethod(guiType, "GetCommonSoundsMixerGroup", 0);
         return mixerGroup.Invoke(instance, null) ?? throw new InvalidOperationException("게임 UI 믹서가 아직 준비되지 않았습니다.");
+    }
+    internal static void PlayClip(object clip)
+    {
+        var instance = Gui();
+        if (playClip == null) playClip = GameBridge.RequiredMethod(guiType, "PlaySound", 4);
+        // Mixed UI playback: don't stop a native source or replace its clip.
+        playClip.Invoke(instance, new[] { clip, (object)false, false, 1f });
     }
     internal static void Play(FeedbackCue cue)
     {

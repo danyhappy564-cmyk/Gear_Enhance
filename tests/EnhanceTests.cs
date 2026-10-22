@@ -528,13 +528,14 @@ public sealed class EnhanceTests
     }
 
     [Theory]
-    [InlineData(10, 5, 10, 10, false)]
+    [InlineData(10, 4, 10, 10, false)]
+    [InlineData(10, 5, 0, 0, true)]
     [InlineData(10, 6, 0, 0, true)]
     [InlineData(9, 6, 1, 1, true)]
     [InlineData(20, 6, 0, 0, true)]
-    [InlineData(20, 5, 20, 20, false)]
+    [InlineData(20, 4, 20, 20, false)]
     [InlineData(5, 4, 5, 5, false)]
-    public void High_risk_and_protection_start_at_selected_current_level_six_independently_of_other_tracks(
+    public void High_risk_and_protection_start_at_selected_attempt_level_six_independently_of_other_tracks(
         int maximum, int recoil, int ergonomics, int precision, bool expected)
     {
         var rig = new Rig();
@@ -550,14 +551,14 @@ public sealed class EnhanceTests
         Assert.Equal(expected, quote.Protection.Downgrade);
         if (!expected) Assert.Equal(0, quote.ProtectionCost);
         var other = rig.Service.Quote(Session, Target.ToString(), new() { MaxLevel = 30, SuccessLossPerLevel = 0 }, EnhancePath.Precision);
-        Assert.Equal(precision >= 6, other.HighRisk);
+        Assert.Equal(precision + 1 >= 6, other.HighRisk);
     }
 
     [Fact]
     public void High_risk_downgrade_charges_once_changes_only_selected_track_and_exits_the_risk_zone()
     {
         var rig = new Rig(); rig.AddPart();
-        rig.Seed((EnhancePath.Recoil, 6), (EnhancePath.Ergonomics, 5), (EnhancePath.Precision, 5));
+        rig.Seed((EnhancePath.Recoil, 5), (EnhancePath.Ergonomics, 5), (EnhancePath.Precision, 5));
         var quote = rig.Service.Quote(Session, Target.ToString(),
             new() { SuccessPercent = 0, HighRiskDestructionPercent = 0 }, EnhancePath.Recoil);
         rig.Execute(quote);
@@ -567,14 +568,36 @@ public sealed class EnhanceTests
         var receipt = rig.Service.Receipt(Session, quote.QuoteId)!;
         Assert.False(receipt.Success);
         Assert.Equal(FailureMode.Downgrade, receipt.FailureMode);
-        Assert.Equal(5, receipt.Level);
+        Assert.Equal(4, receipt.Level);
         Assert.Throws<InvalidOperationException>(() => rig.Execute(quote));
         rig.Backend.Saved = Json.Deserialize<SptProfile>(Json.Serialize(rig.Backend.Saved))!;
         var levels = rig.Service.Snapshot(Session).Items.ToDictionary(i => i.Path, i => i.Level);
-        Assert.Equal(5, levels[EnhancePath.Recoil]);
+        Assert.Equal(4, levels[EnhancePath.Recoil]);
         Assert.Equal(5, levels[EnhancePath.Ergonomics]);
         Assert.Equal(5, levels[EnhancePath.Precision]);
         Assert.False(rig.Service.Quote(Session, Target.ToString(), new(), EnhancePath.Recoil).HighRisk);
+    }
+
+    [Fact]
+    public void After_six_to_five_downgrade_the_retry_to_six_can_buy_both_protections()
+    {
+        var rig = new Rig(10000000);
+        rig.Seed((EnhancePath.Recoil, 6));
+        var first = rig.Service.Quote(Session, Target.ToString(),
+            new() { SuccessPercent = 0, HighRiskDestructionPercent = 0 }, EnhancePath.Recoil);
+        rig.Execute(first);
+        Assert.Equal(5, rig.Service.Receipt(Session, first.QuoteId)!.Level);
+        var retry = rig.Service.Quote(Session, Target.ToString(), new() { SuccessPercent = 0 }, EnhancePath.Recoil,
+            new() { Destruction = true, Downgrade = true });
+        Assert.Equal(5, retry.CurrentLevel); Assert.Equal(6, retry.NextLevel);
+        Assert.True(retry.HighRisk);
+        Assert.True(retry.Protection.Destruction); Assert.True(retry.Protection.Downgrade);
+        Assert.Equal(964369, retry.Cost);
+        Assert.Equal(30518, retry.BaseCost);
+        rig.Execute(retry);
+        Assert.Equal(5, rig.Service.Receipt(Session, retry.QuoteId)!.Level);
+        Assert.Equal(10000000 - first.Cost - retry.Cost, rig.Money);
+        Assert.Equal(5, Assert.Single(rig.Service.Snapshot(Session).Items).Level);
     }
 
     [Fact]

@@ -78,7 +78,7 @@ public sealed class EnhanceService(SptEnhanceBackend backend, JsonUtil serialize
             var (price, source) = backend.Price(target.Template, settings.PriceBasis);
             var tree = Tree(profile, itemId);
             var highRisk = !legacy && !evolving && weapon && settings.HighRiskEnabled
-                && level >= 6;
+                && nextLevel >= 6;
             var nextTracks = tracks == null ? new Dictionary<EnhancePath, int>() : new(tracks);
             nextTracks[selected] = nextLevel;
             var complete = EnhanceProgression.AllAtLeast(tracks, weapon, settings.MaxLevel);

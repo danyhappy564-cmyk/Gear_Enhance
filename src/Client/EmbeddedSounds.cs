@@ -12,6 +12,17 @@ internal sealed class WaveSound
     internal int Frames => Samples.Length / Channels;
     internal double Duration => Frames / (double)SampleRate;
 
+    internal float[] SamplesFrom(int offset, float volume)
+    {
+        if (offset < 0 || offset >= Frames || float.IsNaN(volume) || float.IsInfinity(volume) || volume < 0 || volume > 1)
+            throw new ArgumentOutOfRangeException(nameof(offset));
+        if (offset == 0 && volume == 1) return Samples;
+        var samples = new float[(Frames - offset) * Channels];
+        for (var index = 0; index < samples.Length; index++)
+            samples[index] = Samples[offset * Channels + index] * volume;
+        return samples;
+    }
+
     // A bounded PCM16 reader, independent of Unity and the platform MP3 codec.
     internal static WaveSound Read(Stream stream)
     {

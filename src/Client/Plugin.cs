@@ -18,7 +18,7 @@ public sealed partial class Plugin : BaseUnityPlugin
     private ConfigEntry<float> chance, chanceLoss, destructionChance, completionBonus, soundVolume, percent, growth;
     private ConfigEntry<float> destructionProtectionPrice, downgradeProtectionPrice;
     private ConfigEntry<float> evolutionChance, evolutionPrice;
-    private ConfigEntry<bool> showDeveloperOptions;
+    private ConfigEntry<bool> showDeveloperOptions, detailedLogging;
     private readonly DeveloperOptions developerOptions = new DeveloperOptions();
     private ConfigEntry<int> maxLevel, minimum;
     private ConfigEntry<PriceBasis> price;
@@ -66,20 +66,21 @@ public sealed partial class Plugin : BaseUnityPlugin
         chance = BindDeveloper("2. 확률", "성공률 (%)", 75f, new ConfigDescription("+0에서 +1로 강화할 때 성공률. 이후 현재 단계 × 단계별 감소량만큼 줄어듭니다.", new AcceptableValueRange<float>(0, 100)));
         chanceLoss = BindDeveloper("2. 확률", "단계별 성공률 감소 (%p)", 5f, new ConfigDescription("기본: +1 시도 75%, +10 시도 30%. 0이면 같은 확률을 유지합니다.", new AcceptableValueRange<float>(0, 100)));
         always = BindDeveloper("2. 확률", "항상 성공 (100%)", false, "켜면 성공률 설정 대신 100%를 적용합니다. 비용은 소모됩니다.");
-        maxLevel = BindDeveloper("2. 확률", "최대 강화 단계", 10, new ConfigDescription("각 항목 최대 단계. 효과 곡선·1차 스타 진화 조건도 함께 바뀝니다. 무기 고위험 시작은 선택 항목 현재 +6으로 고정됩니다.", new AcceptableValueRange<int>(1, 100)));
+        maxLevel = BindDeveloper("2. 확률", "최대 강화 단계", 10, new ConfigDescription("각 항목 최대 단계. 효과 곡선·1차 스타 진화 조건도 함께 바뀝니다. 무기 고위험 시작은 선택 항목 +6 시도(+5→+6)로 고정됩니다.", new AcceptableValueRange<int>(1, 100)));
         price = BindDeveloper("3. 비용", "기준 가격", PriceBasis.Handbook, "Handbook = 북밸류, Flea = SPT 플리 기준가. 장비 본체만 계산합니다.");
         percent = BindDeveloper("3. 비용", "기준 가격 대비 비용 (%)", 10f, new ConfigDescription("0이면 최소 비용만 적용됩니다.", new AcceptableValueRange<float>(0, 1000)));
         growth = BindDeveloper("3. 비용", "단계별 비용 배수", 1.25f, new ConfigDescription("기준가 × 비용 비율 × 배수^현재단계. 최대 1억 루블.", new AcceptableValueRange<float>(1, 3)));
         minimum = BindDeveloper("3. 비용", "최소 비용 (루블)", 1000, new ConfigDescription("창고 안의 잠기지 않은 루블을 사용합니다.", new AcceptableValueRange<int>(0, 100000000)));
         failure = BindDeveloper("4. 실패", "실패 처리", FailureMode.KeepItem,
             "일반 구간 실패 처리. KeepItem: 비용만 / ZeroDurability: 현재 내구도 0 / Destroy: 본체·부착물·탄약 삭제 / Downgrade: 선택 항목 -1. 무기 고위험 구간에서는 아래 파괴·하락 규칙이 우선합니다.");
-        highRiskEnabled = BindDeveloper("4. 실패", "무기 고위험 강화", true, "선택한 무기 항목의 현재 단계가 +6 이상이면 실패 시 파괴 또는 해당 항목 -1. 다른 항목 단계는 무관합니다. 방어구는 일반 실패 처리를 따릅니다.");
+        highRiskEnabled = BindDeveloper("4. 실패", "무기 고위험 강화", true, "선택한 무기 항목의 다음 단계가 +6 이상이면(+5→+6부터) 실패 시 파괴 또는 해당 항목 -1. 다른 항목 단계는 무관합니다. 방어구는 일반 실패 처리를 따릅니다.");
         destructionChance = BindDeveloper("4. 실패", "고위험 실패 중 파괴 확률 (%)", 25f, new ConfigDescription("성공 판정과 별도입니다. 고위험 실패 중 이 확률로 본체·부착물·탄약 파괴, 나머지는 선택 항목 -1. 0은 하락만, 100은 파괴만.", new AcceptableValueRange<float>(0, 100)));
         BindEffect(EnhancePath.Recoil, "5. 무기 효과", 1.5f, 15);
         BindEffect(EnhancePath.Ergonomics, "5. 무기 효과", 1, 10);
         BindEffect(EnhancePath.Precision, "5. 무기 효과", 1, 10);
         BindEffect(EnhancePath.ArmorDurability, "6. 방어구 효과", 3, 30);
         BindEffect(EnhancePath.Mobility, "6. 방어구 효과", 2, 20);
+        detailedLogging = Config.Bind("7. 피드백", "자세한 로그 남기기", false, "체크한 동안 효과음 설정·재생·대체 경로와 강화 창 UI CPU 진단을 LogOutput.log에 남깁니다. 실제 오류·경고는 체크와 관계없이 기록합니다.");
         soundsEnabled = Config.Bind("7. 피드백", "강화 효과음", true, "강화 중·성공·실패·단계 하락·파괴에 효과음을 재생합니다. 끄더라도 게이지 시간은 유지합니다.");
         providedSounds = Config.Bind("7. 피드백", "전용 강화 음원 사용", true, "사용자 제공 음원6개 사용. 끄면 기존 게임 UI 소리를 사용합니다. 전용 음원 오류 시에도 기본음으로 대체합니다.");
         soundVolume = Config.Bind("7. 피드백", "전용 음원 음량 (%)", 70f, new ConfigDescription("게임의 마스터/인터페이스 음량에 추가로 곱합니다. 0이면 전용 음원 무음. 기본 게임음 모드에서는 게임 소리 설정을 사용합니다.", new AcceptableValueRange<float>(0, 100)));
@@ -97,10 +98,15 @@ public sealed partial class Plugin : BaseUnityPlugin
             balanceVersion.Value = 1;
         }
         PrepareFeedback();
-        Logger.LogInfo($"강화 효과음 설정: 사용={soundsEnabled.Value}, 전용={providedSounds.Value}, 음량={soundVolume.Value:0.##}%, 준비={feedbackAudio != null}, 충전={attemptDuration:0.000}초");
+        LogDetailed($"강화 효과음 설정: 사용={soundsEnabled.Value}, 전용={providedSounds.Value}, 음량={soundVolume.Value:0.##}%, 준비={feedbackAudio != null}, 충전={attemptDuration:0.000}초");
         StatPatches.Registry.Configure(Tuning());
         Config.SettingChanged += (_, args) => main.Enqueue(() =>
         {
+            if (ReferenceEquals(args.ChangedSetting, detailedLogging))
+            {
+                LogDetailed($"강화 상세 로그 ON: 효과음={soundsEnabled.Value}, 전용={providedSounds.Value}, 음량={soundVolume.Value:0.##}%");
+                return;
+            }
             if (ReferenceEquals(args.ChangedSetting, showDeveloperOptions))
             {
                 developerOptions.SetVisible(showDeveloperOptions.Value);
@@ -135,6 +141,11 @@ public sealed partial class Plugin : BaseUnityPlugin
             harmony?.UnpatchSelf();
             Logger.LogError("SPT API 연결 실패로 Gear Enhance 패치를 취소했습니다: " + ex);
         }
+    }
+
+    private void LogDetailed(string text)
+    {
+        if (detailedLogging.Value) Logger.LogInfo(text);
     }
 
     internal static void LogError(string text) => Instance?.Logger.LogError(text);
@@ -304,7 +315,7 @@ public sealed partial class Plugin : BaseUnityPlugin
             try { started = feedbackAudio.StartAttempt(soundVolume.Value / 100, evolutionMode); attemptUsesAudioClock = true; }
             catch (Exception ex) { ProvidedAudioFailed(ex); }
         }
-        if (!soundsEnabled.Value) Logger.LogInfo("강화 충전음 생략: F12 효과음 OFF");
+        if (!soundsEnabled.Value) LogDetailed("강화 충전음 생략: F12 효과음 OFF");
         if (!attemptUsesAudioClock && soundsEnabled.Value) PlayFeedback(evolutionMode ? FeedbackCue.EvolutionAttempt : FeedbackCue.Attempt, false);
         if (!attemptTimeline.Begin(started, evolutionMode ? evolutionAttemptDuration : attemptDuration)) return;
         attemptWallStart = Clock;
@@ -380,7 +391,7 @@ public sealed partial class Plugin : BaseUnityPlugin
             var charge = EmbeddedSounds.Load(0);
             attemptDuration = charge.Duration;
             evolutionAttemptDuration = EmbeddedSounds.Load(5).Duration;
-            if (providedSounds.Value && feedbackAudio == null) feedbackAudio = new EnhancementAudio(gameObject, charge, text => Logger.LogInfo(text));
+            if (providedSounds.Value && feedbackAudio == null) feedbackAudio = new EnhancementAudio(gameObject, charge, LogDetailed, () => detailedLogging.Value);
         }
         catch (Exception ex) { ProvidedAudioFailed(ex); }
     }
@@ -397,7 +408,7 @@ public sealed partial class Plugin : BaseUnityPlugin
     }
     private void PlayFeedback(FeedbackCue cue, bool allowProvided = true)
     {
-        if (!soundsEnabled.Value) { Logger.LogInfo("강화 효과음 생략: F12 효과음 OFF"); return; }
+        if (!soundsEnabled.Value) { LogDetailed("강화 효과음 생략: F12 효과음 OFF"); return; }
         if (allowProvided && providedSounds.Value && feedbackAudio != null && !providedFeedbackUnavailable)
         {
             try { feedbackAudio.Play(cue, soundVolume.Value / 100); return; }
@@ -452,7 +463,7 @@ public sealed partial class Plugin : BaseUnityPlugin
     }
     private void Close()
     {
-        if (visible && repaintCount > 0)
+        if (detailedLogging?.Value == true && visible && repaintCount > 0)
             Logger.LogInfo($"강화 창 UI CPU: Repaint {repaintCount}회, 평균 {repaintTicks * 1000.0 / System.Diagnostics.Stopwatch.Frequency / repaintCount:0.00}ms, 최대 {maximumRepaintTicks * 1000.0 / System.Diagnostics.Stopwatch.Frequency:0.00}ms (GPU/FPS 측정 아님)");
         repaintCount = repaintTicks = maximumRepaintTicks = 0;
         visible = false; quote = preview = null; session = uiContext = selectedItem = itemIcon = null; generation++;

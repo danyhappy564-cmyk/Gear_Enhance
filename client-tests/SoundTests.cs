@@ -7,6 +7,35 @@ namespace GearEnhanceClientTests;
 public sealed class SoundTests
 {
     [Theory]
+    [InlineData(0, 0.7f)]
+    [InlineData(12000, 0.7f)]
+    [InlineData(12000, 0f)]
+    [InlineData(211765, 1f)]
+    public void Ui_audio_recovery_keeps_remaining_stereo_frames_and_scales_only_our_clip(int offset, float volume)
+    {
+        var wave = EmbeddedSounds.Load(0);
+        var first = wave.Samples[offset * wave.Channels];
+        var remaining = wave.SamplesFrom(offset, volume);
+        Assert.Equal((wave.Frames - offset) * wave.Channels, remaining.Length);
+        for (var i = 0; i < remaining.Length; i++)
+            Assert.Equal(wave.Samples[offset * wave.Channels + i] * volume, remaining[i]);
+        Assert.Equal(first, wave.Samples[offset * wave.Channels]);
+        Assert.Equal(wave.Duration - offset / (double)wave.SampleRate,
+            remaining.Length / (double)wave.Channels / wave.SampleRate, 12);
+    }
+
+    [Fact]
+    public void Ui_audio_recovery_rejects_invalid_offsets_and_volume_without_modifying_cached_pcm()
+    {
+        var wave = EmbeddedSounds.Load(0);
+        Assert.Throws<ArgumentOutOfRangeException>(() => wave.SamplesFrom(-1, 1));
+        Assert.Throws<ArgumentOutOfRangeException>(() => wave.SamplesFrom(wave.Frames, 1));
+        Assert.Throws<ArgumentOutOfRangeException>(() => wave.SamplesFrom(0, float.NaN));
+        Assert.Throws<ArgumentOutOfRangeException>(() => wave.SamplesFrom(0, 1.1f));
+        Assert.Same(wave.Samples, wave.SamplesFrom(0, 1));
+    }
+
+    [Theory]
     [InlineData(0, "charge", 211766, 48000, 2, "E614D77CA16F837821E4B50C502464CFB693BA5E5028645FEA36967DE03E140B")]
     [InlineData(1, "success", 44100, 44100, 2, "028E08883B7740DD9F881F56BAEE7348AC7BA4741F9B74CEAECE4494FFBB9DCB")]
     [InlineData(2, "failure", 108288, 48000, 2, "0207580EA45EA1A9B9C5B95E917955FC7F4BC76680878BAA1F3AFBE649275DF6")]

@@ -88,6 +88,10 @@ public sealed class GameApiTests
             Assert.Contains(cues.Fields, field => field.Name == name && field.HasConstant);
         Assert.Equal("UnityEngine.Audio.AudioMixerGroup",
             Assert.Single(sounds.Methods, m => m.Name == "GetCommonSoundsMixerGroup" && m.Parameters.Count == 0).ReturnType.FullName);
+        var clipPlay = Assert.Single(sounds.Methods, m => m.Name == "PlaySound" && m.Parameters.Count == 4);
+        Assert.Equal(new[] { "UnityEngine.AudioClip", "System.Boolean", "System.Boolean", "System.Single" },
+            clipPlay.Parameters.Select(p => p.ParameterType.FullName).ToArray());
+        AssertCalls(clipPlay, "PlayOneShot");
         var grid = game.MainModule.GetType("EFT.UI.DragAndDrop.GridItemView");
         Assert.Single(grid.Methods, m => m.Name == "GetItemName" && m.Parameters.Count == 1);
         AssertCalls(grid.Methods.Single(m => m.Name == "UpdateInfo" && m.Parameters.Count == 0), "UpdateColor");
