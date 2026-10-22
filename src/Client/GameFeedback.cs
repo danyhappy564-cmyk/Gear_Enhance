@@ -4,13 +4,13 @@ using HarmonyLib;
 
 namespace GearEnhance;
 
-internal enum FeedbackCue { Attempt, Success, Failure }
+internal enum FeedbackCue { Attempt, Success, Failure, Destroy }
 internal static class GameFeedback
 {
     private static Type soundType, singletonType;
     private static MethodInfo play;
     internal static string SoundName(FeedbackCue cue) => cue == FeedbackCue.Attempt ? "MenuInstallModFunc"
-        : cue == FeedbackCue.Success ? "RepairComplete" : "ErrorMessage";
+        : cue == FeedbackCue.Success ? "RepairComplete" : cue == FeedbackCue.Destroy ? "MenuWeaponDisassemble" : "ErrorMessage";
     internal static void Play(FeedbackCue cue)
     {
         if (play == null)

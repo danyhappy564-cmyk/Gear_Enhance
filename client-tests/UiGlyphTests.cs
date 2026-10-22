@@ -27,5 +27,6 @@ public sealed class UiGlyphTests
         Assert.Equal("MenuInstallModFunc", GameFeedback.SoundName(FeedbackCue.Attempt));
         Assert.Equal("RepairComplete", GameFeedback.SoundName(FeedbackCue.Success));
         Assert.Equal("ErrorMessage", GameFeedback.SoundName(FeedbackCue.Failure));
+        Assert.Equal("MenuWeaponDisassemble", GameFeedback.SoundName(FeedbackCue.Destroy));
     }
 }

@@ -70,12 +70,17 @@ public sealed class EnhanceTests
             Service = new(Backend, Json);
         }
         public EnhanceQuote Quote(double chance = 100, FailureMode failure = FailureMode.KeepItem) =>
-            Service.Quote(Session, Target.ToString(), new() { SuccessPercent = chance, FailureMode = failure });
+            Service.Quote(Session, Target.ToString(), new() { SuccessPercent = chance, AlwaysSucceed = chance == 100, FailureMode = failure });
         public void Execute(EnhanceQuote quote, bool confirm = false) =>
             Service.Execute(Session, Pmc, quote.QuoteId, confirm, Output);
         public long Money => (long)Pmc.Inventory!.Items!.Where(i => i.Template == RubleTpl)
             .Sum(i => i.Upd?.StackObjectsCount ?? 1);
         public Item Item => Pmc.Inventory!.Items!.Single(i => i.Id == Target);
+        public void Seed(params (EnhancePath Path, int Level)[] tracks) => Backend.Saved.ExtensionData = new()
+        {
+            ["rfGearEnhance"] = new EnhanceState { Tracks = new()
+                { [Target.ToString()] = tracks.ToDictionary(t => t.Path, t => t.Level) } }
+        };
         public void AddPart(string slot = "mod_scope") => Pmc.Inventory!.Items!.Add(new()
         {
             Id = Part, Template = new("777777777777777777777777"), ParentId = Target,
@@ -262,7 +267,7 @@ public sealed class EnhanceTests
     {
         var rig = new Rig();
         var router = new EnhanceQueries(Json, rig.Service);
-        var request = "{\"ProtocolVersion\":2,\"ItemId\":\"" + Target + "\",\"Settings\":{\"AlwaysSucceed\":true,\"SuccessPercent\":0}}";
+        var request = "{\"ProtocolVersion\":3,\"ItemId\":\"" + Target + "\",\"Settings\":{\"AlwaysSucceed\":true,\"SuccessPercent\":0}}";
         var result = await router.HandleStaticAsync("/rf/gear-enhance/quote", request, Session, "");
         var reply = Json.Deserialize<ApiReply<EnhanceQuote>>((string)result)!;
         Assert.True(reply.Ok, reply.Error);
@@ -331,7 +336,7 @@ public sealed class EnhanceTests
         Assert.Equal(1, quote.NextLevel);
         Assert.Equal(10000, quote.Cost);
         Assert.Equal(0, quote.CurrentEffect);
-        Assert.Equal(1, quote.NextEffect);
+        Assert.Equal(10.0 / 19, quote.NextEffect, 10);
         rig.Execute(quote);
         rig.Execute(rig.Service.Quote(Session, Target.ToString(), new() { AlwaysSucceed = true }, EnhancePath.Precision));
         rig.Execute(rig.Quote());
@@ -370,7 +375,7 @@ public sealed class EnhanceTests
         Assert.Throws<ArgumentException>(() => rig.Service.Quote(Session, Target.ToString(), new(), EnhancePath.Recoil));
         var quote = rig.Service.Quote(Session, Target.ToString(),
             new() { AlwaysSucceed = true }, EnhancePath.ArmorDurability);
-        Assert.Equal(3, quote.NextEffect);
+        Assert.Equal(30.0 / 19, quote.NextEffect, 10);
         rig.Execute(quote);
         Assert.Equal(EnhancePath.ArmorDurability, rig.Service.Snapshot(Session).Items.Single().Path);
     }
@@ -404,7 +409,7 @@ public sealed class EnhanceTests
         var rig = new Rig();
         rig.Execute(rig.Quote());
         var router = new EnhanceQueries(Json, rig.Service);
-        var result = await router.HandleStaticAsync("/rf/gear-enhance/state", "{\"ProtocolVersion\":2}", Session, "");
+        var result = await router.HandleStaticAsync("/rf/gear-enhance/state", "{\"ProtocolVersion\":3}", Session, "");
         var client = Newtonsoft.Json.JsonConvert.DeserializeObject<ApiReply<EnhanceSnapshot>>((string)result)!;
         Assert.True(client.Ok, client.Error);
         Assert.Equal(EnhancePath.Recoil, client.Data!.Items.Single().Path);
@@ -475,5 +480,196 @@ public sealed class EnhanceTests
         Assert.False(reply.Ok);
         Assert.Contains("업데이트", reply.Error);
         Assert.Equal(100000, rig.Money);
+    }
+
+    [Theory]
+    [InlineData(0, 75)]
+    [InlineData(1, 70)]
+    [InlineData(4, 55)]
+    [InlineData(9, 30)]
+    public void Quotes_reduce_success_chance_by_the_selected_track_level(int level, double expected)
+    {
+        var rig = new Rig();
+        rig.Seed((EnhancePath.Recoil, level));
+        var quote = rig.Service.Quote(Session, Target.ToString(), new(), EnhancePath.Recoil);
+        Assert.Equal(expected, quote.SuccessPercent);
+        var other = rig.Service.Quote(Session, Target.ToString(), new(), EnhancePath.Precision);
+        Assert.Equal(75, other.SuccessPercent);
+        var certain = rig.Service.Quote(Session, Target.ToString(), new() { AlwaysSucceed = true }, EnhancePath.Recoil);
+        Assert.Equal(100, certain.SuccessPercent);
+        var constant = rig.Service.Quote(Session, Target.ToString(), new() { SuccessLossPerLevel = 0 }, EnhancePath.Recoil);
+        Assert.Equal(75, constant.SuccessPercent);
+        var zero = rig.Service.Quote(Session, Target.ToString(), new() { SuccessPercent = 0, SuccessLossPerLevel = 100 }, EnhancePath.Recoil);
+        Assert.Equal(0, zero.SuccessPercent);
+    }
+
+    [Theory]
+    [InlineData(10, 5, 5, 4, false)]
+    [InlineData(10, 5, 5, 5, true)]
+    [InlineData(9, 5, 5, 4, false)]
+    [InlineData(9, 5, 5, 5, true)]
+    [InlineData(11, 6, 6, 5, false)]
+    [InlineData(11, 6, 6, 6, true)]
+    public void High_risk_requires_every_weapon_track_at_half_rounded_up(int maximum, int recoil, int ergonomics, int precision, bool expected)
+    {
+        var rig = new Rig();
+        rig.Seed((EnhancePath.Recoil, recoil), (EnhancePath.Ergonomics, ergonomics), (EnhancePath.Precision, precision));
+        var quote = rig.Service.Quote(Session, Target.ToString(), new() { MaxLevel = maximum }, EnhancePath.Recoil);
+        Assert.Equal(expected, quote.HighRisk);
+        Assert.Equal(expected ? FailureMode.Downgrade : FailureMode.KeepItem, quote.FailureMode);
+        Assert.Equal(expected ? 25 : 0, quote.DestructionPercent);
+        Assert.Equal(expected, quote.CanDestroy);
+    }
+
+    [Fact]
+    public void High_risk_downgrade_charges_once_changes_only_selected_track_and_exits_the_risk_zone()
+    {
+        var rig = new Rig(); rig.AddPart();
+        rig.Seed((EnhancePath.Recoil, 5), (EnhancePath.Ergonomics, 5), (EnhancePath.Precision, 5));
+        var quote = rig.Service.Quote(Session, Target.ToString(),
+            new() { SuccessPercent = 0, HighRiskDestructionPercent = 0 }, EnhancePath.Recoil);
+        rig.Execute(quote);
+        Assert.Equal(100000 - quote.Cost, rig.Money);
+        Assert.Equal(80, rig.Item.Upd!.Repairable!.Durability);
+        Assert.Contains(rig.Pmc.Inventory!.Items!, i => i.Id == Part);
+        var receipt = rig.Service.Receipt(Session, quote.QuoteId)!;
+        Assert.False(receipt.Success);
+        Assert.Equal(FailureMode.Downgrade, receipt.FailureMode);
+        Assert.Equal(4, receipt.Level);
+        Assert.Throws<InvalidOperationException>(() => rig.Execute(quote));
+        rig.Backend.Saved = Json.Deserialize<SptProfile>(Json.Serialize(rig.Backend.Saved))!;
+        var levels = rig.Service.Snapshot(Session).Items.ToDictionary(i => i.Path, i => i.Level);
+        Assert.Equal(4, levels[EnhancePath.Recoil]);
+        Assert.Equal(5, levels[EnhancePath.Ergonomics]);
+        Assert.Equal(5, levels[EnhancePath.Precision]);
+        Assert.False(rig.Service.Quote(Session, Target.ToString(), new(), EnhancePath.Recoil).HighRisk);
+    }
+
+    [Fact]
+    public void High_risk_destruction_requires_confirmation_and_removes_the_native_tree_and_every_track()
+    {
+        var rig = new Rig(); rig.AddPart();
+        rig.Pmc.InsuredItems!.Add(new() { ItemId = Part });
+        rig.Seed((EnhancePath.Recoil, 5), (EnhancePath.Ergonomics, 5), (EnhancePath.Precision, 5));
+        var quote = rig.Service.Quote(Session, Target.ToString(),
+            new() { SuccessPercent = 0, HighRiskDestructionPercent = 100 }, EnhancePath.Recoil);
+        Assert.True(quote.CanDestroy);
+        Assert.Throws<InvalidOperationException>(() => rig.Execute(quote));
+        Assert.Equal(100000, rig.Money);
+        rig.Execute(quote, true);
+        Assert.Equal(100000 - quote.Cost, rig.Money);
+        Assert.Equal(FailureMode.Destroy, rig.Service.Receipt(Session, quote.QuoteId)!.FailureMode);
+        Assert.Empty(rig.Service.Snapshot(Session).Items);
+        Assert.DoesNotContain(rig.Pmc.Inventory!.Items!, i => i.Id == Target || i.Id == Part);
+        Assert.Empty(rig.Pmc.InsuredItems!);
+        // SPT reports the deleted root; its children are removed with that tree.
+        Assert.Contains(rig.Output.ProfileChanges![Session].Items!.DeletedItems!, i => i.Id == Target);
+    }
+
+    [Fact]
+    public void Guaranteed_success_overrides_high_risk_and_completion_quote_matches_restored_client_effects()
+    {
+        var rig = new Rig();
+        rig.Seed((EnhancePath.Recoil, 10), (EnhancePath.Ergonomics, 10), (EnhancePath.Precision, 9));
+        var quote = rig.Service.Quote(Session, Target.ToString(), new() { AlwaysSucceed = true }, EnhancePath.Precision);
+        Assert.True(quote.HighRisk);
+        Assert.False(quote.CanDestroy);
+        Assert.False(quote.Complete);
+        Assert.True(quote.CompletesOnSuccess);
+        Assert.Equal(4, quote.NextGainMultiplier);
+        Assert.Equal(12, quote.NextEffect);
+        rig.Execute(quote);
+        rig.Backend.Saved = Json.Deserialize<SptProfile>(Json.Serialize(rig.Backend.Saved))!;
+        var registry = new EffectRegistry();
+        registry.Replace(rig.Service.Snapshot(Session), Session.ToString());
+        Assert.True(registry.IsComplete(Target.ToString()));
+        Assert.Equal(quote.NextEffect, registry.Amount(Target.ToString(), EnhancePath.Precision));
+        Assert.Equal(18, registry.Amount(Target.ToString(), EnhancePath.Recoil));
+        Assert.Equal(12, registry.Amount(Target.ToString(), EnhancePath.Ergonomics));
+    }
+
+    [Fact]
+    public void Armor_completion_has_a_bonus_and_uses_the_normal_failure_setting()
+    {
+        var rig = new Rig(); rig.Backend.WeaponCategory = false;
+        rig.Seed((EnhancePath.ArmorDurability, 10), (EnhancePath.Mobility, 9));
+        var quote = rig.Service.Quote(Session, Target.ToString(), new() { AlwaysSucceed = true }, EnhancePath.Mobility);
+        Assert.False(quote.HighRisk);
+        Assert.False(quote.CanDestroy);
+        Assert.True(quote.CompletesOnSuccess);
+        Assert.Equal(24, quote.NextEffect);
+        rig.Execute(quote);
+        var registry = new EffectRegistry();
+        registry.Replace(rig.Service.Snapshot(Session), Session.ToString());
+        Assert.Equal(36, registry.Amount(Target.ToString(), EnhancePath.ArmorDurability));
+        Assert.Equal(24, registry.Amount(Target.ToString(), EnhancePath.Mobility));
+    }
+
+    [Fact]
+    public void Disabling_high_risk_preserves_the_selected_normal_failure_option()
+    {
+        var rig = new Rig();
+        rig.Seed((EnhancePath.Recoil, 5), (EnhancePath.Ergonomics, 5), (EnhancePath.Precision, 5));
+        var quote = rig.Service.Quote(Session, Target.ToString(),
+            new() { SuccessPercent = 0, HighRiskEnabled = false, FailureMode = FailureMode.ZeroDurability }, EnhancePath.Recoil);
+        Assert.False(quote.HighRisk);
+        Assert.False(quote.CanDestroy);
+        rig.Execute(quote);
+        Assert.Equal(0, rig.Item.Upd!.Repairable!.Durability);
+        Assert.All(rig.Service.Snapshot(Session).Items, i => Assert.Equal(5, i.Level));
+    }
+
+    [Fact]
+    public void Changes_to_any_other_track_invalidate_the_saved_risk_and_completion_quote_without_payment()
+    {
+        var rig = new Rig();
+        rig.Seed((EnhancePath.Recoil, 5), (EnhancePath.Ergonomics, 5), (EnhancePath.Precision, 5));
+        var quote = rig.Service.Quote(Session, Target.ToString(), new(), EnhancePath.Recoil);
+        var state = Assert.IsType<EnhanceState>(rig.Backend.Saved.ExtensionData!["rfGearEnhance"]);
+        state.Tracks[Target.ToString()][EnhancePath.Precision] = 4;
+        Assert.Throws<InvalidOperationException>(() => rig.Execute(quote, true));
+        Assert.Equal(100000, rig.Money);
+    }
+
+    [Theory]
+    [InlineData(0.249999, FailureMode.Destroy)]
+    [InlineData(0.25, FailureMode.Downgrade)]
+    [InlineData(0.999999, FailureMode.Downgrade)]
+    public void Conditional_destruction_draw_is_independent_of_the_upgrade_success_roll(double draw, FailureMode expected) =>
+        Assert.Equal(expected, EnhanceRules.Failure(new() { DestructionPercent = 25, FailureMode = FailureMode.Downgrade }, draw));
+
+    [Fact]
+    public async Task Protocol_two_clients_are_rejected_before_a_destructive_quote_can_be_issued()
+    {
+        var rig = new Rig();
+        var router = new EnhanceQueries(Json, rig.Service);
+        var result = await router.HandleStaticAsync("/rf/gear-enhance/quote",
+            Json.Serialize(new QuoteRequest { ProtocolVersion = 2, ItemId = Target.ToString() })!, Session, "");
+        Assert.False(Json.Deserialize<ApiReply<EnhanceQuote>>((string)result)!.Ok);
+        Assert.Equal(100000, rig.Money);
+    }
+
+    [Fact]
+    public async Task A_downgrade_to_zero_is_not_deletion_and_the_client_reads_the_actual_server_receipt_enum()
+    {
+        var rig = new Rig();
+        rig.Seed((EnhancePath.Recoil, 1));
+        var quote = rig.Service.Quote(Session, Target.ToString(), new()
+            { SuccessPercent = 0, FailureMode = FailureMode.Downgrade }, EnhancePath.Recoil);
+        var registry = new EffectRegistry();
+        registry.Replace(rig.Service.Snapshot(Session), Session.ToString());
+        rig.Execute(quote);
+        var router = new EnhanceQueries(Json, rig.Service);
+        var response = await router.HandleStaticAsync("/rf/gear-enhance/receipt",
+            Json.Serialize(new ReceiptRequest { ProtocolVersion = EnhanceProtocol.Version, QuoteId = quote.QuoteId })!, Session, "");
+        var client = Newtonsoft.Json.JsonConvert.DeserializeObject<ApiReply<EnhanceReceipt>>((string)response)!;
+        Assert.True(client.Ok, client.Error);
+        Assert.Equal(FailureMode.Downgrade, client.Data!.FailureMode);
+        Assert.Equal(0, client.Data.Level);
+        registry.ApplyReceipt(client.Data, Session.ToString());
+        Assert.Null(registry.Find(Target.ToString()));
+        Assert.Empty(rig.Service.Snapshot(Session).Items);
+        Assert.Equal(80, rig.Item.Upd!.Repairable!.Durability);
+        Assert.Empty(rig.Output.ProfileChanges![Session].Items!.DeletedItems!);
     }
 }

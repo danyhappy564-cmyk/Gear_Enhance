@@ -56,7 +56,9 @@ internal static class ItemMarkers
         var image = GameBridge.Get(__instance, "MainImage");
         if (GameBridge.Get(image, "color") is not Color color || color.g < 0.9f || color.b < 0.9f) return;
         // Same gold background used by GridItemView for native repair buffs.
-        background.SetValue(__instance, new Color(209f / 255, 153f / 255, 45f / 255, 32f / 255));
+        background.SetValue(__instance, StatPatches.Registry.IsComplete(id)
+            ? new Color(163f / 255, 103f / 255, 232f / 255, 65f / 255)
+            : new Color(209f / 255, 153f / 255, 45f / 255, 32f / 255));
         updateColor.Invoke(__instance, null);
     }
     private static void Name(object __instance, ref string __result)
@@ -66,7 +68,8 @@ internal static class ItemMarkers
             if (GameBridge.Get(__instance, "Examined") is not true) return;
             var id = GameBridge.Get(GameBridge.Get(__instance, "Item"), "Id")?.ToString();
             var badge = id == null ? "" : StatPatches.Registry.Badge(id);
-            if (badge.Length > 0) __result += " <color=#D9B66F>" + badge + "</color>";
+            if (badge.Length > 0) __result += (StatPatches.Registry.IsComplete(id)
+                ? " <color=#B989F5>" : " <color=#D9B66F>") + badge + "</color>";
         }
         catch (Exception ex) { Report(ex); }
     }

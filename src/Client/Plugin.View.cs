@@ -8,6 +8,8 @@ public sealed partial class Plugin
 {
     private const float WindowWidth = 760, WindowHeight = 870;
     private static readonly Color Gold = new Color(0.84f, 0.74f, 0.55f);
+    private static readonly Color Purple = new Color(0.73f, 0.54f, 0.96f);
+    private static readonly Color Danger = new Color(0.94f, 0.30f, 0.24f);
     private static readonly Color Muted = new Color(0.62f, 0.65f, 0.67f);
     private static readonly Color Line = new Color(0.25f, 0.28f, 0.30f);
     private static readonly Color Panel = new Color(0.045f, 0.055f, 0.065f, 0.98f);
@@ -198,7 +200,8 @@ public sealed partial class Plugin
             GUI.DrawTextureWithTexCoords(new Rect(24, 62, 480, 166), previewGrid, new Rect(0, 0, 20, 166f / 24));
         var area = new Rect(38, 69, 449, 151);
         var sprite = GameBridge.Get(itemIcon, "Sprite") as Sprite;
-        if (sprite != null && sprite.texture != null && Event.current.type == EventType.Repaint)
+        var shattering = resultCue == FeedbackCue.Destroy && Clock - resultStarted < ResultDuration;
+        if (!shattering && sprite != null && sprite.texture != null && Event.current.type == EventType.Repaint)
         {
             var source = sprite.rect;
             var fit = Math.Min(area.width / source.width, area.height / source.height);
@@ -207,13 +210,19 @@ public sealed partial class Plugin
             GUI.DrawTextureWithTexCoords(rect, sprite.texture, new Rect(source.x / sprite.texture.width,
                 source.y / sprite.texture.height, source.width / sprite.texture.width, source.height / sprite.texture.height));
         }
-        if (sprite == null || sprite.texture == null) Label(62, 127, 380, 30, "장비 이미지를 불러오는 중…", small);
+        if (!shattering && (sprite == null || sprite.texture == null))
+            Label(62, 127, 380, 30, itemId == null ? "장비가 파괴되었습니다" : "장비 이미지를 불러오는 중…", small);
+        DrawResultEffect(area);
         Label(517, 76, 217, 38, itemName ?? "장비", heading);
         Label(518, 112, 216, 25, EnhanceEffects.Name(selectedPath) + " 강화", small);
         var current = preview?.CurrentLevel ?? StatPatches.Registry.Find(itemId ?? "", selectedPath)?.Level ?? 0;
         var next = preview?.NextLevel ?? Math.Max(current, Math.Min(current + 1, maxLevel.Value));
-        Label(513, 145, 225, 64, $"+{current} → +{next}", current >= 100 || next >= 100
+        Label(513, 145, 225, 64, itemId == null ? "파괴됨" : $"+{current} → +{next}", current >= 100 || next >= 100
             ? selectedValue : large);
+        var complete = StatPatches.Registry.IsComplete(itemId ?? "");
+        Label(517, 207, 217, 22, itemId == null ? "본체·부착물·탄약 소실" : complete ? $"전 항목 완성 · 효과 +{completionBonus.Value:0.##}%"
+            : preview?.CompletesOnSuccess == true ? $"성공 시 완성 · 효과 +{completionBonus.Value:0.##}%" : "전 항목 완성 시 보너스", small);
+        if (complete) Fill(new Rect(517, 230, 217, 2), Purple);
         Fill(new Rect(24, 231, 712, 1), Line);
     }
 
@@ -249,14 +258,14 @@ public sealed partial class Plugin
     {
         Box(new Rect(24, 367, 712, 170), Panel, Line);
         Fill(new Rect(25, 368, 710, 34), new Color(0.12f, 0.135f, 0.15f, 0.65f));
-        Label(40, 370, 280, 29, "강화 효과", body);
+        Label(40, 370, 280, 29, $"강화 효과 · 증가량 ×{(preview?.NextGainMultiplier ?? 1):0.##}", body);
         Label(379, 370, 122, 29, $"현재 +{preview?.CurrentLevel ?? StatPatches.Registry.Find(itemId ?? "", selectedPath)?.Level ?? 0}", centeredSmall);
         Label(594, 370, 126, 29,  $"성공 시 +{preview?.NextLevel ?? Math.Max(StatPatches.Registry.Find(itemId ?? "", selectedPath)?.Level ?? 0, Math.Min(maxLevel.Value, (StatPatches.Registry.Find(itemId ?? "", selectedPath)?.Level ?? 0) + 1))}", centeredSmall);
         Fill(new Rect(25, 402, 710, 1), Line);
         Label(48, 412, 290, 36, EnhanceEffects.StatName(selectedPath), body);
         var current = preview?.CurrentEffect ?? StatPatches.Registry.Amount(itemId ?? "", selectedPath);
         var next = preview?.NextEffect ?? current;
-        var cap = preview?.EffectCap ?? EnhanceEffects.Cap(selectedPath, Tuning());
+        var cap = preview?.EffectCap ?? EnhanceEffects.Amount(selectedPath, maxLevel.Value, Tuning(), true);
         Label(379, 408, 122, 42, EnhanceEffects.Format(selectedPath, current), value);
         Label(532, 410, 40, 38, "→", value);
         Label(594, 408, 126, 42, EnhanceEffects.Format(selectedPath, next), selectedValue);
@@ -300,11 +309,21 @@ public sealed partial class Plugin
         Label(38, 711, 24, 27, "!", selectedValue);
         var note = preview?.BindLegacy == true ? "기존 단계 유지 · 첫 효과 선택은 무료 · 100% 적용"
 
+            : preview?.HighRisk == true ? $"고위험 실패 시: 파괴 {preview.DestructionPercent:0.##}% / 선택 항목 -1 {100 - preview.DestructionPercent:0.##}% · 이번 시도 파괴 {(100 - preview.SuccessPercent) * preview.DestructionPercent / 100:0.##}%"
             : "실패 시: " + FailureText(preview?.FailureMode ?? failure.Value);
         Label(75, 709, 643, 34, note, noteStyle);
-        if (quote != null && quote.FailureMode == FailureMode.Destroy && quote.SuccessPercent < 100)
-            destructionConfirmed = GUI.Toggle(new Rect(28, 759, 704, 35), destructionConfirmed,
+        if (attemptTimeline.Active)
+        {
+            var fraction = attemptTimeline.Fraction(Clock);
+            Label(28, 750, 704, 27, fraction < 1 ? $"강화 진행 중… {fraction * 100:0}%" : "강화 판정 중…", statusStyle);
+            Bar(new Rect(28, 784, 704, 9), fraction, 1, Gold);
+        }
+        else if (quote?.CanDestroy == true)
+        {
+            Label(28, 750, 704, 22, message, statusStyle);
+            destructionConfirmed = GUI.Toggle(new Rect(28, 774, 704, 25), destructionConfirmed,
                 $" 본체와 부착물 {quote.AttachedItems}개(탄약 포함)가 삭제될 수 있음을 확인했습니다.");
+        }
         else
         {
             var seconds = quote == null ? "" : $"견적 유효 시간: {Math.Max(0, quote.ExpiresUnixSeconds - DateTimeOffset.UtcNow.ToUnixTimeSeconds())}초";
@@ -316,12 +335,12 @@ public sealed partial class Plugin
         if (GUI.Button(closeRect, "닫기", secondary)) main.Enqueue(Close);
         var expired = quote != null && DateTimeOffset.UtcNow.ToUnixTimeSeconds() >= quote.ExpiresUnixSeconds;
         var canPay = quote != null && quote.AvailableRoubles >= quote.Cost && !expired
-            && (quote.FailureMode != FailureMode.Destroy || quote.SuccessPercent == 100 || destructionConfirmed);
+            && (!quote.CanDestroy || destructionConfirmed);
         var atMaximum = (StatPatches.Registry.Find(itemId ?? "", selectedPath)?.Level ?? 0) >= maxLevel.Value;
         GUI.enabled = !busy && !uncertain && itemId != null && !atMaximum && (quote == null || expired || canPay);
         var actionRect = new Rect(273, 803, 463, 48);
         Surface(actionRect, goldGradient, new Color(0.95f, 0.85f, 0.64f));
-        var caption = busy ? "처리 중…" : atMaximum ? "이 항목은 최대 단계입니다" : quote == null || expired ? "견적 다시 불러오기"
+        var caption = busy ? attemptTimeline.Active ? "강화 진행 중…" : "처리 중…" : atMaximum ? "이 항목은 최대 단계입니다" : quote == null || expired ? "견적 다시 불러오기"
             : quote.BindLegacy ? "기존 단계에 효과 적용 · 무료" : $"강화 시도  {quote.Cost:N0} ₽";
         if (GUI.Button(actionRect, caption, primary))
         {

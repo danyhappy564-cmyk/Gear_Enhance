@@ -14,8 +14,8 @@ public sealed partial class Plugin : BaseUnityPlugin
 {
     internal static Plugin Instance;
     private Harmony harmony;
-    private ConfigEntry<bool> menuEnabled, always, soundsEnabled;
-    private ConfigEntry<float> chance, percent, growth;
+    private ConfigEntry<bool> menuEnabled, always, soundsEnabled, highRiskEnabled;
+    private ConfigEntry<float> chance, chanceLoss, destructionChance, completionBonus, percent, growth;
     private ConfigEntry<int> maxLevel, minimum;
     private ConfigEntry<PriceBasis> price;
     private ConfigEntry<FailureMode> failure;
@@ -30,6 +30,11 @@ public sealed partial class Plugin : BaseUnityPlugin
     private string message = "";
     private long repaintCount, repaintTicks, maximumRepaintTicks;
     private bool feedbackUnavailable;
+    private readonly AttemptTimeline attemptTimeline = new AttemptTimeline();
+    private EnhanceQuote pendingAttempt;
+    private bool pendingDestructionConfirmation;
+    private int pendingGeneration;
+    private static double Clock => System.Diagnostics.Stopwatch.GetTimestamp() / (double)System.Diagnostics.Stopwatch.Frequency;
     private Rect window;
     private GameObject blocker;
     private GUISkin windowSkin;
@@ -40,21 +45,25 @@ public sealed partial class Plugin : BaseUnityPlugin
     {
         Instance = this;
         menuEnabled = Config.Bind("1. 기본", "강화 메뉴 사용", true, "창고의 무기·방어구 우클릭에 장비 강화를 표시합니다.");
-        chance = Config.Bind("2. 확률", "성공률 (%)", 75f, new ConfigDescription("다음 견적부터 적용됩니다.", new AcceptableValueRange<float>(0, 100)));
+        chance = Config.Bind("2. 확률", "성공률 (%)", 75f, new ConfigDescription("+0에서 +1로 강화할 때 성공률. 이후 현재 단계 × 단계별 감소량만큼 줄어듭니다.", new AcceptableValueRange<float>(0, 100)));
+        chanceLoss = Config.Bind("2. 확률", "단계별 성공률 감소 (%p)", 5f, new ConfigDescription("기본: +1 시도 75%, +10 시도 30%. 0이면 같은 확률을 유지합니다.", new AcceptableValueRange<float>(0, 100)));
         always = Config.Bind("2. 확률", "항상 성공 (100%)", false, "켜면 성공률 설정 대신 100%를 적용합니다. 비용은 소모됩니다.");
-        maxLevel = Config.Bind("2. 확률", "최대 강화 단계", 10, new ConfigDescription("각 항목의 최대 단계입니다. 효과별 수치 상한은 별도로 적용합니다.", new AcceptableValueRange<int>(1, 100)));
+        maxLevel = Config.Bind("2. 확률", "최대 강화 단계", 10, new ConfigDescription("각 항목 최대 단계. 효과 곡선·무기 고위험 시작(절반 올림)·완성 보너스 판정도 함께 바뀝니다.", new AcceptableValueRange<int>(1, 100)));
         price = Config.Bind("3. 비용", "기준 가격", PriceBasis.Handbook, "Handbook = 북밸류, Flea = SPT 플리 기준가. 장비 본체만 계산합니다.");
         percent = Config.Bind("3. 비용", "기준 가격 대비 비용 (%)", 10f, new ConfigDescription("0이면 최소 비용만 적용됩니다.", new AcceptableValueRange<float>(0, 1000)));
         growth = Config.Bind("3. 비용", "단계별 비용 배수", 1.25f, new ConfigDescription("기준가 × 비용 비율 × 배수^현재단계. 최대 1억 루블.", new AcceptableValueRange<float>(1, 3)));
         minimum = Config.Bind("3. 비용", "최소 비용 (루블)", 1000, new ConfigDescription("창고 안의 잠기지 않은 루블을 사용합니다.", new AcceptableValueRange<int>(0, 100000000)));
         failure = Config.Bind("4. 실패", "실패 처리", FailureMode.KeepItem,
-            "KeepItem: 비용만 소모 / ZeroDurability: 장비·부품의 현재 내구도 0 / Destroy: 본체·부착물·탄약 삭제. 최대 내구도는 유지됩니다.");
+            "일반 구간 실패 처리. KeepItem: 비용만 / ZeroDurability: 현재 내구도 0 / Destroy: 본체·부착물·탄약 삭제 / Downgrade: 선택 항목 -1. 무기 고위험 구간에서는 아래 파괴·하락 규칙이 우선합니다.");
+        highRiskEnabled = Config.Bind("4. 실패", "무기 고위험 강화", true, "무기 3개 항목이 모두 최대 단계의 절반(올림) 이상이면 실패 시 파괴 또는 선택 항목 -1. 방어구는 일반 실패 처리를 따릅니다.");
+        destructionChance = Config.Bind("4. 실패", "고위험 실패 중 파괴 확률 (%)", 25f, new ConfigDescription("성공 판정과 별도입니다. 고위험 실패 중 이 확률로 본체·부착물·탄약 파괴, 나머지는 선택 항목 -1. 0은 하락만, 100은 파괴만.", new AcceptableValueRange<float>(0, 100)));
         BindEffect(EnhancePath.Recoil, "5. 무기 효과", 1.5f, 15);
         BindEffect(EnhancePath.Ergonomics, "5. 무기 효과", 1, 10);
         BindEffect(EnhancePath.Precision, "5. 무기 효과", 1, 10);
         BindEffect(EnhancePath.ArmorDurability, "6. 방어구 효과", 3, 30);
         BindEffect(EnhancePath.Mobility, "6. 방어구 효과", 2, 20);
         soundsEnabled = Config.Bind("7. 피드백", "강화 효과음", true, "시도·성공·실패에 게임 UI 효과음을 재생합니다. 게임의 소리 설정을 따릅니다.");
+        completionBonus = Config.Bind("8. 완성 보너스", "전 항목 완성 추가 효과 (%)", 20f, new ConfigDescription("무기 3종/방어구 2종이 모두 최대이면 기존 강화 효과에 추가 배율. 예: 반동 15% → 18%. 완성 장비는 보라색으로 표시합니다.", new AcceptableValueRange<float>(0, 100)));
         StatPatches.Registry.Configure(Tuning());
         Config.SettingChanged += (_, _) => main.Enqueue(() =>
         {
@@ -89,11 +98,12 @@ public sealed partial class Plugin : BaseUnityPlugin
         var name = EnhanceEffects.StatName(path);
         var unit = path == EnhancePath.Ergonomics ? "" : " (%)";
         effectConfig[path] = (
-            Config.Bind(section, name + " / 단계" + unit, step, new ConfigDescription("기존 강화 장비에도 적용됩니다.", new AcceptableValueRange<float>(0, 10))),
-            Config.Bind(section, name + " 상한" + unit, cap, new ConfigDescription("단계가 높아도 이 값을 넘지 않습니다.", new AcceptableValueRange<float>(0, path == EnhancePath.Ergonomics ? 50 : 80))));
+            Config.Bind(section, name + " / 단계" + unit, step, new ConfigDescription("최대 효과 기준 = 이 값 × 최대 단계와 효과 상한 중 작은 값. 실제 단계별 증가량은 후반 1→4배 곡선으로 배분됩니다. 기존 장비에도 적용됩니다.", new AcceptableValueRange<float>(0, 10))),
+            Config.Bind(section, name + " 상한" + unit, cap, new ConfigDescription("완성 보너스 적용 전 상한. 보너스 후 안전 한계는 감소율 80%, 인체공학 추가 50입니다.", new AcceptableValueRange<float>(0, path == EnhancePath.Ergonomics ? 50 : 80))));
     }
     private EffectTuning Tuning() => new EffectTuning
     {
+        MaxLevel = maxLevel.Value, CompletionBonusPercent = completionBonus.Value,
         RecoilPerLevel = effectConfig[EnhancePath.Recoil].Step.Value, RecoilCap = effectConfig[EnhancePath.Recoil].Cap.Value,
         ErgonomicsPerLevel = effectConfig[EnhancePath.Ergonomics].Step.Value, ErgonomicsCap = effectConfig[EnhancePath.Ergonomics].Cap.Value,
         PrecisionPerLevel = effectConfig[EnhancePath.Precision].Step.Value, PrecisionCap = effectConfig[EnhancePath.Precision].Cap.Value,
@@ -103,6 +113,8 @@ public sealed partial class Plugin : BaseUnityPlugin
     private EnhanceSettings Settings() => new EnhanceSettings
     {
         SuccessPercent = chance.Value, AlwaysSucceed = always.Value, MaxLevel = maxLevel.Value,
+        SuccessLossPerLevel = chanceLoss.Value, HighRiskEnabled = highRiskEnabled.Value,
+        HighRiskDestructionPercent = destructionChance.Value,
         PriceBasis = price.Value, CostPercent = percent.Value, CostPerLevel = growth.Value,
         MinimumCost = minimum.Value, FailureMode = failure.Value, Effects = Tuning()
     };
@@ -216,30 +228,44 @@ public sealed partial class Plugin : BaseUnityPlugin
         selectedPath = path; quote = preview = null; generation++; RefreshQuote();
     }
 
-    private async void Execute()
+    private void Execute()
     {
         if (busy || quote == null || uncertain) return;
-        var attempt = quote;
-        busy = true; quote = null; message = "강화 결과를 확인하는 중입니다…";
+        if (!attemptTimeline.Begin(Clock)) return;
+        pendingAttempt = quote; pendingDestructionConfirmation = destructionConfirmed; pendingGeneration = generation;
+        busy = true; quote = null; message = "강화 진행 중…";
+        QueueFeedback(FeedbackCue.Attempt);
+    }
+
+    private async void SubmitAttempt(EnhanceQuote attempt, bool confirmed, int expectedGeneration)
+    {
         var submitted = false;
         var completed = false;
         try
         {
+            if (expectedGeneration != generation || !visible || !GameBridge.InStash(uiContext))
+                throw new InvalidOperationException("강화 준비 중 설정이나 화면이 바뀌었습니다. 견적을 다시 불러와 주세요.");
             await GameBridge.Flush(session);
-            QueueFeedback(FeedbackCue.Attempt);
+            if (expectedGeneration != generation || !visible || !GameBridge.InStash(uiContext))
+                throw new InvalidOperationException("강화 준비가 취소됐습니다. 견적을 다시 불러와 주세요.");
+            message = "강화 결과를 확인하는 중입니다…";
             submitted = true;
-            var ok = await GameBridge.WithTimeout(GameBridge.Execute(session, attempt.QuoteId, destructionConfirmed), 30000);
+            var ok = await GameBridge.WithTimeout(GameBridge.Execute(session, attempt.QuoteId, confirmed), 30000);
             if (!ok) { message = "강화가 거절됐습니다. 서버 오류 안내를 확인하고 견적을 다시 불러와 주세요."; return; }
             var receipt = await GameBridge.WithTimeout(GameBridge.Query<EnhanceReceipt>("/rf/gear-enhance/receipt", new { ProtocolVersion = EnhanceProtocol.Version, attempt.QuoteId }));
             message = receipt.Success
                 ? $"{(attempt.BindLegacy ? "기존 단계 복원 완료" : "강화 성공")}! {EnhanceEffects.Name(receipt.Path)} +{receipt.Level} · {receipt.Paid:N0} ₽ 소모"
-                : $"강화 실패 · {receipt.Paid:N0} ₽ 소모\n{FailureText(receipt.FailureMode)}";
+                : receipt.FailureMode == FailureMode.Downgrade
+                    ? $"강화 실패 · {EnhanceEffects.Name(receipt.Path)} +{receipt.Level}로 하락 · {receipt.Paid:N0} ₽ 소모"
+                    : $"강화 실패 · {receipt.Paid:N0} ₽ 소모\n{FailureText(receipt.FailureMode)}";
+            if (receipt.Success && attempt.CompletesOnSuccess) message += " · 전 항목 완성 보너스 적용!";
             StatPatches.Registry.ApplyReceipt(receipt, GameBridge.ProfileId(session));
             completed = true;
-            QueueFeedback(receipt.Success ? FeedbackCue.Success : FeedbackCue.Failure);
+            ShowResultFeedback(receipt);
+            QueueFeedback(receipt.Success ? FeedbackCue.Success : receipt.FailureMode == FailureMode.Destroy ? FeedbackCue.Destroy : FeedbackCue.Failure);
             RefreshGameplay();
             await SyncEffects(session);
-            if (!receipt.Success && receipt.FailureMode == FailureMode.Destroy) { itemId = null; selectedItem = null; itemIcon = null; }
+            if (!receipt.Success && receipt.FailureMode == FailureMode.Destroy) { itemId = null; selectedItem = null; itemIcon = null; preview = null; }
         }
         catch (Exception ex)
         {
@@ -252,6 +278,7 @@ public sealed partial class Plugin : BaseUnityPlugin
         finally
         {
             busy = false; destructionConfirmed = false;
+            attemptTimeline.Reset(); pendingAttempt = null;
             if (completed && itemId != null && !uncertain)
             {
                 var result = message;
@@ -277,11 +304,14 @@ public sealed partial class Plugin : BaseUnityPlugin
     private static string FailureText(FailureMode mode) => mode == FailureMode.Destroy
         ? "본체·부착물·탄창·탄약이 함께 파괴됩니다."
         : mode == FailureMode.ZeroDurability ? "본체·부품의 현재 내구도 0 · 최대 내구도 유지"
+        : mode == FailureMode.Downgrade ? "선택 항목의 강화 단계 -1 · 다른 항목과 장비 유지"
         : "비용만 소모 · 장비와 기존 강화 단계 유지";
 
     private void Update()
     {
         for (var n = 0; n < 32 && main.TryDequeue(out var action); n++) action();
+        if (pendingAttempt != null && attemptTimeline.TryComplete(Clock))
+            SubmitAttempt(pendingAttempt, pendingDestructionConfirmation, pendingGeneration);
         if (visible && !busy && !GameBridge.InStash(uiContext)) Close();
     }
     private void CreateBlocker()
@@ -306,6 +336,8 @@ public sealed partial class Plugin : BaseUnityPlugin
         repaintCount = repaintTicks = maximumRepaintTicks = 0;
         visible = false; quote = preview = null; session = uiContext = selectedItem = itemIcon = null; generation++;
         itemId = null;
+        attemptTimeline.Reset(); pendingAttempt = null;
+        resultSprite = null; resultStarted = -100;
         if (blocker != null) Destroy(blocker);
         blocker = null;
     }

@@ -134,8 +134,8 @@ public sealed class HooksTests : IDisposable
         } }, "pmc");
         var item = new TestItem("gun");
         Assert.Equal(-0.49f, Run("Recoil", item, -0.4f), 5);
-        Assert.Equal(54, Run("Ergonomics", item, 50));
-        Assert.Equal(0.93f, Run("Precision", item, 1), 5);
+        Assert.Equal(52.105263f, Run("Ergonomics", item, 50), 5);
+        Assert.Equal(0.9536842f, Run("Precision", item, 1), 5);
         Assert.Equal("★ +21", StatPatches.Registry.Badge("gun"));
     }
 
@@ -149,8 +149,42 @@ public sealed class HooksTests : IDisposable
         } }, "pmc");
         var vest = new TestItem("vest");
         var plate = new TestItem("plate") { CurrentAddress = new(new(vest)) };
-        Assert.Equal(9.7f, Run("Durability", new TestArmor(plate), 10), 4);
-        Assert.Equal(-9, Run("Mobility", new TestArmor(plate), -10));
+        Assert.Equal(9.842105f, Run("Durability", new TestArmor(plate), 10), 4);
+        Assert.Equal(-9.473684f, Run("Mobility", new TestArmor(plate), -10), 4);
+    }
+
+    [Fact]
+    public void Completed_weapon_bonus_reaches_all_real_postfixes_and_the_purple_name_marker()
+    {
+        foreach (var path in new[] { EnhancePath.Recoil, EnhancePath.Ergonomics, EnhancePath.Precision })
+            StatPatches.Registry.ApplyReceipt(new() { Success = true, ItemId = "gun", Level = 10, Path = path }, "pmc");
+        var gun = new TestItem("gun");
+        Assert.Equal(-0.508f, Run("Recoil", gun, -0.4f), 5);
+        Assert.Equal(62, Run("Ergonomics", gun, 50));
+        Assert.Equal(0.88f, Run("Precision", gun, 1), 5);
+        var args = new object[] { new MarkerView(gun), "K2" };
+        typeof(ItemMarkers).GetMethod("Name", BindingFlags.Static | BindingFlags.NonPublic)!.Invoke(null, args);
+        Assert.Equal("K2 <color=#B989F5>✦ 완성 +30</color>", args[1]);
+        StatPatches.Registry.ApplyReceipt(new() { ItemId = "gun", Path = EnhancePath.Recoil, Level = 9, FailureMode = FailureMode.Downgrade }, "pmc");
+        args[1] = "K2";
+        typeof(ItemMarkers).GetMethod("Name", BindingFlags.Static | BindingFlags.NonPublic)!.Invoke(null, args);
+        Assert.Equal("K2 <color=#D9B66F>★ +29</color>", args[1]);
+    }
+
+    public record MarkerView(TestItem Item) { public bool Examined => true; }
+
+    [Fact]
+    public void Completed_item_stat_reads_do_not_allocate_or_scan_the_inventory()
+    {
+        foreach (var path in new[] { EnhancePath.Recoil, EnhancePath.Ergonomics, EnhancePath.Precision })
+            StatPatches.Registry.ApplyReceipt(new() { Success = true, ItemId = "gun", Level = 10, Path = path }, "pmc");
+        for (var warmup = 0; warmup < 100; warmup++) StatPatches.Registry.Amount("gun", EnhancePath.Recoil);
+        var before = GC.GetAllocatedBytesForCurrentThread();
+        var amount = 0.0;
+        for (var frame = 0; frame < 10000; frame++) amount = StatPatches.Registry.Amount("gun", EnhancePath.Recoil);
+        var allocated = GC.GetAllocatedBytesForCurrentThread() - before;
+        Assert.Equal(18, amount);
+        Assert.Equal(0, allocated);
     }
 
     [Fact]

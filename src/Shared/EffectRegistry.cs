@@ -50,7 +50,14 @@ public sealed class EffectRegistry
     public string Badge(string id)
     {
         var total = TotalLevel(id);
-        return total > 0 ? $"★ +{total}" : "";
+        return total > 0 ? (IsComplete(id) ? $"✦ 완성 +{total}" : $"★ +{total}") : "";
+    }
+    public bool IsComplete(string id) => records.TryGetValue(id, out var tracks) && Complete(tracks, tuning);
+    private static bool Complete(Dictionary<EnhancePath, EnhanceRecord> tracks, EffectTuning config)
+    {
+        bool Max(EnhancePath path) => tracks.TryGetValue(path, out var record) && record.Level >= config.MaxLevel;
+        return Max(EnhancePath.Recoil) && Max(EnhancePath.Ergonomics) && Max(EnhancePath.Precision)
+            || Max(EnhancePath.ArmorDurability) && Max(EnhancePath.Mobility);
     }
     public void ApplyReceipt(EnhanceReceipt receipt, string expectedProfile)
     {
@@ -65,12 +72,21 @@ public sealed class EffectRegistry
             tracks[receipt.Path] = new EnhanceRecord { ItemId = receipt.ItemId, Path = receipt.Path, Level = receipt.Level };
             next[receipt.ItemId] = tracks;
         }
+        else if (receipt.FailureMode == FailureMode.Downgrade && next.TryGetValue(receipt.ItemId, out var existing))
+        {
+            var tracks = new Dictionary<EnhancePath, EnhanceRecord>(existing);
+            if (receipt.Level > 0)
+                tracks[receipt.Path] = new EnhanceRecord { ItemId = receipt.ItemId, Path = receipt.Path, Level = receipt.Level };
+            else tracks.Remove(receipt.Path);
+            if (tracks.Count == 0) next.Remove(receipt.ItemId); else next[receipt.ItemId] = tracks;
+        }
         else if (receipt.FailureMode == FailureMode.Destroy) next.Remove(receipt.ItemId);
         records = next; ProfileId = expectedProfile;
     }
     public double Amount(string id, EnhancePath path)
     {
-        var item = Find(id, path);
-        return item == null ? 0 : EnhanceEffects.Amount(path, item.Level, tuning);
+        var config = tuning;
+        if (!records.TryGetValue(id, out var tracks) || !tracks.TryGetValue(path, out var item)) return 0;
+        return EnhanceEffects.Amount(path, item.Level, config, Complete(tracks, config));
     }
 }

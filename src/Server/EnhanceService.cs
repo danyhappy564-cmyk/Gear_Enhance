@@ -34,7 +34,7 @@ public sealed class EnhanceService(SptEnhanceBackend backend, JsonUtil serialize
     private readonly object sync = new();
     private readonly Dictionary<MongoId, PendingQuote> pending = new();
 
-    private sealed record PendingQuote(EnhanceQuote View, string Fingerprint);
+    private sealed record PendingQuote(EnhanceQuote View, string Fingerprint, string TrackFingerprint);
 
     public EnhanceQuote Quote(MongoId session, string itemId, EnhanceSettings settings, EnhancePath? path = null)
     {
@@ -65,24 +65,33 @@ public sealed class EnhanceService(SptEnhanceBackend backend, JsonUtil serialize
             var nextLevel = legacy ? level : level + 1;
             var (price, source) = backend.Price(target.Template, settings.PriceBasis);
             var tree = Tree(profile, itemId);
+            var highRisk = !legacy && weapon && settings.HighRiskEnabled
+                && EnhanceProgression.AllAtLeast(tracks, true, EnhanceProgression.HalfLevel(settings.MaxLevel));
+            var nextTracks = tracks == null ? new Dictionary<EnhancePath, int>() : new(tracks);
+            nextTracks[selected] = nextLevel;
+            var complete = EnhanceProgression.AllAtLeast(tracks, weapon, settings.MaxLevel);
+            var completes = EnhanceProgression.AllAtLeast(nextTracks, weapon, settings.MaxLevel);
             var quote = new EnhanceQuote
             {
                 QuoteId = Guid.NewGuid().ToString("N"), ItemId = itemId,
                 CurrentLevel = level, NextLevel = nextLevel,
                 Cost = legacy ? 0 : EnhanceRules.Cost(price, level, settings),
                 AvailableRoubles = Money(profile).Sum(i => Count(i)),
-                SuccessPercent = legacy || settings.AlwaysSucceed ? 100 : settings.SuccessPercent,
-                PriceSource = source, FailureMode = legacy ? FailureMode.KeepItem : settings.FailureMode,
+                SuccessPercent = legacy ? 100 : EnhanceProgression.Success(level, settings),
+                PriceSource = source, FailureMode = legacy ? FailureMode.KeepItem : highRisk ? FailureMode.Downgrade : settings.FailureMode,
+                HighRisk = highRisk, DestructionPercent = highRisk ? settings.HighRiskDestructionPercent : 0,
                 AttachedItems = tree.Count - 1,
                 ExpiresUnixSeconds = DateTimeOffset.UtcNow.AddSeconds(60).ToUnixTimeSeconds(),
                 Path = selected, IsWeapon = weapon,
                 BindLegacy = legacy,
-                CurrentEffect = legacy ? 0 : EnhanceEffects.Amount(selected, level, settings.Effects),
-                NextEffect = EnhanceEffects.Amount(selected, nextLevel, settings.Effects),
-                EffectCap = EnhanceEffects.Cap(selected, settings.Effects)
+                CurrentEffect = legacy ? 0 : EnhanceEffects.Amount(selected, level, settings.Effects, complete),
+                NextEffect = EnhanceEffects.Amount(selected, nextLevel, settings.Effects, completes),
+                EffectCap = EnhanceEffects.Amount(selected, settings.MaxLevel, settings.Effects, true),
+                Complete = complete, CompletesOnSuccess = completes,
+                NextGainMultiplier = EnhanceProgression.GainMultiplier(nextLevel, settings.MaxLevel)
             };
             // One current quote per profile; opening another item invalidates the old one.
-            pending[session] = new(quote, Fingerprint(tree));
+            pending[session] = new(quote, Fingerprint(tree), TracksFingerprint(tracks));
             return quote;
         }
     }
@@ -130,9 +139,10 @@ public sealed class EnhanceService(SptEnhanceBackend backend, JsonUtil serialize
             var tree = Tree(profile, quote.ItemId);
             var recordedLevel = quote.BindLegacy ? state.Levels.GetValueOrDefault(quote.ItemId)
                 : state.Tracks.GetValueOrDefault(quote.ItemId)?.GetValueOrDefault(quote.Path) ?? 0;
-            if (recordedLevel != quote.CurrentLevel || Fingerprint(tree) != saved.Fingerprint)
+            if (recordedLevel != quote.CurrentLevel || Fingerprint(tree) != saved.Fingerprint
+                || TracksFingerprint(state.Tracks.GetValueOrDefault(quote.ItemId)) != saved.TrackFingerprint)
                 throw new InvalidOperationException("장비 상태가 바뀌었습니다. 견적을 다시 불러와 주세요.");
-            if (quote.FailureMode == FailureMode.Destroy && quote.SuccessPercent < 100 && !confirmDestruction)
+            if (quote.CanDestroy && !confirmDestruction)
                 throw new InvalidOperationException("장비와 부착물 파괴 안내를 확인해 주세요.");
             var purse = Money(profile).ToList();
             if (purse.Sum(i => Count(i)) < quote.Cost)
@@ -142,6 +152,8 @@ public sealed class EnhanceService(SptEnhanceBackend backend, JsonUtil serialize
             // client's stacks, deleted items and durability in sync with SPT.
             var success = EnhanceRules.Succeeds(quote.SuccessPercent,
                 RandomNumberGenerator.GetInt32(int.MaxValue) / (double)int.MaxValue);
+            var failureMode = !success ? EnhanceRules.Failure(quote,
+                RandomNumberGenerator.GetInt32(int.MaxValue) / (double)int.MaxValue) : quote.FailureMode;
             pending.Remove(session);
             var remaining = quote.Cost;
             foreach (var money in purse)
@@ -159,7 +171,17 @@ public sealed class EnhanceService(SptEnhanceBackend backend, JsonUtil serialize
                 state.Levels.Remove(quote.ItemId);
                 state.Paths.Remove(quote.ItemId);
             }
-            else if (quote.FailureMode == FailureMode.ZeroDurability)
+            else if (failureMode == FailureMode.Downgrade)
+            {
+                var tracks = state.Tracks.GetValueOrDefault(quote.ItemId);
+                if (tracks != null)
+                {
+                    if (quote.CurrentLevel > 1) tracks[quote.Path] = quote.CurrentLevel - 1;
+                    else tracks.Remove(quote.Path);
+                    if (tracks.Count == 0) state.Tracks.Remove(quote.ItemId);
+                }
+            }
+            else if (failureMode == FailureMode.ZeroDurability)
             {
                 foreach (var part in tree.Where(i => i.Upd?.Repairable != null))
                 {
@@ -167,7 +189,7 @@ public sealed class EnhanceService(SptEnhanceBackend backend, JsonUtil serialize
                     changedItems.Add(part);
                 }
             }
-            else if (quote.FailureMode == FailureMode.Destroy)
+            else if (failureMode == FailureMode.Destroy)
             {
                 backend.Destroy(profile, target.Id, session, output);
                 foreach (var part in tree)
@@ -180,8 +202,8 @@ public sealed class EnhanceService(SptEnhanceBackend backend, JsonUtil serialize
             state.Receipts.Add(new EnhanceReceipt
             {
                 QuoteId = quoteId, ItemId = quote.ItemId, Success = success,
-                Level = success ? quote.NextLevel : quote.CurrentLevel, Paid = quote.Cost,
-                FailureMode = quote.FailureMode, Path = quote.Path,
+                Level = success ? quote.NextLevel : failureMode == FailureMode.Downgrade ? Math.Max(0, quote.CurrentLevel - 1) : quote.CurrentLevel,
+                Paid = quote.Cost, FailureMode = failureMode, Path = quote.Path,
                 CompletedUnixSeconds = DateTimeOffset.UtcNow.ToUnixTimeSeconds()
             });
             if (state.Receipts.Count > 100) state.Receipts.RemoveRange(0, state.Receipts.Count - 100);
@@ -274,4 +296,7 @@ public sealed class EnhanceService(SptEnhanceBackend backend, JsonUtil serialize
             $"{i.Id}:{i.Template}:{i.ParentId}:{i.SlotId}:{serializer.Serialize(i.Upd)}"));
         return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(text)));
     }
+
+    private static string TracksFingerprint(Dictionary<EnhancePath, int>? tracks) => tracks == null ? ""
+        : string.Join("|", tracks.OrderBy(t => t.Key).Select(t => $"{(int)t.Key}:{t.Value}"));
 }

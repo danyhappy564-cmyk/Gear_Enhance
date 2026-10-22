@@ -25,6 +25,9 @@ public static class EnhanceRules
         return percent == 100 || (percent > 0 && draw < percent / 100);
     }
 
+    public static FailureMode Failure(EnhanceQuote quote, double draw) => quote.DestructionPercent > 0
+        && Succeeds(quote.DestructionPercent, draw) ? FailureMode.Destroy : quote.FailureMode;
+
     // Walk with a visited set and inventory-size bound. Malformed parent cycles
     // must never hang the game/server or qualify an equipped item as stash loot.
     public static bool IsBelow(string itemId, string root, IReadOnlyDictionary<string, string> parents)
