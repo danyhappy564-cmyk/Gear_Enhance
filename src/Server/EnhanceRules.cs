@@ -1,0 +1,41 @@
+namespace GearEnhance;
+
+// Pure rules shared by the real SPT adapter and the executable tests.
+public static class EnhanceRules
+{
+    public static int Cost(double basePrice, int level, EnhanceSettings settings)
+    {
+        settings.Validate();
+        if (!double.IsFinite(basePrice) || basePrice <= 0)
+            throw new InvalidOperationException("가격을 찾을 수 없는 아이템은 강화할 수 없습니다.");
+        if (level < 0 || level >= settings.MaxLevel)
+            throw new InvalidOperationException("최대 강화 단계입니다.");
+        var cost = Math.Ceiling(Math.Max(settings.MinimumCost,
+            basePrice * settings.CostPercent / 100 * Math.Pow(settings.CostPerLevel, level)));
+        if (!double.IsFinite(cost) || cost > 100000000)
+            throw new InvalidOperationException("강화 비용이 1억 루블을 초과합니다. F12 설정을 낮춰 주세요.");
+        return checked((int)cost);
+    }
+
+    public static bool Succeeds(double percent, double draw)
+    {
+        if (!double.IsFinite(percent) || percent < 0 || percent > 100
+            || !double.IsFinite(draw) || draw < 0 || draw >= 1)
+            throw new ArgumentOutOfRangeException(nameof(percent));
+        return percent == 100 || (percent > 0 && draw < percent / 100);
+    }
+
+    // Walk with a visited set and inventory-size bound. Malformed parent cycles
+    // must never hang the game/server or qualify an equipped item as stash loot.
+    public static bool IsBelow(string itemId, string root, IReadOnlyDictionary<string, string> parents)
+    {
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+        for (var step = 0; step <= parents.Count; step++)
+        {
+            if (itemId == root) return true;
+            if (!seen.Add(itemId) || !parents.TryGetValue(itemId, out var parent)) return false;
+            itemId = parent;
+        }
+        return false;
+    }
+}
