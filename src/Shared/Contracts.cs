@@ -11,7 +11,7 @@ public enum EnhanceAction { Upgrade, Evolve }
 public static class EnhanceProtocol
 {
     public const int Version = 5;
-    public const string ModVersion = "0.6.1";
+    public const string ModVersion = "0.6.2";
     public static void Validate(int version)
     {
         if (version != Version)
@@ -34,7 +34,7 @@ public sealed class EnhanceSettings
     public double HighRiskDestructionPercent { get; set; } = 25;
     public double DestructionProtectionPercent { get; set; } = 50;
     public double DowngradeProtectionPercent { get; set; } = 35;
-    public double EvolutionSuccessPercent { get; set; } = 50;
+    public double EvolutionSuccessPercent { get; set; } = 30;
     public double EvolutionCostPercent { get; set; } = 300;
     public EffectTuning Effects { get; set; } = new EffectTuning();
 
@@ -88,8 +88,8 @@ public sealed class EnhanceQuote
     public bool HighRisk { get; set; }
     // Conditional chance after a failed attempt. FailureMode is the other outcome.
     public double DestructionPercent { get; set; }
-    public bool DestructionProtectionAvailable => !IsEvolution && SuccessPercent < 100 && (FailureMode == FailureMode.Destroy || DestructionPercent > 0);
-    public bool DowngradeProtectionAvailable => !IsEvolution && SuccessPercent < 100 && CurrentLevel > 0
+    public bool DestructionProtectionAvailable => !IsEvolution && CurrentLevel >= 6 && SuccessPercent < 100 && (FailureMode == FailureMode.Destroy || DestructionPercent > 0);
+    public bool DowngradeProtectionAvailable => !IsEvolution && SuccessPercent < 100 && CurrentLevel >= 6
         && FailureMode == FailureMode.Downgrade && DestructionPercent < 100;
     public bool CanDestroy => SuccessPercent < 100 && (FailureMode == FailureMode.Destroy || DestructionPercent > 0) && !Protection.Destruction;
     public int AttachedItems { get; set; }

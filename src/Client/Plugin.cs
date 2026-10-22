@@ -66,14 +66,14 @@ public sealed partial class Plugin : BaseUnityPlugin
         chance = BindDeveloper("2. 확률", "성공률 (%)", 75f, new ConfigDescription("+0에서 +1로 강화할 때 성공률. 이후 현재 단계 × 단계별 감소량만큼 줄어듭니다.", new AcceptableValueRange<float>(0, 100)));
         chanceLoss = BindDeveloper("2. 확률", "단계별 성공률 감소 (%p)", 5f, new ConfigDescription("기본: +1 시도 75%, +10 시도 30%. 0이면 같은 확률을 유지합니다.", new AcceptableValueRange<float>(0, 100)));
         always = BindDeveloper("2. 확률", "항상 성공 (100%)", false, "켜면 성공률 설정 대신 100%를 적용합니다. 비용은 소모됩니다.");
-        maxLevel = BindDeveloper("2. 확률", "최대 강화 단계", 10, new ConfigDescription("각 항목 최대 단계. 효과 곡선·무기 고위험 시작(절반 올림)·1차 스타 진화 조건도 함께 바뀝니다.", new AcceptableValueRange<int>(1, 100)));
+        maxLevel = BindDeveloper("2. 확률", "최대 강화 단계", 10, new ConfigDescription("각 항목 최대 단계. 효과 곡선·1차 스타 진화 조건도 함께 바뀝니다. 무기 고위험 시작은 선택 항목 현재 +6으로 고정됩니다.", new AcceptableValueRange<int>(1, 100)));
         price = BindDeveloper("3. 비용", "기준 가격", PriceBasis.Handbook, "Handbook = 북밸류, Flea = SPT 플리 기준가. 장비 본체만 계산합니다.");
         percent = BindDeveloper("3. 비용", "기준 가격 대비 비용 (%)", 10f, new ConfigDescription("0이면 최소 비용만 적용됩니다.", new AcceptableValueRange<float>(0, 1000)));
         growth = BindDeveloper("3. 비용", "단계별 비용 배수", 1.25f, new ConfigDescription("기준가 × 비용 비율 × 배수^현재단계. 최대 1억 루블.", new AcceptableValueRange<float>(1, 3)));
         minimum = BindDeveloper("3. 비용", "최소 비용 (루블)", 1000, new ConfigDescription("창고 안의 잠기지 않은 루블을 사용합니다.", new AcceptableValueRange<int>(0, 100000000)));
         failure = BindDeveloper("4. 실패", "실패 처리", FailureMode.KeepItem,
             "일반 구간 실패 처리. KeepItem: 비용만 / ZeroDurability: 현재 내구도 0 / Destroy: 본체·부착물·탄약 삭제 / Downgrade: 선택 항목 -1. 무기 고위험 구간에서는 아래 파괴·하락 규칙이 우선합니다.");
-        highRiskEnabled = BindDeveloper("4. 실패", "무기 고위험 강화", true, "무기 3개 항목이 모두 최대 단계의 절반(올림) 이상이면 실패 시 파괴 또는 선택 항목 -1. 방어구는 일반 실패 처리를 따릅니다.");
+        highRiskEnabled = BindDeveloper("4. 실패", "무기 고위험 강화", true, "선택한 무기 항목의 현재 단계가 +6 이상이면 실패 시 파괴 또는 해당 항목 -1. 다른 항목 단계는 무관합니다. 방어구는 일반 실패 처리를 따릅니다.");
         destructionChance = BindDeveloper("4. 실패", "고위험 실패 중 파괴 확률 (%)", 25f, new ConfigDescription("성공 판정과 별도입니다. 고위험 실패 중 이 확률로 본체·부착물·탄약 파괴, 나머지는 선택 항목 -1. 0은 하락만, 100은 파괴만.", new AcceptableValueRange<float>(0, 100)));
         BindEffect(EnhancePath.Recoil, "5. 무기 효과", 1.5f, 15);
         BindEffect(EnhancePath.Ergonomics, "5. 무기 효과", 1, 10);
@@ -86,9 +86,18 @@ public sealed partial class Plugin : BaseUnityPlugin
         completionBonus = BindDeveloper("8. 완성 보너스", "전 항목 완성 추가 효과 (%)", 20f, new ConfigDescription("모든 항목 최대 달성 후 별도 스타 강화 진화에 성공한 장비에만 추가 배율. 예: 반동15%→18%, ★★ 보라색. 자동 적용이 아닙니다.", new AcceptableValueRange<float>(0, 100)));
         destructionProtectionPrice = BindDeveloper("9. 강화 보호", "파괴 방지 비용 계수 (%)", 50f, new ConfigDescription("추가 비용 = 기본 강화 비용 × 이 값/100 × 시도 단계². 해당 파괴 위험이 있을 때만 부과합니다.", new AcceptableValueRange<float>(0, 1000)));
         downgradeProtectionPrice = BindDeveloper("9. 강화 보호", "단계 하락 방지 비용 계수 (%)", 35f, new ConfigDescription("추가 비용 = 기본 강화 비용 × 이 값/100 × 시도 단계². 하락 위험이 있을 때만 부과합니다. 보호비도 성공/실패와 관계없이 소모됩니다.", new AcceptableValueRange<float>(0, 1000)));
-        evolutionChance = BindDeveloper("10. 스타 강화 진화", "진화 성공률 (%)", 50f, new ConfigDescription("1차 스타 전 항목 최대 달성 후 별도 진화 창에서 사용합니다. 실패 시 파괴, 보호 불가.", new AcceptableValueRange<float>(0, 100)));
-        evolutionPrice = BindDeveloper("10. 스타 강화 진화", "진화 기준가 대비 비용 (%)", 300f, new ConfigDescription("진화 비용 = 본체 기준가 × 이 값/100. 기본3배, 1회 최대1억 루블.", new AcceptableValueRange<float>(0, 10000)));
+        evolutionChance = BindDeveloper("10. 스타 강화 진화", "진화 성공률 (%)", 30f, new ConfigDescription("1차 스타 전 항목 최대 달성 후 별도 진화 창에서 사용합니다. 실패 시 파괴, 보호 불가.", new AcceptableValueRange<float>(0, 100)));
+        evolutionPrice = BindDeveloper("10. 스타 강화 진화", "진화 기준가 대비 비용 (%)", 300f, new ConfigDescription("진화 비용 = 최소 200만 루블과 본체 기준가 × 이 값/100 중 큰 값. 기본3배, 1회 최대1억 루블.", new AcceptableValueRange<float>(0, 10000)));
+        // Migrate the previous shipped default once; preserve custom developer odds.
+        var balanceVersion = Config.Bind("0. 내부", "밸런스 설정 버전", 0,
+            new ConfigDescription("내부 설정 이전용", null, new ConfigurationManagerAttributes { Browsable = false }));
+        if (balanceVersion.Value < 1)
+        {
+            if (evolutionChance.Value == 50f) evolutionChance.Value = 30f;
+            balanceVersion.Value = 1;
+        }
         PrepareFeedback();
+        Logger.LogInfo($"강화 효과음 설정: 사용={soundsEnabled.Value}, 전용={providedSounds.Value}, 음량={soundVolume.Value:0.##}%, 준비={feedbackAudio != null}, 충전={attemptDuration:0.000}초");
         StatPatches.Registry.Configure(Tuning());
         Config.SettingChanged += (_, args) => main.Enqueue(() =>
         {
@@ -295,6 +304,7 @@ public sealed partial class Plugin : BaseUnityPlugin
             try { started = feedbackAudio.StartAttempt(soundVolume.Value / 100, evolutionMode); attemptUsesAudioClock = true; }
             catch (Exception ex) { ProvidedAudioFailed(ex); }
         }
+        if (!soundsEnabled.Value) Logger.LogInfo("강화 충전음 생략: F12 효과음 OFF");
         if (!attemptUsesAudioClock && soundsEnabled.Value) PlayFeedback(evolutionMode ? FeedbackCue.EvolutionAttempt : FeedbackCue.Attempt, false);
         if (!attemptTimeline.Begin(started, evolutionMode ? evolutionAttemptDuration : attemptDuration)) return;
         attemptWallStart = Clock;
@@ -370,7 +380,7 @@ public sealed partial class Plugin : BaseUnityPlugin
             var charge = EmbeddedSounds.Load(0);
             attemptDuration = charge.Duration;
             evolutionAttemptDuration = EmbeddedSounds.Load(5).Duration;
-            if (providedSounds.Value && feedbackAudio == null) feedbackAudio = new EnhancementAudio(gameObject, charge);
+            if (providedSounds.Value && feedbackAudio == null) feedbackAudio = new EnhancementAudio(gameObject, charge, text => Logger.LogInfo(text));
         }
         catch (Exception ex) { ProvidedAudioFailed(ex); }
     }
@@ -383,11 +393,11 @@ public sealed partial class Plugin : BaseUnityPlugin
     }
     private void QueueFeedback(FeedbackCue cue)
     {
-        if (soundsEnabled.Value) main.Enqueue(() => PlayFeedback(cue));
+        main.Enqueue(() => PlayFeedback(cue));
     }
     private void PlayFeedback(FeedbackCue cue, bool allowProvided = true)
     {
-        if (!soundsEnabled.Value) return;
+        if (!soundsEnabled.Value) { Logger.LogInfo("강화 효과음 생략: F12 효과음 OFF"); return; }
         if (allowProvided && providedSounds.Value && feedbackAudio != null && !providedFeedbackUnavailable)
         {
             try { feedbackAudio.Play(cue, soundVolume.Value / 100); return; }
@@ -411,6 +421,8 @@ public sealed partial class Plugin : BaseUnityPlugin
     private void Update()
     {
         for (var n = 0; n < 32 && main.TryDequeue(out var action); n++) action();
+        try { feedbackAudio?.Tick(); }
+        catch (Exception ex) { ProvidedAudioFailed(ex); }
         if (pendingAttempt != null && (attemptTimeline.TryComplete(AttemptClock) || AudioClockStalled() && attemptTimeline.ForceComplete()))
             SubmitAttempt(pendingAttempt, pendingDestructionConfirmation, pendingGeneration);
         if (visible && !busy && !GameBridge.InStash(uiContext)) Close();
