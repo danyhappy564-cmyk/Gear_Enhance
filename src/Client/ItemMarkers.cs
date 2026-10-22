@@ -27,7 +27,21 @@ internal static class ItemMarkers
         harmony.Patch(GameBridge.RequiredMethod(basic, "Kill", 0),
             prefix: new HarmonyMethod(typeof(ItemMarkers), nameof(Kill)));
     }
+    // ItemView.Init calls UpdateInfo before SetActive(true). An exception escaping
+    // these cosmetic postfixes leaves the item in the grid with no visible view.
+    private static bool failed;
+    private static void Report(Exception ex)
+    {
+        if (failed) return;
+        failed = true;
+        Plugin.LogError("강화 표식 오류(장비 표시는 유지): " + ex);
+    }
     private static void AfterUpdate(object __instance)
+    {
+        try { Mark(__instance); }
+        catch (Exception ex) { Report(ex); }
+    }
+    private static void Mark(object __instance)
     {
         // Registered views are refreshed only after a state/receipt change, never in Update.
         if (views.Count < 2048) views.Add(__instance);
@@ -47,10 +61,14 @@ internal static class ItemMarkers
     }
     private static void Name(object __instance, ref string __result)
     {
-        if (GameBridge.Get(__instance, "Examined") is not true) return;
-        var id = GameBridge.Get(GameBridge.Get(__instance, "Item"), "Id")?.ToString();
-        var badge = id == null ? "" : StatPatches.Registry.Badge(id);
-        if (badge.Length > 0) __result += " <color=#D9B66F>" + badge + "</color>";
+        try
+        {
+            if (GameBridge.Get(__instance, "Examined") is not true) return;
+            var id = GameBridge.Get(GameBridge.Get(__instance, "Item"), "Id")?.ToString();
+            var badge = id == null ? "" : StatPatches.Registry.Badge(id);
+            if (badge.Length > 0) __result += " <color=#D9B66F>" + badge + "</color>";
+        }
+        catch (Exception ex) { Report(ex); }
     }
     private static void Kill(object __instance) => views.Remove(__instance);
     internal static void Refresh(string itemId)

@@ -93,6 +93,14 @@ public sealed class GameApiTests
         Assert.Equal("UnityEngine.Color", basic.Fields.Single(f => f.Name == "BackgroundColor").FieldType.FullName);
         Assert.Single(basic.Methods, m => m.Name == "Kill" && m.Parameters.Count == 0);
         Assert.Single(basic.Methods, m => m.Name == "UpdateColor" && m.Parameters.Count == 0);
+        // Loading-state checks read BindableState<bool>.Value, whose override has no
+        // getter; GameBridge.Get must fall through to BaseBindable<T> (0.3.1 fix).
+        Assert.StartsWith("Diz.Binding.BindableState`1",
+            basic.Properties.Single(p => p.Name == "IsBeingLoadedAmmo").PropertyType.FullName);
+        var state = game.MainModule.GetType("Diz.Binding.BindableState`1");
+        Assert.Null(state.Properties.Single(p => p.Name == "Value").GetMethod);
+        Assert.NotNull(state.BaseType.Resolve().Properties.Single(p => p.Name == "Value").GetMethod);
+        AssertCalls(game.MainModule.GetType("EFT.UI.DragAndDrop.ItemView").Methods.Single(m => m.Name == "Init" && m.Parameters.Count == 0), "UpdateInfo");
     }
 
     [GameAssemblyFact]

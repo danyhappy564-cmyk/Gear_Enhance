@@ -32,8 +32,13 @@ internal static class GameBridge
                 | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly;
             // Standard reflection also works in the .NET test host; Harmony's
             // runtime helpers are only needed when installing patches in Mono.
+            // A setter-only override (Diz BindableState<T>.Value) keeps its getter
+            // on the base type, so skip unreadable declarations and keep walking.
             for (var current = type; current != null && member == null; current = current.BaseType)
-                member = (MemberInfo)current.GetProperty(name, flags) ?? current.GetField(name, flags);
+            {
+                var declared = current.GetProperty(name, flags);
+                member = declared?.GetGetMethod(true) != null ? declared : current.GetField(name, flags);
+            }
             if (member != null) members.TryAdd((type, name), member);
         }
         var target = instance is Type ? null : instance;

@@ -183,6 +183,20 @@ public sealed class HooksTests : IDisposable
     public static class PropertyRaidStatus { public static bool InRaid => true; }
 
     [Fact]
+    public void Setter_only_override_reads_the_inherited_getter_like_diz_bindable_state()
+    {
+        // Diz.Binding.BindableState<T> overrides only the Value setter. Reading the
+        // derived declaration threw and stopped ItemView.Init before SetActive(true).
+        var state = new TestBindableState<bool> { Value = true };
+        Assert.True((bool)GameBridge.Get(state, "Value"));
+        state.Value = false;
+        Assert.False((bool)GameBridge.Get(state, "Value"));
+    }
+
+    public class TestBaseBindable<T> { protected T Current = default!; public virtual T Value { get => Current; set => Current = value; } }
+    public class TestBindableState<T> : TestBaseBindable<T> { public override T Value { set => Current = value; } }
+
+    [Fact]
     public async Task Native_callback_binding_and_flush_result_are_compatible_with_typed_delegate()
     {
         var session = new TestSession();

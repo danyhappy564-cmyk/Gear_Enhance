@@ -82,6 +82,8 @@ public sealed partial class Plugin : BaseUnityPlugin
         }
     }
 
+    internal static void LogError(string text) => Instance?.Logger.LogError(text);
+
     private void BindEffect(EnhancePath path, string section, float step, float cap)
     {
         var name = EnhanceEffects.StatName(path);

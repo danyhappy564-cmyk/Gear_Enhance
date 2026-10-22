@@ -10,7 +10,7 @@ public enum EnhancePath { Recoil, Ergonomics, Precision, ArmorDurability, Mobili
 public static class EnhanceProtocol
 {
     public const int Version = 2;
-    public const string ModVersion = "0.3.0";
+    public const string ModVersion = "0.3.1";
     public static void Validate(int version)
     {
         if (version != Version)
