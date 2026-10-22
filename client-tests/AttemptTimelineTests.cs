@@ -26,6 +26,20 @@ public sealed class AttemptTimelineTests
     }
 
     [Fact]
+    public void A_stalled_audio_clock_can_be_completed_once_by_the_wall_clock_fallback()
+    {
+        var timeline = new AttemptTimeline();
+        Assert.False(timeline.ForceComplete());
+        timeline.Begin(10, 4.4);
+        Assert.False(timeline.TryComplete(10.5));
+        Assert.True(timeline.ForceComplete());
+        Assert.False(timeline.ForceComplete());
+        Assert.False(timeline.TryComplete(100));
+        timeline.Reset();
+        Assert.False(timeline.ForceComplete());
+    }
+
+    [Fact]
     public void Closing_or_cancelling_the_window_discards_an_unsubmitted_attempt()
     {
         var timeline = new AttemptTimeline();

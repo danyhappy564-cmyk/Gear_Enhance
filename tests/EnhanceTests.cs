@@ -503,6 +503,30 @@ public sealed class EnhanceTests
         Assert.Equal(0, zero.SuccessPercent);
     }
 
+    [Fact]
+    public void Per_level_loss_reaching_zero_is_refused_but_an_explicit_zero_base_is_kept()
+    {
+        var rig = new Rig();
+        rig.Seed((EnhancePath.Recoil, 15));
+        var money = rig.Money;
+        Assert.Throws<InvalidOperationException>(() => rig.Service.Quote(Session, Target.ToString(),
+            new() { MaxLevel = 20 }, EnhancePath.Recoil));
+        Assert.Equal(money, rig.Money);
+        Assert.Equal(5, rig.Service.Quote(Session, Target.ToString(), new() { MaxLevel = 20, SuccessPercent = 80 }, EnhancePath.Recoil).SuccessPercent);
+        Assert.Equal(100, rig.Service.Quote(Session, Target.ToString(), new() { MaxLevel = 20, AlwaysSucceed = true }, EnhancePath.Recoil).SuccessPercent);
+        Assert.Equal(0, rig.Service.Quote(Session, Target.ToString(), new() { MaxLevel = 20, SuccessPercent = 0 }, EnhancePath.Recoil).SuccessPercent);
+    }
+
+    [Fact]
+    public void Upgrades_past_the_maximum_are_refused_while_evolution_stays_available()
+    {
+        var rig = new Rig();
+        rig.Seed((EnhancePath.Recoil, 10), (EnhancePath.Ergonomics, 10), (EnhancePath.Precision, 10));
+        Assert.Throws<InvalidOperationException>(() => rig.Service.Quote(Session, Target.ToString(), new(), EnhancePath.Recoil));
+        Assert.Equal(11, rig.Service.Quote(Session, Target.ToString(), new() { MaxLevel = 11 }, EnhancePath.Recoil).NextLevel);
+        Assert.Equal(50, rig.Service.Quote(Session, Target.ToString(), new(), EnhancePath.Recoil, action: EnhanceAction.Evolve).SuccessPercent);
+    }
+
     [Theory]
     [InlineData(10, 5, 5, 4, false)]
     [InlineData(10, 5, 5, 5, true)]

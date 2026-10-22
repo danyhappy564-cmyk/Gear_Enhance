@@ -71,6 +71,9 @@ public sealed class EnhanceService(SptEnhanceBackend backend, JsonUtil serialize
             if (evolving && (legacy || !EnhanceProgression.AllAtLeast(tracks, weapon, settings.MaxLevel)))
                 throw new InvalidOperationException("모든 항목을 최대 단계까지 강화한 뒤 스타 강화 진화를 시도해 주세요.");
             if (evolving && evolved) throw new InvalidOperationException("이미 스타 강화 진화를 완료한 장비입니다.");
+            // The client hides maxed tracks; the server enforces it for any caller.
+            if (!legacy && !evolving && level >= settings.MaxLevel)
+                throw new InvalidOperationException("이 항목은 최대 단계입니다. 다른 항목을 선택해 주세요.");
             var nextLevel = legacy || evolving ? level : level + 1;
             var (price, source) = backend.Price(target.Template, settings.PriceBasis);
             var tree = Tree(profile, itemId);
@@ -99,6 +102,10 @@ public sealed class EnhanceService(SptEnhanceBackend backend, JsonUtil serialize
                 Complete = complete, CompletesOnSuccess = completes,
                 NextGainMultiplier = EnhanceProgression.GainMultiplier(nextLevel, settings.MaxLevel), IsEvolution = evolving
             };
+            // Per-level loss must not silently turn a positive base chance into a
+            // paid attempt that can never succeed. An explicit 0% base is a choice.
+            if (!legacy && !evolving && settings.SuccessPercent > 0 && quote.SuccessPercent <= 0)
+                throw new InvalidOperationException("단계별 성공률 감소로 이 단계의 성공률이 0%가 됐습니다. F12 개발자 옵션의 단계별 감소 또는 최대 단계를 낮춰 주세요.");
             quote.BaseCost = quote.Cost;
             // Inapplicable protections are removed without charging (100% success,
             // legacy restore, safe failure mode, or an outcome with zero chance).

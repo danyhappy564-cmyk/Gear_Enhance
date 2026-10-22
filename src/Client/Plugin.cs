@@ -46,6 +46,10 @@ public sealed partial class Plugin : BaseUnityPlugin
     private int pendingGeneration;
     private static double Clock => System.Diagnostics.Stopwatch.GetTimestamp() / (double)System.Diagnostics.Stopwatch.Frequency;
     private double AttemptClock => attemptUsesAudioClock ? AudioSettings.dspTime : Clock;
+    // dspTime stops while the audio device is paused or lost. Submit after the
+    // clip length plus this grace on the monotonic clock so busy is never stuck.
+    private const double AudioStallGrace = 3;
+    private double attemptWallStart;
     private Rect window;
     private GameObject blocker;
     private GUISkin windowSkin;
@@ -293,6 +297,7 @@ public sealed partial class Plugin : BaseUnityPlugin
         }
         if (!attemptUsesAudioClock && soundsEnabled.Value) PlayFeedback(evolutionMode ? FeedbackCue.EvolutionAttempt : FeedbackCue.Attempt, false);
         if (!attemptTimeline.Begin(started, evolutionMode ? evolutionAttemptDuration : attemptDuration)) return;
+        attemptWallStart = Clock;
         pendingAttempt = quote; pendingDestructionConfirmation = destructionConfirmed; pendingGeneration = generation;
         busy = true; quote = null; message = "강화 진행 중…";
     }
@@ -406,9 +411,17 @@ public sealed partial class Plugin : BaseUnityPlugin
     private void Update()
     {
         for (var n = 0; n < 32 && main.TryDequeue(out var action); n++) action();
-        if (pendingAttempt != null && attemptTimeline.TryComplete(AttemptClock))
+        if (pendingAttempt != null && (attemptTimeline.TryComplete(AttemptClock) || AudioClockStalled() && attemptTimeline.ForceComplete()))
             SubmitAttempt(pendingAttempt, pendingDestructionConfirmation, pendingGeneration);
         if (visible && !busy && !GameBridge.InStash(uiContext)) Close();
+    }
+    private bool AudioClockStalled()
+    {
+        if (!attemptUsesAudioClock || Clock - attemptWallStart <= attemptTimeline.Duration + AudioStallGrace) return false;
+        attemptUsesAudioClock = false;
+        feedbackAudio?.Stop();
+        Logger.LogWarning("게임 오디오 시계가 멈춰 강화 게이지를 실제 시간 기준으로 마쳤습니다.");
+        return true;
     }
     private void CreateBlocker()
     {

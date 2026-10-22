@@ -27,5 +27,12 @@ internal sealed class AttemptTimeline
         submitted = true;
         return true;
     }
+    // Wall-clock fallback when the scheduled audio clock stops advancing.
+    internal bool ForceComplete()
+    {
+        if (!Active || submitted) return false;
+        submitted = true;
+        return true;
+    }
     internal void Reset() { Active = false; submitted = false; }
 }
