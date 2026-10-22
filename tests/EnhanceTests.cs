@@ -25,11 +25,13 @@ public sealed class EnhanceTests
     {
         public SptProfile Saved { get; set; }
         public bool IsEligible { get; set; } = true;
+        public bool WeaponCategory { get; set; } = true;
         // These are SPT's real removal methods, not a copied payment/deletion algorithm.
         private readonly InventoryHelper native = new(null!, null!, null!, null!, null!, null!, null!, null!);
         public MemoryBackend(SptProfile saved) : base(null!, null!, null!, null!, null!) => Saved = saved;
         public override SptProfile Profile(MongoId session) => session == Session ? Saved : null!;
         public override bool Eligible(MongoId template) => IsEligible;
+        public override bool IsWeapon(MongoId template) => WeaponCategory;
         public override (double, string) Price(MongoId template, PriceBasis basis) => (100000, "북밸류");
         public override void RemoveMoney(PmcData profile, MongoId id, int count, MongoId session,
             ItemEventRouterResponse output) => native.RemoveItemByCount(profile, id, count, session, output);
@@ -41,7 +43,7 @@ public sealed class EnhanceTests
     {
         public readonly PmcData Pmc = new()
         {
-            Inventory = new() { Stash = Stash, Items = [] }, InsuredItems = []
+            Id = Session, Inventory = new() { Stash = Stash, Items = [] }, InsuredItems = []
         };
         public readonly MemoryBackend Backend;
         public readonly EnhanceService Service;
@@ -90,7 +92,7 @@ public sealed class EnhanceTests
         await router.HandleItemEvent("GearEnhance", rig.Pmc, data, Session, rig.Output);
         Assert.Equal(90000, rig.Money);
         Assert.Equal(1, rig.Service.Receipt(Session, quote.QuoteId)!.Level);
-        Assert.Null(rig.Item.Upd!.Buff); // The agreed first phase applies no stat buff.
+        Assert.Null(rig.Item.Upd!.Buff); // Enhancement never overwrites native repair buffs.
         Assert.Contains(rig.Output.ProfileChanges![Session].Items!.ChangedItems!, i => i.Template == RubleTpl);
         Assert.Throws<InvalidOperationException>(() => rig.Execute(quote));
         Assert.Equal(90000, rig.Money);
@@ -284,5 +286,91 @@ public sealed class EnhanceTests
         var cycle = new Dictionary<string, string> { ["a"] = "b", ["b"] = "a", ["c"] = "c" };
         Assert.False(EnhanceRules.IsBelow("a", "stash", cycle));
         Assert.False(EnhanceRules.IsBelow("c", "stash", cycle));
+    }
+
+    [Fact]
+    public void Specialization_change_keeps_level_charges_a_separate_cost_and_always_succeeds()
+    {
+        var rig = new Rig();
+        rig.Execute(rig.Quote());
+        var quote = rig.Service.Quote(Session, Target.ToString(),
+            new() { SuccessPercent = 0, FailureMode = FailureMode.Destroy }, EnhancePath.Ergonomics);
+        Assert.True(quote.ChangePath);
+        Assert.Equal(1, quote.NextLevel);
+        Assert.Equal(100, quote.SuccessPercent);
+        Assert.Equal(FailureMode.KeepItem, quote.FailureMode);
+        Assert.Equal(0, quote.CurrentEffect);
+        Assert.Equal(1, quote.NextEffect);
+        rig.Execute(quote);
+        Assert.Equal(77500, rig.Money);
+        Assert.Equal(EnhancePath.Ergonomics, rig.Service.Snapshot(Session).Items.Single().Path);
+        Assert.Equal(1, rig.Service.Snapshot(Session).Items.Single().Level);
+    }
+
+    [Fact]
+    public void Existing_prototype_levels_get_a_free_choice_even_at_maximum_level()
+    {
+        var rig = new Rig();
+        rig.Backend.Saved.ExtensionData = new() { ["rfGearEnhance"] = new EnhanceState
+            { Levels = new() { [Target.ToString()] = 10 } } };
+        var quote = rig.Service.Quote(Session, Target.ToString(), new(), EnhancePath.Precision);
+        Assert.True(quote.BindLegacy);
+        Assert.Equal(0, quote.Cost);
+        Assert.Equal(10, quote.NextLevel);
+        rig.Execute(quote);
+        Assert.Equal(100000, rig.Money);
+        Assert.Equal(EnhancePath.Precision, rig.Service.Snapshot(Session).Items.Single().Path);
+        Assert.Throws<InvalidOperationException>(() => rig.Service.Quote(Session, Target.ToString(), new(), EnhancePath.Precision));
+        Assert.True(rig.Service.Quote(Session, Target.ToString(), new(), EnhancePath.Recoil).ChangePath);
+    }
+
+    [Fact]
+    public void Weapon_and_armor_paths_cannot_be_mixed()
+    {
+        var rig = new Rig();
+        Assert.Throws<ArgumentException>(() => rig.Service.Quote(Session, Target.ToString(), new(), EnhancePath.Mobility));
+        rig.Backend.WeaponCategory = false;
+        Assert.Throws<ArgumentException>(() => rig.Service.Quote(Session, Target.ToString(), new(), EnhancePath.Recoil));
+        var quote = rig.Service.Quote(Session, Target.ToString(), new(), EnhancePath.ArmorDurability);
+        Assert.Equal(3, quote.NextEffect);
+        rig.Execute(quote);
+        Assert.Equal(EnhancePath.ArmorDurability, rig.Service.Snapshot(Session).Items.Single().Path);
+    }
+
+    [Fact]
+    public void Snapshot_and_specialization_survive_the_real_spt_profile_serializer()
+    {
+        var rig = new Rig();
+        rig.Execute(rig.Quote());
+        rig.Backend.Saved = Json.Deserialize<SptProfile>(Json.Serialize(rig.Backend.Saved))!;
+        var restored = new EnhanceService(rig.Backend, Json).Snapshot(Session);
+        Assert.Equal(Session.ToString(), restored.ProfileId);
+        Assert.Equal(EnhancePath.Recoil, restored.Items.Single().Path);
+        Assert.Equal(1, restored.Items.Single().Level);
+    }
+
+    [Fact]
+    public void Failed_upgrade_preserves_specialization_and_recorded_effect_level()
+    {
+        var rig = new Rig();
+        rig.Execute(rig.Quote());
+        rig.Execute(rig.Quote(0));
+        var entry = rig.Service.Snapshot(Session).Items.Single();
+        Assert.Equal(EnhancePath.Recoil, entry.Path);
+        Assert.Equal(1, entry.Level);
+    }
+
+    [Fact]
+    public async Task State_endpoint_returns_only_owned_enhanced_items_using_client_json()
+    {
+        var rig = new Rig();
+        rig.Execute(rig.Quote());
+        var router = new EnhanceQueries(Json, rig.Service);
+        var result = await router.HandleStaticAsync("/rf/gear-enhance/state", "{}", Session, "");
+        var client = Newtonsoft.Json.JsonConvert.DeserializeObject<ApiReply<EnhanceSnapshot>>((string)result)!;
+        Assert.True(client.Ok, client.Error);
+        Assert.Equal(EnhancePath.Recoil, client.Data!.Items.Single().Path);
+        rig.Pmc.Inventory!.Items!.Remove(rig.Item);
+        Assert.Empty(rig.Service.Snapshot(Session).Items);
     }
 }

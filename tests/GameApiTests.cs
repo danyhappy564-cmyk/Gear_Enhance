@@ -61,4 +61,41 @@ public sealed class GameApiTests
         Assert.True(template.Properties.Any(p => p.Name == "_id") || template.Fields.Any(f => f.Name == "_id"));
         Assert.True(template.Properties.Any(p => p.Name == "Parent") || template.Fields.Any(f => f.Name == "Parent"));
     }
+
+    [GameAssemblyFact]
+    public void Enhancement_getters_feed_real_recoil_accuracy_and_ergonomics_calculations()
+    {
+        using var game = Game();
+        var weapon = game.MainModule.GetType("EFT.InventoryLogic.Weapon");
+        foreach (var name in new[] { "RecoilDelta", "ErgonomicsTotal", "TotalShotgunDispersion" })
+            Assert.Equal("System.Single", weapon.Properties.Single(p => p.Name == name).GetMethod.ReturnType.FullName);
+        var firearm = game.MainModule.GetType("EFT.Player").NestedTypes.Single(t => t.Name == "FirearmController");
+        AssertCalls(firearm.Methods.Single(m => m.Name == "TotalErgonomicsFunc"), "get_ErgonomicsTotal");
+        AssertCalls(firearm.Methods.Single(m => m.Name == "WeaponModified"), "GetTotalCenterOfImpact");
+        AssertCalls(firearm.Methods.Single(m => m.Name == "WeaponModified"), "get_TotalShotgunDispersion");
+        AssertCalls(game.MainModule.GetType("ShotEffector").Methods.Single(m => m.Name == "RecoilDelta"), "get_RecoilDelta");
+    }
+
+    [GameAssemblyFact]
+    public void Armor_hooks_cover_actual_durability_subtraction_and_equipment_penalties()
+    {
+        using var game = Game();
+        var armor = game.MainModule.GetType("EFT.InventoryLogic.ArmorComponent");
+        var damage = armor.Methods.Single(m => m.Name == "ApplyDurabilityDamage");
+        Assert.Equal(2, damage.Parameters.Count);
+        Assert.Equal("System.Single", damage.Parameters[0].ParameterType.FullName);
+        AssertCalls(armor.Methods.Single(m => m.Name == "ApplyDamage"), "ApplyDurabilityDamage");
+        AssertCalls(armor.Methods.Single(m => m.Name == "ApplyExplosionDurabilityDamage"), "ApplyDurabilityDamage");
+        var equipment = game.MainModule.GetType("EFT.Player").Methods.Single(m => m.Name == "RecalculateEquipmentParams");
+        foreach (var getter in new[] { "get_SpeedPenalty", "get_MousePenalty", "get_WeaponErgonomicPenalty" })
+            AssertCalls(equipment, getter);
+        var profiles = game.MainModule.GetType("EFT.EftClientBackendSession").Methods.Single(m => m.Name == "GetProfiles");
+        Assert.Equal("System.Threading.Tasks.Task", profiles.ReturnType.FullName);
+        var icon = game.MainModule.GetType("EFT.UI.DragAndDrop.ItemViewFactory").Methods.Single(m => m.Name == "LoadItemIcon");
+        Assert.Equal(3, icon.Parameters.Count);
+        Assert.Equal("ItemIcon", icon.ReturnType.FullName);
+    }
+
+    private static void AssertCalls(MethodDefinition caller, string target) =>
+        Assert.Contains(caller.Body.Instructions, i => i.Operand is MethodReference method && method.Name == target);
 }

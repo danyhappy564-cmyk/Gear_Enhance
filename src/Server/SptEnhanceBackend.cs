@@ -19,6 +19,7 @@ public class SptEnhanceBackend(SaveServer saves, ItemHelper items, InventoryHelp
     HandbookHelper handbook, RagfairPriceService flea)
 {
     public virtual SptProfile Profile(MongoId session) => saves.GetProfile(session);
+    public virtual bool IsWeapon(MongoId template) => items.IsOfBaseclass(template, BaseClasses.WEAPON);
 
     public virtual bool Eligible(MongoId template) => new[] { BaseClasses.WEAPON, BaseClasses.ARMOR,
         BaseClasses.VEST, BaseClasses.HEADWEAR, BaseClasses.ARMORED_EQUIPMENT,

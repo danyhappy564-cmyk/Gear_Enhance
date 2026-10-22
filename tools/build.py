@@ -29,15 +29,17 @@ def main():
     run("dotnet", "restore", "src/Server/GearEnhance.Server.csproj", "--locked-mode")
     run("dotnet", "restore", "src/Client/GearEnhance.Client.csproj", "--locked-mode", f"-p:SptRoot={game}")
     run("dotnet", "restore", "tests/GearEnhance.Tests.csproj", "--locked-mode")
+    run("dotnet", "restore", "client-tests/GearEnhance.ClientTests.csproj", "--locked-mode", f"-p:SptRoot={game}")
     run("dotnet", "build", "src/Server/GearEnhance.Server.csproj", "-c", "Release", "--no-restore")
     run("dotnet", "build", "src/Client/GearEnhance.Client.csproj", "-c", "Release", "--no-restore", f"-p:SptRoot={game}")
     run("dotnet", "test", "tests/GearEnhance.Tests.csproj", "-c", "Release", "--no-restore")
+    run("dotnet", "test", "client-tests/GearEnhance.ClientTests.csproj", "-c", "Release", "--no-restore", f"-p:SptRoot={game}")
     if args.validate_only:
         print("컴파일·검사 완료. 인게임 검증 및 배포 빌드는 수행하지 않았습니다.")
         return
     build = ROOT / "Build"
     build.mkdir(exist_ok=True)
-    output = build / "GearEnhance-0.1.0.zip"
+    output = build / "GearEnhance-0.2.0.zip"
     # Build to a temporary archive so a failed build never leaves a partial zip.
     with tempfile.TemporaryDirectory(prefix="gear-package-", dir=build) as work:
         archive = Path(work) / output.name

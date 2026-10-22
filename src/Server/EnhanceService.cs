@@ -19,6 +19,7 @@ public sealed class EnhanceState
 {
     public Dictionary<string, int> Levels { get; set; } = new();
     public List<EnhanceReceipt> Receipts { get; set; } = new();
+    public Dictionary<string, EnhancePath> Paths { get; set; } = new();
 }
 
 [Injectable]
@@ -31,7 +32,7 @@ public sealed class EnhanceService(SptEnhanceBackend backend, JsonUtil serialize
 
     private sealed record PendingQuote(EnhanceQuote View, string Fingerprint);
 
-    public EnhanceQuote Quote(MongoId session, string itemId, EnhanceSettings settings)
+    public EnhanceQuote Quote(MongoId session, string itemId, EnhanceSettings settings, EnhancePath? path = null)
     {
         lock (sync)
         {
@@ -43,20 +44,37 @@ public sealed class EnhanceService(SptEnhanceBackend backend, JsonUtil serialize
             // Discard metadata only for items no longer owned by this profile.
             var owned = InventoryItems(profile).Select(i => i.Id.ToString()).ToHashSet();
             foreach (var key in state.Levels.Keys.Where(k => !owned.Contains(k)).ToArray())
+            {
                 state.Levels.Remove(key);
+                state.Paths.Remove(key);
+            }
             var level = state.Levels.GetValueOrDefault(itemId);
+            if (level < 0 || level > 100) throw new InvalidOperationException("강화 단계 기록이 올바르지 않습니다.");
+            var weapon = backend.IsWeapon(target.Template);
+            var hasPath = state.Paths.TryGetValue(itemId, out var previous);
+            var selected = path ?? (hasPath ? previous : weapon ? EnhancePath.Recoil : EnhancePath.ArmorDurability);
+            if (!EnhanceEffects.Allowed(selected, weapon))
+                throw new ArgumentException("이 장비에 사용할 수 없는 강화 방향입니다.");
+            var legacy = level > 0 && !hasPath;
+            var changing = level > 0 && hasPath && selected != previous;
+            var nextLevel = legacy || changing ? level : level + 1;
             var (price, source) = backend.Price(target.Template, settings.PriceBasis);
             var tree = Tree(profile, itemId);
             var quote = new EnhanceQuote
             {
                 QuoteId = Guid.NewGuid().ToString("N"), ItemId = itemId,
-                CurrentLevel = level, NextLevel = level + 1,
-                Cost = EnhanceRules.Cost(price, level, settings),
+                CurrentLevel = level, NextLevel = nextLevel,
+                Cost = legacy ? 0 : EnhanceRules.Cost(price, level, settings, changing),
                 AvailableRoubles = Money(profile).Sum(i => Count(i)),
-                SuccessPercent = settings.AlwaysSucceed ? 100 : settings.SuccessPercent,
-                PriceSource = source, FailureMode = settings.FailureMode,
+                SuccessPercent = legacy || changing || settings.AlwaysSucceed ? 100 : settings.SuccessPercent,
+                PriceSource = source, FailureMode = legacy || changing ? FailureMode.KeepItem : settings.FailureMode,
                 AttachedItems = tree.Count - 1,
-                ExpiresUnixSeconds = DateTimeOffset.UtcNow.AddSeconds(60).ToUnixTimeSeconds()
+                ExpiresUnixSeconds = DateTimeOffset.UtcNow.AddSeconds(60).ToUnixTimeSeconds(),
+                Path = selected, PreviousPath = hasPath ? previous : null, IsWeapon = weapon,
+                BindLegacy = legacy, ChangePath = changing,
+                CurrentEffect = hasPath && previous == selected ? EnhanceEffects.Amount(selected, level, settings.Effects) : 0,
+                NextEffect = EnhanceEffects.Amount(selected, nextLevel, settings.Effects),
+                EffectCap = EnhanceEffects.Cap(selected, settings.Effects)
             };
             // One current quote per profile; opening another item invalidates the old one.
             pending[session] = new(quote, Fingerprint(tree));
@@ -67,6 +85,24 @@ public sealed class EnhanceService(SptEnhanceBackend backend, JsonUtil serialize
     public EnhanceReceipt? Receipt(MongoId session, string quoteId)
     {
         lock (sync) return State(session).Receipts.LastOrDefault(r => r.QuoteId == quoteId);
+    }
+
+    public EnhanceSnapshot Snapshot(MongoId session)
+    {
+        lock (sync)
+        {
+            var profile = GetPmc(session);
+            var state = State(session);
+            var owned = InventoryItems(profile).ToDictionary(i => i.Id.ToString());
+            return new EnhanceSnapshot
+            {
+                ProfileId = profile.Id.ToString() ?? "",
+                Items = state.Paths.Where(p => owned.TryGetValue(p.Key, out var item)
+                    && EnhanceEffects.Allowed(p.Value, backend.IsWeapon(item.Template)))
+                    .Select(p => new EnhanceRecord { ItemId = p.Key, Path = p.Value,
+                        Level = Math.Clamp(state.Levels.GetValueOrDefault(p.Key), 0, 100) }).ToArray()
+            };
+        }
     }
 
     public void Execute(MongoId session, PmcData profile, string quoteId, bool confirmDestruction,
@@ -86,7 +122,9 @@ public sealed class EnhanceService(SptEnhanceBackend backend, JsonUtil serialize
             var changedItems = output.ProfileChanges?[session]?.Items?.ChangedItems
                 ?? throw new InvalidOperationException("SPT 아이템 응답을 준비할 수 없습니다.");
             var tree = Tree(profile, quote.ItemId);
+            EnhancePath? currentPath = state.Paths.TryGetValue(quote.ItemId, out var savedPath) ? savedPath : null;
             if (state.Levels.GetValueOrDefault(quote.ItemId) != quote.CurrentLevel
+                || currentPath != quote.PreviousPath
                 || Fingerprint(tree) != saved.Fingerprint)
                 throw new InvalidOperationException("장비 상태가 바뀌었습니다. 견적을 다시 불러와 주세요.");
             if (quote.FailureMode == FailureMode.Destroy && quote.SuccessPercent < 100 && !confirmDestruction)
@@ -108,7 +146,11 @@ public sealed class EnhanceService(SptEnhanceBackend backend, JsonUtil serialize
                 backend.RemoveMoney(profile, money.Id, take, session, output);
                 remaining -= take;
             }
-            if (success) state.Levels[quote.ItemId] = quote.NextLevel;
+            if (success)
+            {
+                state.Levels[quote.ItemId] = quote.NextLevel;
+                state.Paths[quote.ItemId] = quote.Path;
+            }
             else if (quote.FailureMode == FailureMode.ZeroDurability)
             {
                 foreach (var part in tree.Where(i => i.Upd?.Repairable != null))
@@ -120,13 +162,17 @@ public sealed class EnhanceService(SptEnhanceBackend backend, JsonUtil serialize
             else if (quote.FailureMode == FailureMode.Destroy)
             {
                 backend.Destroy(profile, target.Id, session, output);
-                foreach (var part in tree) state.Levels.Remove(part.Id.ToString());
+                foreach (var part in tree)
+                {
+                    state.Levels.Remove(part.Id.ToString());
+                    state.Paths.Remove(part.Id.ToString());
+                }
             }
             state.Receipts.Add(new EnhanceReceipt
             {
                 QuoteId = quoteId, ItemId = quote.ItemId, Success = success,
                 Level = success ? quote.NextLevel : quote.CurrentLevel, Paid = quote.Cost,
-                FailureMode = quote.FailureMode,
+                FailureMode = quote.FailureMode, Path = quote.Path,
                 CompletedUnixSeconds = DateTimeOffset.UtcNow.ToUnixTimeSeconds()
             });
             if (state.Receipts.Count > 100) state.Receipts.RemoveRange(0, state.Receipts.Count - 100);
@@ -146,7 +192,7 @@ public sealed class EnhanceService(SptEnhanceBackend backend, JsonUtil serialize
         if (raw is JsonElement json)
             profile.ExtensionData[StateKey] = raw = serializer.Deserialize<EnhanceState>(json.GetRawText())
                 ?? throw new InvalidOperationException("강화 기록을 읽을 수 없습니다.");
-        if (raw is not EnhanceState state || state.Levels == null || state.Receipts == null)
+        if (raw is not EnhanceState state || state.Levels == null || state.Receipts == null || state.Paths == null)
             throw new InvalidOperationException("강화 기록 형식이 다릅니다.");
         return state;
     }

@@ -3,6 +3,7 @@ using SPTarkov.DI.Annotations;
 using SPTarkov.Server.Core.DI;
 using SPTarkov.Server.Core.DI.Routing;
 using SPTarkov.Server.Core.Models.Eft.Common.Request;
+using SPTarkov.Server.Core.Models.Eft.Common;
 using SPTarkov.Server.Core.Models.Utils;
 using SPTarkov.Server.Core.Utils;
 
@@ -12,6 +13,7 @@ public sealed class QuoteRequest : IRequestData
 {
     public string ItemId { get; set; } = "";
     public EnhanceSettings Settings { get; set; } = new();
+    public EnhancePath? Path { get; set; }
 }
 
 public sealed class ReceiptRequest : IRequestData
@@ -31,7 +33,9 @@ public sealed record EnhanceOperation : BaseInteractionRequestData
 public sealed class EnhanceQueries(JsonUtil json, EnhanceService service) : StaticRouter(json,
 [
     new RouteAction<QuoteRequest>("/rf/gear-enhance/quote", (_, body, session, _, _) =>
-        ValueTask.FromResult(Reply(() => service.Quote(session, body.ItemId, body.Settings), json))),
+        ValueTask.FromResult(Reply(() => service.Quote(session, body.ItemId, body.Settings, body.Path), json))),
+    new RouteAction<EmptyRequestData>("/rf/gear-enhance/state", (_, _, session, _, _) =>
+        ValueTask.FromResult(Reply(() => service.Snapshot(session), json))),
     new RouteAction<ReceiptRequest>("/rf/gear-enhance/receipt", (_, body, session, _, _) =>
         ValueTask.FromResult(Reply(() => service.Receipt(session, body.QuoteId)
             ?? throw new InvalidOperationException("완료 기록이 없습니다. 연결 상태와 서버 로그를 확인해 주세요."), json)))

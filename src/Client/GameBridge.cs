@@ -3,6 +3,7 @@ using System.Collections;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
+using System.Collections.Concurrent;
 using HarmonyLib;
 using Newtonsoft.Json;
 
@@ -12,12 +13,23 @@ namespace GearEnhance;
 // or copies of another mod's interaction implementation are shipped.
 internal static class GameBridge
 {
+    private static readonly ConcurrentDictionary<(Type, string), MemberInfo> members = new ConcurrentDictionary<(Type, string), MemberInfo>();
     internal static object Get(object instance, string name)
     {
         if (instance == null) return null;
         var type = instance.GetType();
-        return AccessTools.Property(type, name)?.GetValue(instance)
-            ?? AccessTools.Field(type, name)?.GetValue(instance);
+        if (!members.TryGetValue((type, name), out var member))
+        {
+            const BindingFlags flags = BindingFlags.Public | BindingFlags.NonPublic
+                | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly;
+            // Standard reflection also works in the .NET test host; Harmony's
+            // runtime helpers are only needed when installing patches in Mono.
+            for (var current = type; current != null && member == null; current = current.BaseType)
+                member = (MemberInfo)current.GetProperty(name, flags) ?? current.GetField(name, flags);
+            if (member != null) members.TryAdd((type, name), member);
+        }
+        return member is PropertyInfo property ? property.GetValue(instance)
+            : member is FieldInfo field ? field.GetValue(instance) : null;
     }
 
     internal static MethodInfo RequiredMethod(Type type, string name, int count) =>
@@ -48,6 +60,31 @@ internal static class GameBridge
             template = Get(template, "Parent");
         }
         return false;
+    }
+
+    internal static bool IsWeapon(object item) => AccessTools.TypeByName("EFT.InventoryLogic.Weapon")?.IsInstanceOfType(item) == true;
+    internal static string ProfileId(object session) => Get(Get(session, "Profile"), "Id")?.ToString() ?? "";
+
+    internal static object ParentItem(object item)
+    {
+        var address = Get(item, "CurrentAddress");
+        return Get(Get(address, "Container"), "ParentItem");
+    }
+
+    internal static void RefreshGameplay()
+    {
+        var worldType = AccessTools.TypeByName("EFT.GameWorld");
+        if (worldType == null) return;
+        var singleton = AccessTools.TypeByName("Comfort.Common.Singleton`1")?.MakeGenericType(worldType);
+        var world = singleton == null ? null : AccessTools.Property(singleton, "Instance")?.GetValue(null);
+        var player = Get(world, "MainPlayer");
+        if (player == null) return;
+        RequiredMethod(player.GetType(), "RecalculateEquipmentParams", 0).Invoke(player, null);
+        var hands = Get(player, "HandsController");
+        if (hands != null && AccessTools.TypeByName("EFT.Player+FirearmController")?.IsInstanceOfType(hands) == true)
+            RequiredMethod(hands.GetType(), "WeaponModified", 0).Invoke(hands, null);
+        var shot = Get(Get(player, "ProceduralWeaponAnimation"), "Shootingg");
+        if (shot != null) RequiredMethod(shot.GetType(), "OnWeaponParametersChanged", 0).Invoke(shot, null);
     }
 
     internal static void AddInteraction(object interactions, Action action)

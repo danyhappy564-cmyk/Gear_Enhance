@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Concurrent;
-using System.Reflection;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using BepInEx;
 using BepInEx.Configuration;
@@ -9,8 +9,8 @@ using UnityEngine;
 
 namespace GearEnhance;
 
-[BepInPlugin("rf.gearenhance", "Gear Enhance", "0.1.0")]
-public sealed class Plugin : BaseUnityPlugin
+[BepInPlugin("rf.gearenhance", "Gear Enhance", "0.2.0")]
+public sealed partial class Plugin : BaseUnityPlugin
 {
     internal static Plugin Instance;
     private Harmony harmony;
@@ -19,12 +19,14 @@ public sealed class Plugin : BaseUnityPlugin
     private ConfigEntry<int> maxLevel, minimum;
     private ConfigEntry<PriceBasis> price;
     private ConfigEntry<FailureMode> failure;
-    private object session;
-    private object uiContext;
+    private readonly Dictionary<EnhancePath, (ConfigEntry<float> Step, ConfigEntry<float> Cap)> effectConfig
+        = new Dictionary<EnhancePath, (ConfigEntry<float>, ConfigEntry<float>)>();
+    private object session, uiContext, selectedItem, itemIcon;
     private string itemId, itemName;
-    private EnhanceQuote quote;
-    private bool visible, busy, destructionConfirmed, uncertain;
-    private int generation;
+    private EnhancePath selectedPath;
+    private EnhanceQuote quote, preview;
+    private bool visible, busy, destructionConfirmed, uncertain, weapon, firstQuote;
+    private int generation, syncGeneration;
     private string message = "";
     private Rect window;
     private GameObject blocker;
@@ -38,39 +40,75 @@ public sealed class Plugin : BaseUnityPlugin
         menuEnabled = Config.Bind("1. 기본", "강화 메뉴 사용", true, "창고의 무기·방어구 우클릭에 장비 강화를 표시합니다.");
         chance = Config.Bind("2. 확률", "성공률 (%)", 75f, new ConfigDescription("다음 견적부터 적용됩니다.", new AcceptableValueRange<float>(0, 100)));
         always = Config.Bind("2. 확률", "항상 성공 (100%)", false, "켜면 성공률 설정 대신 100%를 적용합니다. 비용은 소모됩니다.");
-        maxLevel = Config.Bind("2. 확률", "최대 강화 단계", 10, new ConfigDescription("현재는 단계만 기록하며 능력치 효과는 없습니다.", new AcceptableValueRange<int>(1, 100)));
-        price = Config.Bind("3. 비용", "기준 가격", PriceBasis.Handbook, "Handbook = 북밸류, Flea = SPT 플리 기준가. 부착물 가격은 포함하지 않습니다.");
+        maxLevel = Config.Bind("2. 확률", "최대 강화 단계", 10, new ConfigDescription("효과별 상한은 별도로 적용합니다.", new AcceptableValueRange<int>(1, 100)));
+        price = Config.Bind("3. 비용", "기준 가격", PriceBasis.Handbook, "Handbook = 북밸류, Flea = SPT 플리 기준가. 장비 본체만 계산합니다.");
         percent = Config.Bind("3. 비용", "기준 가격 대비 비용 (%)", 10f, new ConfigDescription("0이면 최소 비용만 적용됩니다.", new AcceptableValueRange<float>(0, 1000)));
-        growth = Config.Bind("3. 비용", "단계별 비용 배수", 1.25f, new ConfigDescription("비용 = 기준가 × 비용 비율 × 배수^현재단계. 최대 1억 루블.", new AcceptableValueRange<float>(1, 3)));
+        growth = Config.Bind("3. 비용", "단계별 비용 배수", 1.25f, new ConfigDescription("기준가 × 비용 비율 × 배수^현재단계. 최대 1억 루블.", new AcceptableValueRange<float>(1, 3)));
         minimum = Config.Bind("3. 비용", "최소 비용 (루블)", 1000, new ConfigDescription("창고 안의 잠기지 않은 루블을 사용합니다.", new AcceptableValueRange<int>(0, 100000000)));
         failure = Config.Bind("4. 실패", "실패 처리", FailureMode.KeepItem,
-            "KeepItem: 비용만 소모 / ZeroDurability: 장비와 내구도 있는 부착물의 현재 내구도 0 / Destroy: 장비와 모든 부착물 삭제. 최대 내구도는 변경하지 않습니다.");
+            "KeepItem: 비용만 소모 / ZeroDurability: 장비·부품의 현재 내구도 0 / Destroy: 본체·부착물·탄약 삭제. 최대 내구도는 유지됩니다.");
+        BindEffect(EnhancePath.Recoil, "5. 무기 효과", 1.5f, 15);
+        BindEffect(EnhancePath.Ergonomics, "5. 무기 효과", 1, 10);
+        BindEffect(EnhancePath.Precision, "5. 무기 효과", 1, 10);
+        BindEffect(EnhancePath.ArmorDurability, "6. 방어구 효과", 3, 30);
+        BindEffect(EnhancePath.Mobility, "6. 방어구 효과", 2, 20);
+        StatPatches.Registry.Configure(Tuning());
         Config.SettingChanged += (_, _) => main.Enqueue(() =>
         {
-            generation++; quote = null; destructionConfirmed = false;
+            generation++; quote = preview = null; destructionConfirmed = false;
+            try { StatPatches.Registry.Configure(Tuning()); RefreshGameplay(); }
+            catch (Exception ex) { Logger.LogWarning(ex); }
             if (visible && !busy) message = "설정이 바뀌었습니다. 견적을 다시 불러와 주세요.";
         });
         try
         {
-            var target = GameBridge.RequiredMethod(AccessTools.TypeByName("EFT.UI.ItemUiContext"), "GetItemContextInteractions", 2);
             harmony = new Harmony("rf.gearenhance");
+            StatPatches.Install(harmony);
+            var target = GameBridge.RequiredMethod(AccessTools.TypeByName("EFT.UI.ItemUiContext"), "GetItemContextInteractions", 2);
             harmony.Patch(target, postfix: new HarmonyMethod(typeof(Plugin), nameof(MenuPostfix)));
-            Logger.LogInfo("Gear Enhance 0.1.0: 단계 기록용 프로토타입, 능력치 효과 없음");
+            Logger.LogInfo("Gear Enhance 0.2.0: 강화 방향 5종과 아이템별 효과 로드");
         }
-        catch (Exception ex) { Logger.LogError(ex); }
+        catch (Exception ex)
+        {
+            harmony?.UnpatchSelf();
+            Logger.LogError("SPT API 연결 실패로 Gear Enhance 패치를 취소했습니다: " + ex);
+        }
     }
+
+    private void BindEffect(EnhancePath path, string section, float step, float cap)
+    {
+        var name = EnhanceEffects.StatName(path);
+        var unit = path == EnhancePath.Ergonomics ? "" : " (%)";
+        effectConfig[path] = (
+            Config.Bind(section, name + " / 단계" + unit, step, new ConfigDescription("기존 강화 장비에도 적용됩니다.", new AcceptableValueRange<float>(0, 10))),
+            Config.Bind(section, name + " 상한" + unit, cap, new ConfigDescription("단계가 높아도 이 값을 넘지 않습니다.", new AcceptableValueRange<float>(0, path == EnhancePath.Ergonomics ? 50 : 80))));
+    }
+    private EffectTuning Tuning() => new EffectTuning
+    {
+        RecoilPerLevel = effectConfig[EnhancePath.Recoil].Step.Value, RecoilCap = effectConfig[EnhancePath.Recoil].Cap.Value,
+        ErgonomicsPerLevel = effectConfig[EnhancePath.Ergonomics].Step.Value, ErgonomicsCap = effectConfig[EnhancePath.Ergonomics].Cap.Value,
+        PrecisionPerLevel = effectConfig[EnhancePath.Precision].Step.Value, PrecisionCap = effectConfig[EnhancePath.Precision].Cap.Value,
+        ArmorDurabilityPerLevel = effectConfig[EnhancePath.ArmorDurability].Step.Value, ArmorDurabilityCap = effectConfig[EnhancePath.ArmorDurability].Cap.Value,
+        MobilityPerLevel = effectConfig[EnhancePath.Mobility].Step.Value, MobilityCap = effectConfig[EnhancePath.Mobility].Cap.Value
+    };
+    private EnhanceSettings Settings() => new EnhanceSettings
+    {
+        SuccessPercent = chance.Value, AlwaysSucceed = always.Value, MaxLevel = maxLevel.Value,
+        PriceBasis = price.Value, CostPercent = percent.Value, CostPerLevel = growth.Value,
+        MinimumCost = minimum.Value, FailureMode = failure.Value, Effects = Tuning()
+    };
 
     private static void MenuPostfix(object __instance, object itemContext, object __result)
     {
         var plugin = Instance;
-        if (plugin == null || !plugin.menuEnabled.Value || __result == null || !GameBridge.InStash(__instance)) return;
+        if (plugin == null || !plugin.menuEnabled.Value || __result == null) return;
         try
         {
+            if (!GameBridge.InStash(__instance)) return;
             var view = GameBridge.Get(itemContext, "ViewType")?.ToString();
-            if (view != "Inventory" && view != "TradingPlayer") return;
             var item = GameBridge.Get(itemContext, "Item");
-            if (!GameBridge.Eligible(item)) return;
-            GameBridge.AddInteraction(__result, () => plugin.Open(__instance, item));
+            if ((view == "Inventory" || view == "TradingPlayer") && GameBridge.Eligible(item))
+                GameBridge.AddInteraction(__result, () => plugin.Open(__instance, item));
         }
         catch (Exception ex) { plugin.Logger.LogError(ex); }
     }
@@ -81,44 +119,84 @@ public sealed class Plugin : BaseUnityPlugin
         try
         {
             session = GameBridge.Get(context, "ClientSession") ?? throw new InvalidOperationException("PMC 세션이 없습니다.");
-            uiContext = context;
+            uiContext = context; selectedItem = item;
             itemId = GameBridge.Get(item, "Id")?.ToString() ?? throw new InvalidOperationException("아이템 ID가 없습니다.");
-            // A readable template key is available even when a localization mod fails.
+            weapon = GameBridge.IsWeapon(item);
+            selectedPath = StatPatches.Registry.Find(itemId)?.Path ?? (weapon ? EnhancePath.Recoil : EnhancePath.ArmorDurability);
             itemName = GameBridge.Get(item, "ShortName")?.ToString() ?? itemId;
             var manager = AccessTools.TypeByName("EFT.LocalizationManager");
             var localizer = manager?.GetMethod("LocalizedValue", new[] { typeof(string) });
             var instance = manager == null ? null : AccessTools.Property(manager, "Instance")?.GetValue(null);
             if (instance != null && localizer != null) itemName = localizer.Invoke(instance, new object[] { itemName })?.ToString() ?? itemName;
-            CreateBlocker();
-            window = new Rect(Math.Max(0, (Screen.width - 540) / 2), Math.Max(0, (Screen.height - 500) / 2), 540, 500);
-            visible = true; quote = null; destructionConfirmed = false; generation++;
+            itemIcon = GameBridge.RequiredMethod(AccessTools.TypeByName("EFT.UI.DragAndDrop.ItemViewFactory"), "LoadItemIcon", 3)
+                .Invoke(null, new[] { item, (object)1, false });
+            CreateBlocker(); ResetWindow();
+            visible = true; quote = null; preview = null; firstQuote = true; destructionConfirmed = false; generation++;
             RefreshQuote();
         }
         catch (Exception ex) { Logger.LogError(ex); Close(); }
     }
 
-    private EnhanceSettings Settings() => new EnhanceSettings
+    internal async Task<bool> SyncEffects(object activeSession)
     {
-        SuccessPercent = chance.Value, AlwaysSucceed = always.Value, MaxLevel = maxLevel.Value,
-        PriceBasis = price.Value, CostPercent = percent.Value, CostPerLevel = growth.Value,
-        MinimumCost = minimum.Value, FailureMode = failure.Value
-    };
+        var expected = GameBridge.ProfileId(activeSession);
+        var request = ++syncGeneration;
+        if (expected.Length == 0) { StatPatches.Registry.Clear(); return false; }
+        try
+        {
+            var snapshot = await GameBridge.WithTimeout(GameBridge.Query<EnhanceSnapshot>("/rf/gear-enhance/state", new { }));
+            if (request != syncGeneration || expected != GameBridge.ProfileId(activeSession)) return false;
+            StatPatches.Registry.Replace(snapshot, expected);
+            main.Enqueue(RefreshGameplay);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            if (request != syncGeneration) return false;
+            if (StatPatches.Registry.ProfileId != expected) StatPatches.Registry.Clear();
+            Logger.LogWarning("강화 효과 동기화 실패: " + ex.GetBaseException().Message);
+            return false;
+        }
+    }
+
+    private void RefreshGameplay()
+    {
+        try
+        {
+            if (selectedItem != null) GameBridge.RequiredMethod(selectedItem.GetType(), "UpdateAttributes", 0).Invoke(selectedItem, null);
+            GameBridge.RefreshGameplay();
+        }
+        catch (Exception ex) { Logger.LogWarning("강화 능력치 재계산: " + ex.GetBaseException().Message); }
+    }
 
     private async void RefreshQuote()
     {
-        if (busy || uncertain) return;
+        if (busy || uncertain || itemId == null) return;
         busy = true; quote = null; message = "견적을 불러오는 중입니다…";
         var current = generation;
         try
         {
             await GameBridge.Flush(session);
+            if (firstQuote)
+            {
+                if (!await SyncEffects(session))
+                    throw new InvalidOperationException("강화 기록을 동기화하지 못했습니다. 서버 모드 버전과 연결을 확인하고 다시 불러와 주세요.");
+                selectedPath = StatPatches.Registry.Find(itemId)?.Path ?? selectedPath;
+                firstQuote = false;
+            }
             var response = await GameBridge.WithTimeout(GameBridge.Query<EnhanceQuote>(
-                "/rf/gear-enhance/quote", new { ItemId = itemId, Settings = Settings() }));
+                "/rf/gear-enhance/quote", new { ItemId = itemId, Path = selectedPath, Settings = Settings() }));
             if (current != generation) { message = "설정이 바뀌었습니다. 견적을 다시 불러와 주세요."; return; }
-            quote = response; message = ""; destructionConfirmed = false;
+            quote = preview = response; weapon = response.IsWeapon; message = ""; destructionConfirmed = false;
         }
         catch (Exception ex) { message = ex.GetBaseException().Message; Logger.LogWarning(ex); }
         finally { busy = false; }
+    }
+
+    private void SelectPath(EnhancePath path)
+    {
+        if (busy || selectedPath == path) return;
+        selectedPath = path; quote = preview = null; generation++; RefreshQuote();
     }
 
     private async void Execute()
@@ -133,18 +211,20 @@ public sealed class Plugin : BaseUnityPlugin
             submitted = true;
             var ok = await GameBridge.WithTimeout(GameBridge.Execute(session, attempt.QuoteId, destructionConfirmed), 30000);
             if (!ok) { message = "강화가 거절됐습니다. 서버 오류 안내를 확인하고 견적을 다시 불러와 주세요."; return; }
-            var receipt = await GameBridge.WithTimeout(GameBridge.Query<EnhanceReceipt>(
-                "/rf/gear-enhance/receipt", new { attempt.QuoteId }));
+            var receipt = await GameBridge.WithTimeout(GameBridge.Query<EnhanceReceipt>("/rf/gear-enhance/receipt", new { attempt.QuoteId }));
             message = receipt.Success
-                ? $"강화 성공! +{receipt.Level} / {receipt.Paid:N0} ₽ 소모\n현재 능력치 효과는 없습니다."
-                : $"강화 실패 / {receipt.Paid:N0} ₽ 소모\n{FailureText(receipt.FailureMode)}";
-            if (!receipt.Success && receipt.FailureMode == FailureMode.Destroy) itemId = null;
+                ? $"{(attempt.BindLegacy ? "효과 선택 완료" : attempt.ChangePath ? "방향 변경 완료" : "강화 성공")}! {EnhanceEffects.Name(receipt.Path)} +{receipt.Level} · {receipt.Paid:N0} ₽ 소모"
+                : $"강화 실패 · {receipt.Paid:N0} ₽ 소모\n{FailureText(receipt.FailureMode)}";
+            StatPatches.Registry.ApplyReceipt(receipt, GameBridge.ProfileId(session));
+            RefreshGameplay();
+            await SyncEffects(session);
+            if (!receipt.Success && receipt.FailureMode == FailureMode.Destroy) { itemId = null; selectedItem = null; itemIcon = null; }
         }
         catch (Exception ex)
         {
             uncertain = submitted;
             message = ex.GetBaseException().Message + (submitted
-                ? "\n결과가 미확정입니다. 재시도하지 말고 게임을 종료한 뒤 재접속하여 장비·루블·강화 기록을 확인해 주세요."
+                ? "\n결과 미확정: 재시도하지 말고 게임 종료 후 재접속하여 장비·루블을 확인해 주세요."
                 : "\n아직 강화를 전송하지 않았습니다.");
             Logger.LogError(ex);
         }
@@ -152,72 +232,15 @@ public sealed class Plugin : BaseUnityPlugin
     }
 
     private static string FailureText(FailureMode mode) => mode == FailureMode.Destroy
-        ? "장비와 모든 부착물(탄창·탄약 포함)이 파괴됩니다. 되돌릴 수 없습니다."
-        : mode == FailureMode.ZeroDurability
-            ? "장비와 내구도 있는 부착물의 현재 내구도가 0이 됩니다. 최대 내구도는 유지됩니다."
-            : "비용만 소모하며 장비와 강화 단계는 유지됩니다.";
+        ? "본체·부착물·탄창·탄약이 함께 파괴됩니다."
+        : mode == FailureMode.ZeroDurability ? "본체·부품의 현재 내구도 0 · 최대 내구도 유지"
+        : "비용만 소모 · 장비와 기존 강화 단계 유지";
 
     private void Update()
     {
         for (var n = 0; n < 32 && main.TryDequeue(out var action); n++) action();
         if (visible && !busy && !GameBridge.InStash(uiContext)) Close();
     }
-
-    private void OnGUI()
-    {
-        if (!visible) return;
-        if (windowSkin == null)
-        {
-            windowSkin = Instantiate(GUI.skin);
-            uiFont = Font.CreateDynamicFontFromOSFont(
-                new[] { "Malgun Gothic", "맑은 고딕", "Noto Sans CJK KR", "Arial Unicode MS" }, 16);
-            if (uiFont != null) windowSkin.font = uiFont;
-            windowSkin.toggle.wordWrap = true;
-            windowSkin.button.fontSize = 16;
-        }
-        var oldSkin = GUI.skin;
-        GUI.skin = windowSkin;
-        var old = GUI.color;
-        GUI.color = new Color(0, 0, 0, 0.55f);
-        GUI.DrawTexture(new Rect(0, 0, Screen.width, Screen.height), Texture2D.whiteTexture);
-        GUI.color = old;
-        window = GUILayout.Window(GetInstanceID(), window, DrawWindow, "장비 강화 · 1차 프로토타입");
-        GUI.skin = oldSkin;
-    }
-
-    private void DrawWindow(int id)
-    {
-        var body = new GUIStyle(GUI.skin.label) { wordWrap = true, fontSize = 16, richText = false };
-        GUILayout.Space(10);
-        GUILayout.Label(itemName ?? "장비", body);
-        GUILayout.Label("현재 버전은 강화 단계만 기록합니다. 능력치 효과 없음.", body);
-        GUILayout.Space(10);
-        if (quote != null)
-        {
-            GUILayout.Label($"+{quote.CurrentLevel} → +{quote.NextLevel}    성공률 {quote.SuccessPercent:0.##}%", body);
-            GUILayout.Label($"비용 {quote.Cost:N0} ₽    보유 {quote.AvailableRoubles:N0} ₽", body);
-            GUILayout.Label($"가격 기준: {quote.PriceSource} (장비 본체만)", body);
-            var left = Math.Max(0, quote.ExpiresUnixSeconds - DateTimeOffset.UtcNow.ToUnixTimeSeconds());
-            GUILayout.Label($"견적 유효 시간: {left}초", body);
-            GUILayout.Label("실패 시: " + FailureText(quote.FailureMode), body);
-            if (quote.FailureMode == FailureMode.Destroy && quote.SuccessPercent < 100)
-                destructionConfirmed = GUILayout.Toggle(destructionConfirmed,
-                    $" 본체 + 부착물 {quote.AttachedItems}개가 사라질 수 있음을 확인했습니다.");
-            GUI.enabled = !busy && left > 0 && quote.AvailableRoubles >= quote.Cost
-                && (quote.FailureMode != FailureMode.Destroy || quote.SuccessPercent == 100 || destructionConfirmed);
-            if (GUILayout.Button("비용을 지불하고 강화", GUILayout.Height(42))) Execute();
-            GUI.enabled = true;
-        }
-        if (!string.IsNullOrEmpty(message)) GUILayout.Label(message, body);
-        GUILayout.FlexibleSpace();
-        GUI.enabled = !busy && !uncertain && itemId != null;
-        if (GUILayout.Button("견적 다시 불러오기", GUILayout.Height(32))) RefreshQuote();
-        GUI.enabled = !busy;
-        if (GUILayout.Button("닫기", GUILayout.Height(32))) Close();
-        GUI.enabled = true;
-        GUI.DragWindow(new Rect(0, 0, window.width, 24));
-    }
-
     private void CreateBlocker()
     {
         if (blocker != null) return;
@@ -227,24 +250,22 @@ public sealed class Plugin : BaseUnityPlugin
         blocker = new GameObject("GearEnhance.InputBlocker", typeof(RectTransform), typeof(Canvas), raycaster, image);
         DontDestroyOnLoad(blocker);
         var canvas = blocker.GetComponent<Canvas>();
-        canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-        canvas.sortingOrder = short.MaxValue;
+        canvas.renderMode = RenderMode.ScreenSpaceOverlay; canvas.sortingOrder = short.MaxValue;
         var rect = blocker.GetComponent<RectTransform>();
         rect.anchorMin = Vector2.zero; rect.anchorMax = Vector2.one;
         rect.offsetMin = Vector2.zero; rect.offsetMax = Vector2.zero;
         AccessTools.Property(image, "color").SetValue(blocker.GetComponent(image), Color.clear);
     }
-
     private void Close()
     {
-        visible = false; quote = null; session = null; uiContext = null; generation++;
+        visible = false; quote = preview = null; session = uiContext = selectedItem = itemIcon = null; generation++;
         if (blocker != null) Destroy(blocker);
         blocker = null;
     }
-
     private void OnDestroy()
     {
-        Close(); harmony?.UnpatchSelf();
+        syncGeneration++;
+        Close(); harmony?.UnpatchSelf(); StatPatches.Registry.Clear();
         if (windowSkin != null) Destroy(windowSkin);
         if (uiFont != null) Destroy(uiFont);
         if (Instance == this) Instance = null;
