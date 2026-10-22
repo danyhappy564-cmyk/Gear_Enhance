@@ -1,9 +1,13 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
 <rect width="256" height="256" fill="#000"/>
-<g transform="translate(-16,4)" fill="none" stroke="#fff" stroke-width="13" stroke-linecap="round" stroke-linejoin="round">
- <path d="M84 50 L100 50 L100 62 Q100 86 118 86 Q136 86 136 62 L136 50 L152 50 L152 70 Q152 92 172 98 L172 196 Q172 206 162 206 L74 206 Q64 206 64 196 L64 98 Q84 92 84 70 Z"/>
- <rect x="88" y="114" width="60" height="64" rx="10" stroke-width="10"/>
- <polygon points="118.00,128.00 122.70,140.53 136.07,141.13 125.61,149.47 129.17,162.37 118.00,155.00 106.83,162.37 110.39,149.47 99.93,141.13 113.30,140.53" stroke-width="8"/>
- <path d="M216 132 L216 54 M192 78 L216 54 L240 78"/>
+<g transform="translate(0,-6)">
+<g fill="none" stroke="#fff" stroke-width="13" stroke-linecap="round" stroke-linejoin="round">
+ <path d="M90 30 L108 30 L108 40 Q108 62 128 62 Q148 62 148 40 L148 30 L166 30 L166 46 Q166 66 190 72 L190 178 Q190 190 178 190 L78 190 Q66 190 66 178 L66 72 Q90 66 90 46 Z"/>
+ <path d="M100 100 L156 100"/>
+</g>
+<g transform="translate(130,184) rotate(-18) scale(1.06) translate(-85,-29)" stroke-linecap="round" stroke-linejoin="round">
+ <path d="M0 6 L36 12 L36 6 L118 6 L118 11 L170 11 L170 21 L118 21 L112 27 L98 27 L94 52 L80 52 L82 27 L68 27 L62 46 L50 46 L54 27 L36 27 L36 24 L2 32 Z" fill="#000" stroke="#000" stroke-width="26"/>
+ <path d="M0 6 L36 12 L36 6 L118 6 L118 11 L170 11 L170 21 L118 21 L112 27 L98 27 L94 52 L80 52 L82 27 L68 27 L62 46 L50 46 L54 27 L36 27 L36 24 L2 32 Z" fill="#000" stroke="#fff" stroke-width="11"/>
+</g>
 </g>
 </svg>
