@@ -4,3 +4,4 @@ Build/
 TestResults/
 LocalSettings.props
 *.user
+.vs/

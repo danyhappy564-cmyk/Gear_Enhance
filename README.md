@@ -15,6 +15,7 @@
 
 ## 변경 이력
 
+- 2026-10-22 15:23 — Visual Studio용 전체 솔루션을 추가했습니다. Release로 솔루션을 빌드하면 클라이언트·서버 DLL을 함께 묶은 설치용 ZIP을 Build 폴더에 자동 생성하며, Python 없이도 사용할 수 있습니다. 방어구 효과 기록 검사에서 무작위 성공률 때문에 간헐적으로 실패하던 부분도 검사 안에서만 100% 성공으로 고정했습니다.
 - 2026-10-22 13:32 — 승인된 목업 기준 강화 창을 재구성하고, 무기·방어구 특화 5종과 단계별 능력치 효과, F12 효과 조절, 방향 변경·기존 단계 이전을 추가했습니다.
 - 2026-10-22 11:53 — 1차 프로토타입: 창고 장비 우클릭 강화 창, F12 설정, 가격 비례 비용, 서버 확률 판정, 실패 처리, 아이템별 단계 기록을 추가했습니다. 능력치 효과는 다음 단계로 보류했습니다.
 
@@ -94,13 +95,32 @@ BepInEx ConfigurationManager가 설치되어 있으면 F12의 **Gear Enhance**�
 
 ## 빌드와 검사
 
-필요한 도구는 **.NET SDK 10, Python 3.12+, 실제 SPT 4.1.6 설치본**입니다. Python 외부 패키지는 빌드 스크립트에 필요하지 않습니다.
+필요한 도구는 **.NET SDK 10, 실제 SPT 4.1.6 설치본**입니다. Visual Studio에서는 .NET 10을 지원하는 버전을 사용합니다.
+
+### Visual Studio에서 Release 빌드
+
+1. 저장소 루트의 **`GearEnhance.sln`**을 엽니다. `tests/GearEnhance.Tests.csproj`만 열면 전체 패키징 프로젝트가 포함되지 않습니다.
+2. 게임 경로가 기본값 `E:\SPT 4.1`과 다르면 `LocalSettings.props.example`을 `LocalSettings.props`로 복사하고 `SptRoot`를 실제 경로로 바꿉니다. 개인 경로 파일은 Git에서 제외합니다.
+3. 위쪽 구성을 **Release**로 선택하고 **빌드 → 솔루션 빌드**를 누릅니다.
+4. 성공하면 **`Build/GearEnhance-0.2.0.zip`**이 생성됩니다. 클라이언트·서버 DLL과 README·LICENSE만 포함하며 설치 경로 구조로 묶습니다.
+
+`GearEnhance.Package` 프로젝트가 두 DLL의 빌드 완료 후 MSBuild로 압축합니다. Python이나 별도의 압축 프로그램은 필요하지 않습니다. 파일 변경이 없는 Release 빌드에서도 ZIP을 다시 생성하며, Debug 빌드에서는 생성하지 않습니다. 참조 전용 환경은 설치용 ZIP 생성을 차단합니다. **게임 폴더에 복사하거나 서버·게임을 실행하지 않습니다.** 클라이언트와 서버는 같은 버전으로 사용해야 합니다.
+
+명령줄에서도 같은 솔루션을 사용할 수 있습니다.
+
+```powershell
+dotnet build GearEnhance.sln -c Release
+```
+
+### 자동 검사까지 실행한 뒤 패키징
+
+Python 3.12+가 있으면 기존 스크립트로 두 검사 모음까지 실행할 수 있습니다. Python 외부 패키지는 필요하지 않습니다. Visual Studio의 일반 빌드는 검사 프로젝트를 컴파일하며 검사를 자동 실행하지는 않습니다.
 
 ```powershell
 python tools/build.py --spt-root "E:\SPT 4.1"
 ```
 
-패키지는 `Build/GearEnhance-0.2.0.zip`입니다. **게임 폴더에 복사하거나 서버·게임을 실행하지 않습니다.** IDE에서는 `LocalSettings.props.example`을 `LocalSettings.props`로 복사하고 `SptRoot`를 본인 경로로 바꿉니다. 개인 경로 파일은 Git에서 제외합니다. 클라이언트와 서버는 같은 버전으로 사용해야 합니다.
+검사가 모두 통과한 뒤 Visual Studio와 같은 MSBuild 압축 대상으로 `Build/GearEnhance-0.2.0.zip`을 생성합니다.
 
 클라우드의 컴파일 전용 참조 환경에서는:
 
@@ -109,6 +129,8 @@ source /workspace/.onboarding/dotnet-env.sh
 GEAR_GAME_ASSEMBLY=/workspace/Cluade_For_spt/references/Assembly-CSharp.dll \
   python3 tools/build.py --spt-root /workspace/.gear-reference --validate-only
 ```
+
+솔루션만 컴파일할 때는 `dotnet build GearEnhance.sln -c Release -p:SptRoot=/workspace/.gear-reference -p:GearCreatePackage=false`를 사용합니다. 이 옵션은 ZIP 생성을 생략하며 배포 빌드가 아닙니다.
 
 단독 검사:
 

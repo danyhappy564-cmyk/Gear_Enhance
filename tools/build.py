@@ -3,8 +3,6 @@ import argparse
 import os
 from pathlib import Path
 import subprocess
-import tempfile
-import zipfile
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -26,32 +24,18 @@ def main():
     def run(*arguments):
         subprocess.run(arguments, cwd=ROOT, env=environ, check=True)
 
-    run("dotnet", "restore", "src/Server/GearEnhance.Server.csproj", "--locked-mode")
-    run("dotnet", "restore", "src/Client/GearEnhance.Client.csproj", "--locked-mode", f"-p:SptRoot={game}")
+    run("dotnet", "restore", "GearEnhance.Package.csproj", "--locked-mode", f"-p:SptRoot={game}")
     run("dotnet", "restore", "tests/GearEnhance.Tests.csproj", "--locked-mode")
     run("dotnet", "restore", "client-tests/GearEnhance.ClientTests.csproj", "--locked-mode", f"-p:SptRoot={game}")
-    run("dotnet", "build", "src/Server/GearEnhance.Server.csproj", "-c", "Release", "--no-restore")
-    run("dotnet", "build", "src/Client/GearEnhance.Client.csproj", "-c", "Release", "--no-restore", f"-p:SptRoot={game}")
+    run("dotnet", "build", "GearEnhance.Package.csproj", "-c", "Release", "--no-restore",
+        f"-p:SptRoot={game}", "-p:GearCreatePackage=false")
     run("dotnet", "test", "tests/GearEnhance.Tests.csproj", "-c", "Release", "--no-restore")
     run("dotnet", "test", "client-tests/GearEnhance.ClientTests.csproj", "-c", "Release", "--no-restore", f"-p:SptRoot={game}")
     if args.validate_only:
         print("컴파일·검사 완료. 인게임 검증 및 배포 빌드는 수행하지 않았습니다.")
         return
-    build = ROOT / "Build"
-    build.mkdir(exist_ok=True)
-    output = build / "GearEnhance-0.2.0.zip"
-    # Build to a temporary archive so a failed build never leaves a partial zip.
-    with tempfile.TemporaryDirectory(prefix="gear-package-", dir=build) as work:
-        archive = Path(work) / output.name
-        with zipfile.ZipFile(archive, "w", zipfile.ZIP_DEFLATED) as bundle:
-            bundle.write(ROOT / "src/Client/bin/Release/netstandard2.1/GearEnhance.Client.dll",
-                         "BepInEx/plugins/GearEnhance/GearEnhance.Client.dll")
-            bundle.write(ROOT / "src/Server/bin/Release/net10.0/GearEnhance.Server.dll",
-                         "SPT_Runtime/user/mods/GearEnhance/GearEnhance.Server.dll")
-            for name in ("LICENSE", "README.md"):
-                bundle.write(ROOT / name, f"SPT_Runtime/user/mods/GearEnhance/{name}")
-        archive.replace(output)
-    print(f"패키지: {output} (게임 폴더에는 복사하지 않았습니다.)")
+    run("dotnet", "msbuild", "GearEnhance.Package.csproj", "-t:CreateGearPackage",
+        "-p:Configuration=Release", f"-p:SptRoot={game}")
 
 
 if __name__ == "__main__":

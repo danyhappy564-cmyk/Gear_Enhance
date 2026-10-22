@@ -56,6 +56,14 @@ Layout 이벤트 도중 컨트롤 수를 바꾸는 문제를 피하려고 GUILay
 
 이는 실제 Unity의 Harmony 패치 설치, 게임 화면, 반동 체감·피격 결과, 다른 모드와의 조합을 검증한 것은 아닙니다. 컴파일 참조 모듈도 실제 사용자 게임 모듈과 구분하며, 배포 패키지는 실제 게임 설치 경로에서 다시 빌드해야 합니다.
 
+## Visual Studio 패키징
+
+`GearEnhance.sln`은 클라이언트·서버·검사 프로젝트와 `GearEnhance.Package.csproj`를 포함합니다. 패키징 프로젝트는 두 런타임 프로젝트를 `ReferenceOutputAssembly=false`로 참조하여 빌드 순서만 연결하고 게임에 설치할 DLL에는 참조되지 않습니다.
+
+Release 빌드 후 `tools/Packaging.targets`가 실제 게임 설치 경로를 확인하고 현재 구성의 두 `GetTargetPath` 결과만 수집합니다. 중간 스테이징 폴더를 매번 비워 제거된 파일이 섞이지 않게 하며, MSBuild `ZipDirectory`로 임시 ZIP을 완성한 뒤 `Build/GearEnhance-$(Version).zip`으로 이동합니다. 게임·SDK·NuGet 의존 DLL은 넣지 않습니다. Visual Studio의 빠른 최신 상태 판정을 패키징 프로젝트에만 끄므로 변경이 없는 재빌드에서도 ZIP을 갱신합니다.
+
+Debug·디자인 타임 빌드에는 압축하지 않습니다. 컴파일 전용 환경의 `GearCreatePackage=false`는 압축을 생략합니다. Python 스크립트는 이 옵션으로 먼저 빌드·검사를 마친 뒤 같은 패키징 타깃을 실행하므로 두 방식의 설치 경로 구성이 같습니다. Visual Studio의 일반 빌드는 검사 실행을 포함하지 않습니다.
+
 ## 남은 범위
 
 SPT 일반 프로필 저장 주기를 사용하며 강제 종료용 별도 복구 저널은 없습니다. 아이템 ID가 바뀌는 판매·분해·재조합에 기록을 옮기지 않습니다. 다른 세션의 인벤토리 변경과 공유하는 외부 잠금도 없으므로 이 모드는 싱글플레이어 범위입니다. 같은 계산 지점을 바꾸는 모드와의 중첩은 실제 설치 조합에서 확인해야 합니다.

@@ -331,7 +331,8 @@ public sealed class EnhanceTests
         Assert.Throws<ArgumentException>(() => rig.Service.Quote(Session, Target.ToString(), new(), EnhancePath.Mobility));
         rig.Backend.WeaponCategory = false;
         Assert.Throws<ArgumentException>(() => rig.Service.Quote(Session, Target.ToString(), new(), EnhancePath.Recoil));
-        var quote = rig.Service.Quote(Session, Target.ToString(), new(), EnhancePath.ArmorDurability);
+        var quote = rig.Service.Quote(Session, Target.ToString(),
+            new() { AlwaysSucceed = true }, EnhancePath.ArmorDurability);
         Assert.Equal(3, quote.NextEffect);
         rig.Execute(quote);
         Assert.Equal(EnhancePath.ArmorDurability, rig.Service.Snapshot(Session).Items.Single().Path);

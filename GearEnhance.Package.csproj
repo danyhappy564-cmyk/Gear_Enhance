@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="LocalSettings.props" Condition="Exists('LocalSettings.props')" />
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Version>0.2.0</Version>
+    <EnableDefaultItems>false</EnableDefaultItems>
+    <IsPackable>false</IsPackable>
+    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+    <!-- Run the packaging target even when Visual Studio considers the DLLs current. -->
+    <DisableFastUpToDateCheck>true</DisableFastUpToDateCheck>
+    <SptRoot Condition="'$(SptRoot)' == '' and '$(SPT_ROOT)' != ''">$(SPT_ROOT)</SptRoot>
+    <SptRoot Condition="'$(SptRoot)' == ''">E:\SPT 4.1</SptRoot>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="src/Server/GearEnhance.Server.csproj" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="src/Client/GearEnhance.Client.csproj" ReferenceOutputAssembly="false"
+                      AdditionalProperties="SptRoot=$(SptRoot)" />
+  </ItemGroup>
+  <Import Project="tools/Packaging.targets" />
+</Project>

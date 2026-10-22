@@ -1,0 +1,51 @@
+<Project>
+  <PropertyGroup>
+    <GearRepositoryRoot>$(MSBuildThisFileDirectory)..</GearRepositoryRoot>
+    <GearBuildDirectory>$(GearRepositoryRoot)/Build</GearBuildDirectory>
+    <GearPackageStage>$(MSBuildProjectDirectory)/obj/$(Configuration)/gear-package</GearPackageStage>
+    <GearPackageArchive>$(GearBuildDirectory)/GearEnhance-$(Version).zip</GearPackageArchive>
+    <GearPackageTemporaryArchive>$(GearPackageStage).zip</GearPackageTemporaryArchive>
+  </PropertyGroup>
+
+  <Target Name="CreateGearPackage" AfterTargets="Build"
+          Condition="'$(Configuration)' == 'Release' and '$(DesignTimeBuild)' != 'true' and '$(GearCreatePackage)' != 'false'"
+          DependsOnTargets="RequireGearGameInstall;ResolveGearPackageInputs;StageGearPackage;ArchiveGearPackage" />
+
+  <Target Name="RequireGearGameInstall">
+    <Error Condition="!Exists('$(SptRoot)/EscapeFromTarkov.exe')"
+           Text="설치용 ZIP은 실제 SPT 4.1.6 설치본으로 빌드해야 합니다. LocalSettings.props의 SptRoot를 확인하세요. 참조 전용 검사는 -p:GearCreatePackage=false를 사용하세요." />
+  </Target>
+
+  <Target Name="ResolveGearPackageInputs">
+    <MSBuild Projects="$(GearRepositoryRoot)/src/Client/GearEnhance.Client.csproj"
+             Targets="GetTargetPath" Properties="Configuration=$(Configuration);SptRoot=$(SptRoot)">
+      <Output TaskParameter="TargetOutputs" ItemName="GearClientAssembly" />
+    </MSBuild>
+    <MSBuild Projects="$(GearRepositoryRoot)/src/Server/GearEnhance.Server.csproj"
+             Targets="GetTargetPath" Properties="Configuration=$(Configuration)">
+      <Output TaskParameter="TargetOutputs" ItemName="GearServerAssembly" />
+    </MSBuild>
+    <Error Condition="'@(GearClientAssembly)' == '' or !Exists('@(GearClientAssembly)')"
+           Text="클라이언트 DLL이 없습니다. GearEnhance.sln 전체를 Release로 빌드하세요." />
+    <Error Condition="'@(GearServerAssembly)' == '' or !Exists('@(GearServerAssembly)')"
+           Text="서버 DLL이 없습니다. GearEnhance.sln 전체를 Release로 빌드하세요." />
+  </Target>
+
+  <Target Name="StageGearPackage">
+    <!-- Recreate the staging tree so removed files never survive into a later package. -->
+    <RemoveDir Directories="$(GearPackageStage)" />
+    <MakeDir Directories="$(GearPackageStage)/BepInEx/plugins/GearEnhance;$(GearPackageStage)/SPT_Runtime/user/mods/GearEnhance" />
+    <Copy SourceFiles="@(GearClientAssembly)" DestinationFolder="$(GearPackageStage)/BepInEx/plugins/GearEnhance" />
+    <Copy SourceFiles="@(GearServerAssembly)" DestinationFolder="$(GearPackageStage)/SPT_Runtime/user/mods/GearEnhance" />
+    <Copy SourceFiles="$(GearRepositoryRoot)/README.md;$(GearRepositoryRoot)/LICENSE"
+          DestinationFolder="$(GearPackageStage)/SPT_Runtime/user/mods/GearEnhance" />
+  </Target>
+
+  <Target Name="ArchiveGearPackage">
+    <MakeDir Directories="$(GearBuildDirectory)" />
+    <ZipDirectory SourceDirectory="$(GearPackageStage)" DestinationFile="$(GearPackageTemporaryArchive)" Overwrite="true" />
+    <!-- Publish only after the archive has been written successfully. -->
+    <Move SourceFiles="$(GearPackageTemporaryArchive)" DestinationFiles="$(GearPackageArchive)" />
+    <Message Importance="high" Text="설치용 ZIP 생성: $(GearPackageArchive)" />
+  </Target>
+</Project>
