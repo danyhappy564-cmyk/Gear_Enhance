@@ -174,6 +174,23 @@ public sealed class HooksTests : IDisposable
         Assert.Equal("K2 <color=#B989F5>★★ 진화 +29</color>", args[1]);
     }
 
+    [Fact]
+    public void Third_star_uses_total_thirty_five_percent_in_real_hooks_and_red_three_star_name()
+    {
+        foreach (var path in new[] { EnhancePath.Recoil, EnhancePath.Ergonomics, EnhancePath.Precision })
+            StatPatches.Registry.ApplyReceipt(new() { Success = true, ItemId = "gun", Level = 10, Path = path }, "pmc");
+        StatPatches.Registry.ApplyReceipt(new() { Success = true, ItemId = "gun", IsEvolution = true, Evolved = true, StarLevel = 3 }, "pmc");
+        var gun = new TestItem("gun");
+        Assert.Equal(-0.5215f, Run("Recoil", gun, -0.4f), 5);
+        Assert.Equal(63.5f, Run("Ergonomics", gun, 50));
+        Assert.Equal(0.865f, Run("Precision", gun, 1), 5);
+        var args = new object[] { new MarkerView(gun), "K2" };
+        typeof(ItemMarkers).GetMethod("Name", BindingFlags.Static | BindingFlags.NonPublic)!.Invoke(null, args);
+        Assert.Equal("K2 <color=#F06A6A>★★★ 진화 +30</color>", args[1]);
+        Assert.Equal(FeedbackCue.Complete, GameFeedback.Result(new() { Success = true, IsEvolution = true, Evolved = true, StarLevel = 3 }, true));
+        Assert.Equal(4, EmbeddedSounds.Index(FeedbackCue.Complete));
+    }
+
     public record MarkerView(TestItem Item) { public bool Examined => true; }
 
     [Fact]

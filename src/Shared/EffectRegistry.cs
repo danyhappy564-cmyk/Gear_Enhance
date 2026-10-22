@@ -27,7 +27,7 @@ public sealed class EffectRegistry
             if (string.IsNullOrEmpty(item.ItemId) || item.Level < 1 || item.Level > 100
                 || !Enum.IsDefined(typeof(EnhancePath), item.Path)) continue;
             if (!next.TryGetValue(item.ItemId, out var tracks)) next[item.ItemId] = tracks = new Dictionary<EnhancePath, EnhanceRecord>();
-            tracks[item.Path] = new EnhanceRecord { ItemId = item.ItemId, Level = item.Level, Path = item.Path, Evolved = item.Evolved };
+            tracks[item.Path] = new EnhanceRecord { ItemId = item.ItemId, Level = item.Level, Path = item.Path, Evolved = item.Evolved, StarLevel = StarEvolution.Level(item.Evolved, item.StarLevel) };
         }
         records = next; ProfileId = expectedProfile;
     }
@@ -50,13 +50,15 @@ public sealed class EffectRegistry
     public string Badge(string id)
     {
         var total = TotalLevel(id);
-        return total > 0 ? (IsEvolved(id) ? $"★★ 진화 +{total}" : $"★ +{total}") : "";
+        return total > 0 ? (IsEvolved(id) ? $"{StarEvolution.Stars(StarLevel(id))} 진화 +{total}" : $"★ +{total}") : "";
     }
-    public bool IsEvolved(string id)
+    public bool IsEvolved(string id) => StarLevel(id) >= 2;
+    public int StarLevel(string id)
     {
-        if (!records.TryGetValue(id, out var tracks)) return false;
-        foreach (var track in tracks.Values) if (track.Evolved) return true;
-        return false;
+        var level = 1;
+        if (!records.TryGetValue(id, out var tracks)) return level;
+        foreach (var track in tracks.Values) level = Math.Max(level, StarEvolution.Level(track.Evolved, track.StarLevel));
+        return level;
     }
     public bool IsComplete(string id) => records.TryGetValue(id, out var tracks) && Complete(tracks, tuning);
     private static bool Complete(Dictionary<EnhancePath, EnhanceRecord> tracks, EffectTuning config)
@@ -77,7 +79,7 @@ public sealed class EffectRegistry
             {
                 var evolved = new Dictionary<EnhancePath, EnhanceRecord>();
                 foreach (var entry in existingTracks)
-                    evolved[entry.Key] = new EnhanceRecord { ItemId = entry.Value.ItemId, Path = entry.Key, Level = entry.Value.Level, Evolved = true };
+                    evolved[entry.Key] = new EnhanceRecord { ItemId = entry.Value.ItemId, Path = entry.Key, Level = entry.Value.Level, Evolved = true, StarLevel = StarEvolution.Level(true, receipt.StarLevel) };
                 next[receipt.ItemId] = evolved;
             }
         }
@@ -85,14 +87,14 @@ public sealed class EffectRegistry
         {
             var tracks = next.TryGetValue(receipt.ItemId, out var current)
                 ? new Dictionary<EnhancePath, EnhanceRecord>(current) : new Dictionary<EnhancePath, EnhanceRecord>();
-            tracks[receipt.Path] = new EnhanceRecord { ItemId = receipt.ItemId, Path = receipt.Path, Level = receipt.Level, Evolved = receipt.Evolved };
+            tracks[receipt.Path] = new EnhanceRecord { ItemId = receipt.ItemId, Path = receipt.Path, Level = receipt.Level, Evolved = receipt.Evolved, StarLevel = StarEvolution.Level(receipt.Evolved, receipt.StarLevel) };
             next[receipt.ItemId] = tracks;
         }
         else if (receipt.FailureMode == FailureMode.Downgrade && next.TryGetValue(receipt.ItemId, out var existing))
         {
             var tracks = new Dictionary<EnhancePath, EnhanceRecord>(existing);
             if (receipt.Level > 0)
-                tracks[receipt.Path] = new EnhanceRecord { ItemId = receipt.ItemId, Path = receipt.Path, Level = receipt.Level, Evolved = receipt.Evolved };
+                tracks[receipt.Path] = new EnhanceRecord { ItemId = receipt.ItemId, Path = receipt.Path, Level = receipt.Level, Evolved = receipt.Evolved, StarLevel = StarEvolution.Level(receipt.Evolved, receipt.StarLevel) };
             else tracks.Remove(receipt.Path);
             if (tracks.Count == 0) next.Remove(receipt.ItemId); else next[receipt.ItemId] = tracks;
         }
@@ -103,6 +105,6 @@ public sealed class EffectRegistry
     {
         var config = tuning;
         if (!records.TryGetValue(id, out var tracks) || !tracks.TryGetValue(path, out var item)) return 0;
-        return EnhanceEffects.Amount(path, item.Level, config, item.Evolved);
+        return EnhanceEffects.Amount(path, item.Level, config, StarEvolution.Level(item.Evolved, item.StarLevel));
     }
 }

@@ -5,6 +5,7 @@ using HarmonyLib;
 namespace GearEnhance;
 
 internal enum FeedbackCue { Attempt, Success, Failure, Destroy, Complete, Downgrade, EvolutionAttempt }
+internal enum UiInteraction { Button, CheckBox, Open, Close }
 internal static class GameFeedback
 {
     private static Type soundType, singletonType, guiType;
@@ -12,6 +13,11 @@ internal static class GameFeedback
     internal static string SoundName(FeedbackCue cue) => cue == FeedbackCue.Attempt || cue == FeedbackCue.EvolutionAttempt ? "MenuInstallModFunc"
         : cue == FeedbackCue.Success ? "RepairComplete" : cue == FeedbackCue.Destroy ? "MenuWeaponDisassemble"
         : cue == FeedbackCue.Complete ? "QuestCompleted" : "ErrorMessage";
+    internal static string SoundName(UiInteraction cue) => cue switch
+    {
+        UiInteraction.CheckBox => "MenuCheckBox", UiInteraction.Open => "MenuInspectorWindowOpen",
+        UiInteraction.Close => "MenuInspectorWindowClose", _ => "ButtonClick"
+    };
     internal static FeedbackCue Result(EnhanceReceipt receipt, bool complete) => receipt.Success
         ? complete ? FeedbackCue.Complete : FeedbackCue.Success
         : receipt.FailureMode == FailureMode.Destroy ? FeedbackCue.Destroy
@@ -42,7 +48,9 @@ internal static class GameFeedback
         // Mixed UI playback: don't stop a native source or replace its clip.
         playClip.Invoke(instance, new[] { clip, (object)false, false, 1f });
     }
-    internal static void Play(FeedbackCue cue)
+    internal static void Play(FeedbackCue cue) => PlayNamed(SoundName(cue));
+    internal static void Play(UiInteraction cue) => PlayNamed(SoundName(cue));
+    private static void PlayNamed(string name)
     {
         var instance = Gui();
         if (play == null)
@@ -50,6 +58,6 @@ internal static class GameFeedback
             play = GameBridge.RequiredMethod(guiType, "PlayUISound", 1);
             soundType = play.GetParameters()[0].ParameterType;
         }
-        play.Invoke(instance, new[] { Enum.Parse(soundType, SoundName(cue)) });
+        play.Invoke(instance, new[] { Enum.Parse(soundType, name) });
     }
 }

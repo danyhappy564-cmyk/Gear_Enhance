@@ -6,8 +6,26 @@ namespace GearEnhance;
 
 public sealed partial class Plugin
 {
+    private bool UiButton(Rect rect, string text, GUIStyle style, UiInteraction cue = UiInteraction.Button)
+    {
+        if (!GUI.Button(rect, text, style)) return false;
+        PlayInteraction(cue); return true;
+    }
+    private bool UiButton(Rect rect, GUIContent content, GUIStyle style)
+    {
+        if (!GUI.Button(rect, content, style)) return false;
+        PlayInteraction(UiInteraction.Button); return true;
+    }
+    private bool UiToggle(Rect rect, bool current, string text)
+    {
+        var selected = GUI.Toggle(rect, current, text);
+        if (selected != current) PlayInteraction(UiInteraction.CheckBox);
+        return selected;
+    }
     private const float WindowWidth = 760, WindowHeight = 950;
     private static readonly Color Gold = new Color(0.84f, 0.74f, 0.55f);
+    private double StarBonus(int stars) => stars >= 3 ? thirdStarBonus.Value : completionBonus.Value;
+    private static Color StarTint(int stars) => stars >= 3 ? new Color(0.94f, 0.34f, 0.34f) : Purple;
     private static readonly Color Purple = new Color(0.73f, 0.54f, 0.96f);
     private static readonly Color Danger = new Color(0.94f, 0.30f, 0.24f);
     private static readonly Color Muted = new Color(0.62f, 0.65f, 0.67f);
@@ -21,7 +39,7 @@ public sealed partial class Plugin
     private GUIStyle noteStyle, statusStyle;
     private GUIStyle resultTitleStyle, resultDetailStyle;
     private GUI.WindowFunction drawWindow, drawEvolutionWindow;
-    private float ActiveWindowHeight => evolutionMode ? 870 : WindowHeight;
+    private float ActiveWindowHeight => evolutionMode ? 910 : WindowHeight;
     private GUIStyle heading, body, small, centeredSmall, pathHeading, large, value, selectedValue, chanceValue, costValue;
     private GUIStyle card, primary, secondary, frame;
     private float UiScale => Mathf.Max(0.1f, Mathf.Min(1.1f,
@@ -185,8 +203,8 @@ public sealed partial class Plugin
         Label(23, 9, 200, 36, "장비 강화", heading);
         Label(162, 16, 190, 24, "Gear Enhance · " + EnhanceProtocol.ModVersion, small);
         GUI.enabled = !busy && !resultVisible;
-        if (!uncertain && itemId != null && GUI.Button(new Rect(608, 13, 92, 29), "새로고침", secondary)) main.Enqueue(RefreshQuote);
-        if (GUI.Button(new Rect(712, 10, 32, 32), "×", secondary)) main.Enqueue(Close);
+        if (!uncertain && itemId != null && UiButton(new Rect(608, 13, 92, 29), "새로고침", secondary)) main.Enqueue(RefreshQuote);
+        if (UiButton(new Rect(712, 10, 32, 32), "×", secondary, UiInteraction.Close)) main.Enqueue(Close);
         GUI.enabled = true;
 
         DrawPreview();
@@ -220,15 +238,19 @@ public sealed partial class Plugin
             Label(62, 127, 380, 30, itemId == null ? "장비가 파괴되었습니다" : "장비 이미지를 불러오는 중…", small);
         DrawResultEffect(area);
         Label(517, 76, 217, 38, itemName ?? "장비", heading);
-        Label(518, 112, 216, 25, evolutionMode ? "1차 스타 올 강화 → 진화" : EnhanceEffects.Name(selectedPath) + " 강화", small);
+        Label(518, 112, 216, 25, evolutionMode ? $"{evolutionTargetStars}차 스타 진화" : EnhanceEffects.Name(selectedPath) + " 강화", small);
         var current = preview?.CurrentLevel ?? StatPatches.Registry.Find(itemId ?? "", selectedPath)?.Level ?? 0;
         var next = preview?.NextLevel ?? Math.Max(current, Math.Min(current + 1, maxLevel.Value));
-        Label(513, 145, 225, 64, itemId == null ? "파괴됨" : evolutionMode ? StatPatches.Registry.IsEvolved(itemId) ? "★★" : "★ → ★★" : $"+{current} → +{next}", current >= 100 || next >= 100
-            ? selectedValue : large);
-        var complete = StatPatches.Registry.IsEvolved(itemId ?? "");
-        Label(517, 207, 217, 22, itemId == null ? "본체·부착물·탄약 소실" : complete ? $"★★ 진화 완료 · 효과 +{completionBonus.Value:0.##}%"
-            : evolutionMode ? $"진화 성공 시 효과 +{completionBonus.Value:0.##}%" : "1차 스타 완성 후 진화 가능", small);
-        if (complete) Fill(new Rect(517, 230, 217, 2), Purple);
+        var stars = StatPatches.Registry.StarLevel(itemId ?? "");
+        var finishedEvolution = stars >= evolutionTargetStars;
+        Label(513, 145, 225, 64, itemId == null ? "파괴됨" : evolutionMode
+            ? finishedEvolution ? StarEvolution.Stars(stars) : $"{StarEvolution.Stars(stars)} → {StarEvolution.Stars(evolutionTargetStars)}"
+            : $"+{current} → +{next}", evolutionMode || current >= 100 || next >= 100 ? selectedValue : large);
+        var complete = stars >= 2;
+        Label(517, 207, 217, 22, itemId == null ? "본체·부착물·탄약 소실" : evolutionMode && !finishedEvolution
+            ? $"진화 성공 시 총 효과 +{StarBonus(evolutionTargetStars):0.##}%" : complete
+            ? $"{StarEvolution.Stars(stars)} 진화 완료 · 효과 +{StarBonus(stars):0.##}%" : "1차 스타 완성 후 진화 가능", small);
+        if (complete) Fill(new Rect(517, 230, 217, 2), StarTint(stars));
         Fill(new Rect(24, 231, 712, 1), Line);
     }
 
@@ -239,7 +261,7 @@ public sealed partial class Plugin
         var hovered = GUI.enabled && rect.Contains(Event.current.mousePosition);
         Surface(rect, selected ? selectedGradient : cardGradient, selected ? Gold : hovered ? Muted : Line);
         if (selected) Fill(new Rect(rect.x + 2, rect.y + 1, rect.width - 4, 1), new Color(0.96f, 0.86f, 0.66f));
-        if (GUI.Button(rect, GUIContent.none, card)) main.Enqueue(() => SelectPath(path));
+        if (UiButton(rect, GUIContent.none, card)) main.Enqueue(() => SelectPath(path));
         DrawPathIcon(new Vector2(rect.x + 34, rect.y + 38), path, selected ? Gold : Muted);
         var textX = rect.x + 63;
         var textWidth = rect.width - 73;
@@ -271,7 +293,7 @@ public sealed partial class Plugin
         Label(48, 412, 290, 36, EnhanceEffects.StatName(selectedPath), body);
         var current = preview?.CurrentEffect ?? StatPatches.Registry.Amount(itemId ?? "", selectedPath);
         var next = preview?.NextEffect ?? current;
-        var cap = preview?.EffectCap ?? EnhanceEffects.Amount(selectedPath, maxLevel.Value, Tuning(), true);
+        var cap = preview?.EffectCap ?? EnhanceEffects.Amount(selectedPath, maxLevel.Value, Tuning(), StatPatches.Registry.StarLevel(itemId ?? ""));
         Label(379, 408, 122, 42, EnhanceEffects.Format(selectedPath, current), value);
         Label(532, 410, 40, 38, "→", value);
         Label(594, 408, 126, 42, EnhanceEffects.Format(selectedPath, next), selectedValue);
@@ -299,13 +321,14 @@ public sealed partial class Plugin
     {
         Surface(new Rect(24, 550, 347, 112), cardGradient, Line);
         Surface(new Rect(385, 550, 351, 112), cardGradient, Line);
-        Label(45, 558, 300, 28, "성공률", body);
+        Label(45, 558, 300, 28, preview?.ChanceBoost == true ? $"성공률 (+{preview.BoostPoints:0.##}%p)" : "성공률", body);
         Label(44, 585, 300, 49, preview == null ? "—" : $"{preview.SuccessPercent:0.##}%", chanceValue);
         Bar(new Rect(48, 643, 296, 9), preview?.SuccessPercent ?? 0, 100, Gold);
         Label(405, 558, 310, 28, evolutionMode ? "진화 비용" : "총 강화 비용", body);
         Label(406, 587, 310, 40, preview == null ? "—" : $"{preview.Cost:N0} ₽", costValue);
-        Label(407, 628, 309, 25, preview == null ? "" : $"보유 {preview.AvailableRoubles:N0} ₽", small);
-        Label(24, 670, 515, 23, "가격 기준: " + (preview?.PriceSource ?? "견적 확인 중") + " · 장비 본체", small);
+        Label(407, 628, 309, 25, preview == null ? "" : $"보유 {preview.AvailableRoubles:N0} ₽ · BTC {preview.AvailableBitcoins:N0}", small);
+        Label(24, 670, 515, 23, evolutionMode && evolutionTargetStars == 3 ? "가격 기준: 3차 진화 4,000,000 ₽ 고정"
+            : "가격 기준: " + (preview?.PriceSource ?? "견적 확인 중") + " · 장비 본체", small);
         Label(562, 670, 174, 23, evolutionMode ? "진화 전용 판정" : "선택 항목 +6 시도부터 보호", centeredSmall);
     }
 
@@ -329,7 +352,7 @@ public sealed partial class Plugin
         {
             Label(28, 830, 704, 22, message, statusStyle);
             GUI.enabled = !busy && !resultVisible;
-            destructionConfirmed = GUI.Toggle(new Rect(28, 854, 704, 25), destructionConfirmed,
+            destructionConfirmed = UiToggle(new Rect(28, 854, 704, 25), destructionConfirmed,
                 $" 본체와 부착물 {quote.AttachedItems}개(탄약 포함)가 삭제될 수 있음을 확인했습니다.");
             GUI.enabled = true;
         }
@@ -341,18 +364,18 @@ public sealed partial class Plugin
         GUI.enabled = !busy && !resultVisible;
         var closeRect = new Rect(24, 883, 233, 48);
         Surface(closeRect, cardGradient, Line);
-        if (GUI.Button(closeRect, "닫기", secondary)) main.Enqueue(Close);
+        if (UiButton(closeRect, "닫기", secondary, UiInteraction.Close)) main.Enqueue(Close);
         var expired = quote != null && DateTimeOffset.UtcNow.ToUnixTimeSeconds() >= quote.ExpiresUnixSeconds;
-        var canPay = quote != null && quote.AvailableRoubles >= quote.Cost && !expired
+        var canPay = quote != null && quote.CanPay && !expired
             && (!quote.CanDestroy || destructionConfirmed);
         var atMaximum = (StatPatches.Registry.Find(itemId ?? "", selectedPath)?.Level ?? 0) >= maxLevel.Value;
-        var canEvolve = itemId != null && StatPatches.Registry.IsComplete(itemId) && !StatPatches.Registry.IsEvolved(itemId);
+        var canEvolve = itemId != null && StatPatches.Registry.IsComplete(itemId) && StatPatches.Registry.StarLevel(itemId) < StarEvolution.Maximum;
         GUI.enabled = !busy && !resultVisible && !uncertain && itemId != null && (canEvolve || !atMaximum && (quote == null || expired || canPay));
         var actionRect = new Rect(273, 883, 463, 48);
         Surface(actionRect, goldGradient, new Color(0.95f, 0.85f, 0.64f));
-        var caption = busy ? attemptTimeline.Active ? "강화 진행 중…" : "처리 중…" : canEvolve ? "스타 강화 진화 열기  ★ → ★★" : atMaximum ? "이 항목은 최대 단계입니다" : quote == null || expired ? "견적 다시 불러오기"
+        var caption = busy ? attemptTimeline.Active ? "강화 진행 중…" : "처리 중…" : canEvolve ? $"스타 진화 열기  {StarEvolution.Stars(StatPatches.Registry.StarLevel(itemId))} → {StarEvolution.Stars(StatPatches.Registry.StarLevel(itemId) + 1)}" : atMaximum ? "이 항목은 최대 단계입니다" : quote == null || expired ? "견적 다시 불러오기"
             : quote.BindLegacy ? "기존 단계에 효과 적용 · 무료" : $"강화 시도  {quote.Cost:N0} ₽";
-        if (GUI.Button(actionRect, caption, primary))
+        if (UiButton(actionRect, caption, primary, canEvolve ? UiInteraction.Open : UiInteraction.Button))
         {
             if (canEvolve) main.Enqueue(OpenEvolution);
             else if (quote == null || expired) main.Enqueue(RefreshQuote);
@@ -363,18 +386,29 @@ public sealed partial class Plugin
 
     private void DrawProtection()
     {
-        Surface(new Rect(24, 700, 712, 64), cardGradient, Line);
+        Surface(new Rect(24, 700, 712, 74), cardGradient, Line);
         GUI.enabled = !busy && !resultVisible && !uncertain && quote?.DestructionProtectionAvailable == true;
-        var destruction = GUI.Toggle(new Rect(38, 705, 335, 27), protectDestruction,
+        var destruction = UiToggle(new Rect(38, 705, 335, 27), protectDestruction,
             $" 파괴 방지 (+{preview?.DestructionProtectionFee ?? 0:N0} ₽)");
         if (destruction != protectDestruction) main.Enqueue(() => SetProtection(true, destruction));
         GUI.enabled = !busy && !resultVisible && !uncertain && quote?.DowngradeProtectionAvailable == true;
-        var downgrade = GUI.Toggle(new Rect(390, 705, 335, 27), protectDowngrade,
+        var downgrade = UiToggle(new Rect(390, 705, 335, 27), protectDowngrade,
             $" 단계 하락 방지 (+{preview?.DowngradeProtectionFee ?? 0:N0} ₽)");
         if (downgrade != protectDowngrade) main.Enqueue(() => SetProtection(false, downgrade));
         GUI.enabled = true;
-        Label(38, 734, 684, 24, preview == null ? "보호 적용 비용은 견적에서 확인합니다."
-            : $"기본 {preview.BaseCost:N0} ₽ + 보호 {preview.ProtectionCost:N0} ₽ = 총 {preview.Cost:N0} ₽ · 선택한 보호비도 매 시도 소모", small);
+        DrawChanceBoost(38, 740, 684);
+    }
+    private void DrawChanceBoost(float x, float y, float width)
+    {
+        var stars = evolutionMode ? evolutionTargetStars : 1;
+        var coins = SuccessBoost.Bitcoins(evolutionMode, stars);
+        var fee = SuccessBoost.Roubles(evolutionMode, stars);
+        var points = SuccessBoost.Points(evolutionMode);
+        GUI.enabled = !busy && !resultVisible && !uncertain && (chanceBoost || quote?.ChanceBoostAvailable == true);
+        var enabled = UiToggle(new Rect(x, y, width, 28), chanceBoost,
+            $" 성공률 +{points}%p · BTC {coins}개 + {fee:N0} ₽ (보유 {preview?.AvailableBitcoins ?? 0:N0}개)");
+        if (enabled != chanceBoost) main.Enqueue(() => SetChanceBoost(enabled));
+        GUI.enabled = true;
     }
     private static string RiskNote(EnhanceQuote view)
     {

@@ -28,14 +28,19 @@ public sealed class EnhanceTests
         public SptProfile Saved { get; set; }
         public bool IsEligible { get; set; } = true;
         public bool WeaponCategory { get; set; } = true;
+        public double BasePrice { get; set; } = 100000;
+        public double? DrawValue { get; set; }
+        public override double Draw() => DrawValue ?? base.Draw();
         // These are SPT's real removal methods, not a copied payment/deletion algorithm.
         private readonly InventoryHelper native = new(null!, null!, null!, null!, null!, null!, null!, null!);
         public MemoryBackend(SptProfile saved) : base(null!, null!, null!, null!, null!) => Saved = saved;
         public override SptProfile Profile(MongoId session) => session == Session ? Saved : null!;
         public override bool Eligible(MongoId template) => IsEligible;
         public override bool IsWeapon(MongoId template) => WeaponCategory;
-        public override (double, string) Price(MongoId template, PriceBasis basis) => (100000, "북밸류");
+        public override (double, string) Price(MongoId template, PriceBasis basis) => (BasePrice, "북밸류");
         public override void RemoveMoney(PmcData profile, MongoId id, int count, MongoId session,
+            ItemEventRouterResponse output) => native.RemoveItemByCount(profile, id, count, session, output);
+        public override void RemoveMaterial(PmcData profile, MongoId id, int count, MongoId session,
             ItemEventRouterResponse output) => native.RemoveItemByCount(profile, id, count, session, output);
         public override void Destroy(PmcData profile, MongoId id, MongoId session,
             ItemEventRouterResponse output) => native.RemoveItem(profile, id, session, output);
@@ -81,6 +86,14 @@ public sealed class EnhanceTests
             ["rfGearEnhance"] = new EnhanceState { Tracks = new()
                 { [Target.ToString()] = tracks.ToDictionary(t => t.Path, t => t.Level) } }
         };
+        public Item AddBitcoin(int count = 1, bool foundInRaid = false)
+        {
+            var item = new Item { Id = new(Guid.NewGuid().ToString("N")[..24]), Template = new(SuccessBoost.BitcoinTemplate),
+                ParentId = Stash, SlotId = "hideout", Upd = new() { StackObjectsCount = count, SpawnedInSession = foundInRaid } };
+            Pmc.Inventory!.Items!.Add(item); return item;
+        }
+        public long Bitcoins => Pmc.Inventory!.Items!.Where(i => i.Template.ToString() == SuccessBoost.BitcoinTemplate)
+            .Sum(i => (long)(i.Upd?.StackObjectsCount ?? 1));
         public void AddPart(string slot = "mod_scope") => Pmc.Inventory!.Items!.Add(new()
         {
             Id = Part, Template = new("777777777777777777777777"), ParentId = Target,
@@ -267,7 +280,7 @@ public sealed class EnhanceTests
     {
         var rig = new Rig();
         var router = new EnhanceQueries(Json, rig.Service);
-        var request = "{\"ProtocolVersion\":5,\"ItemId\":\"" + Target + "\",\"Settings\":{\"AlwaysSucceed\":true,\"SuccessPercent\":0}}";
+        var request = "{\"ProtocolVersion\":6,\"ItemId\":\"" + Target + "\",\"Settings\":{\"AlwaysSucceed\":true,\"SuccessPercent\":0}}";
         var result = await router.HandleStaticAsync("/rf/gear-enhance/quote", request, Session, "");
         var reply = Json.Deserialize<ApiReply<EnhanceQuote>>((string)result)!;
         Assert.True(reply.Ok, reply.Error);
@@ -409,7 +422,7 @@ public sealed class EnhanceTests
         var rig = new Rig();
         rig.Execute(rig.Quote());
         var router = new EnhanceQueries(Json, rig.Service);
-        var result = await router.HandleStaticAsync("/rf/gear-enhance/state", "{\"ProtocolVersion\":5}", Session, "");
+        var result = await router.HandleStaticAsync("/rf/gear-enhance/state", "{\"ProtocolVersion\":6}", Session, "");
         var client = Newtonsoft.Json.JsonConvert.DeserializeObject<ApiReply<EnhanceSnapshot>>((string)result)!;
         Assert.True(client.Ok, client.Error);
         Assert.Equal(EnhancePath.Recoil, client.Data!.Items.Single().Path);
@@ -698,6 +711,7 @@ public sealed class EnhanceTests
     [InlineData(2)]
     [InlineData(3)]
     [InlineData(4)]
+    [InlineData(5)]
     public async Task Previous_protocol_clients_are_rejected_before_a_destructive_quote_can_be_issued(int protocol)
     {
         var rig = new Rig();
@@ -996,4 +1010,215 @@ public sealed class EnhanceTests
         var clientReceipt = Newtonsoft.Json.JsonConvert.DeserializeObject<EnhanceReceipt>(Json.Serialize(receipt)!)!;
         Assert.True(clientReceipt.IsEvolution); Assert.True(clientReceipt.Evolved);
     }
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void Third_star_requires_second_star_and_all_current_maxima_and_restores_without_stacking(bool weapon)
+    {
+        var rig = new Rig(20000000); rig.Backend.WeaponCategory = weapon;
+        var paths = weapon ? new[] { EnhancePath.Recoil, EnhancePath.Ergonomics, EnhancePath.Precision }
+            : new[] { EnhancePath.ArmorDurability, EnhancePath.Mobility };
+        rig.Seed(paths.Select(p => (p, 10)).ToArray());
+        Assert.Throws<InvalidOperationException>(() => rig.Service.Quote(Session, Target.ToString(), new(), action: EnhanceAction.EvolveThird));
+        var second = rig.Service.Quote(Session, Target.ToString(), new() { EvolutionSuccessPercent = 100 }, action: EnhanceAction.Evolve);
+        rig.Execute(second);
+        // Actually remove the new field to exercise old two-star saves.
+        var oldJson = System.Text.Json.Nodes.JsonNode.Parse(Json.Serialize(rig.Backend.Saved)!)!;
+        var oldState = oldJson["rfGearEnhance"]!.AsObject();
+        var newField = Assert.Single(oldState.Select(p => p.Key), k => k.Equals("ThirdStarItems", StringComparison.OrdinalIgnoreCase));
+        Assert.True(oldState.Remove(newField));
+        rig.Backend.Saved = Json.Deserialize<SptProfile>(oldJson.ToJsonString())!;
+        var service = new EnhanceService(rig.Backend, Json);
+        var before = new EffectRegistry(); before.Replace(service.Snapshot(Session), Session.ToString());
+        Assert.Equal(2, before.StarLevel(Target.ToString()));
+        var ordinary = service.Quote(Session, Target.ToString(), new(), action: EnhanceAction.EvolveThird);
+        Assert.Equal(10, ordinary.SuccessPercent);
+        Assert.True(EnhanceRules.Succeeds(ordinary.SuccessPercent, 0.099999));
+        Assert.False(EnhanceRules.Succeeds(ordinary.SuccessPercent, 0.1));
+        Assert.Equal(2, ordinary.CurrentStars); Assert.Equal(3, ordinary.NextStars);
+        Assert.Equal(4000000, ordinary.Cost); Assert.True(ordinary.CanDestroy);
+        var quote = service.Quote(Session, Target.ToString(), new() { ThirdStarSuccessPercent = 100 },
+            protection: new() { Destruction = true, Downgrade = true }, action: EnhanceAction.EvolveThird);
+        Assert.False(quote.Protection.Destruction); Assert.False(quote.Protection.Downgrade);
+        Assert.Equal(0, quote.ProtectionCost);
+        Assert.Equal(weapon ? 18 : 36, quote.CurrentEffect);
+        Assert.Equal(weapon ? 20.25 : 40.5, quote.NextEffect, 10);
+        service.Execute(Session, rig.Pmc, quote.QuoteId, false, rig.Output);
+        var receipt = service.Receipt(Session, quote.QuoteId)!;
+        Assert.True(receipt.Success); Assert.True(receipt.IsEvolution); Assert.True(receipt.Evolved);
+        Assert.Equal(3, receipt.StarLevel);
+        before.ApplyReceipt(receipt, Session.ToString());
+        Assert.Equal(3, before.StarLevel(Target.ToString()));
+        Assert.Equal(weapon ? "★★★ 진화 +30" : "★★★ 진화 +20", before.Badge(Target.ToString()));
+        Assert.All(service.Snapshot(Session).Items, record => { Assert.Equal(10, record.Level); Assert.Equal(3, record.StarLevel); });
+        rig.Backend.Saved = Json.Deserialize<SptProfile>(Json.Serialize(rig.Backend.Saved))!;
+        var restored = new EnhanceService(rig.Backend, Json);
+        before.Replace(restored.Snapshot(Session), Session.ToString());
+        before.Replace(restored.Snapshot(Session), Session.ToString());
+        Assert.Equal(weapon ? 20.25 : 40.5, before.Amount(Target.ToString(), paths[0]), 10);
+        Assert.Throws<InvalidOperationException>(() => restored.Quote(Session, Target.ToString(), new(), action: EnhanceAction.EvolveThird));
+        Assert.Throws<InvalidOperationException>(() => restored.Quote(Session, Target.ToString(), new(), action: EnhanceAction.Evolve));
+        Assert.Throws<InvalidOperationException>(() => restored.Execute(Session, rig.Pmc, quote.QuoteId, false, rig.Output));
+        Assert.Equal(14000000, rig.Money);
+    }
+
+    [Fact]
+    public void Third_star_failure_cannot_be_insured_and_deletes_the_entire_tree_insurance_and_both_evolution_records()
+    {
+        var rig = new Rig(10000000); rig.AddPart();
+        rig.Pmc.InsuredItems!.Add(new() { ItemId = Target }); rig.Pmc.InsuredItems.Add(new() { ItemId = Part });
+        rig.Seed((EnhancePath.Recoil, 10), (EnhancePath.Ergonomics, 10), (EnhancePath.Precision, 10));
+        rig.Execute(rig.Service.Quote(Session, Target.ToString(), new() { AlwaysSucceed = true }, action: EnhanceAction.Evolve));
+        var quote = rig.Service.Quote(Session, Target.ToString(), new() { ThirdStarSuccessPercent = 0, FailureMode = FailureMode.KeepItem },
+            protection: new() { Destruction = true, Downgrade = true }, action: EnhanceAction.EvolveThird);
+        Assert.True(quote.CanDestroy); Assert.False(quote.Protection.Destruction); Assert.False(quote.Protection.Downgrade);
+        Assert.False(quote.DestructionProtectionAvailable); Assert.False(quote.DowngradeProtectionAvailable);
+        Assert.Throws<InvalidOperationException>(() => rig.Execute(quote));
+        Assert.Equal(8000000, rig.Money);
+        rig.Execute(quote, true);
+        var receipt = rig.Service.Receipt(Session, quote.QuoteId)!;
+        Assert.False(receipt.Success); Assert.Equal(FailureMode.Destroy, receipt.FailureMode);
+        Assert.False(receipt.DestructionPrevented); Assert.False(receipt.DowngradePrevented); Assert.Equal(0, receipt.StarLevel);
+        Assert.Empty(rig.Service.Snapshot(Session).Items); Assert.Empty(rig.Pmc.InsuredItems);
+        Assert.DoesNotContain(rig.Pmc.Inventory!.Items!, i => i.Id == Target || i.Id == Part);
+        var state = Assert.IsType<EnhanceState>(rig.Backend.Saved.ExtensionData!["rfGearEnhance"]);
+        Assert.DoesNotContain(Target.ToString(), state.EvolvedItems); Assert.DoesNotContain(Target.ToString(), state.ThirdStarItems);
+        Assert.Equal(4000000, rig.Money);
+    }
+
+    [Fact]
+    public async Task Third_star_contract_survives_real_client_serializers_and_stale_star_state_is_rejected_before_payment()
+    {
+        var rig = new Rig(10000000);
+        rig.Seed((EnhancePath.Recoil, 10), (EnhancePath.Ergonomics, 10), (EnhancePath.Precision, 10));
+        rig.Execute(rig.Service.Quote(Session, Target.ToString(), new() { AlwaysSucceed = true }, action: EnhanceAction.Evolve));
+        var router = new EnhanceQueries(Json, rig.Service);
+        var body = Newtonsoft.Json.JsonConvert.SerializeObject(new { ProtocolVersion = EnhanceProtocol.Version,
+            ItemId = Target.ToString(), Action = EnhanceAction.EvolveThird, Settings = new EnhanceSettings { AlwaysSucceed = true } });
+        var response = await router.HandleStaticAsync("/rf/gear-enhance/quote", body, Session, "");
+        var quote = Newtonsoft.Json.JsonConvert.DeserializeObject<ApiReply<EnhanceQuote>>((string)response)!;
+        Assert.True(quote.Ok, quote.Error); Assert.Equal(3, quote.Data!.NextStars);
+        var state = Assert.IsType<EnhanceState>(rig.Backend.Saved.ExtensionData!["rfGearEnhance"]);
+        state.ThirdStarItems.Add(Target.ToString());
+        Assert.Throws<InvalidOperationException>(() => rig.Execute(quote.Data));
+        Assert.Equal(8000000, rig.Money);
+        state.ThirdStarItems.Clear();
+        rig.Execute(quote.Data);
+        var receipt = Newtonsoft.Json.JsonConvert.DeserializeObject<EnhanceReceipt>(Json.Serialize(rig.Service.Receipt(Session, quote.Data.QuoteId))!)!;
+        Assert.True(receipt.Success); Assert.Equal(3, receipt.StarLevel);
+        Assert.Equal(4000000, rig.Money);
+    }
+
+    [Fact]
+    public void Second_star_with_a_track_below_the_current_maximum_cannot_start_third_star_evolution()
+    {
+        var rig = new Rig(10000000);
+        rig.Seed((EnhancePath.Recoil, 10), (EnhancePath.Ergonomics, 10), (EnhancePath.Precision, 10));
+        rig.Execute(rig.Service.Quote(Session, Target.ToString(), new() { AlwaysSucceed = true }, action: EnhanceAction.Evolve));
+        Assert.Throws<InvalidOperationException>(() => rig.Service.Quote(Session, Target.ToString(), new() { MaxLevel = 11 }, action: EnhanceAction.EvolveThird));
+        Assert.Equal(8000000, rig.Money);
+    }
+
+    [Theory]
+    [InlineData(EnhanceAction.Upgrade, false, 82, 1, 510000)]
+    [InlineData(EnhanceAction.Upgrade, true, 82, 1, 510000)]
+    [InlineData(EnhanceAction.Evolve, false, 40, 3, 3000000)]
+    [InlineData(EnhanceAction.Evolve, true, 40, 3, 3000000)]
+    [InlineData(EnhanceAction.EvolveThird, false, 20, 10, 7000000)]
+    [InlineData(EnhanceAction.EvolveThird, true, 20, 10, 7000000)]
+    public void Boost_consumes_fixed_cash_and_bitcoins_once_on_both_success_and_failure_regardless_of_fir(
+        EnhanceAction action, bool succeeds, int chance, int coins, int cash)
+    {
+        var rig = new Rig(20000000);
+        if (action != EnhanceAction.Upgrade)
+            rig.Seed((EnhancePath.Recoil, 10), (EnhancePath.Ergonomics, 10), (EnhancePath.Precision, 10));
+        if (action == EnhanceAction.EvolveThird)
+            rig.Execute(rig.Service.Quote(Session, Target.ToString(), new() { AlwaysSucceed = true }, action: EnhanceAction.Evolve));
+        for (var i = 0; i < 12; i++) rig.AddBitcoin(foundInRaid: i % 2 == 0);
+        rig.Backend.DrawValue = succeeds ? 0 : 0.999999;
+        var money = rig.Money;
+        var quote = rig.Service.Quote(Session, Target.ToString(), new(), action: action, chanceBoost: true);
+        Assert.True(quote.ChanceBoost); Assert.Equal(chance, quote.SuccessPercent);
+        Assert.Equal(action == EnhanceAction.Upgrade ? 7 : 10, quote.BoostPoints);
+        Assert.Equal(coins, quote.BoostBitcoins); Assert.Equal(12, quote.AvailableBitcoins);
+        Assert.Equal(cash, quote.Cost); Assert.Equal(0, quote.ProtectionCost); Assert.True(quote.CanPay);
+        rig.Execute(quote, quote.CanDestroy);
+        var receipt = rig.Service.Receipt(Session, quote.QuoteId)!;
+        Assert.Equal(succeeds, receipt.Success); Assert.Equal(coins, receipt.BitcoinsPaid); Assert.Equal(cash, receipt.Paid);
+        Assert.Equal(money - cash, rig.Money); Assert.Equal(12 - coins, rig.Bitcoins);
+        if (!succeeds && action != EnhanceAction.Upgrade)
+            Assert.Equal(FailureMode.Destroy, receipt.FailureMode);
+        Assert.Throws<InvalidOperationException>(() => rig.Execute(quote, true));
+        Assert.Equal(money - cash, rig.Money); Assert.Equal(12 - coins, rig.Bitcoins);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void Boost_checks_both_wallets_again_at_execution_before_consuming_either(bool insufficientCash)
+    {
+        var rig = new Rig(insufficientCash ? 509999 : 1000000);
+        var coin = rig.AddBitcoin();
+        var quote = rig.Service.Quote(Session, Target.ToString(), new(), chanceBoost: true);
+        if (!insufficientCash) rig.Pmc.Inventory!.Items!.Remove(coin); // consumed elsewhere after the quote
+        var money = rig.Money; var bitcoin = rig.Bitcoins;
+        Assert.Throws<InvalidOperationException>(() => rig.Execute(quote));
+        Assert.Equal(money, rig.Money); Assert.Equal(bitcoin, rig.Bitcoins);
+        Assert.NotNull(rig.Item); Assert.Null(rig.Service.Receipt(Session, quote.QuoteId));
+    }
+
+    [Fact]
+    public async Task Boost_is_bound_to_the_server_quote_and_unchecking_invalidates_the_previous_purchase()
+    {
+        var rig = new Rig(1000000); rig.AddBitcoin();
+        var router = new EnhanceQueries(Json, rig.Service);
+        var body = Newtonsoft.Json.JsonConvert.SerializeObject(new { ProtocolVersion = EnhanceProtocol.Version,
+            ItemId = Target.ToString(), ChanceBoost = true, Settings = new EnhanceSettings() });
+        var response = await router.HandleStaticAsync("/rf/gear-enhance/quote", body, Session, "");
+        var boosted = Newtonsoft.Json.JsonConvert.DeserializeObject<ApiReply<EnhanceQuote>>((string)response)!;
+        Assert.True(boosted.Ok, boosted.Error); Assert.True(boosted.Data!.ChanceBoost);
+        Assert.Equal(82, boosted.Data.SuccessPercent); Assert.Equal(510000, boosted.Data.Cost);
+        Assert.Equal(1, boosted.Data.BoostBitcoins); Assert.True(boosted.Data.CanPay);
+        var unboosted = rig.Service.Quote(Session, Target.ToString(), new() { AlwaysSucceed = true });
+        Assert.Throws<InvalidOperationException>(() => rig.Execute(boosted.Data));
+        rig.Execute(unboosted);
+        Assert.Equal(990000, rig.Money); Assert.Equal(1, rig.Bitcoins);
+        Assert.Equal(0, rig.Service.Receipt(Session, unboosted.QuoteId)!.BitcoinsPaid);
+    }
+
+    [Fact]
+    public void Boost_preserves_stage_prices_and_protection_fees_caps_at_one_hundred_and_skips_unneeded_purchase()
+    {
+        var rig = new Rig(10000000); rig.AddBitcoin(2);
+        rig.Seed((EnhancePath.Recoil, 5));
+        var quote = rig.Service.Quote(Session, Target.ToString(), new(), EnhancePath.Recoil,
+            new() { Destruction = true, Downgrade = true }, chanceBoost: true);
+        Assert.Equal(50, quote.BaseSuccessPercent); Assert.Equal(57, quote.SuccessPercent);
+        Assert.Equal(1464369, quote.Cost); Assert.Equal(933851, quote.ProtectionCost);
+        Assert.Equal(500000, quote.BoostCost); Assert.Equal(30518, quote.BaseCost);
+        var capped = rig.Service.Quote(Session, Target.ToString(), new() { SuccessPercent = 98, SuccessLossPerLevel = 0 },
+            chanceBoost: true);
+        Assert.Equal(100, capped.SuccessPercent); Assert.Equal(2, capped.BoostPoints);
+        Assert.False(capped.CanDestroy);
+        var guaranteed = rig.Service.Quote(Session, Target.ToString(), new() { AlwaysSucceed = true }, chanceBoost: true);
+        Assert.False(guaranteed.ChanceBoost); Assert.False(guaranteed.ChanceBoostAvailable);
+        Assert.Equal(0, guaranteed.BoostCost); Assert.Equal(0, guaranteed.BoostBitcoins);
+        Assert.Equal(guaranteed.BaseCost, guaranteed.Cost); Assert.Equal(2, rig.Bitcoins);
+    }
+
+    [Fact]
+    public void Bitcoins_outside_the_stash_cannot_pay_and_third_star_base_cost_stays_exactly_four_million()
+    {
+        var rig = new Rig(20000000);
+        var coin = rig.AddBitcoin(); coin.ParentId = Session;
+        var unavailable = rig.Service.Quote(Session, Target.ToString(), new(), chanceBoost: true);
+        Assert.Equal(0, unavailable.AvailableBitcoins); Assert.False(unavailable.CanPay);
+        Assert.Throws<InvalidOperationException>(() => rig.Execute(unavailable));
+        rig.Seed((EnhancePath.Recoil, 10), (EnhancePath.Ergonomics, 10), (EnhancePath.Precision, 10));
+        rig.Execute(rig.Service.Quote(Session, Target.ToString(), new() { AlwaysSucceed = true }, action: EnhanceAction.Evolve));
+        rig.Backend.BasePrice = 10000000;
+        var third = rig.Service.Quote(Session, Target.ToString(), new() { MinimumCost = 9000000, EvolutionCostPercent = 10000 }, action: EnhanceAction.EvolveThird);
+        Assert.Equal(4000000, third.Cost); Assert.Equal(10, third.SuccessPercent); Assert.Equal(18000000, rig.Money);
+    }
+
 }

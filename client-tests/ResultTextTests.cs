@@ -10,6 +10,8 @@ public sealed class ResultTextTests
     {
         Assert.Equal("강화 성공!", ResultText.Title(new() { Success = true }, false));
         Assert.Equal("스타 강화 진화 성공!", ResultText.Title(new() { Success = true, IsEvolution = true }, true));
+        Assert.Equal("3차 스타 강화 진화 성공!", ResultText.Title(new() { Success = true, IsEvolution = true, StarLevel = 3 }, true));
+        Assert.Contains("★★★", ResultText.Detail(new() { Success = true, IsEvolution = true, StarLevel = 3 }));
         Assert.Equal("장비 파괴", ResultText.Title(new() { FailureMode = FailureMode.Destroy }, false));
         Assert.Equal("강화 단계 하락", ResultText.Title(new() { FailureMode = FailureMode.Downgrade }, false));
         var receipt = new EnhanceReceipt { DestructionPrevented = true, FailureMode = FailureMode.KeepItem };

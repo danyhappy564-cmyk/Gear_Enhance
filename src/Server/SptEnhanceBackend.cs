@@ -1,3 +1,4 @@
+using System.Security.Cryptography;
 using SPTarkov.DI.Annotations;
 using SPTarkov.Server.Core.Helpers.Items;
 using SPTarkov.Server.Core.Helpers.Profile;
@@ -18,6 +19,7 @@ namespace GearEnhance;
 public class SptEnhanceBackend(SaveServer saves, ItemHelper items, InventoryHelper inventory,
     HandbookHelper handbook, RagfairPriceService flea)
 {
+    public virtual double Draw() => RandomNumberGenerator.GetInt32(int.MaxValue) / (double)int.MaxValue;
     public virtual SptProfile Profile(MongoId session) => saves.GetProfile(session);
     public virtual bool IsWeapon(MongoId template) => items.IsOfBaseclass(template, BaseClasses.WEAPON);
 
@@ -37,6 +39,9 @@ public class SptEnhanceBackend(SaveServer saves, ItemHelper items, InventoryHelp
     }
 
     public virtual void RemoveMoney(PmcData profile, MongoId id, int count, MongoId session,
+        ItemEventRouterResponse output) => inventory.RemoveItemByCount(profile, id, count, session, output);
+
+    public virtual void RemoveMaterial(PmcData profile, MongoId id, int count, MongoId session,
         ItemEventRouterResponse output) => inventory.RemoveItemByCount(profile, id, count, session, output);
 
     public virtual void Destroy(PmcData profile, MongoId id, MongoId session,

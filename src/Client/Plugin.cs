@@ -17,7 +17,7 @@ public sealed partial class Plugin : BaseUnityPlugin
     private ConfigEntry<bool> menuEnabled, always, soundsEnabled, providedSounds, highRiskEnabled;
     private ConfigEntry<float> chance, chanceLoss, destructionChance, completionBonus, soundVolume, percent, growth;
     private ConfigEntry<float> destructionProtectionPrice, downgradeProtectionPrice;
-    private ConfigEntry<float> evolutionChance, evolutionPrice;
+    private ConfigEntry<float> evolutionChance, evolutionPrice, thirdStarChance, thirdStarBonus;
     private ConfigEntry<bool> showDeveloperOptions, detailedLogging;
     private readonly DeveloperOptions developerOptions = new DeveloperOptions();
     private ConfigEntry<int> maxLevel, minimum;
@@ -30,12 +30,13 @@ public sealed partial class Plugin : BaseUnityPlugin
     private EnhancePath selectedPath;
     private EnhanceQuote quote, preview;
     private bool visible, busy, destructionConfirmed, uncertain, weapon, firstQuote;
-    private bool protectDestruction, protectDowngrade;
+    private bool protectDestruction, protectDowngrade, chanceBoost;
     private bool evolutionMode;
+    private int evolutionTargetStars = 2;
     private int generation, syncGeneration;
     private string message = "";
     private long repaintCount, repaintTicks, maximumRepaintTicks;
-    private bool feedbackUnavailable;
+    private bool feedbackUnavailable, uiFeedbackUnavailable;
     private bool providedFeedbackUnavailable, attemptUsesAudioClock;
     private EnhancementAudio feedbackAudio;
     private double attemptDuration = 1;
@@ -81,7 +82,7 @@ public sealed partial class Plugin : BaseUnityPlugin
         BindEffect(EnhancePath.ArmorDurability, "6. 방어구 효과", 3, 30);
         BindEffect(EnhancePath.Mobility, "6. 방어구 효과", 2, 20);
         detailedLogging = Config.Bind("7. 피드백", "자세한 로그 남기기", false, "체크한 동안 효과음 설정·재생·대체 경로와 강화 창 UI CPU 진단을 LogOutput.log에 남깁니다. 실제 오류·경고는 체크와 관계없이 기록합니다.");
-        soundsEnabled = Config.Bind("7. 피드백", "강화 효과음", true, "강화 중·성공·실패·단계 하락·파괴에 효과음을 재생합니다. 끄더라도 게이지 시간은 유지합니다.");
+        soundsEnabled = Config.Bind("7. 피드백", "강화 효과음", true, "강화 중·결과·버튼·항목·체크박스·창 여닫기에 효과음을 재생합니다. 끄더라도 게이지 시간은 유지합니다.");
         providedSounds = Config.Bind("7. 피드백", "전용 강화 음원 사용", true, "사용자 제공 음원6개 사용. 끄면 기존 게임 UI 소리를 사용합니다. 전용 음원 오류 시에도 기본음으로 대체합니다.");
         soundVolume = Config.Bind("7. 피드백", "전용 음원 음량 (%)", 70f, new ConfigDescription("게임의 마스터/인터페이스 음량에 추가로 곱합니다. 0이면 전용 음원 무음. 기본 게임음 모드에서는 게임 소리 설정을 사용합니다.", new AcceptableValueRange<float>(0, 100)));
         completionBonus = BindDeveloper("8. 완성 보너스", "전 항목 완성 추가 효과 (%)", 20f, new ConfigDescription("모든 항목 최대 달성 후 별도 스타 강화 진화에 성공한 장비에만 추가 배율. 예: 반동15%→18%, ★★ 보라색. 자동 적용이 아닙니다.", new AcceptableValueRange<float>(0, 100)));
@@ -89,6 +90,8 @@ public sealed partial class Plugin : BaseUnityPlugin
         downgradeProtectionPrice = BindDeveloper("9. 강화 보호", "단계 하락 방지 비용 계수 (%)", 35f, new ConfigDescription("추가 비용 = 기본 강화 비용 × 이 값/100 × 시도 단계². 하락 위험이 있을 때만 부과합니다. 보호비도 성공/실패와 관계없이 소모됩니다.", new AcceptableValueRange<float>(0, 1000)));
         evolutionChance = BindDeveloper("10. 스타 강화 진화", "진화 성공률 (%)", 30f, new ConfigDescription("1차 스타 전 항목 최대 달성 후 별도 진화 창에서 사용합니다. 실패 시 파괴, 보호 불가.", new AcceptableValueRange<float>(0, 100)));
         evolutionPrice = BindDeveloper("10. 스타 강화 진화", "진화 기준가 대비 비용 (%)", 300f, new ConfigDescription("진화 비용 = 최소 200만 루블과 본체 기준가 × 이 값/100 중 큰 값. 기본3배, 1회 최대1억 루블.", new AcceptableValueRange<float>(0, 10000)));
+        thirdStarChance = BindDeveloper("11. 3차 스타 진화", "3차 스타 성공률 (%)", 10f, new ConfigDescription("2차 스타 성공 및 전 항목 최대인 장비만 시도. 실패 시 보호 없이 파괴합니다.", new AcceptableValueRange<float>(0, 100)));
+        thirdStarBonus = BindDeveloper("11. 3차 스타 진화", "3차 스타 총 추가 효과 (%)", 35f, new ConfigDescription("기본 강화 효과 대비 총 추가 배율. 2차20%에 중첩하지 않고 총35%로 대체합니다. 성공 표식은 빨간색 ★★★.", new AcceptableValueRange<float>(0, 100)));
         // Migrate the previous shipped default once; preserve custom developer odds.
         var balanceVersion = Config.Bind("0. 내부", "밸런스 설정 버전", 0,
             new ConfigDescription("내부 설정 이전용", null, new ConfigurationManagerAttributes { Browsable = false }));
@@ -115,7 +118,7 @@ public sealed partial class Plugin : BaseUnityPlugin
             if (ReferenceEquals(args.ChangedSetting, soundsEnabled) || ReferenceEquals(args.ChangedSetting, providedSounds)
                 || ReferenceEquals(args.ChangedSetting, soundVolume))
             {
-                feedbackAudio?.Stop(); feedbackUnavailable = providedFeedbackUnavailable = false;
+                feedbackAudio?.Stop(); feedbackUnavailable = providedFeedbackUnavailable = uiFeedbackUnavailable = false;
                 if (providedSounds.Value && feedbackAudio == null) PrepareFeedback();
                 return;
             }
@@ -166,7 +169,7 @@ public sealed partial class Plugin : BaseUnityPlugin
     }
     private EffectTuning Tuning() => new EffectTuning
     {
-        MaxLevel = maxLevel.Value, CompletionBonusPercent = completionBonus.Value,
+        MaxLevel = maxLevel.Value, CompletionBonusPercent = completionBonus.Value, ThirdStarBonusPercent = thirdStarBonus.Value,
         RecoilPerLevel = effectConfig[EnhancePath.Recoil].Step.Value, RecoilCap = effectConfig[EnhancePath.Recoil].Cap.Value,
         ErgonomicsPerLevel = effectConfig[EnhancePath.Ergonomics].Step.Value, ErgonomicsCap = effectConfig[EnhancePath.Ergonomics].Cap.Value,
         PrecisionPerLevel = effectConfig[EnhancePath.Precision].Step.Value, PrecisionCap = effectConfig[EnhancePath.Precision].Cap.Value,
@@ -179,7 +182,7 @@ public sealed partial class Plugin : BaseUnityPlugin
         SuccessLossPerLevel = chanceLoss.Value, HighRiskEnabled = highRiskEnabled.Value,
         HighRiskDestructionPercent = destructionChance.Value,
         DestructionProtectionPercent = destructionProtectionPrice.Value, DowngradeProtectionPercent = downgradeProtectionPrice.Value,
-        EvolutionSuccessPercent = evolutionChance.Value, EvolutionCostPercent = evolutionPrice.Value,
+        EvolutionSuccessPercent = evolutionChance.Value, ThirdStarSuccessPercent = thirdStarChance.Value, EvolutionCostPercent = evolutionPrice.Value,
         PriceBasis = price.Value, CostPercent = percent.Value, CostPerLevel = growth.Value,
         MinimumCost = minimum.Value, FailureMode = failure.Value, Effects = Tuning()
     };
@@ -218,8 +221,8 @@ public sealed partial class Plugin : BaseUnityPlugin
             itemIcon = GameBridge.RequiredMethod(GameBridge.RuntimeType("EFT.UI.DragAndDrop.ItemViewFactory"), "LoadItemIcon", 3)
                 .Invoke(null, new[] { item, (object)1, false });
             CreateBlocker(); ResetWindow();
-            visible = true; quote = null; preview = null; firstQuote = true; destructionConfirmed = false; generation++;
-            protectDestruction = protectDowngrade = false;
+            visible = true; PlayInteraction(UiInteraction.Open); quote = null; preview = null; firstQuote = true; destructionConfirmed = false; generation++;
+            protectDestruction = protectDowngrade = chanceBoost = false;
             RefreshQuote();
         }
         catch (Exception ex) { Logger.LogError(ex); Close(); }
@@ -274,10 +277,10 @@ public sealed partial class Plugin : BaseUnityPlugin
                 selectedPath = StatPatches.Registry.Find(itemId)?.Path ?? selectedPath;
                 firstQuote = false;
             }
-            if (evolutionMode && StatPatches.Registry.IsEvolved(itemId))
+            if (evolutionMode && StatPatches.Registry.StarLevel(itemId) >= evolutionTargetStars)
             {
                 preview = null;
-                message = resultMessage ?? "★★ 스타 강화 진화를 완료했습니다.";
+                message = resultMessage ?? StarEvolution.Stars(evolutionTargetStars) + " 스타 강화 진화를 완료했습니다.";
                 return;
             }
             if (!evolutionMode && (StatPatches.Registry.Find(itemId, selectedPath)?.Level ?? 0) >= maxLevel.Value)
@@ -288,10 +291,11 @@ public sealed partial class Plugin : BaseUnityPlugin
             }
             var response = await GameBridge.WithTimeout(GameBridge.Query<EnhanceQuote>(
                 "/rf/gear-enhance/quote", new { ProtocolVersion = EnhanceProtocol.Version, ItemId = itemId, Path = selectedPath, Settings = Settings(),
-                    Protection = new EnhanceProtection { Destruction = protectDestruction, Downgrade = protectDowngrade },
-                    Action = evolutionMode ? EnhanceAction.Evolve : EnhanceAction.Upgrade }));
+                    Protection = new EnhanceProtection { Destruction = protectDestruction, Downgrade = protectDowngrade }, ChanceBoost = chanceBoost,
+                    Action = evolutionMode ? evolutionTargetStars == 3 ? EnhanceAction.EvolveThird : EnhanceAction.Evolve : EnhanceAction.Upgrade }));
             if (current != generation) { message = "설정이 바뀌었습니다. 견적을 다시 불러와 주세요."; return; }
             quote = preview = response; weapon = response.IsWeapon; message = resultMessage ?? ""; destructionConfirmed = false;
+            chanceBoost = response.ChanceBoost;
             protectDestruction = response.Protection.Destruction; protectDowngrade = response.Protection.Downgrade;
         }
         catch (Exception ex) { message = ex.GetBaseException().Message; Logger.LogWarning(ex); }
@@ -323,6 +327,13 @@ public sealed partial class Plugin : BaseUnityPlugin
         busy = true; quote = null; message = "강화 진행 중…";
     }
 
+    private void SetChanceBoost(bool enabled)
+    {
+        if (busy || resultVisible || uncertain) return;
+        chanceBoost = enabled; generation++; quote = null; destructionConfirmed = false;
+        RefreshQuote();
+    }
+
     private void SetProtection(bool destruction, bool enabled)
     {
         if (busy || resultVisible || evolutionMode || uncertain) return;
@@ -352,7 +363,7 @@ public sealed partial class Plugin : BaseUnityPlugin
                 : receipt.FailureMode == FailureMode.Downgrade
                     ? $"강화 실패 · {EnhanceEffects.Name(receipt.Path)} +{receipt.Level}로 하락 · {receipt.Paid:N0} ₽ 소모"
                     : $"강화 실패 · {receipt.Paid:N0} ₽ 소모\n{FailureText(receipt.FailureMode)}";
-            if (receipt.Success && receipt.IsEvolution) message = "스타 강화 진화 성공! ★★ 보라색 표식 · 진화 보너스 적용";
+            if (receipt.Success && receipt.IsEvolution) message = $"스타 강화 진화 성공! {StarEvolution.Stars(receipt.StarLevel)} {StarEvolution.ColorName(receipt.StarLevel)} 표식 · 진화 보너스 적용";
             else if (receipt.Success && attempt.CompletesOnSuccess) message += " · 1차 스타 전 항목 완성! 진화 창을 열 수 있습니다.";
             StatPatches.Registry.ApplyReceipt(receipt, GameBridge.ProfileId(session));
             completed = true;
@@ -379,6 +390,17 @@ public sealed partial class Plugin : BaseUnityPlugin
                 var result = message;
                 main.Enqueue(() => LoadQuote(result));
             }
+        }
+    }
+
+    private void PlayInteraction(UiInteraction cue)
+    {
+        if (soundsEnabled?.Value != true || uiFeedbackUnavailable) return;
+        try { GameFeedback.Play(cue); }
+        catch (Exception ex)
+        {
+            uiFeedbackUnavailable = true;
+            Logger.LogWarning("강화 창 UI 소리 연결 실패: " + ex.GetBaseException().Message);
         }
     }
 

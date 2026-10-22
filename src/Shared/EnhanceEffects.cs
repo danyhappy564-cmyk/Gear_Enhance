@@ -6,6 +6,7 @@ namespace GearEnhance;
 public sealed class EffectTuning
 {
     public int MaxLevel { get; set; } = 10;
+    public double ThirdStarBonusPercent { get; set; } = 35;
     public double CompletionBonusPercent { get; set; } = 20;
     public double RecoilPerLevel { get; set; } = 1.5;
     public double RecoilCap { get; set; } = 15;
@@ -21,7 +22,7 @@ public sealed class EffectTuning
     public void Validate()
     {
         if (MaxLevel < 1 || MaxLevel > 100) throw new ArgumentException("최대 강화 단계를 확인해 주세요.");
-        Check(CompletionBonusPercent, 100);
+        Check(CompletionBonusPercent, 100); Check(ThirdStarBonusPercent, 100);
         Check(RecoilPerLevel, 10); Check(RecoilCap, 80);
         Check(ErgonomicsPerLevel, 10); Check(ErgonomicsCap, 50);
         Check(PrecisionPerLevel, 10); Check(PrecisionCap, 80);
@@ -55,6 +56,9 @@ public static class EnhanceEffects
     };
 
     public static double Amount(EnhancePath path, int level, EffectTuning tuning, bool complete = false)
+        => Amount(path, level, tuning, complete ? 2 : 1);
+
+    public static double Amount(EnhancePath path, int level, EffectTuning tuning, int stars)
     {
         var step = path switch
         {
@@ -68,7 +72,7 @@ public static class EnhanceEffects
         var maximum = tuning.MaxLevel;
         var total = Math.Min(Cap(path, tuning), step * maximum);
         var amount = total * EnhanceProgression.Points(level, maximum) / EnhanceProgression.Points(maximum, maximum);
-        if (complete) amount *= 1 + tuning.CompletionBonusPercent / 100;
+        amount *= 1 + StarEvolution.Bonus(stars, tuning) / 100;
         return Math.Min(path == EnhancePath.Ergonomics ? 50 : 80, amount);
     }
 

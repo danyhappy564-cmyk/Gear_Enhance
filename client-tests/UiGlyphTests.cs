@@ -31,4 +31,13 @@ public sealed class UiGlyphTests
         Assert.Equal("QuestCompleted", GameFeedback.SoundName(FeedbackCue.Complete));
         Assert.Equal("ErrorMessage", GameFeedback.SoundName(FeedbackCue.Downgrade));
     }
+    [Fact]
+    public void Interaction_sounds_use_the_games_button_checkbox_and_inspector_window_cues()
+    {
+        Assert.Equal("ButtonClick", GameFeedback.SoundName(UiInteraction.Button));
+        Assert.Equal("MenuCheckBox", GameFeedback.SoundName(UiInteraction.CheckBox));
+        Assert.Equal("MenuInspectorWindowOpen", GameFeedback.SoundName(UiInteraction.Open));
+        Assert.Equal("MenuInspectorWindowClose", GameFeedback.SoundName(UiInteraction.Close));
+    }
+
 }

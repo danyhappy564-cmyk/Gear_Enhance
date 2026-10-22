@@ -22,6 +22,7 @@ public sealed class EnhanceState
     // Legacy 0.1/0.2 fields are read once, then removed per migrated item.
     public Dictionary<string, EnhancePath> Paths { get; set; } = new();
     public Dictionary<string, Dictionary<EnhancePath, int>> Tracks { get; set; } = new();
+    public HashSet<string> ThirdStarItems { get; set; } = new();
     public HashSet<string> EvolvedItems { get; set; } = new();
 }
 
@@ -35,10 +36,10 @@ public sealed class EnhanceService(SptEnhanceBackend backend, JsonUtil serialize
     private readonly object sync = new();
     private readonly Dictionary<MongoId, PendingQuote> pending = new();
 
-    private sealed record PendingQuote(EnhanceQuote View, string Fingerprint, string TrackFingerprint, bool Evolved);
+    private sealed record PendingQuote(EnhanceQuote View, string Fingerprint, string TrackFingerprint, int Stars);
 
     public EnhanceQuote Quote(MongoId session, string itemId, EnhanceSettings settings, EnhancePath? path = null,
-        EnhanceProtection? protection = null, EnhanceAction action = EnhanceAction.Upgrade)
+        EnhanceProtection? protection = null, EnhanceAction action = EnhanceAction.Upgrade, bool chanceBoost = false)
     {
         lock (sync)
         {
@@ -50,12 +51,13 @@ public sealed class EnhanceService(SptEnhanceBackend backend, JsonUtil serialize
             var state = State(session);
             // Discard metadata only for items no longer owned by this profile.
             var owned = InventoryItems(profile).Select(i => i.Id.ToString()).ToHashSet();
-            foreach (var key in state.Levels.Keys.Concat(state.Tracks.Keys).Where(k => !owned.Contains(k)).Distinct().ToArray())
+            foreach (var key in state.Levels.Keys.Concat(state.Tracks.Keys).Concat(state.EvolvedItems).Concat(state.ThirdStarItems).Where(k => !owned.Contains(k)).Distinct().ToArray())
             {
                 state.Levels.Remove(key);
                 state.Paths.Remove(key);
                 state.Tracks.Remove(key);
                 state.EvolvedItems.Remove(key);
+                state.ThirdStarItems.Remove(key);
             }
             var weapon = backend.IsWeapon(target.Template);
             var tracks = state.Tracks.GetValueOrDefault(itemId);
@@ -66,11 +68,14 @@ public sealed class EnhanceService(SptEnhanceBackend backend, JsonUtil serialize
             var legacy = (tracks == null || tracks.Count == 0) && state.Levels.GetValueOrDefault(itemId) > 0;
             var level = legacy ? state.Levels[itemId] : tracks?.GetValueOrDefault(selected) ?? 0;
             if (level < 0 || level > 100) throw new InvalidOperationException("강화 단계 기록이 올바르지 않습니다.");
-            var evolving = action == EnhanceAction.Evolve;
-            var evolved = state.EvolvedItems.Contains(itemId);
+            var evolving = action != EnhanceAction.Upgrade;
+            var third = action == EnhanceAction.EvolveThird;
+            var stars = Stars(state, itemId);
             if (evolving && (legacy || !EnhanceProgression.AllAtLeast(tracks, weapon, settings.MaxLevel)))
                 throw new InvalidOperationException("모든 항목을 최대 단계까지 강화한 뒤 스타 강화 진화를 시도해 주세요.");
-            if (evolving && evolved) throw new InvalidOperationException("이미 스타 강화 진화를 완료한 장비입니다.");
+            if (evolving && ((!third && stars != 1) || (third && stars != 2)))
+                throw new InvalidOperationException(third ? "2차 스타 진화를 완료한 장비만 3차 진화를 시도할 수 있습니다." : "이미 2차 스타 진화를 완료한 장비입니다.");
+            var nextStars = evolving ? stars + 1 : stars;
             // The client hides maxed tracks; the server enforces it for any caller.
             if (!legacy && !evolving && level >= settings.MaxLevel)
                 throw new InvalidOperationException("이 항목은 최대 단계입니다. 다른 항목을 선택해 주세요.");
@@ -87,21 +92,30 @@ public sealed class EnhanceService(SptEnhanceBackend backend, JsonUtil serialize
             {
                 QuoteId = Guid.NewGuid().ToString("N"), ItemId = itemId,
                 CurrentLevel = level, NextLevel = nextLevel,
-                Cost = legacy ? 0 : evolving ? EnhanceRules.EvolutionCost(price, settings) : EnhanceRules.Cost(price, level, settings),
+                Cost = legacy ? 0 : evolving ? third ? 4000000 : EnhanceRules.EvolutionCost(price, settings) : EnhanceRules.Cost(price, level, settings),
                 AvailableRoubles = Money(profile).Sum(i => Count(i)),
-                SuccessPercent = legacy || settings.AlwaysSucceed ? 100 : evolving ? settings.EvolutionSuccessPercent : EnhanceProgression.Success(level, settings),
+                SuccessPercent = legacy || settings.AlwaysSucceed ? 100 : evolving ? third ? settings.ThirdStarSuccessPercent : settings.EvolutionSuccessPercent : EnhanceProgression.Success(level, settings),
                 PriceSource = source, FailureMode = legacy ? FailureMode.KeepItem : evolving ? FailureMode.Destroy : highRisk ? FailureMode.Downgrade : settings.FailureMode,
                 HighRisk = highRisk, DestructionPercent = highRisk ? settings.HighRiskDestructionPercent : 0,
                 AttachedItems = tree.Count - 1,
                 ExpiresUnixSeconds = DateTimeOffset.UtcNow.AddSeconds(60).ToUnixTimeSeconds(),
                 Path = selected, IsWeapon = weapon,
                 BindLegacy = legacy,
-                CurrentEffect = legacy ? 0 : EnhanceEffects.Amount(selected, level, settings.Effects, evolved),
-                NextEffect = EnhanceEffects.Amount(selected, nextLevel, settings.Effects, evolved || evolving),
-                EffectCap = EnhanceEffects.Amount(selected, settings.MaxLevel, settings.Effects, true),
+                CurrentEffect = legacy ? 0 : EnhanceEffects.Amount(selected, level, settings.Effects, stars),
+                NextEffect = EnhanceEffects.Amount(selected, nextLevel, settings.Effects, nextStars),
+                EffectCap = EnhanceEffects.Amount(selected, settings.MaxLevel, settings.Effects, evolving ? nextStars : stars),
                 Complete = complete, CompletesOnSuccess = completes,
-                NextGainMultiplier = EnhanceProgression.GainMultiplier(nextLevel, settings.MaxLevel), IsEvolution = evolving
+                NextGainMultiplier = EnhanceProgression.GainMultiplier(nextLevel, settings.MaxLevel), IsEvolution = evolving, CurrentStars = stars, NextStars = nextStars
             };
+            quote.BaseSuccessPercent = quote.SuccessPercent;
+            quote.AvailableBitcoins = Materials(profile, SuccessBoost.BitcoinTemplate).Sum(Count);
+            quote.ChanceBoost = chanceBoost && quote.ChanceBoostAvailable;
+            if (quote.ChanceBoost)
+            {
+                quote.BoostCost = SuccessBoost.Roubles(evolving, nextStars);
+                quote.BoostBitcoins = SuccessBoost.Bitcoins(evolving, nextStars);
+                quote.SuccessPercent = Math.Min(100, quote.SuccessPercent + SuccessBoost.Points(evolving));
+            }
             // Per-level loss must not silently turn a positive base chance into a
             // paid attempt that can never succeed. An explicit 0% base is a choice.
             if (!legacy && !evolving && settings.SuccessPercent > 0 && quote.SuccessPercent <= 0)
@@ -121,8 +135,9 @@ public sealed class EnhanceService(SptEnhanceBackend backend, JsonUtil serialize
             quote.Cost = ProtectionCosts.Total(quote.BaseCost,
                 quote.Protection.Destruction ? quote.DestructionProtectionFee : 0,
                 quote.Protection.Downgrade ? quote.DowngradeProtectionFee : 0);
+            quote.Cost = ProtectionCosts.Total(quote.Cost, quote.BoostCost, 0);
             // One current quote per profile; opening another item invalidates the old one.
-            pending[session] = new(quote, Fingerprint(tree), TracksFingerprint(tracks), evolved);
+            pending[session] = new(quote, Fingerprint(tree), TracksFingerprint(tracks), stars);
             return quote;
         }
     }
@@ -146,7 +161,7 @@ public sealed class EnhanceService(SptEnhanceBackend backend, JsonUtil serialize
                     .SelectMany(p => p.Value.Where(track => track.Value > 0 && track.Value <= 100
                         && EnhanceEffects.Allowed(track.Key, backend.IsWeapon(owned[p.Key].Template)))
                         .Select(track => new EnhanceRecord { ItemId = p.Key, Path = track.Key, Level = track.Value,
-                            Evolved = state.EvolvedItems.Contains(p.Key) }))
+                            Evolved = Stars(state, p.Key) >= 2, StarLevel = Stars(state, p.Key) }))
                     .ToArray()
             };
         }
@@ -173,10 +188,13 @@ public sealed class EnhanceService(SptEnhanceBackend backend, JsonUtil serialize
                 : state.Tracks.GetValueOrDefault(quote.ItemId)?.GetValueOrDefault(quote.Path) ?? 0;
             if (recordedLevel != quote.CurrentLevel || Fingerprint(tree) != saved.Fingerprint
                 || TracksFingerprint(state.Tracks.GetValueOrDefault(quote.ItemId)) != saved.TrackFingerprint
-                || state.EvolvedItems.Contains(quote.ItemId) != saved.Evolved)
+                || Stars(state, quote.ItemId) != saved.Stars)
                 throw new InvalidOperationException("장비 상태가 바뀌었습니다. 견적을 다시 불러와 주세요.");
             if (quote.CanDestroy && !confirmDestruction)
                 throw new InvalidOperationException("장비와 부착물 파괴 안내를 확인해 주세요.");
+            var material = Materials(profile, SuccessBoost.BitcoinTemplate).ToList();
+            if (material.Sum(Count) < quote.BoostBitcoins)
+                throw new InvalidOperationException("성공률 상승에 필요한 비트코인이 부족합니다.");
             var purse = Money(profile).ToList();
             if (purse.Sum(i => Count(i)) < quote.Cost)
                 throw new InvalidOperationException("창고의 루블이 부족합니다.");
@@ -184,9 +202,9 @@ public sealed class EnhanceService(SptEnhanceBackend backend, JsonUtil serialize
             // All checks precede payment. Native item-event output keeps the
             // client's stacks, deleted items and durability in sync with SPT.
             var success = EnhanceRules.Succeeds(quote.SuccessPercent,
-                RandomNumberGenerator.GetInt32(int.MaxValue) / (double)int.MaxValue);
+                backend.Draw());
             var failureMode = !success ? EnhanceRules.Failure(quote,
-                RandomNumberGenerator.GetInt32(int.MaxValue) / (double)int.MaxValue) : quote.FailureMode;
+                backend.Draw()) : quote.FailureMode;
             var destructionPrevented = !success && failureMode == FailureMode.Destroy && quote.Protection.Destruction;
             var downgradePrevented = !success && failureMode == FailureMode.Downgrade && quote.Protection.Downgrade;
             if (destructionPrevented || downgradePrevented) failureMode = FailureMode.KeepItem;
@@ -199,7 +217,19 @@ public sealed class EnhanceService(SptEnhanceBackend backend, JsonUtil serialize
                 backend.RemoveMoney(profile, money.Id, take, session, output);
                 remaining -= take;
             }
-            if (success && quote.IsEvolution) state.EvolvedItems.Add(quote.ItemId);
+            var remainingBitcoins = quote.BoostBitcoins;
+            foreach (var bitcoin in material)
+            {
+                if (remainingBitcoins == 0) break;
+                var take = (int)Math.Min(Count(bitcoin), remainingBitcoins);
+                backend.RemoveMaterial(profile, bitcoin.Id, take, session, output);
+                remainingBitcoins -= take;
+            }
+            if (success && quote.IsEvolution)
+            {
+                state.EvolvedItems.Add(quote.ItemId);
+                if (quote.NextStars == 3) state.ThirdStarItems.Add(quote.ItemId);
+            }
             else if (success)
             {
                 if (!state.Tracks.TryGetValue(quote.ItemId, out var tracks))
@@ -235,20 +265,24 @@ public sealed class EnhanceService(SptEnhanceBackend backend, JsonUtil serialize
                     state.Paths.Remove(part.Id.ToString());
                     state.Tracks.Remove(part.Id.ToString());
                     state.EvolvedItems.Remove(part.Id.ToString());
+                    state.ThirdStarItems.Remove(part.Id.ToString());
                 }
             }
             state.Receipts.Add(new EnhanceReceipt
             {
                 QuoteId = quoteId, ItemId = quote.ItemId, Success = success,
                 Level = success ? quote.NextLevel : failureMode == FailureMode.Downgrade ? Math.Max(0, quote.CurrentLevel - 1) : quote.CurrentLevel,
-                Paid = quote.Cost, FailureMode = failureMode, Path = quote.Path,
+                Paid = quote.Cost, BitcoinsPaid = quote.BoostBitcoins, FailureMode = failureMode, Path = quote.Path,
                 DestructionPrevented = destructionPrevented, DowngradePrevented = downgradePrevented,
-                IsEvolution = quote.IsEvolution, Evolved = state.EvolvedItems.Contains(quote.ItemId),
+                IsEvolution = quote.IsEvolution, Evolved = Stars(state, quote.ItemId) >= 2,
+                StarLevel = failureMode == FailureMode.Destroy && !success ? 0 : Stars(state, quote.ItemId),
                 CompletedUnixSeconds = DateTimeOffset.UtcNow.ToUnixTimeSeconds()
             });
             if (state.Receipts.Count > 100) state.Receipts.RemoveRange(0, state.Receipts.Count - 100);
         }
     }
+
+    private static int Stars(EnhanceState state, string id) => state.ThirdStarItems.Contains(id) ? 3 : state.EvolvedItems.Contains(id) ? 2 : 1;
 
     private PmcData GetPmc(MongoId session) =>
         backend.Profile(session)?.CharacterData?.PmcData
@@ -266,6 +300,7 @@ public sealed class EnhanceService(SptEnhanceBackend backend, JsonUtil serialize
         if (raw is not EnhanceState state || state.Levels == null || state.Receipts == null || state.Paths == null || state.Tracks == null)
             throw new InvalidOperationException("강화 기록 형식이 다릅니다.");
         state.EvolvedItems ??= new();
+        state.ThirdStarItems ??= new();
         // Preserve the paid specialization from 0.2 as one independent track.
         // Level-only 0.1 records wait for their existing free first selection.
         foreach (var entry in state.Paths.ToArray())
@@ -315,10 +350,13 @@ public sealed class EnhanceService(SptEnhanceBackend backend, JsonUtil serialize
         return InventoryItems(profile).Where(i => EnhanceRules.IsBelow(i.Id.ToString(), root, parents)).ToList();
     }
 
-    private static IEnumerable<Item> Money(PmcData profile)
+    private static IEnumerable<Item> Money(PmcData profile) => Materials(profile, Roubles);
+
+    private static IEnumerable<Item> Materials(PmcData profile, string template)
     {
         var parents = Parents(profile);
-        return InventoryItems(profile).Where(i => i.Template.ToString() == Roubles
+        // FIR/SpawnedInSession is intentionally irrelevant for enhancement costs.
+        return InventoryItems(profile).Where(i => i.Template.ToString() == template
             && EnhanceRules.IsBelow(i.Id.ToString(), Stash(profile), parents)
             && i.Upd?.PinLockState?.ToString() != "Locked" && Count(i) > 0);
     }
@@ -327,7 +365,7 @@ public sealed class EnhanceService(SptEnhanceBackend backend, JsonUtil serialize
     {
         var count = item.Upd?.StackObjectsCount ?? 1;
         if (!double.IsFinite(count) || count < 0 || count > int.MaxValue || count != Math.Floor(count))
-            throw new InvalidOperationException("루블 묶음의 수량이 올바르지 않습니다.");
+            throw new InvalidOperationException("소모 아이템 묶음의 수량이 올바르지 않습니다.");
         return (long)count;
     }
 
