@@ -20,7 +20,7 @@ public sealed class EffectRegistry
     public void Replace(EnhanceSnapshot snapshot, string expectedProfile)
     {
         if (string.IsNullOrEmpty(expectedProfile) || snapshot.ProfileId != expectedProfile)
-            throw new InvalidOperationException("강화 기록의 PMC 프로필이 일치하지 않습니다.");
+            throw Loc.Invalid("강화 기록의 PMC 프로필이 일치하지 않습니다.", "The enhancement records belong to a different PMC profile.");
         var next = new Dictionary<string, Dictionary<EnhancePath, EnhanceRecord>>(StringComparer.Ordinal);
         foreach (var item in snapshot.Items ?? Array.Empty<EnhanceRecord>())
         {
@@ -50,7 +50,7 @@ public sealed class EffectRegistry
     public string Badge(string id)
     {
         var total = TotalLevel(id);
-        return total > 0 ? (IsEvolved(id) ? $"{StarEvolution.Stars(StarLevel(id))} 진화 +{total}" : $"★ +{total}") : "";
+        return total > 0 ? (IsEvolved(id) ? $"{StarEvolution.Stars(StarLevel(id))} {Loc.L("진화", "Evolved")} +{total}" : $"★ +{total}") : "";
     }
     public bool IsEvolved(string id) => StarLevel(id) >= 2;
     public int StarLevel(string id)
@@ -69,7 +69,7 @@ public sealed class EffectRegistry
     }
     public void ApplyReceipt(EnhanceReceipt receipt, string expectedProfile)
     {
-        if (string.IsNullOrEmpty(expectedProfile)) throw new InvalidOperationException("PMC 프로필이 없습니다.");
+        if (string.IsNullOrEmpty(expectedProfile)) throw Loc.Invalid("PMC 프로필이 없습니다.", "No PMC profile.");
         var next = ProfileId == expectedProfile
             ? new Dictionary<string, Dictionary<EnhancePath, EnhanceRecord>>(records, StringComparer.Ordinal)
             : new Dictionary<string, Dictionary<EnhancePath, EnhanceRecord>>(StringComparer.Ordinal);

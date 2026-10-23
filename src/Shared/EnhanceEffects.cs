@@ -21,7 +21,7 @@ public sealed class EffectTuning
 
     public void Validate()
     {
-        if (MaxLevel < 1 || MaxLevel > 100) throw new ArgumentException("최대 강화 단계를 확인해 주세요.");
+        if (MaxLevel < 1 || MaxLevel > 100) throw Loc.Argument("최대 강화 단계를 확인해 주세요.", "Check the maximum enhancement level.");
         Check(CompletionBonusPercent, 300); Check(ThirdStarBonusPercent, 300);
         Check(RecoilPerLevel, 10); Check(RecoilCap, 80);
         Check(ErgonomicsPerLevel, 10); Check(ErgonomicsCap, 50);
@@ -33,7 +33,7 @@ public sealed class EffectTuning
     private static void Check(double value, double max)
     {
         if (double.IsNaN(value) || double.IsInfinity(value) || value < 0 || value > max)
-            throw new ArgumentException("F12 강화 효과 수치 범위를 확인해 주세요.");
+            throw Loc.Argument("F12 강화 효과 수치 범위를 확인해 주세요.", "Check the F12 effect value ranges.");
     }
 }
 
@@ -52,7 +52,7 @@ public static class EnhanceEffects
         EnhancePath.Precision => tuning.PrecisionCap,
         EnhancePath.ArmorDurability => tuning.ArmorDurabilityCap,
         EnhancePath.Mobility => tuning.MobilityCap,
-        _ => throw new ArgumentException("강화 항목이 올바르지 않습니다.")
+        _ => throw Loc.Argument("강화 항목이 올바르지 않습니다.", "Invalid enhancement track.")
     };
 
     public static double Amount(EnhancePath path, int level, EffectTuning tuning, bool complete = false)
@@ -67,7 +67,7 @@ public static class EnhanceEffects
             EnhancePath.Precision => tuning.PrecisionPerLevel,
             EnhancePath.ArmorDurability => tuning.ArmorDurabilityPerLevel,
             EnhancePath.Mobility => tuning.MobilityPerLevel,
-            _ => throw new ArgumentException("강화 항목이 올바르지 않습니다.")
+            _ => throw Loc.Argument("강화 항목이 올바르지 않습니다.", "Invalid enhancement track.")
         };
         var maximum = tuning.MaxLevel;
         var total = Math.Min(Cap(path, tuning), step * maximum);
@@ -78,25 +78,33 @@ public static class EnhanceEffects
 
     public static string Name(EnhancePath path) => path switch
     {
-        EnhancePath.Recoil => "반동 제어", EnhancePath.Ergonomics => "조작성",
-        EnhancePath.Precision => "정밀성", EnhancePath.ArmorDurability => "내구성",
-        EnhancePath.Mobility => "기동성", _ => "미선택"
+        EnhancePath.Recoil => Loc.L("반동 제어", "Recoil"), EnhancePath.Ergonomics => Loc.L("조작성", "Handling"),
+        EnhancePath.Precision => Loc.L("정밀성", "Precision"), EnhancePath.ArmorDurability => Loc.L("내구성", "Durability"),
+        EnhancePath.Mobility => Loc.L("기동성", "Mobility"), _ => Loc.L("미선택", "None")
     };
 
-    public static string StatName(EnhancePath path) => path switch
+    // F12 cfg keys are built from this Korean text and must never change with language.
+    public static string KoreanStatName(EnhancePath path) => path switch
     {
         EnhancePath.Recoil => "반동 감소", EnhancePath.Ergonomics => "인체공학 증가",
         EnhancePath.Precision => "탄 퍼짐 감소", EnhancePath.ArmorDurability => "내구도 소모 감소",
         EnhancePath.Mobility => "장비 페널티 완화", _ => ""
     };
 
+    public static string StatName(EnhancePath path) => Loc.L(KoreanStatName(path), path switch
+    {
+        EnhancePath.Recoil => "Recoil reduction", EnhancePath.Ergonomics => "Ergonomics bonus",
+        EnhancePath.Precision => "Dispersion reduction", EnhancePath.ArmorDurability => "Durability loss reduction",
+        EnhancePath.Mobility => "Gear penalty relief", _ => ""
+    });
+
     public static string Description(EnhancePath path) => path switch
     {
-        EnhancePath.Recoil => "수직·수평 반동에 적용",
-        EnhancePath.Ergonomics => "해당 무기의 인체공학에 더함 · 최종 100 상한",
-        EnhancePath.Precision => "총알 탄 퍼짐과 산탄 퍼짐에 적용",
-        EnhancePath.ArmorDurability => "피격·폭발로 소모되는 방어구 내구도에 적용",
-        EnhancePath.Mobility => "해당 장비의 이동·회전·인체공학 페널티에 적용",
+        EnhancePath.Recoil => Loc.L("수직·수평 반동에 적용", "Applies to vertical and horizontal recoil"),
+        EnhancePath.Ergonomics => Loc.L("해당 무기의 인체공학에 더함 · 최종 100 상한", "Added to this weapon's ergonomics · final cap 100"),
+        EnhancePath.Precision => Loc.L("총알 탄 퍼짐과 산탄 퍼짐에 적용", "Applies to bullet and buckshot dispersion"),
+        EnhancePath.ArmorDurability => Loc.L("피격·폭발로 소모되는 방어구 내구도에 적용", "Applies to armor durability lost to hits and blasts"),
+        EnhancePath.Mobility => Loc.L("해당 장비의 이동·회전·인체공학 페널티에 적용", "Applies to this gear's move, turn and ergo penalties"),
         _ => ""
     };
 

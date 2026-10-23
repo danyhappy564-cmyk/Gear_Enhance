@@ -50,7 +50,7 @@ public sealed class EnhanceQueries(JsonUtil json, EnhanceService service) : Stat
     new RouteAction<ReceiptRequest>("/rf/gear-enhance/receipt", (_, body, session, _, _) =>
         ValueTask.FromResult(Reply(() => { EnhanceProtocol.Validate(body.ProtocolVersion);
             return service.Receipt(session, body.QuoteId)
-            ?? throw new InvalidOperationException("완료 기록이 없습니다. 연결 상태와 서버 로그를 확인해 주세요."); }, json)))
+            ?? throw Loc.Invalid("완료 기록이 없습니다. 연결 상태와 서버 로그를 확인해 주세요.", "No completion record. Check the connection and server log."); }, json)))
 ])
 {
     private static string Reply<T>(Func<T> action, JsonUtil json) where T : class
@@ -58,11 +58,14 @@ public sealed class EnhanceQueries(JsonUtil json, EnhanceService service) : Stat
         ApiReply<T> response;
         try { response = new() { Ok = true, Data = action() }; }
         catch (Exception ex) when (ex is ArgumentException or InvalidOperationException)
-        { response = new() { Error = ex.Message }; }
+        { response = new() { Error = ex.Message, ErrorEnglish = Loc.EnglishOf(ex) ?? ex.Message }; }
         // Quote/state/receipt never pay. Report anything else as text so the
         // client shows and logs the cause instead of an unreadable response.
         catch (Exception ex)
-        { response = new() { Error = "Gear Enhance 서버 오류(" + ex.GetType().Name + "): " + ex.Message }; }
+        {
+            response = new() { Error = "Gear Enhance 서버 오류(" + ex.GetType().Name + "): " + ex.Message,
+                ErrorEnglish = "Gear Enhance server error (" + ex.GetType().Name + "): " + ex.Message };
+        }
         return json.Serialize(response)!;
     }
 }
@@ -73,8 +76,9 @@ public sealed class EnhanceEvents(EnhanceService service, HttpResponseUtil respo
     new ItemRouteAction<EnhanceOperation>("GearEnhance", (_, profile, body, session, output, _) =>
     {
         try { service.Execute(session, profile, body.QuoteId, body.ConfirmDestruction, output); }
+        // The native error popup has no language channel, so show both texts.
         catch (Exception ex) when (ex is ArgumentException or InvalidOperationException)
-        { responses.AppendErrorToOutput(output, ex.Message); }
+        { responses.AppendErrorToOutput(output, Loc.EnglishOf(ex) is { } english ? ex.Message + "\n" + english : ex.Message); }
         return ValueTask.FromResult(output);
     })
 ]);

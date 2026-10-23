@@ -200,15 +200,15 @@ public sealed partial class Plugin
         Fill(new Rect(0, WindowHeight - 1, 14, 1), accent); Fill(new Rect(0, WindowHeight - 14, 1, 14), accent);
         Fill(new Rect(WindowWidth - 14, WindowHeight - 1, 14, 1), accent);
         Fill(new Rect(WindowWidth - 1, WindowHeight - 14, 1, 14), accent);
-        Label(23, 9, 200, 36, "장비 강화", heading);
+        Label(23, 9, 200, 36, Loc.L("장비 강화", "Enhance"), heading);
         Label(162, 16, 190, 24, "Gear Enhance · " + EnhanceProtocol.ModVersion, small);
         GUI.enabled = !busy && !resultVisible;
-        if (!uncertain && itemId != null && UiButton(new Rect(608, 13, 92, 29), "새로고침", secondary)) main.Enqueue(RefreshQuote);
+        if (!uncertain && itemId != null && UiButton(new Rect(608, 13, 92, 29), Loc.L("새로고침", "Refresh"), secondary)) main.Enqueue(RefreshQuote);
         if (UiButton(new Rect(712, 10, 32, 32), "×", secondary, UiInteraction.Close)) main.Enqueue(Close);
         GUI.enabled = true;
 
         DrawPreview();
-        Label(24, 239, 300, 29, "강화 항목 · 각각 강화 가능", body);
+        Label(24, 239, 300, 29, Loc.L("강화 항목 · 각각 강화 가능", "Tracks · upgraded separately"), body);
         var options = weapon ? WeaponTracks : ArmorTracks;
         var width = (712f - (options.Length - 1) * 12) / options.Length;
         for (var index = 0; index < options.Length; index++)
@@ -235,21 +235,23 @@ public sealed partial class Plugin
                 source.y / sprite.texture.height, source.width / sprite.texture.width, source.height / sprite.texture.height));
         }
         if (!shattering && (sprite == null || sprite.texture == null))
-            Label(62, 127, 380, 30, itemId == null ? "장비가 파괴되었습니다" : "장비 이미지를 불러오는 중…", small);
+            Label(62, 127, 380, 30, itemId == null ? Loc.L("장비가 파괴되었습니다", "Gear destroyed") : Loc.L("장비 이미지를 불러오는 중…", "Loading gear image…"), small);
         DrawResultEffect(area);
-        Label(517, 76, 217, 38, itemName ?? "장비", heading);
-        Label(518, 112, 216, 25, evolutionMode ? $"{evolutionTargetStars}차 스타 진화" : EnhanceEffects.Name(selectedPath) + " 강화", small);
+        Label(517, 76, 217, 38, itemName ?? Loc.L("장비", "Gear"), heading);
+        Label(518, 112, 216, 25, evolutionMode ? Loc.L($"{evolutionTargetStars}차 스타 진화", $"{Loc.Tier(evolutionTargetStars)} star evolution")
+            : EnhanceEffects.Name(selectedPath) + Loc.L(" 강화", " upgrade"), small);
         var current = preview?.CurrentLevel ?? StatPatches.Registry.Find(itemId ?? "", selectedPath)?.Level ?? 0;
         var next = preview?.NextLevel ?? Math.Max(current, Math.Min(current + 1, maxLevel.Value));
         var stars = StatPatches.Registry.StarLevel(itemId ?? "");
         var finishedEvolution = stars >= evolutionTargetStars;
-        Label(513, 145, 225, 64, itemId == null ? "파괴됨" : evolutionMode
+        Label(513, 145, 225, 64, itemId == null ? Loc.L("파괴됨", "Destroyed") : evolutionMode
             ? finishedEvolution ? StarEvolution.Stars(stars) : $"{StarEvolution.Stars(stars)} → {StarEvolution.Stars(evolutionTargetStars)}"
             : $"+{current} → +{next}", evolutionMode || current >= 100 || next >= 100 ? selectedValue : large);
         var complete = stars >= 2;
-        Label(517, 207, 217, 22, itemId == null ? "본체·부착물·탄약 소실" : evolutionMode && !finishedEvolution
-            ? $"진화 성공 시 효과 ×{StarMultiplier(evolutionTargetStars):0.##}" : complete
-            ? $"{StarEvolution.Stars(stars)} 진화 완료 · 효과 ×{StarMultiplier(stars):0.##}" : "1차 스타 완성 후 진화 가능", small);
+        Label(517, 207, 217, 22, itemId == null ? Loc.L("본체·부착물·탄약 소실", "Gear, mods and ammo lost") : evolutionMode && !finishedEvolution
+            ? Loc.L($"진화 성공 시 효과 ×{StarMultiplier(evolutionTargetStars):0.##}", $"On success: effect ×{StarMultiplier(evolutionTargetStars):0.##}") : complete
+            ? Loc.L($"{StarEvolution.Stars(stars)} 진화 완료 · 효과 ×{StarMultiplier(stars):0.##}", $"{StarEvolution.Stars(stars)} evolved · effect ×{StarMultiplier(stars):0.##}")
+            : Loc.L("1차 스타 완성 후 진화 가능", "Evolve after maxing 1st star"), small);
         if (complete) Fill(new Rect(517, 230, 217, 2), StarTint(stars));
         Fill(new Rect(24, 231, 712, 1), Line);
     }
@@ -266,9 +268,9 @@ public sealed partial class Plugin
         var textX = rect.x + 63;
         var textWidth = rect.width - 73;
         Label(textX, rect.y + 12, textWidth, 26, EnhanceEffects.Name(path) + " +" + (StatPatches.Registry.Find(itemId ?? "", path)?.Level ?? 0), pathHeading);
-        var description = path == EnhancePath.Recoil ? "수직·수평 반동 감소"
-            : path == EnhancePath.Ergonomics ? "인체공학 증가" : path == EnhancePath.Precision ? "탄 퍼짐 감소"
-            : path == EnhancePath.ArmorDurability ? "피격 시 내구도 소모 감소" : "장비 페널티 완화";
+        var description = path == EnhancePath.Recoil ? Loc.L("수직·수평 반동 감소", "Lower V/H recoil")
+            : path == EnhancePath.Ergonomics ? Loc.L("인체공학 증가", "More ergonomics") : path == EnhancePath.Precision ? Loc.L("탄 퍼짐 감소", "Less dispersion")
+            : path == EnhancePath.ArmorDurability ? Loc.L("피격 시 내구도 소모 감소", "Less durability loss on hit") : Loc.L("장비 페널티 완화", "Lighter gear penalties");
         Label(textX, rect.y + 39, textWidth, 24, description, centeredSmall);
         GUI.enabled = true;
     }
@@ -286,9 +288,9 @@ public sealed partial class Plugin
     {
         Box(new Rect(24, 367, 712, 170), Panel, Line);
         Fill(new Rect(25, 368, 710, 34), new Color(0.12f, 0.135f, 0.15f, 0.65f));
-        Label(40, 370, 280, 29, $"강화 효과 · 증가량 ×{(preview?.NextGainMultiplier ?? 1):0.##}", body);
-        Label(379, 370, 122, 29, $"현재 +{preview?.CurrentLevel ?? StatPatches.Registry.Find(itemId ?? "", selectedPath)?.Level ?? 0}", centeredSmall);
-        Label(594, 370, 126, 29,  $"성공 시 +{preview?.NextLevel ?? Math.Max(StatPatches.Registry.Find(itemId ?? "", selectedPath)?.Level ?? 0, Math.Min(maxLevel.Value, (StatPatches.Registry.Find(itemId ?? "", selectedPath)?.Level ?? 0) + 1))}", centeredSmall);
+        Label(40, 370, 280, 29, Loc.L("강화 효과 · 증가량 ×", "Effect · gain ×") + $"{(preview?.NextGainMultiplier ?? 1):0.##}", body);
+        Label(379, 370, 122, 29, Now + $"+{preview?.CurrentLevel ?? StatPatches.Registry.Find(itemId ?? "", selectedPath)?.Level ?? 0}", centeredSmall);
+        Label(594, 370, 126, 29, Next + $"+{preview?.NextLevel ?? Math.Max(StatPatches.Registry.Find(itemId ?? "", selectedPath)?.Level ?? 0, Math.Min(maxLevel.Value, (StatPatches.Registry.Find(itemId ?? "", selectedPath)?.Level ?? 0) + 1))}", centeredSmall);
         Fill(new Rect(25, 402, 710, 1), Line);
         Label(48, 412, 290, 36, EnhanceEffects.StatName(selectedPath), body);
         var current = preview?.CurrentEffect ?? StatPatches.Registry.Amount(itemId ?? "", selectedPath);
@@ -299,12 +301,15 @@ public sealed partial class Plugin
         Label(594, 408, 126, 42, EnhanceEffects.Format(selectedPath, next), selectedValue);
         Bar(new Rect(155, 467, 400, 10), current, cap, new Color(0.43f, 0.46f, 0.48f));
         Bar(new Rect(155, 492, 400, 10), next, cap, Gold);
-        Label(48, 458, 102, 27, $"현재 +{preview?.CurrentLevel ?? StatPatches.Registry.Find(itemId ?? "", selectedPath)?.Level ?? 0}", small);
-        Label(48, 483, 102, 27, $"성공 시 +{preview?.NextLevel ?? Math.Max(StatPatches.Registry.Find(itemId ?? "", selectedPath)?.Level ?? 0, Math.Min(maxLevel.Value, (StatPatches.Registry.Find(itemId ?? "", selectedPath)?.Level ?? 0) + 1))}", small);
+        Label(48, 458, 102, 27, Now + $"+{preview?.CurrentLevel ?? StatPatches.Registry.Find(itemId ?? "", selectedPath)?.Level ?? 0}", small);
+        Label(48, 483, 102, 27, Next + $"+{preview?.NextLevel ?? Math.Max(StatPatches.Registry.Find(itemId ?? "", selectedPath)?.Level ?? 0, Math.Min(maxLevel.Value, (StatPatches.Registry.Find(itemId ?? "", selectedPath)?.Level ?? 0) + 1))}", small);
         Label(575, 458, 143, 27, EnhanceEffects.Format(selectedPath, current), small);
         Label(575, 483, 143, 27, EnhanceEffects.Format(selectedPath, next), small);
         Label(155, 511, 563, 22, EnhanceEffects.Description(selectedPath), small);
     }
+
+    private static string Now => Loc.L("현재 ", "Now ");
+    private static string Next => Loc.L("성공 시 ", "Next ");
 
     private void Bar(Rect rect, double amount, double cap, Color color)
     {
@@ -321,31 +326,32 @@ public sealed partial class Plugin
     {
         Surface(new Rect(24, 550, 347, 112), cardGradient, Line);
         Surface(new Rect(385, 550, 351, 112), cardGradient, Line);
-        Label(45, 558, 300, 28, preview?.ChanceBoost == true ? $"성공률 (+{preview.BoostPoints:0.##}%p)" : "성공률", body);
+        Label(45, 558, 300, 28, Loc.L("성공률", "Success chance") + (preview?.ChanceBoost == true ? $" (+{preview.BoostPoints:0.##}%p)" : ""), body);
         Label(44, 585, 300, 49, preview == null ? "—" : $"{preview.SuccessPercent:0.##}%", chanceValue);
         Bar(new Rect(48, 643, 296, 9), preview?.SuccessPercent ?? 0, 100, Gold);
-        Label(405, 558, 310, 28, evolutionMode ? "진화 비용" : "총 강화 비용", body);
+        Label(405, 558, 310, 28, evolutionMode ? Loc.L("진화 비용", "Evolution cost") : Loc.L("총 강화 비용", "Total cost"), body);
         Label(406, 587, 310, 40, preview == null ? "—" : $"{preview.Cost:N0} ₽", costValue);
-        Label(407, 628, 309, 25, preview == null ? "" : $"보유 {preview.AvailableRoubles:N0} ₽ · BTC {preview.AvailableBitcoins:N0}", small);
-        Label(24, 670, 515, 23, evolutionMode && evolutionTargetStars == 3 ? "가격 기준: 3차 진화 4,000,000 ₽ 고정"
-            : "가격 기준: " + (preview?.PriceSource ?? "견적 확인 중") + " · 장비 본체", small);
-        Label(562, 670, 174, 23, evolutionMode ? "진화 전용 판정" : "선택 항목 +6 시도부터 보호", centeredSmall);
+        Label(407, 628, 309, 25, preview == null ? "" : Loc.L("보유 ", "Have ") + $"{preview.AvailableRoubles:N0} ₽ · BTC {preview.AvailableBitcoins:N0}", small);
+        Label(24, 670, 515, 23, evolutionMode && evolutionTargetStars == 3 ? Loc.L("가격 기준: 3차 진화 4,000,000 ₽ 고정", "Price: 3rd evolution fixed at 4,000,000 ₽")
+            : Loc.L("가격 기준: ", "Price: ") + (preview == null ? Loc.L("견적 확인 중", "checking quote") : Loc.PriceSource(preview.PriceSource))
+              + Loc.L(" · 장비 본체", " · gear body only"), small);
+        Label(562, 670, 174, 23, evolutionMode ? Loc.L("진화 전용 판정", "Evolution roll") : Loc.L("선택 항목 +6 시도부터 보호", "Protect from +6 try"), centeredSmall);
     }
 
     private void DrawActions()
     {
         Box(new Rect(24, 784, 712, 44), new Color(0.10f, 0.085f, 0.055f), new Color(0.61f, 0.46f, 0.22f));
         Label(38, 791, 24, 27, "!", selectedValue);
-        var note = preview?.BindLegacy == true ? "기존 단계 유지 · 첫 효과 선택은 무료 · 100% 적용"
+        var note = preview?.BindLegacy == true ? Loc.L("기존 단계 유지 · 첫 효과 선택은 무료 · 100% 적용", "Keeps old level · first effect choice is free · 100%")
             : preview?.HighRisk == true ? RiskNote(preview)
-            : preview?.Protection.Destruction == true ? "파괴 방지 적용 · 실패 시 비용만 소모"
-            : preview?.Protection.Downgrade == true ? "단계 하락 방지 적용 · 실패 시 비용만 소모"
-            : "실패 시: " + FailureText(preview?.FailureMode ?? failure.Value);
+            : preview?.Protection.Destruction == true ? Loc.L("파괴 방지 적용 · 실패 시 비용만 소모", "Destruction protected · failure costs only the fee")
+            : preview?.Protection.Downgrade == true ? Loc.L("단계 하락 방지 적용 · 실패 시 비용만 소모", "Downgrade protected · failure costs only the fee")
+            : Loc.L("실패 시: ", "On failure: ") + FailureText(preview?.FailureMode ?? failure.Value);
         Label(75, 789, 643, 34, note, noteStyle);
         if (attemptTimeline.Active)
         {
             var fraction = attemptTimeline.Fraction(AttemptClock);
-            Label(28, 830, 704, 27, fraction < 1 ? $"강화 진행 중… {fraction * 100:0}%" : "강화 판정 중…", statusStyle);
+            Label(28, 830, 704, 27, fraction < 1 ? Loc.L("강화 진행 중… ", "Enhancing… ") + $"{fraction * 100:0}%" : Loc.L("강화 판정 중…", "Rolling result…"), statusStyle);
             Bar(new Rect(28, 864, 704, 9), fraction, 1, Gold);
         }
         else if (quote?.CanDestroy == true)
@@ -353,18 +359,20 @@ public sealed partial class Plugin
             Label(28, 830, 704, 22, message, statusStyle);
             GUI.enabled = !busy && !resultVisible;
             destructionConfirmed = UiToggle(new Rect(28, 854, 704, 25), destructionConfirmed,
-                $" 본체와 부착물 {quote.AttachedItems}개(탄약 포함)가 삭제될 수 있음을 확인했습니다.");
+                Loc.L($" 본체와 부착물 {quote.AttachedItems}개(탄약 포함)가 삭제될 수 있음을 확인했습니다.",
+                    $" I understand the gear and {quote.AttachedItems} attachment(s) (incl. ammo) may be deleted."));
             GUI.enabled = true;
         }
         else
         {
-            var seconds = quote == null ? "" : $"견적 유효 시간: {Math.Max(0, quote.ExpiresUnixSeconds - DateTimeOffset.UtcNow.ToUnixTimeSeconds())}초";
+            var left = quote == null ? 0 : Math.Max(0, quote.ExpiresUnixSeconds - DateTimeOffset.UtcNow.ToUnixTimeSeconds());
+            var seconds = quote == null ? "" : Loc.L($"견적 유효 시간: {left}초", $"Quote valid for {left}s");
             Label(28, 833, 704, 43, string.IsNullOrEmpty(message) ? seconds : message, statusStyle);
         }
         GUI.enabled = !busy && !resultVisible;
         var closeRect = new Rect(24, 883, 233, 48);
         Surface(closeRect, cardGradient, Line);
-        if (UiButton(closeRect, "닫기", secondary, UiInteraction.Close)) main.Enqueue(Close);
+        if (UiButton(closeRect, Loc.L("닫기", "Close"), secondary, UiInteraction.Close)) main.Enqueue(Close);
         var expired = quote != null && DateTimeOffset.UtcNow.ToUnixTimeSeconds() >= quote.ExpiresUnixSeconds;
         var canPay = quote != null && quote.CanPay && !expired
             && (!quote.CanDestroy || destructionConfirmed);
@@ -373,8 +381,10 @@ public sealed partial class Plugin
         GUI.enabled = !busy && !resultVisible && !uncertain && itemId != null && (canEvolve || !atMaximum && (quote == null || expired || canPay));
         var actionRect = new Rect(273, 883, 463, 48);
         Surface(actionRect, goldGradient, new Color(0.95f, 0.85f, 0.64f));
-        var caption = busy ? attemptTimeline.Active ? "강화 진행 중…" : "처리 중…" : canEvolve ? $"스타 진화 열기  {StarEvolution.Stars(StatPatches.Registry.StarLevel(itemId))} → {StarEvolution.Stars(StatPatches.Registry.StarLevel(itemId) + 1)}" : atMaximum ? "이 항목은 최대 단계입니다" : quote == null || expired ? "견적 다시 불러오기"
-            : quote.BindLegacy ? "기존 단계에 효과 적용 · 무료" : $"강화 시도  {quote.Cost:N0} ₽";
+        var caption = busy ? attemptTimeline.Active ? Loc.L("강화 진행 중…", "Enhancing…") : Loc.L("처리 중…", "Working…")
+            : canEvolve ? Loc.L("스타 진화 열기  ", "Open star evolution  ") + $"{StarEvolution.Stars(StatPatches.Registry.StarLevel(itemId))} → {StarEvolution.Stars(StatPatches.Registry.StarLevel(itemId) + 1)}"
+            : atMaximum ? Loc.L("이 항목은 최대 단계입니다", "This track is maxed") : quote == null || expired ? Loc.L("견적 다시 불러오기", "Reload quote")
+            : quote.BindLegacy ? Loc.L("기존 단계에 효과 적용 · 무료", "Apply effect to old level · free") : Loc.L("강화 시도  ", "Enhance  ") + $"{quote.Cost:N0} ₽";
         if (UiButton(actionRect, caption, primary, canEvolve ? UiInteraction.Open : UiInteraction.Button))
         {
             if (canEvolve) main.Enqueue(OpenEvolution);
@@ -389,11 +399,11 @@ public sealed partial class Plugin
         Surface(new Rect(24, 700, 712, 74), cardGradient, Line);
         GUI.enabled = !busy && !resultVisible && !uncertain && quote?.DestructionProtectionAvailable == true;
         var destruction = UiToggle(new Rect(38, 705, 335, 27), protectDestruction,
-            $" 파괴 방지 (+{preview?.DestructionProtectionFee ?? 0:N0} ₽)");
+            Loc.L(" 파괴 방지", " Prevent destruction") + $" (+{preview?.DestructionProtectionFee ?? 0:N0} ₽)");
         if (destruction != protectDestruction) main.Enqueue(() => SetProtection(true, destruction));
         GUI.enabled = !busy && !resultVisible && !uncertain && quote?.DowngradeProtectionAvailable == true;
         var downgrade = UiToggle(new Rect(390, 705, 335, 27), protectDowngrade,
-            $" 단계 하락 방지 (+{preview?.DowngradeProtectionFee ?? 0:N0} ₽)");
+            Loc.L(" 단계 하락 방지", " Prevent downgrade") + $" (+{preview?.DowngradeProtectionFee ?? 0:N0} ₽)");
         if (downgrade != protectDowngrade) main.Enqueue(() => SetProtection(false, downgrade));
         GUI.enabled = true;
         DrawChanceBoost(38, 740, 684);
@@ -406,7 +416,8 @@ public sealed partial class Plugin
         var points = SuccessBoost.Points(evolutionMode);
         GUI.enabled = !busy && !resultVisible && !uncertain && (chanceBoost || quote?.ChanceBoostAvailable == true);
         var enabled = UiToggle(new Rect(x, y, width, 28), chanceBoost,
-            $" 성공률 +{points}%p · BTC {coins}개 + {fee:N0} ₽ (보유 {preview?.AvailableBitcoins ?? 0:N0}개)");
+            Loc.L($" 성공률 +{points}%p · BTC {coins}개 + {fee:N0} ₽ (보유 {preview?.AvailableBitcoins ?? 0:N0}개)",
+                $" Chance +{points}%p · {coins} BTC + {fee:N0} ₽ (have {preview?.AvailableBitcoins ?? 0:N0})"));
         if (enabled != chanceBoost) main.Enqueue(() => SetChanceBoost(enabled));
         GUI.enabled = true;
     }
@@ -414,6 +425,8 @@ public sealed partial class Plugin
     {
         var destroy = view.Protection.Destruction ? 0 : view.DestructionPercent;
         var downgrade = view.Protection.Downgrade ? 0 : 100 - view.DestructionPercent;
-        return $"고위험 실패 시: 파괴 {destroy:0.##}% · 하락 {downgrade:0.##}% · 보호 {100 - destroy - downgrade:0.##}% / 이번 시도 파괴 {(100 - view.SuccessPercent) * destroy / 100:0.##}%";
+        var attempt = (100 - view.SuccessPercent) * destroy / 100;
+        return Loc.L($"고위험 실패 시: 파괴 {destroy:0.##}% · 하락 {downgrade:0.##}% · 보호 {100 - destroy - downgrade:0.##}% / 이번 시도 파괴 {attempt:0.##}%",
+            $"High-risk failure: destroy {destroy:0.##}% · downgrade {downgrade:0.##}% · protected {100 - destroy - downgrade:0.##}% / destroy this try {attempt:0.##}%");
     }
 }

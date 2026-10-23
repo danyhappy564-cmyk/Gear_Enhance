@@ -49,12 +49,14 @@ public sealed partial class Plugin
         Label(90, 315, 580, 70, ResultText.Title(receipt, resultComplete), resultTitleStyle);
         GUI.color = previous;
         Label(100, 393, 560, 66, ResultText.Detail(receipt), resultDetailStyle);
-        Label(100, 467, 560, 27, $"{EnhanceEffects.Name(receipt.Path)} · {receipt.Paid:N0} ₽ + BTC {receipt.BitcoinsPaid}개 소모", centeredSmall);
-        if (resultComplete) Label(100, 493, 560, 27, $"{StarEvolution.Stars(receipt.StarLevel)} 진화 효과 ×{StarMultiplier(receipt.StarLevel):0.##} · {StarEvolution.ColorName(receipt.StarLevel)} 표식 적용", centeredSmall);
+        Label(100, 467, 560, 27, Loc.L($"{EnhanceEffects.Name(receipt.Path)} · {receipt.Paid:N0} ₽ + BTC {receipt.BitcoinsPaid}개 소모",
+            $"{EnhanceEffects.Name(receipt.Path)} · spent {receipt.Paid:N0} ₽ + {receipt.BitcoinsPaid} BTC"), centeredSmall);
+        if (resultComplete) Label(100, 493, 560, 27, Loc.L($"{StarEvolution.Stars(receipt.StarLevel)} 진화 효과 ×{StarMultiplier(receipt.StarLevel):0.##} · {StarEvolution.ColorName(receipt.StarLevel)} 표식 적용",
+            $"{StarEvolution.Stars(receipt.StarLevel)} evolution effect ×{StarMultiplier(receipt.StarLevel):0.##} · {StarEvolution.ColorName(receipt.StarLevel)} marker applied"), centeredSmall);
         GUI.enabled = !busy;
         var button = new Rect(215, 536, 330, 46);
         Surface(button, goldGradient, tint);
-        if (UiButton(button, busy ? "기록 동기화 중…" : "확인", primary)) main.Enqueue(DismissResult);
+        if (UiButton(button, busy ? Loc.L("기록 동기화 중…", "Syncing records…") : Loc.L("확인", "OK"), primary)) main.Enqueue(DismissResult);
         GUI.enabled = true;
     }
 

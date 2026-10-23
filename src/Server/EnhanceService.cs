@@ -8,6 +8,7 @@ using SPTarkov.Server.Core.Models.Common;
 using SPTarkov.Server.Core.Models.Eft.Common;
 using SPTarkov.Server.Core.Models.Eft.Common.Tables;
 using SPTarkov.Server.Core.Models.Eft.ItemEvent;
+using SPTarkov.Server.Core.Models.Eft.Profile;
 using SPTarkov.Server.Core.Models.Enums;
 using SPTarkov.Server.Core.Servers;
 using SPTarkov.Server.Core.Services.Ragfair;
@@ -45,12 +46,13 @@ public sealed class EnhanceService(SptEnhanceBackend backend, JsonUtil serialize
         {
             ArgumentNullException.ThrowIfNull(settings);
             settings.Validate();
-            if (!Enum.IsDefined(action)) throw new ArgumentException("강화 작업이 올바르지 않습니다.");
+            if (!Enum.IsDefined(action)) throw Loc.Argument("강화 작업이 올바르지 않습니다.", "Invalid enhancement action.");
             var profile = GetPmc(session);
             var target = GetTarget(profile, itemId);
             var state = State(session);
-            // Discard metadata only for items no longer owned by this profile.
-            var owned = InventoryItems(profile).Select(i => i.Id.ToString()).ToHashSet();
+            // Discard metadata only for items no longer owned by this profile. Insured
+            // losses, flea listings and unread mail keep theirs until they come back.
+            var owned = Tracked(session, profile).Keys.ToHashSet();
             foreach (var key in state.Levels.Keys.Concat(state.Tracks.Keys).Concat(state.EvolvedItems).Concat(state.ThirdStarItems).Where(k => !owned.Contains(k)).Distinct().ToArray())
             {
                 state.Levels.Remove(key);
@@ -64,21 +66,22 @@ public sealed class EnhanceService(SptEnhanceBackend backend, JsonUtil serialize
             var selected = path ?? (tracks?.Count > 0 ? tracks.Keys.First()
                 : weapon ? EnhancePath.Recoil : EnhancePath.ArmorDurability);
             if (!EnhanceEffects.Allowed(selected, weapon))
-                throw new ArgumentException("이 장비에 사용할 수 없는 강화 항목입니다.");
+                throw Loc.Argument("이 장비에 사용할 수 없는 강화 항목입니다.", "This track cannot be used on this gear.");
             var legacy = (tracks == null || tracks.Count == 0) && state.Levels.GetValueOrDefault(itemId) > 0;
             var level = legacy ? state.Levels[itemId] : tracks?.GetValueOrDefault(selected) ?? 0;
-            if (level < 0 || level > 100) throw new InvalidOperationException("강화 단계 기록이 올바르지 않습니다.");
+            if (level < 0 || level > 100) throw Loc.Invalid("강화 단계 기록이 올바르지 않습니다.", "The saved enhancement level is invalid.");
             var evolving = action != EnhanceAction.Upgrade;
             var third = action == EnhanceAction.EvolveThird;
             var stars = Stars(state, itemId);
             if (evolving && (legacy || !EnhanceProgression.AllAtLeast(tracks, weapon, settings.MaxLevel)))
-                throw new InvalidOperationException("모든 항목을 최대 단계까지 강화한 뒤 스타 강화 진화를 시도해 주세요.");
+                throw Loc.Invalid("모든 항목을 최대 단계까지 강화한 뒤 스타 강화 진화를 시도해 주세요.", "Max out every track before attempting star evolution.");
             if (evolving && ((!third && stars != 1) || (third && stars != 2)))
-                throw new InvalidOperationException(third ? "2차 스타 진화를 완료한 장비만 3차 진화를 시도할 수 있습니다." : "이미 2차 스타 진화를 완료한 장비입니다.");
+                throw third ? Loc.Invalid("2차 스타 진화를 완료한 장비만 3차 진화를 시도할 수 있습니다.", "Only gear with a completed 2nd star evolution can attempt the 3rd.")
+                    : Loc.Invalid("이미 2차 스타 진화를 완료한 장비입니다.", "This gear already completed the 2nd star evolution.");
             var nextStars = evolving ? stars + 1 : stars;
             // The client hides maxed tracks; the server enforces it for any caller.
             if (!legacy && !evolving && level >= settings.MaxLevel)
-                throw new InvalidOperationException("이 항목은 최대 단계입니다. 다른 항목을 선택해 주세요.");
+                throw Loc.Invalid("이 항목은 최대 단계입니다. 다른 항목을 선택해 주세요.", "This track is at the maximum level. Choose another track.");
             var nextLevel = legacy || evolving ? level : level + 1;
             var (price, source) = backend.Price(target.Template, settings.PriceBasis);
             var tree = Tree(profile, itemId);
@@ -119,7 +122,7 @@ public sealed class EnhanceService(SptEnhanceBackend backend, JsonUtil serialize
             // Per-level loss must not silently turn a positive base chance into a
             // paid attempt that can never succeed. An explicit 0% base is a choice.
             if (!legacy && !evolving && settings.SuccessPercent > 0 && quote.SuccessPercent <= 0)
-                throw new InvalidOperationException("단계별 성공률 감소로 이 단계의 성공률이 0%가 됐습니다. F12 개발자 옵션의 단계별 감소 또는 최대 단계를 낮춰 주세요.");
+                throw Loc.Invalid("단계별 성공률 감소로 이 단계의 성공률이 0%가 됐습니다. F12 개발자 옵션의 단계별 감소 또는 최대 단계를 낮춰 주세요.", "The per-level chance loss brought this level's chance to 0%. Lower the per-level loss or max level in the F12 developer options.");
             quote.BaseCost = quote.Cost;
             // Inapplicable protections are removed without charging (100% success,
             // legacy restore, safe failure mode, or an outcome with zero chance).
@@ -153,7 +156,8 @@ public sealed class EnhanceService(SptEnhanceBackend backend, JsonUtil serialize
         {
             var profile = GetPmc(session);
             var state = State(session);
-            var owned = InventoryItems(profile).ToDictionary(i => i.Id.ToString());
+            // Mail attachments are included so the returned item already shows its badge.
+            var owned = Tracked(session, profile);
             return new EnhanceSnapshot
             {
                 ProfileId = profile.Id.ToString() ?? "",
@@ -174,30 +178,30 @@ public sealed class EnhanceService(SptEnhanceBackend backend, JsonUtil serialize
         {
             var state = State(session);
             if (state.Receipts.Any(r => r.QuoteId == quoteId))
-                throw new InvalidOperationException("이미 처리된 강화입니다. 결과를 확인해 주세요.");
+                throw Loc.Invalid("이미 처리된 강화입니다. 결과를 확인해 주세요.", "This enhancement was already processed. Check the result.");
             if (!pending.TryGetValue(session, out var saved) || saved.View.QuoteId != quoteId)
-                throw new InvalidOperationException("강화 견적을 다시 불러와 주세요.");
+                throw Loc.Invalid("강화 견적을 다시 불러와 주세요.", "Reload the enhancement quote.");
             var quote = saved.View;
             if (DateTimeOffset.UtcNow.ToUnixTimeSeconds() >= quote.ExpiresUnixSeconds)
-                throw new InvalidOperationException("견적이 만료됐습니다. 비용을 다시 확인해 주세요.");
+                throw Loc.Invalid("견적이 만료됐습니다. 비용을 다시 확인해 주세요.", "The quote expired. Check the cost again.");
             var target = GetTarget(profile, quote.ItemId);
             var changedItems = output.ProfileChanges?[session]?.Items?.ChangedItems
-                ?? throw new InvalidOperationException("SPT 아이템 응답을 준비할 수 없습니다.");
+                ?? throw Loc.Invalid("SPT 아이템 응답을 준비할 수 없습니다.", "Cannot prepare the SPT item response.");
             var tree = Tree(profile, quote.ItemId);
             var recordedLevel = quote.BindLegacy ? state.Levels.GetValueOrDefault(quote.ItemId)
                 : state.Tracks.GetValueOrDefault(quote.ItemId)?.GetValueOrDefault(quote.Path) ?? 0;
             if (recordedLevel != quote.CurrentLevel || Fingerprint(tree) != saved.Fingerprint
                 || TracksFingerprint(state.Tracks.GetValueOrDefault(quote.ItemId)) != saved.TrackFingerprint
                 || Stars(state, quote.ItemId) != saved.Stars)
-                throw new InvalidOperationException("장비 상태가 바뀌었습니다. 견적을 다시 불러와 주세요.");
+                throw Loc.Invalid("장비 상태가 바뀌었습니다. 견적을 다시 불러와 주세요.", "The gear changed. Reload the quote.");
             if (quote.CanDestroy && !confirmDestruction)
-                throw new InvalidOperationException("장비와 부착물 파괴 안내를 확인해 주세요.");
+                throw Loc.Invalid("장비와 부착물 파괴 안내를 확인해 주세요.", "Confirm the gear and attachment destruction notice.");
             var material = Materials(profile, SuccessBoost.BitcoinTemplate).ToList();
             if (material.Sum(Count) < quote.BoostBitcoins)
-                throw new InvalidOperationException("성공률 상승에 필요한 비트코인이 부족합니다.");
+                throw Loc.Invalid("성공률 상승에 필요한 비트코인이 부족합니다.", "Not enough Bitcoins for the chance boost.");
             var purse = Money(profile).ToList();
             if (purse.Sum(i => Count(i)) < quote.Cost)
-                throw new InvalidOperationException("창고의 루블이 부족합니다.");
+                throw Loc.Invalid("창고의 루블이 부족합니다.", "Not enough roubles in the stash.");
 
             // All checks precede payment. Native item-event output keeps the
             // client's stacks, deleted items and durability in sync with SPT.
@@ -282,23 +286,70 @@ public sealed class EnhanceService(SptEnhanceBackend backend, JsonUtil serialize
         }
     }
 
+    // SPT clones every mail attachment with new ids (insurance returns, expired
+    // or cancelled flea offers). Move each lost item's records to its new id.
+    public int Remap(MongoId recipient, IReadOnlyList<(string Old, string New)> pairs)
+    {
+        lock (sync)
+        {
+            var saved = backend.Profile(recipient);
+            if (saved?.ExtensionData == null || !saved.ExtensionData.ContainsKey(StateKey) || pairs.Count == 0) return 0;
+            var state = State(recipient);
+            // A mail copy of an item the player still owns is a duplicate, never a return.
+            var inventory = saved.CharacterData?.PmcData?.Inventory?.Items?.Select(i => i.Id.ToString()).ToHashSet()
+                ?? new HashSet<string>();
+            var moved = 0;
+            foreach (var (old, next) in pairs)
+            {
+                if (old == next || inventory.Contains(old) || !Recorded(state, old) || Recorded(state, next)) continue;
+                if (state.Levels.Remove(old, out var level)) state.Levels[next] = level;
+                if (state.Paths.Remove(old, out var path)) state.Paths[next] = path;
+                if (state.Tracks.Remove(old, out var tracks)) state.Tracks[next] = tracks;
+                if (state.EvolvedItems.Remove(old)) state.EvolvedItems.Add(next);
+                if (state.ThirdStarItems.Remove(old)) state.ThirdStarItems.Add(next);
+                moved++;
+            }
+            return moved;
+        }
+    }
+
+    private static bool Recorded(EnhanceState state, string id) => state.Levels.ContainsKey(id) || state.Paths.ContainsKey(id)
+        || state.Tracks.ContainsKey(id) || state.EvolvedItems.Contains(id) || state.ThirdStarItems.Contains(id);
+
+    // Inventory first, then items that are away but can still come back.
+    private Dictionary<string, Item> Tracked(MongoId session, PmcData profile)
+    {
+        var items = new Dictionary<string, Item>();
+        void Add(IEnumerable<Item>? source)
+        {
+            foreach (var item in source ?? Enumerable.Empty<Item>()) items.TryAdd(item.Id.ToString(), item);
+        }
+        Add(InventoryItems(profile));
+        var saved = backend.Profile(session);
+        foreach (var insurance in saved?.InsuranceList ?? new()) Add(insurance?.Items);
+        foreach (var offer in profile.RagfairInfo?.Offers ?? new()) Add(offer?.Items);
+        foreach (var dialogue in saved?.DialogueRecords?.Values ?? Enumerable.Empty<Dialogue>())
+        foreach (var message in dialogue?.Messages ?? new()) Add(message?.Items?.Data);
+        return items;
+    }
+
     private static int Stars(EnhanceState state, string id) => state.ThirdStarItems.Contains(id) ? 3 : state.EvolvedItems.Contains(id) ? 2 : 1;
 
     private PmcData GetPmc(MongoId session) =>
         backend.Profile(session)?.CharacterData?.PmcData
-        ?? throw new InvalidOperationException("PMC 프로필을 찾을 수 없습니다.");
+        ?? throw Loc.Invalid("PMC 프로필을 찾을 수 없습니다.", "PMC profile not found.");
 
     private EnhanceState State(MongoId session)
     {
-        var profile = backend.Profile(session) ?? throw new InvalidOperationException("프로필이 없습니다.");
+        var profile = backend.Profile(session) ?? throw Loc.Invalid("프로필이 없습니다.", "Profile not found.");
         profile.ExtensionData ??= new();
         if (!profile.ExtensionData.TryGetValue(StateKey, out var raw))
             profile.ExtensionData[StateKey] = raw = new EnhanceState();
         if (raw is JsonElement json)
             profile.ExtensionData[StateKey] = raw = serializer.Deserialize<EnhanceState>(json.GetRawText())
-                ?? throw new InvalidOperationException("강화 기록을 읽을 수 없습니다.");
+                ?? throw Loc.Invalid("강화 기록을 읽을 수 없습니다.", "Cannot read the enhancement records.");
         if (raw is not EnhanceState state || state.Levels == null || state.Receipts == null || state.Paths == null || state.Tracks == null)
-            throw new InvalidOperationException("강화 기록 형식이 다릅니다.");
+            throw Loc.Invalid("강화 기록 형식이 다릅니다.", "The enhancement record format is different.");
         state.EvolvedItems ??= new();
         state.ThirdStarItems ??= new();
         // Preserve the paid specialization from 0.2 as one independent track.
@@ -307,7 +358,7 @@ public sealed class EnhanceService(SptEnhanceBackend backend, JsonUtil serialize
         {
             var level = state.Levels.GetValueOrDefault(entry.Key);
             if (level < 1 || level > 100 || !Enum.IsDefined(entry.Value))
-                throw new InvalidOperationException("이전 강화 기록이 올바르지 않습니다.");
+                throw Loc.Invalid("이전 강화 기록이 올바르지 않습니다.", "The old enhancement records are invalid.");
             if (!state.Tracks.TryGetValue(entry.Key, out var tracks))
                 state.Tracks[entry.Key] = tracks = new();
             if (!tracks.ContainsKey(entry.Value)) tracks[entry.Value] = level;
@@ -320,26 +371,26 @@ public sealed class EnhanceService(SptEnhanceBackend backend, JsonUtil serialize
     private Item GetTarget(PmcData profile, string itemId)
     {
         var target = InventoryItems(profile).SingleOrDefault(i => i.Id.ToString() == itemId)
-            ?? throw new InvalidOperationException("내 창고에서 아이템을 찾을 수 없습니다.");
+            ?? throw Loc.Invalid("내 창고에서 아이템을 찾을 수 없습니다.", "Item not found in your stash.");
         var parents = Parents(profile);
         if (!EnhanceRules.IsBelow(itemId, Stash(profile), parents))
-            throw new InvalidOperationException("장비를 장착 해제하고 창고에 넣어 주세요.");
+            throw Loc.Invalid("장비를 장착 해제하고 창고에 넣어 주세요.", "Unequip the gear and put it in your stash.");
         var tree = Tree(profile, itemId);
         if (tree.Any(i => i.Id != target.Id && i.SlotId == "main"))
-            throw new InvalidOperationException("장비의 내부 보관칸을 비운 뒤 강화해 주세요.");
+            throw Loc.Invalid("장비의 내부 보관칸을 비운 뒤 강화해 주세요.", "Empty the gear's storage before enhancing.");
         if (!backend.Eligible(target.Template)
             || !tree.Any(i => i.Upd?.Repairable is { MaxDurability: > 0 }))
-            throw new InvalidOperationException("내구도가 있는 무기 또는 방어구만 강화할 수 있습니다.");
+            throw Loc.Invalid("내구도가 있는 무기 또는 방어구만 강화할 수 있습니다.", "Only weapons or armor with durability can be enhanced.");
         if (tree.Any(i => i.Upd?.PinLockState?.ToString() == "Locked"))
-            throw new InvalidOperationException("잠긴 장비나 부착물의 잠금을 먼저 해제해 주세요.");
+            throw Loc.Invalid("잠긴 장비나 부착물의 잠금을 먼저 해제해 주세요.", "Unlock the locked gear or attachments first.");
         return target;
     }
 
     private static List<Item> InventoryItems(PmcData profile) => profile.Inventory?.Items
-        ?? throw new InvalidOperationException("아이템 목록을 읽을 수 없습니다.");
+        ?? throw Loc.Invalid("아이템 목록을 읽을 수 없습니다.", "Cannot read the item list.");
 
     private static string Stash(PmcData profile) => profile.Inventory?.Stash?.ToString()
-        ?? throw new InvalidOperationException("창고를 찾을 수 없습니다.");
+        ?? throw Loc.Invalid("창고를 찾을 수 없습니다.", "Stash not found.");
 
     private static Dictionary<string, string> Parents(PmcData profile) => InventoryItems(profile)
         .ToDictionary(i => i.Id.ToString(), i => i.ParentId?.ToString() ?? "");
@@ -365,7 +416,7 @@ public sealed class EnhanceService(SptEnhanceBackend backend, JsonUtil serialize
     {
         var count = item.Upd?.StackObjectsCount ?? 1;
         if (!double.IsFinite(count) || count < 0 || count > int.MaxValue || count != Math.Floor(count))
-            throw new InvalidOperationException("소모 아이템 묶음의 수량이 올바르지 않습니다.");
+            throw Loc.Invalid("소모 아이템 묶음의 수량이 올바르지 않습니다.", "Invalid stack count on a consumed item.");
         return (long)count;
     }
 

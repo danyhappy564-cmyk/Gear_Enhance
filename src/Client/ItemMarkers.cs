@@ -11,6 +11,9 @@ namespace GearEnhance;
 internal static class ItemMarkers
 {
     private static readonly HashSet<object> views = new HashSet<object>();
+    // Ids already shown once without a record. A new one (an insurance or flea return
+    // taken from mail gets a new id) asks for one debounced state sync.
+    private static readonly HashSet<string> unknown = new HashSet<string>();
     private static MethodInfo update, updateColor;
     private static readonly string[] LoadingStates = { "IsBeingLoadedAmmo", "IsBeingLoadedMagazine", "IsBeingUnloadedMagazine" };
     private static FieldInfo background;
@@ -47,6 +50,11 @@ internal static class ItemMarkers
         if (views.Count < 2048) views.Add(__instance);
         var item = GameBridge.Get(__instance, "Item");
         var id = GameBridge.Get(item, "Id")?.ToString();
+        if (id != null && StatPatches.Registry.TotalLevel(id) == 0)
+        {
+            if (unknown.Count >= 65536) unknown.Clear();
+            if (unknown.Add(id)) Plugin.RequestSync();
+        }
         if (id == null || StatPatches.Registry.TotalLevel(id) == 0
             || GameBridge.Get(__instance, "Examined") is not true
             || GameBridge.Get(__instance, "_hasResizeConflict") is true
@@ -84,5 +92,15 @@ internal static class ItemMarkers
                 update?.Invoke(view, null);
         }
     }
-    internal static void Clear() => views.Clear();
+    // After a sync or a language change: redraw only views that carry a record.
+    internal static void RefreshAll()
+    {
+        foreach (var view in views.ToArray())
+        {
+            if (view is UnityEngine.Object instance && instance == null) { views.Remove(view); continue; }
+            var id = GameBridge.Get(GameBridge.Get(view, "Item"), "Id")?.ToString();
+            if (id != null && StatPatches.Registry.TotalLevel(id) > 0) update?.Invoke(view, null);
+        }
+    }
+    internal static void Clear() { views.Clear(); unknown.Clear(); }
 }

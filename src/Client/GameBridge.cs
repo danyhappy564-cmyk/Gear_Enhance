@@ -105,7 +105,7 @@ internal static class GameBridge
         var type = RuntimeType("EFT.UI.DynamicContextInteraction")
             ?? throw new TypeLoadException("SPT 4.1 DynamicContextInteraction");
         var ctor = type.GetConstructors().Single(c => c.GetParameters().Length == 4);
-        const string caption = "장비 강화";
+        var caption = Loc.L("장비 강화", "Enhance gear");
         var interaction = ctor.Invoke(new object[] { "rf.gear.enhance", caption, action, null });
         var dictionary = Get(interactions, "_dynamicInteractions") as IDictionary
             ?? throw new MissingFieldException("ContextInteractions._dynamicInteractions");
@@ -116,10 +116,10 @@ internal static class GameBridge
     {
         var task = (Task)RequiredMethod(session.GetType(), "FlushOperationQueue", 0).Invoke(session, null);
         if (await Task.WhenAny(task, Task.Delay(15000)) != task)
-            throw new TimeoutException("기존 인벤토리 작업의 응답 시간이 초과됐습니다.");
+            throw new TimeoutException(Loc.L("기존 인벤토리 작업의 응답 시간이 초과됐습니다.", "Pending inventory actions timed out."));
         await task;
         var result = Get(task, "Result");
-        if (!Succeeded(result)) throw new InvalidOperationException("기존 인벤토리 작업을 완료하지 못했습니다.");
+        if (!Succeeded(result)) throw Loc.Invalid("기존 인벤토리 작업을 완료하지 못했습니다.", "Pending inventory actions failed.");
     }
 
     internal static Task<bool> Execute(object session, string quoteId, bool destruction)
@@ -165,14 +165,15 @@ internal static class GameBridge
         });
         var response = JsonConvert.DeserializeObject<ApiReply<T>>(raw ?? "");
         if (response?.Ok != true || response.Data == null)
-            throw new InvalidOperationException(response?.Error ?? "서버 응답을 읽을 수 없습니다.");
+            throw new InvalidOperationException(response == null ? Loc.L("서버 응답을 읽을 수 없습니다.", "Cannot read the server response.")
+                : Loc.English && !string.IsNullOrEmpty(response.ErrorEnglish) ? response.ErrorEnglish : response.Error);
         return response.Data;
     }
 
     internal static async Task<T> WithTimeout<T>(Task<T> task, int milliseconds = 15000)
     {
         if (await Task.WhenAny(task, Task.Delay(milliseconds)) != task)
-            throw new TimeoutException("서버 응답 시간이 초과됐습니다.");
+            throw new TimeoutException(Loc.L("서버 응답 시간이 초과됐습니다.", "The server response timed out."));
         return await task;
     }
 }

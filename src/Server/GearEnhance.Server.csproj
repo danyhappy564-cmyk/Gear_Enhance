@@ -4,11 +4,14 @@
     <AssemblyName>GearEnhance.Server</AssemblyName>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <Version>1.0.0</Version>
+    <Version>1.1.0</Version>
   </PropertyGroup>
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
     <PackageReference Include="SPTushonka.Server.Core" Version="4.1.6" />
+    <!-- Ships with SPT 4.1.6 (HarmonyX 2.16.1); never copied into the mod folder. -->
+    <PackageReference Include="SPTushonka.Reflection" Version="4.1.6" ExcludeAssets="runtime" />
     <Compile Include="../Shared/*.cs" Link="Shared/%(Filename)%(Extension)" />
+    <InternalsVisibleTo Include="GearEnhance.Tests" />
   </ItemGroup>
 </Project>

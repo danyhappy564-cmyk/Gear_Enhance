@@ -1,4 +1,4 @@
-# 장비 강화 1.0.0 설계
+# 장비 강화 1.1.0 설계
 
 승인한 목업과 능력치 표를 기준으로 구현했습니다. 원본 수리 버프나 아이템 템플릿은 수정하지 않고 아이템·항목별 단계와 계산 후처리로 적용합니다.
 
@@ -24,6 +24,20 @@ Layout 이벤트 도중 컨트롤 수를 바꾸는 문제를 피하려고 GUILay
 8. 클라이언트는 서버 영수증을 확인한 직후 효과 캐시를 갱신하고, 전체 소유 기록과 다시 맞춥니다. 실행 결과가 미확정이면 자동 재시도하지 않습니다.
 
 항목별 단계로 비용과 최대 단계를 판단합니다. 항목 선택 자체는 비용·확률을 소모하지 않습니다. 0.2.x `Levels/Paths`는 같은 항목의 `Tracks`로 한 번 옮겨 무료 복제나 단계 손실을 막습니다. 0.1의 단계만 남은 장비는 첫 항목에 기존 단계를 무료·100%로 복원합니다. 조회 API에는 통신 버전7을 요구합니다. 기존0.7.0까지는 보너스 수치100% 초과를 거절하므로 클라/서버 모두0.7.1을 요구합니다. 새 기본3스타 추가효과200%를 양쪽에서 동일하게 검증합니다.
+
+## 보험·플리 반환 우편과 기록 이전 (1.1.0)
+
+SPT 4.1.6 `MailSendService.SendMessageToPlayer`는 `ProcessItemsBeforeAddingToMail`에서 첨부를 `Clone(items).ReplaceIDs().ToList()`로 바꿔 `SendMessageDetails.Items`에 다시 넣습니다. 보험 반환(`InsuranceController.SendMail`)과 플리 만료·취소(`RagfairServerHelper.ReturnItems`) 모두 이 경로이며, 보험 대기 목록(`InsuranceList`)과 판매 목록(`RagfairInfo.Offers`)은 옛 ID를 유지하고 우편→창고 이동(`MoveItemToProfile`)은 ID를 바꾸지 않습니다.
+
+`MailReturnLoader`(IOnLoad, PostLoad)가 `MailReturnPatch`(SPT `AbstractPatch`, `[PatchPrefix]`/`[PatchPostfix]`)를 켭니다. 앞에서 첨부 ID·템플릿 순서를 [ThreadStatic]에 담고, 뒤에서 같은 `SendMessageDetails`이고 목록이 교체됐으며 개수·순서·템플릿이 모두 같을 때만 짝을 만들어 `EnhanceService.Remap`을 호출합니다. Remap은 서비스 잠금 안에서 Levels/Paths/Tracks/Evolved/ThirdStar를 새 ID로 옮기며, 옛 ID가 아직 인벤토리에 있거나(복사본 우편) 새 ID에 이미 기록이 있으면 건너뜁니다. 패치·연결 실패는 로그 한 번만 남기고 우편 발송을 막지 않습니다. 실행 DLL은 SPT 런타임 것을 쓰므로 `SPTushonka.Reflection`은 `ExcludeAssets=runtime`이고 배포 zip에는 우리 DLL만 들어갑니다.
+
+견적의 정리 기준과 스냅샷 대상은 인벤토리 + 보험 대기 + 판매 목록 + 우편 첨부(`Tracked`)입니다. 스냅샷에 우편 첨부를 넣어 우편 화면에서도 표식이 보입니다. 클라이언트는 `ItemMarkers`가 기록 없는 ID를 처음 볼 때마다(최대 65536개 기억) `Plugin.RequestSync`로 표시만 하고, `Update`가 레이드 밖·창 닫힘·5초 간격일 때 상태를 한 번 다시 받은 뒤 기록 있는 뷰만 다시 그립니다.
+
+## 한/영 전환 (1.1.0)
+
+원문은 한국어이고 `Loc.L(한국어, 영어)`가 F12 `Language · 언어`(Auto/Korean/English, Auto는 `Application.systemLanguage`)로 고릅니다. 공용 예외는 `Loc.Invalid/Argument`로 만들어 형식(InvalidOperation/Argument)을 유지하고 `Exception.Data`에 영어를 붙입니다. 서버는 늘 한국어 메시지를 쓰고 `ApiReply.ErrorEnglish`로 영어를 함께 보내며, 아이템 이벤트 오류 팝업에는 두 언어를 줄바꿈해 넣습니다. 서버의 가격 기준 문구는 클라이언트 `Loc.PriceSource`가 옮깁니다.
+
+F12는 cfg 섹션·키를 바꾸지 않고 `ConfigurationManagerAttributes`의 Category/DispName/Description만 `ConfigText` 표로 바꿉니다. 효과 키는 `KoreanStatName`으로 만들어 언어와 무관합니다. 표 누락은 Plugin.cs의 Bind 호출 문자열을 읽는 검사로 0을 유지합니다. 언어 전환은 견적을 무효화하지 않습니다.
 
 ## 단계 곡선·완성과 고위험
 

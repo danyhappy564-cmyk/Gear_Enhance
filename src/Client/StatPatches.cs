@@ -88,8 +88,14 @@ internal static class StatPatches
         var amount = Amount(GameBridge.Get(__instance, "Item"), EnhancePath.ArmorDurability, true);
         if (amount > 0 && __0 > 0) __0 = EnhanceEffects.Reduce(__0, amount);
     }
+    // Last loaded backend session, for the background sync of mail-returned gear.
+    internal static object Session;
     private static void ProfilesPrefix() { Registry.Clear(); ItemMarkers.Clear(); }
-    private static void ProfilesPostfix(object __instance, ref Task __result) => __result = AfterProfiles(__result, __instance);
+    private static void ProfilesPostfix(object __instance, ref Task __result)
+    {
+        Session = __instance;
+        __result = AfterProfiles(__result, __instance);
+    }
     private static async Task AfterProfiles(Task original, object session)
     {
         await original;

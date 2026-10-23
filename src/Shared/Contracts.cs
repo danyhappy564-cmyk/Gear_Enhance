@@ -11,11 +11,12 @@ public enum EnhanceAction { Upgrade, Evolve, EvolveThird }
 public static class EnhanceProtocol
 {
     public const int Version = 7;
-    public const string ModVersion = "1.0.0";
+    public const string ModVersion = "1.1.0";
     public static void Validate(int version)
     {
         if (version != Version)
-            throw new ArgumentException("Gear Enhance 클라이언트와 서버를 모두 1.0.0으로 업데이트해 주세요.");
+            throw Loc.Argument($"Gear Enhance 클라이언트와 서버를 모두 {ModVersion}으로 업데이트해 주세요.",
+                $"Update both the Gear Enhance client and server to {ModVersion}.");
     }
 }
 
@@ -55,8 +56,8 @@ public sealed class EnhanceSettings
             || MinimumCost < 0 || MinimumCost > 100000000
             || !Enum.IsDefined(typeof(PriceBasis), PriceBasis)
             || !Enum.IsDefined(typeof(FailureMode), FailureMode))
-            throw new ArgumentException("F12 설정 범위를 확인해 주세요.");
-        if (Effects == null) throw new ArgumentException("강화 효과 설정이 없습니다.");
+            throw Loc.Argument("F12 설정 범위를 확인해 주세요.", "Check the F12 setting ranges.");
+        if (Effects == null) throw Loc.Argument("강화 효과 설정이 없습니다.", "Enhancement effect settings are missing.");
         Effects.MaxLevel = MaxLevel;
         Effects.Validate();
     }
@@ -156,5 +157,7 @@ public sealed class ApiReply<T> where T : class
 {
     public bool Ok { get; set; }
     public string Error { get; set; } = "";
+    // Added in 1.1.0. Older servers leave it empty and the Korean text is shown.
+    public string ErrorEnglish { get; set; } = "";
     public T? Data { get; set; }
 }
