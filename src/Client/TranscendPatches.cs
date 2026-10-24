@@ -54,6 +54,9 @@ internal static class TranscendPatches
             harmony.Patch(ctor, postfix: Hook(nameof(AutomaticCreated)));
             // Overheating resets the interval from the base rate in Update; corrected ones redo it.
             harmony.Patch(GameBridge.RequiredMethod(operation, "Update", 1), postfix: Hook(nameof(AutomaticUpdated)));
+            // In-game 2026-10-24: interval 61.5 ms in the log, yet "feels the same" in a raid.
+            // Each shot of a transcended weapon is timed so the log shows the real rate.
+            harmony.Patch(GameBridge.RequiredMethod(operation, "InternalOnFireEvent", 0), postfix: Hook(nameof(AutomaticShot)));
         });
         Try("과열 / overheat", () => harmony.Patch(GameBridge.RequiredMethod(weapon, "GetShotOverheat", 3), postfix: Hook(nameof(Overheat))));
         Try("고장 / malfunction", () => harmony.Patch(GameBridge.RequiredMethod(Required("EFT.Player+FirearmController"),
@@ -298,6 +301,27 @@ internal static class TranscendPatches
     private sealed class CorrectedFire { internal object Weapon; internal int Rate; }
     private static readonly ConditionalWeakTable<object, CorrectedFire> correctedOperations = new ConditionalWeakTable<object, CorrectedFire>();
 
+    // Shots of one trigger pull of a transcended weapon: a gap over 0.4 s starts a new burst.
+    // After 12 shots the measured rate is logged, at most 8 times per game session.
+    private sealed class Burst { internal float Start, Last; internal int Shots; internal int Rate; internal bool Logged; }
+    private static readonly ConditionalWeakTable<object, Burst> bursts = new ConditionalWeakTable<object, Burst>();
+    private static int burstLogs;
+
+    private static void AutomaticShot(object __instance)
+    {
+        if (burstLogs >= 8 || !Registry.HasTranscend || !bursts.TryGetValue(__instance, out var burst)) return;
+        var now = Time.realtimeSinceStartup;
+        if (burst.Shots == 0 || now - burst.Last > 0.4f) { burst.Start = now; burst.Shots = 0; burst.Logged = false; }
+        burst.Shots++;
+        burst.Last = now;
+        if (burst.Logged || burst.Shots < 12) return;
+        burst.Logged = true;
+        burstLogs++;
+        var measured = (burst.Shots - 1) * 60f / Math.Max(0.001f, now - burst.Start);
+        var interval = shotsTime.GetValue(__instance) is float value ? value * 1000 : 0;
+        Plugin.LogInfo($"초월 발사속도 실측: {burst.Shots}발 {measured:0}rpm (목표 {burst.Rate}rpm, 지금 간격 {interval:0.0}ms, FPS {1f / Math.Max(0.0001f, Time.unscaledDeltaTime):0})");
+    }
+
     private static void AutomaticUpdated(object __instance)
     {
         if (!Registry.HasTranscend || !correctedOperations.TryGetValue(__instance, out var fix)) return;
@@ -337,6 +361,8 @@ internal static class TranscendPatches
             var bonus = FireRateBonus(weapon, baseRate);
             var expected = 60f / (baseRate + bonus);
             var corrected = bonus > 0 && Math.Abs(current - expected) > 0.0001f;
+            bursts.Remove(__instance);
+            bursts.Add(__instance, new Burst { Rate = baseRate + bonus });
             if (corrected)
             {
                 shotsTime.SetValue(__instance, expected);
