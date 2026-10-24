@@ -19,6 +19,7 @@ public sealed class QuoteRequest : IRequestData
     public EnhanceAction Action { get; set; }
     public bool ChanceBoost { get; set; }
     public InsuranceTier Tier { get; set; }
+    public TranscendTrack Track { get; set; }
 }
 
 public sealed class ReceiptRequest : IRequestData
@@ -45,7 +46,7 @@ public sealed class EnhanceQueries(JsonUtil json, EnhanceService service) : Stat
 [
     new RouteAction<QuoteRequest>("/rf/gear-enhance/quote", (_, body, session, _, _) =>
         ValueTask.FromResult(Reply(() => { EnhanceProtocol.Validate(body.ProtocolVersion);
-            return service.Quote(session, body.ItemId, body.Settings, body.Path, body.Protection, body.Action, body.ChanceBoost, body.Tier); }, json))),
+            return service.Quote(session, body.ItemId, body.Settings, body.Path, body.Protection, body.Action, body.ChanceBoost, body.Tier, body.Track); }, json))),
     new RouteAction<StateRequest>("/rf/gear-enhance/state", (_, body, session, _, _) =>
         ValueTask.FromResult(Reply(() => { EnhanceProtocol.Validate(body.ProtocolVersion); return service.Snapshot(session); }, json))),
     new RouteAction<ReceiptRequest>("/rf/gear-enhance/receipt", (_, body, session, _, _) =>

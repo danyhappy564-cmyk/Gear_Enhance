@@ -30,6 +30,9 @@ public sealed class EnhanceState
     public Dictionary<string, InsertRecord> Inserts { get; set; } = new();
     public Dictionary<string, InsuranceCoverage> Coverage { get; set; } = new();
     public HashSet<string> Forfeited { get; set; } = new();
+    // 1.3.0: transcendence per gear, and max durability added to armor items by it.
+    public Dictionary<string, TranscendRecord> Transcend { get; set; } = new();
+    public Dictionary<string, DurabilityGrant> Grants { get; set; } = new();
 }
 
 public sealed class InsertRecord
@@ -52,23 +55,26 @@ public sealed class RaidCapture
 {
     public int InsuranceCount { get; set; }
     public List<(string Root, List<Item> Tree)> Gear { get; } = new();
+    // Items holding added max durability that were in the inventory before the raid.
+    public HashSet<string> Granted { get; } = new();
 }
 
 // The query router and item-event router are resolved separately by SPT.
 // Quotes and their lock must belong to the same server-wide instance.
 [Injectable(InjectionType.Singleton)]
-public sealed class EnhanceService(SptEnhanceBackend backend, JsonUtil serializer)
+public sealed partial class EnhanceService(SptEnhanceBackend backend, JsonUtil serializer)
 {
     private const string StateKey = "rfGearEnhance";
     private const string Roubles = "5449016a4bdc2d6f028b456f";
     private readonly object sync = new();
     private readonly Dictionary<MongoId, PendingQuote> pending = new();
 
-    private sealed record PendingQuote(EnhanceQuote View, string Fingerprint, string TrackFingerprint, int Stars, PriceBasis Basis);
+    private sealed record PendingQuote(EnhanceQuote View, string Fingerprint, string TrackFingerprint, int Stars, PriceBasis Basis,
+        TranscendTuning Tuning);
 
     public EnhanceQuote Quote(MongoId session, string itemId, EnhanceSettings settings, EnhancePath? path = null,
         EnhanceProtection? protection = null, EnhanceAction action = EnhanceAction.Upgrade, bool chanceBoost = false,
-        InsuranceTier tier = InsuranceTier.None)
+        InsuranceTier tier = InsuranceTier.None, TranscendTrack track = TranscendTrack.None)
     {
         lock (sync)
         {
@@ -81,8 +87,10 @@ public sealed class EnhanceService(SptEnhanceBackend backend, JsonUtil serialize
             // Discard metadata only for items no longer owned by this profile. Insured
             // losses, flea listings and unread mail keep theirs until they come back.
             var owned = Tracked(session, profile).Keys.ToHashSet();
-            foreach (var key in state.Levels.Keys.Concat(state.Tracks.Keys).Concat(state.EvolvedItems).Concat(state.ThirdStarItems).Where(k => !owned.Contains(k)).Distinct().ToArray())
+            foreach (var key in state.Levels.Keys.Concat(state.Tracks.Keys).Concat(state.EvolvedItems).Concat(state.ThirdStarItems)
+                .Concat(state.Transcend.Keys).Where(k => !owned.Contains(k)).Distinct().ToArray())
             {
+                state.Transcend.Remove(key);
                 state.Levels.Remove(key);
                 state.Paths.Remove(key);
                 state.Tracks.Remove(key);
@@ -96,14 +104,18 @@ public sealed class EnhanceService(SptEnhanceBackend backend, JsonUtil serialize
             }
             foreach (var record in state.Inserts.Values) record.Ids.RemoveWhere(id => !owned.Contains(id));
             state.Forfeited.RemoveWhere(id => !owned.Contains(id));
+            foreach (var key in state.Grants.Keys.Where(k => !owned.Contains(k)).ToArray()) RemoveGrant(state, key);
             var weapon = backend.IsWeapon(target.Template);
             var parts = weapon ? new List<Item>() : Parts(profile, itemId);
             if (!weapon) EnsureInserts(state, itemId, parts);
             var (bodyPrice, source) = backend.Price(target.Template, settings.PriceBasis);
             var partsPrice = PartsValue(parts.Select(p => p.Template.ToString()), settings.PriceBasis);
             var paidParts = PartsValue(state.Inserts.GetValueOrDefault(itemId)?.PaidTemplates, settings.PriceBasis);
-            if (Enum.IsDefined(action) && action >= EnhanceAction.Insure)
+            if (action == EnhanceAction.Insure || action == EnhanceAction.RegisterInserts)
                 return ManageQuote(session, profile, itemId, state, settings, action, tier, weapon, parts, bodyPrice, source, partsPrice, paidParts);
+            if (action == EnhanceAction.Transcend)
+                return TranscendQuote(session, profile, target, state, settings, track, weapon, parts, bodyPrice, source, partsPrice, paidParts,
+                    protection, chanceBoost);
             var tracks = state.Tracks.GetValueOrDefault(itemId);
             var selected = path ?? (tracks?.Count > 0 ? tracks.Keys.First()
                 : weapon ? EnhancePath.Recoil : EnhancePath.ArmorDurability);
@@ -190,10 +202,12 @@ public sealed class EnhanceService(SptEnhanceBackend backend, JsonUtil serialize
             var coverage = state.Coverage.GetValueOrDefault(itemId);
             quote.CurrentInsurance = coverage?.Tier ?? InsuranceTier.None;
             quote.CurrentInsurancePercent = coverage?.ReturnPercent ?? 0;
-            quote.InsertSurcharge = legacy ? 0 : EnhanceRules.InsertSurcharge(partsPrice - paidParts, tracks, stars, settings);
+            var transcend = state.Transcend.GetValueOrDefault(itemId);
+            quote.InsertSurcharge = legacy ? 0 : EnhanceRules.InsertSurcharge(partsPrice - paidParts, tracks, stars, settings,
+                transcend?.Second ?? 0, transcend?.Third ?? 0);
             quote.Cost = ProtectionCosts.Total(quote.Cost, quote.InsertSurcharge, 0);
             // One current quote per profile; opening another item invalidates the old one.
-            pending[session] = new(quote, Fingerprint(tree), TracksFingerprint(tracks), stars, settings.PriceBasis);
+            pending[session] = new(quote, Fingerprint(tree), StateFingerprint(state, itemId), stars, settings.PriceBasis, settings.Transcend);
             return quote;
         }
     }
@@ -206,9 +220,12 @@ public sealed class EnhanceService(SptEnhanceBackend backend, JsonUtil serialize
         if (tracks == null || !tracks.Values.Any(level => level > 0))
             throw Loc.Invalid("강화된 장비만 강화 보험 가입·방탄판 등록을 할 수 있습니다.", "Only enhanced gear can be insured or have plates registered.");
         var stars = Stars(state, itemId);
-        var registration = weapon ? 0 : EnhanceRules.InsertSurcharge(partsPrice - paidParts, tracks, stars, settings);
+        var transcend = state.Transcend.GetValueOrDefault(itemId);
+        var registration = weapon ? 0 : EnhanceRules.InsertSurcharge(partsPrice - paidParts, tracks, stars, settings,
+            transcend?.Second ?? 0, transcend?.Third ?? 0);
         var unregistered = Unregistered(state, itemId, parts);
-        var value = EnhanceRules.Value(bodyPrice + paidParts, tracks, stars, settings);
+        var value = EnhanceRules.Value(bodyPrice + paidParts, tracks, stars, settings,
+            transcend?.Second ?? 0, transcend?.Third ?? 0, MaterialValue(weapon, transcend));
         var coverage = state.Coverage.GetValueOrDefault(itemId);
         var quote = new EnhanceQuote
         {
@@ -221,7 +238,8 @@ public sealed class EnhanceService(SptEnhanceBackend backend, JsonUtil serialize
             CurrentStars = stars, NextStars = stars, AttachedItems = Tree(profile, itemId).Count - 1,
             PartsPrice = partsPrice, InsertedParts = parts.Count, UnregisteredParts = unregistered, RegistrationFee = registration,
             InsuranceTier = tier, CurrentInsurance = coverage?.Tier ?? InsuranceTier.None, CurrentInsurancePercent = coverage?.ReturnPercent ?? 0,
-            InsuredValue = value
+            InsuredValue = value, TranscendSecond = transcend?.Second ?? 0, TranscendThird = transcend?.Third ?? 0,
+            DurabilityPending = weapon ? 0 : SyncGrants(profile, state, itemId, settings.Transcend, null)
         };
         foreach (var option in new[] { InsuranceTier.Basic, InsuranceTier.Advanced, InsuranceTier.Premium })
         {
@@ -237,10 +255,12 @@ public sealed class EnhanceService(SptEnhanceBackend backend, JsonUtil serialize
         }
         else
         {
-            quote.CanRegister = !weapon && unregistered > 0;
+            // Also offered when a registered part went back in and its added max durability is missing.
+            quote.CanRegister = !weapon && (unregistered > 0 || quote.DurabilityPending > 0);
             quote.Cost = quote.InsertSurcharge = quote.CanRegister ? registration : 0;
         }
-        pending[session] = new(quote, Fingerprint(Tree(profile, itemId)), TracksFingerprint(tracks), stars, settings.PriceBasis);
+        pending[session] = new(quote, Fingerprint(Tree(profile, itemId)), StateFingerprint(state, itemId), stars, settings.PriceBasis,
+            settings.Transcend);
         return quote;
     }
 
@@ -302,6 +322,8 @@ public sealed class EnhanceService(SptEnhanceBackend backend, JsonUtil serialize
         state.ThirdStarItems.Remove(id);
         state.Inserts.Remove(id);
         state.Coverage.Remove(id);
+        state.Transcend.Remove(id);
+        RemoveGrant(state, id);
     }
 
     public EnhanceReceipt? Receipt(MongoId session, string quoteId)
@@ -333,7 +355,13 @@ public sealed class EnhanceService(SptEnhanceBackend backend, JsonUtil serialize
                         && EnhanceEffects.Allowed(track.Key, backend.IsWeapon(owned[p.Key].Template)))
                         .Select(track => new EnhanceRecord { ItemId = p.Key, Path = track.Key, Level = track.Value,
                             Evolved = Stars(state, p.Key) >= 2, StarLevel = Stars(state, p.Key) }))
-                    .ToArray()
+                    .ToArray(),
+                Transcend = state.Transcend.Where(p => owned.ContainsKey(p.Key) && !backend.IsArmorPart(owned[p.Key].Template)
+                        && (p.Value.Second > 0 || p.Value.Third > 0))
+                    .Select(p => new TranscendLink { ItemId = p.Key, Second = TranscendRules.Clamp(p.Value.Second),
+                        Third = TranscendRules.Clamp(p.Value.Third) }).ToArray(),
+                Durability = state.Grants.Where(p => owned.ContainsKey(p.Key) && p.Value.Amount > 0)
+                    .Select(p => new DurabilityLink { ItemId = p.Key, Amount = p.Value.Amount }).ToArray()
             };
         }
     }
@@ -355,10 +383,11 @@ public sealed class EnhanceService(SptEnhanceBackend backend, JsonUtil serialize
             var changedItems = output.ProfileChanges?[session]?.Items?.ChangedItems
                 ?? throw Loc.Invalid("SPT 아이템 응답을 준비할 수 없습니다.", "Cannot prepare the SPT item response.");
             var tree = Tree(profile, quote.ItemId);
-            var recordedLevel = quote.BindLegacy ? state.Levels.GetValueOrDefault(quote.ItemId)
+            var recordedLevel = quote.Action == EnhanceAction.Transcend ? state.Transcend.GetValueOrDefault(quote.ItemId)?.Level(quote.Transcend) ?? 0
+                : quote.BindLegacy ? state.Levels.GetValueOrDefault(quote.ItemId)
                 : state.Tracks.GetValueOrDefault(quote.ItemId)?.GetValueOrDefault(quote.Path) ?? 0;
             if (recordedLevel != quote.CurrentLevel || Fingerprint(tree) != saved.Fingerprint
-                || TracksFingerprint(state.Tracks.GetValueOrDefault(quote.ItemId)) != saved.TrackFingerprint
+                || StateFingerprint(state, quote.ItemId) != saved.TrackFingerprint
                 || Stars(state, quote.ItemId) != saved.Stars)
                 throw Loc.Invalid("장비 상태가 바뀌었습니다. 견적을 다시 불러와 주세요.", "The gear changed. Reload the quote.");
             if (quote.Action == EnhanceAction.Insure && !quote.CanBuyInsurance || quote.Action == EnhanceAction.RegisterInserts && !quote.CanRegister)
@@ -371,6 +400,7 @@ public sealed class EnhanceService(SptEnhanceBackend backend, JsonUtil serialize
             var purse = Money(profile).ToList();
             if (purse.Sum(i => Count(i)) < quote.Cost)
                 throw Loc.Invalid("창고의 루블이 부족합니다.", "Not enough roubles in the stash.");
+            var stock = MaterialStock(profile, quote);
 
             // All checks precede payment. Native item-event output keeps the
             // client's stacks, deleted items and durability in sync with SPT.
@@ -398,9 +428,13 @@ public sealed class EnhanceService(SptEnhanceBackend backend, JsonUtil serialize
                 backend.RemoveMaterial(profile, bitcoin.Id, take, session, output);
                 remainingBitcoins -= take;
             }
+            Consume(profile, stock, session, output);
             var weapon = backend.IsWeapon(target.Template);
             var parts = weapon ? new List<Item>() : Parts(profile, quote.ItemId);
-            if (quote.Action == EnhanceAction.Insure)
+            var pity = 0.0;
+            if (quote.Action == EnhanceAction.Transcend)
+                pity = ApplyTranscend(state, quote, success, failureMode == FailureMode.Downgrade);
+            else if (quote.Action == EnhanceAction.Insure)
                 state.Coverage[quote.ItemId] = new InsuranceCoverage { Tier = quote.InsuranceTier,
                     ReturnPercent = quote.InsuranceChances[(int)quote.InsuranceTier], Paid = quote.Cost };
             else if (quote.Action == EnhanceAction.RegisterInserts) { }
@@ -444,6 +478,8 @@ public sealed class EnhanceService(SptEnhanceBackend backend, JsonUtil serialize
             // A new level or more valuable plates make the old insurance fee too low.
             if (!weapon && failureMode != FailureMode.Destroy && quote.Action != EnhanceAction.Insure)
                 Enroll(state, quote.ItemId, parts, saved.Basis);
+            if (!weapon && failureMode != FailureMode.Destroy)
+                SyncGrants(profile, state, quote.ItemId, saved.Tuning, changedItems);
             if (quote.Action != EnhanceAction.Insure && (success && quote.Action != EnhanceAction.RegisterInserts || quote.InsertSurcharge > 0))
                 state.Coverage.Remove(quote.ItemId);
             state.Receipts.Add(new EnhanceReceipt
@@ -454,6 +490,7 @@ public sealed class EnhanceService(SptEnhanceBackend backend, JsonUtil serialize
                 DestructionPrevented = destructionPrevented, DowngradePrevented = downgradePrevented,
                 IsEvolution = quote.IsEvolution, Evolved = Stars(state, quote.ItemId) >= 2,
                 Action = quote.Action, InsuranceTier = quote.Action == EnhanceAction.Insure ? quote.InsuranceTier : InsuranceTier.None,
+                Transcend = quote.Action == EnhanceAction.Transcend ? quote.Transcend : TranscendTrack.None, Pity = pity,
                 StarLevel = failureMode == FailureMode.Destroy && !success ? 0 : Stars(state, quote.ItemId),
                 CompletedUnixSeconds = DateTimeOffset.UtcNow.ToUnixTimeSeconds()
             });
@@ -489,7 +526,15 @@ public sealed class EnhanceService(SptEnhanceBackend backend, JsonUtil serialize
                     state.Inserts[next] = new InsertRecord { Ids = inserts.Ids.Select(id => map.GetValueOrDefault(id, id)).ToHashSet(),
                         PaidTemplates = inserts.PaidTemplates };
                 if (state.Coverage.Remove(old, out var coverage)) state.Coverage[next] = coverage;
+                if (state.Transcend.Remove(old, out var transcend)) state.Transcend[next] = transcend;
                 moved++;
+            }
+            // Added max durability stays on the mailed copy (insurance return, flea expiry).
+            foreach (var (old, next) in pairs)
+            {
+                if (old == next || inventory.Contains(old) || state.Grants.ContainsKey(next) || !state.Grants.TryGetValue(old, out var grant)) continue;
+                RemoveGrant(state, old);
+                SetGrant(state, next, new DurabilityGrant { Amount = grant.Amount, ArmorId = map.GetValueOrDefault(grant.ArmorId, grant.ArmorId) });
             }
             return moved;
         }
@@ -510,7 +555,8 @@ public sealed class EnhanceService(SptEnhanceBackend backend, JsonUtil serialize
             foreach (var root in state.Tracks.Keys.Concat(state.EvolvedItems).Concat(state.ThirdStarItems).Where(ids.Contains).Distinct())
                 capture.Gear.Add((root, Clone(SlotTree(items, root))));
             capture.Gear.Sort((a, b) => b.Tree.Count.CompareTo(a.Tree.Count));
-            return capture.Gear.Count == 0 ? null : capture;
+            capture.Granted.UnionWith(state.Grants.Keys.Where(ids.Contains));
+            return capture.Gear.Count == 0 && capture.Granted.Count == 0 ? null : capture;
         }
     }
 
@@ -548,11 +594,14 @@ public sealed class EnhanceService(SptEnhanceBackend backend, JsonUtil serialize
                 }
                 else
                 {
+                    StripGrants(saved!, capture.InsuranceCount, tree.Select(i => i.Id.ToString()), state);
                     Forget(state, root);
                     state.Forfeited.Add(root);
                     forfeited++;
                 }
             }
+            // Granted parts lost outside recorded gear (a plate moved into other armor).
+            StripGrants(saved!, capture.InsuranceCount, capture.Granted.Where(id => !owned.Contains(id) && !handled.Contains(id)), state);
             return (returned, forfeited);
         }
     }
@@ -586,6 +635,11 @@ public sealed class EnhanceService(SptEnhanceBackend backend, JsonUtil serialize
         var stars = StarEvolution.Level(receipts[^1].Evolved, receipts[^1].StarLevel);
         if (stars >= 2) state.EvolvedItems.Add(id);
         if (stars >= 3) state.ThirdStarItems.Add(id);
+        foreach (var receipt in state.Receipts.Where(r => r?.ItemId == id && r.Action == EnhanceAction.Transcend && TranscendRules.Valid(r.Transcend)))
+        {
+            if (!state.Transcend.TryGetValue(id, out var record)) state.Transcend[id] = record = new();
+            record.Set(receipt.Transcend, TranscendRules.Clamp(receipt.Level), Math.Max(0, receipt.Pity));
+        }
         return true;
     }
 
@@ -631,6 +685,9 @@ public sealed class EnhanceService(SptEnhanceBackend backend, JsonUtil serialize
         state.Inserts ??= new();
         state.Coverage ??= new();
         state.Forfeited ??= new();
+        state.Transcend ??= new();
+        state.Grants ??= new();
+        foreach (var (id, grant) in state.Grants) GrantIndex.Set(id, grant?.Amount ?? 0);
         // Preserve the paid specialization from 0.2 as one independent track.
         // Level-only 0.1 records wait for their existing free first selection.
         foreach (var entry in state.Paths.ToArray())

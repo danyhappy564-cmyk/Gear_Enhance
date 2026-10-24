@@ -22,7 +22,7 @@ public sealed class MailReturnLoader(EnhanceService service, ISptLogger<MailRetu
         try
         {
             new MailReturnPatch().Enable();
-            // One line in the server log confirms the 1.2.0 server half is loaded.
+            // One line in the server log confirms the server half of this version is loaded.
             logger.Info($"Gear Enhance {EnhanceProtocol.ModVersion}: 보험·플리 반환 장비 강화 기록 연결 준비 완료. "
                 + "Insurance/flea return records hook ready.");
         }
@@ -31,6 +31,17 @@ public sealed class MailReturnLoader(EnhanceService service, ISptLogger<MailRetu
             // Enhancement itself keeps working; only returned mail stays unlinked.
             logger.Error("Gear Enhance: 보험·플리 반환 우편 연결 실패. 돌아온 장비의 강화 기록은 이어지지 않습니다. "
                 + "Insurance/flea return mail hook failed; returned gear will lose its enhancement.", ex);
+        }
+        try
+        {
+            var granted = service.IndexGrants();
+            new DurabilityPricePatch().Enable();
+            if (granted > 0) logger.Info($"Gear Enhance: 초월 최대 내구도 {granted}개 판매가 보정 준비. Price fix ready for {granted} item(s) with added max durability.");
+        }
+        catch (Exception ex)
+        {
+            logger.Error("Gear Enhance: 초월 최대 내구도 판매가 보정 연결 실패. 플리·펜스 가격이 올린 내구도만큼 높게 나올 수 있습니다. "
+                + "Added max durability price fix failed; flea and Fence prices may count the added durability.", ex);
         }
         RaidEndPatch.Service = service;
         RaidEndPatch.Logger = logger;

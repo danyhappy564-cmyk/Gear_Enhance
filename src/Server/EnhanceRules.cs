@@ -29,7 +29,9 @@ public static class EnhanceRules
 
     // What enhancing this gear to its current tracks and stars cost at this price:
     // every level's base cost plus the star evolutions. Basis of the insurance fee.
-    public static long Value(double basePrice, IReadOnlyDictionary<EnhancePath, int>? tracks, int stars, EnhanceSettings settings)
+    // From 1.3.0 the held transcendence levels and their materials' book value count too.
+    public static long Value(double basePrice, IReadOnlyDictionary<EnhancePath, int>? tracks, int stars, EnhanceSettings settings,
+        int second = 0, int third = 0, double materials = 0)
     {
         settings.Validate();
         if (!double.IsFinite(basePrice) || basePrice <= 0) return 0;
@@ -39,12 +41,15 @@ public static class EnhanceRules
                 total += Math.Ceiling(Math.Max(settings.MinimumCost, basePrice * settings.CostPercent / 100 * Math.Pow(settings.CostPerLevel, step)));
         if (stars >= 2) total += Math.Ceiling(Math.Max(2000000, Math.Max(settings.MinimumCost, basePrice * settings.EvolutionCostPercent / 100)));
         if (stars >= 3) total += 4000000;
+        total += TranscendRules.Value(basePrice, second, third, settings.Transcend);
+        if (double.IsFinite(materials) && materials > 0) total += materials;
         return (long)Math.Min(total, 10_000_000_000d);
     }
 
     // Plates worth more than the ones paid for: charge the price difference for every
     // level and evolution already held, so swapping in better plates later is not cheaper.
-    public static int InsertSurcharge(double priceDifference, IReadOnlyDictionary<EnhancePath, int>? tracks, int stars, EnhanceSettings settings)
+    public static int InsertSurcharge(double priceDifference, IReadOnlyDictionary<EnhancePath, int>? tracks, int stars, EnhanceSettings settings,
+        int second = 0, int third = 0)
     {
         settings.Validate();
         if (!double.IsFinite(priceDifference) || priceDifference <= 0) return 0;
@@ -53,6 +58,7 @@ public static class EnhanceRules
             for (var step = 0; step < Math.Clamp(level, 0, 100); step++)
                 total += priceDifference * settings.CostPercent / 100 * Math.Pow(settings.CostPerLevel, step);
         if (stars >= 2) total += priceDifference * settings.EvolutionCostPercent / 100;
+        total += TranscendRules.Surcharge(priceDifference, second, third, settings.Transcend);
         total = Math.Ceiling(total);
         if (!double.IsFinite(total) || total > 100000000)
             throw Loc.Invalid("방탄판 등록비가 1억 루블을 초과합니다. F12 설정을 낮춰 주세요.", "The plate registration fee exceeds 100,000,000 roubles. Lower the F12 settings.");

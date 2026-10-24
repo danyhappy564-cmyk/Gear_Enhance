@@ -6,14 +6,14 @@ namespace GearEnhance;
 public enum PriceBasis { Handbook, Flea }
 public enum FailureMode { KeepItem, ZeroDurability, Destroy, Downgrade }
 public enum EnhancePath { Recoil, Ergonomics, Precision, ArmorDurability, Mobility }
-public enum EnhanceAction { Upgrade, Evolve, EvolveThird, Insure, RegisterInserts }
+public enum EnhanceAction { Upgrade, Evolve, EvolveThird, Insure, RegisterInserts, Transcend }
 // Enhancement insurance (1.2.0): bought in the enhancement window, separate from traders.
 public enum InsuranceTier { None, Basic, Advanced, Premium }
 
 public static class EnhanceProtocol
 {
-    public const int Version = 8;
-    public const string ModVersion = "1.2.0";
+    public const int Version = 9;
+    public const string ModVersion = "1.3.0";
     public static void Validate(int version)
     {
         if (version != Version)
@@ -48,6 +48,7 @@ public sealed class EnhanceSettings
     public double AdvancedInsuranceFeePercent { get; set; } = 15;
     public double PremiumInsuranceFeePercent { get; set; } = 30;
     public EffectTuning Effects { get; set; } = new EffectTuning();
+    public TranscendTuning Transcend { get; set; } = new TranscendTuning();
 
     public double ReturnPercent(InsuranceTier tier) => tier == InsuranceTier.Premium ? PremiumInsuranceReturnPercent
         : tier == InsuranceTier.Advanced ? AdvancedInsuranceReturnPercent : tier == InsuranceTier.Basic ? BasicInsuranceReturnPercent : 0;
@@ -78,6 +79,8 @@ public sealed class EnhanceSettings
         if (Effects == null) throw Loc.Argument("강화 효과 설정이 없습니다.", "Enhancement effect settings are missing.");
         Effects.MaxLevel = MaxLevel;
         Effects.Validate();
+        if (Transcend == null) throw Loc.Argument("초월 강화 설정이 없습니다.", "Transcendence settings are missing.");
+        Transcend.Validate();
     }
 
     private static bool Finite(double value) => !double.IsNaN(value) && !double.IsInfinity(value);
@@ -108,7 +111,8 @@ public sealed class EnhanceQuote
     public double BaseSuccessPercent { get; set; }
     public double BoostPoints => SuccessPercent - BaseSuccessPercent;
     public bool ChanceBoostAvailable => !BindLegacy && BaseSuccessPercent < 100;
-    public bool CanPay => AvailableRoubles >= Cost && AvailableBitcoins >= BoostBitcoins;
+    public bool CanPay => AvailableRoubles >= Cost && AvailableBitcoins >= BoostBitcoins
+        && (Materials == null || Array.TrueForAll(Materials, m => m != null && m.Owned >= m.Count));
     // The charge gauge runs before submission; the server must still accept the quote then.
     public bool ExpiresWithin(long nowUnixSeconds, double seconds) => ExpiresUnixSeconds - nowUnixSeconds < seconds;
     public EnhanceProtection Protection { get; set; } = new EnhanceProtection();
@@ -123,7 +127,8 @@ public sealed class EnhanceQuote
     // Conditional chance after a failed attempt. FailureMode is the other outcome.
     public double DestructionPercent { get; set; }
     public bool DestructionProtectionAvailable => !IsEvolution && NextLevel >= 6 && SuccessPercent < 100 && (FailureMode == FailureMode.Destroy || DestructionPercent > 0);
-    public bool DowngradeProtectionAvailable => !IsEvolution && SuccessPercent < 100 && NextLevel >= 6
+    public bool DowngradeProtectionAvailable => !IsEvolution && SuccessPercent < 100
+        && NextLevel >= (Transcend != TranscendTrack.None ? TranscendRules.DropFrom : 6)
         && FailureMode == FailureMode.Downgrade && DestructionPercent < 100;
     public bool CanDestroy => SuccessPercent < 100 && (FailureMode == FailureMode.Destroy || DestructionPercent > 0) && !Protection.Destruction;
     public int AttachedItems { get; set; }
@@ -155,6 +160,24 @@ public sealed class EnhanceQuote
     // Indexed by InsuranceTier; [0] is unused.
     public int[] InsuranceFees { get; set; } = new int[4];
     public double[] InsuranceChances { get; set; } = new double[4];
+    // 1.3.0 transcendence. CurrentLevel/NextLevel are the chosen track's levels.
+    public TranscendTrack Transcend { get; set; }
+    public TranscendKind TranscendKind { get; set; }
+    public int TranscendSecond { get; set; }
+    public int TranscendThird { get; set; }
+    // Already in BaseSuccessPercent; a failure adds PityStep, up to PityCap.
+    public double PityPercent { get; set; }
+    public double PityStep { get; set; }
+    public double PityCap { get; set; }
+    public bool Automatic { get; set; }
+    // Overheat for Reliability, the flat rounds-per-minute limit for FireRate.
+    public double CurrentSecondary { get; set; }
+    public double NextSecondary { get; set; }
+    public int CurrentClassBonus { get; set; }
+    public int NextClassBonus { get; set; }
+    public TranscendMaterial[] Materials { get; set; } = Array.Empty<TranscendMaterial>();
+    // Armor items whose max durability the next registration brings back in line.
+    public int DurabilityPending { get; set; }
 }
 
 public sealed class EnhanceReceipt
@@ -176,6 +199,9 @@ public sealed class EnhanceReceipt
     // Upgrade for receipts written before 1.2.0.
     public EnhanceAction Action { get; set; }
     public InsuranceTier InsuranceTier { get; set; }
+    public TranscendTrack Transcend { get; set; }
+    // Pity of that track after the attempt (0 after a success).
+    public double Pity { get; set; }
 }
 
 public sealed class EnhanceRecord
@@ -193,6 +219,23 @@ public sealed class EnhanceSnapshot
     public EnhanceRecord[] Items { get; set; } = Array.Empty<EnhanceRecord>();
     // Parts registered to each enhanced armor; only these share its effect while inserted.
     public InsertLink[] Inserts { get; set; } = Array.Empty<InsertLink>();
+    // 1.3.0: transcendence levels per gear, and max durability added per armor item.
+    public TranscendLink[] Transcend { get; set; } = Array.Empty<TranscendLink>();
+    public DurabilityLink[] Durability { get; set; } = Array.Empty<DurabilityLink>();
+}
+
+public sealed class TranscendLink
+{
+    public string ItemId { get; set; } = "";
+    public int Second { get; set; }
+    public int Third { get; set; }
+}
+
+// Sale prices treat the added durability as missing (no profit from the grant).
+public sealed class DurabilityLink
+{
+    public string ItemId { get; set; } = "";
+    public double Amount { get; set; }
 }
 
 public sealed class InsertLink

@@ -40,6 +40,16 @@ public class SptEnhanceBackend(SaveServer saves, ItemHelper items, InventoryHelp
     public virtual HashSet<string> SlotNames(MongoId template) => items.GetItem(template).Value?.Properties?.Slots?
         .Select(s => s.Name).Where(n => !string.IsNullOrEmpty(n)).Select(n => n!).ToHashSet() ?? new HashSet<string>();
 
+    // 1.3.0 third transcendence: guns with an automatic or burst mode gain fire rate.
+    public virtual bool Automatic(MongoId template) => items.GetItem(template).Value?.Properties?.WeapFireType?
+        .Any(mode => mode == "fullauto" || mode == "burst") == true;
+
+    // Template maximum durability; the base of the armor 2nd transcendence grant.
+    public virtual double TemplateMaxDurability(MongoId template) => items.GetItem(template).Value?.Properties?.MaxDurability ?? 0;
+
+    public virtual IEnumerable<(MongoId Session, SptProfile Profile)> Profiles() =>
+        saves.GetProfiles().Select(p => (p.Key, p.Value));
+
     // Enhancement insurance return. The mail hook moves the records to the new ids.
     public virtual void SendReturn(MongoId session, List<Item> tree, string text) =>
         mail.SendSystemMessageToPlayer(session, text, tree);
