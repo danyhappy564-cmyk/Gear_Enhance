@@ -109,7 +109,7 @@ public sealed partial class EnhanceService
             ? TranscendRules.ProtectionFee(quote.BaseCost, tuning) : 0;
         quote.Cost = ProtectionCosts.Total(quote.BaseCost, 0, quote.Protection.Downgrade ? quote.DowngradeProtectionFee : 0);
         quote.Cost = ProtectionCosts.Total(quote.Cost, quote.BoostCost, 0);
-        quote.InsertSurcharge = weapon ? 0 : EnhanceRules.InsertSurcharge(partsPrice - paidParts, tracks, stars, settings, record.Second, record.Third);
+        quote.InsertSurcharge = weapon ? 0 : EnhanceRules.InsertSurcharge(Owed(state, itemId, parts, partsPrice, paidParts), tracks, stars, settings, record.Second, record.Third);
         quote.Cost = ProtectionCosts.Total(quote.Cost, quote.InsertSurcharge, 0);
         quote.Materials = tuning.RequireMaterials
             ? TranscendRules.Materials(weapon, track, next).Select(m => new TranscendMaterial

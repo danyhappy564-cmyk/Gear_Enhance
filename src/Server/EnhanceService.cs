@@ -208,7 +208,7 @@ public sealed partial class EnhanceService(SptEnhanceBackend backend, JsonUtil s
             quote.CurrentInsurance = coverage?.Tier ?? InsuranceTier.None;
             quote.CurrentInsurancePercent = coverage?.ReturnPercent ?? 0;
             var transcend = state.Transcend.GetValueOrDefault(itemId);
-            quote.InsertSurcharge = legacy ? 0 : EnhanceRules.InsertSurcharge(partsPrice - paidParts, tracks, stars, settings,
+            quote.InsertSurcharge = legacy ? 0 : EnhanceRules.InsertSurcharge(Owed(state, itemId, parts, partsPrice, paidParts), tracks, stars, settings,
                 transcend?.Second ?? 0, transcend?.Third ?? 0);
             quote.Cost = ProtectionCosts.Total(quote.Cost, quote.InsertSurcharge, 0);
             // One current quote per profile; opening another item invalidates the old one.
@@ -226,7 +226,7 @@ public sealed partial class EnhanceService(SptEnhanceBackend backend, JsonUtil s
             throw Loc.Invalid("강화된 장비만 강화 보험 가입·방탄판 등록을 할 수 있습니다.", "Only enhanced gear can be insured or have plates registered.");
         var stars = Stars(state, itemId);
         var transcend = state.Transcend.GetValueOrDefault(itemId);
-        var registration = weapon ? 0 : EnhanceRules.InsertSurcharge(partsPrice - paidParts, tracks, stars, settings,
+        var registration = weapon ? 0 : EnhanceRules.InsertSurcharge(Owed(state, itemId, parts, partsPrice, paidParts), tracks, stars, settings,
             transcend?.Second ?? 0, transcend?.Third ?? 0);
         var unregistered = Unregistered(state, itemId, parts);
         var value = EnhanceRules.Value(bodyPrice + paidParts, tracks, stars, settings,
@@ -301,6 +301,12 @@ public sealed partial class EnhanceService(SptEnhanceBackend backend, JsonUtil s
     private static int Unregistered(EnhanceState state, string id, List<Item> parts) =>
         parts.Count(p => state.Inserts.GetValueOrDefault(id)?.Ids.Contains(p.Id.ToString()) != true);
 
+    // Price difference still owed. Only a part not yet applied can owe: parts already applied
+    // were free or paid for when they went in, and a later market move must not turn them into
+    // a debt (seen in game: "all applied" yet insurance blocked by a plate difference).
+    private static double Owed(EnhanceState state, string id, List<Item> parts, double partsPrice, double paidParts) =>
+        Unregistered(state, id, parts) > 0 ? partsPrice - paidParts : 0;
+
     // Armor enhanced before 1.2.0 keeps the parts it had when first seen, free of charge.
     private static void EnsureInserts(EnhanceState state, string id, List<Item> parts)
     {
@@ -367,7 +373,7 @@ public sealed partial class EnhanceService(SptEnhanceBackend backend, JsonUtil s
                 Durability = state.Grants.Where(p => owned.ContainsKey(p.Key) && p.Value.Amount > 0)
                     .Select(p => new DurabilityLink { ItemId = p.Key, Amount = p.Value.Amount }).ToArray(),
                 Coverage = state.Coverage.Where(p => owned.ContainsKey(p.Key) && p.Value.Tier != InsuranceTier.None)
-                    .Select(p => new CoverageLink { ItemId = p.Key, Tier = p.Value.Tier }).ToArray()
+                    .Select(p => new CoverageLink { ItemId = p.Key, Tier = p.Value.Tier, Percent = p.Value.ReturnPercent }).ToArray()
             };
         }
     }

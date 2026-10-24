@@ -60,6 +60,7 @@ public sealed partial class Plugin
     private static readonly EnhancePath[] ArmorTracks = { EnhancePath.ArmorDurability, EnhancePath.Mobility };
     private GUIStyle noteStyle, statusStyle, noteStyleCentered;
     private GUIStyle richBody, richStatus, richSmall, richCentered, richHeading, headerButton;
+    private GUIStyle bandTitle, bandTitleCentered, bandValue, bandTrack, bandStar, bandLevel;
     private GUIStyle resultTitleStyle, resultDetailStyle;
     private GUI.WindowFunction drawWindow, drawEvolutionWindow;
     private float ActiveWindowHeight => evolutionMode || transcendMode ? 910 : WindowHeight;
@@ -118,6 +119,12 @@ public sealed partial class Plugin
         richCentered = new GUIStyle(centeredSmall) { richText = true };
         richHeading = new GUIStyle(pathHeading) { richText = true };
         headerButton = new GUIStyle(secondary) { fontSize = 15 };
+        bandTitle = TextStyle(11, Muted); bandTitle.richText = true;
+        bandTitleCentered = TextStyle(11, Muted, alignment: TextAnchor.MiddleCenter);
+        bandValue = TextStyle(18, Color.white, FontStyle.Bold); bandValue.richText = true;
+        bandTrack = TextStyle(17, Color.white, FontStyle.Bold); bandTrack.richText = true;
+        bandStar = TextStyle(22, Color.white, FontStyle.Bold, TextAnchor.MiddleCenter); bandStar.richText = true;
+        bandLevel = TextStyle(28, Gold, FontStyle.Bold);
         frame = new GUIStyle(windowSkin.window) { padding = new RectOffset(), border = new RectOffset() };
         foreach (var state in new[] { frame.normal, frame.hover, frame.active, frame.focused,
             frame.onNormal, frame.onHover, frame.onActive, frame.onFocused }) state.background = null;
@@ -235,7 +242,6 @@ public sealed partial class Plugin
         Label(23, 9, 200, 36, Loc.L("장비 강화", "Enhance"), heading);
         // ★★ gear: the transcendence button takes the version label's place.
         if (!CanTranscend) Label(162, 16, 132, 24, "Gear Enhance · " + EnhanceProtocol.ModVersion, small);
-        if (itemId != null && quote != null) Label(296, 16, 152, 24, InsuranceStatus(quote.CurrentInsurance, quote.CurrentInsurancePercent), richSmall);
         GUI.enabled = !busy && !resultVisible;
         if (CanTranscend)
         {
@@ -250,7 +256,8 @@ public sealed partial class Plugin
         if (UiButton(new Rect(712, 10, 32, 32), "×", secondary, UiInteraction.Close)) main.Enqueue(Close);
         GUI.enabled = true;
 
-        DrawPreview();
+        DrawStatusBand();
+        DrawPreview(true);
         Label(24, 239, 300, 29, Loc.L("강화 항목 · 각각 강화 가능", "Tracks · upgraded separately"), body);
         var options = weapon ? WeaponTracks : ArmorTracks;
         var width = (712f - (options.Length - 1) * 12) / options.Length;
@@ -262,11 +269,67 @@ public sealed partial class Plugin
         if (!resultVisible) GUI.DragWindow(new Rect(0, 0, 480, 54));
     }
 
-    private void DrawPreview()
+    // Status band of the main window (Codex mockup A, approved 2026-10-24): insurance, transcendence
+    // and stars from the synced records, so they show without a quote (maxed gear has none).
+    private void DrawStatusBand()
     {
+        var id = itemId ?? "";
+        var tier = StatPatches.Registry.Coverage(id);
+        var tint = TierColor(tier);
+        BandPanel(new Rect(24, 64, 272, 52), tier == InsuranceTier.None ? new Color(0.098f, 0.114f, 0.125f) : Color.Lerp(Panel, tint, 0.12f), tint);
+        Label(38, 67, 244, 17, Loc.L("강화 보험", "Enhancement insurance"), bandTitle);
+        // Records not synced for this profile yet (or the sync failed): never claim "not insured".
+        var synced = session != null && StatPatches.Registry.ProfileId.Length > 0 && StatPatches.Registry.ProfileId == GameBridge.ProfileId(session);
+        Label(38, 85, 244, 26, !synced ? Paint(Loc.L("확인 중…", "Checking…"), Muted)
+            : tier == InsuranceTier.None ? Paint(Loc.L("미가입 · 반환 —", "None · return —"), Muted)
+            : Paint(Loc.TierName(tier) + Loc.L(" · 반환 ", " · return ") + $"{StatPatches.Registry.CoveragePercent(id):0.##}%", tint), bandValue);
+        var stars = StatPatches.Registry.StarLevel(id);
+        BandPanel(new Rect(304, 64, 300, 52), new Color(0.063f, 0.129f, 0.141f), Cyan);
+        Label(318, 67, 272, 17, Paint(Loc.L("초월 강화 · 합계 ", "Transcendence · total ") + StatPatches.Registry.TranscendTotal(id), Cyan), bandTitle);
+        if (stars < 2) Label(318, 87, 272, 23, Paint(Loc.L("★★ 진화 후 열림", "Opens at ★★"), Muted), bandTrack);
+        else
+        {
+            Label(318, 87, 132, 23, Paint(Loc.L("2성 ", "2nd ") + $"{StatPatches.Registry.TranscendLevel(id, TranscendTrack.Second)} / {TranscendRules.MaxLevel}", Purple), bandTrack);
+            Label(460, 87, 130, 23, stars >= 3 ? Paint(Loc.L("3성 ", "3rd ") + $"{StatPatches.Registry.TranscendLevel(id, TranscendTrack.Third)} / {TranscendRules.MaxLevel}", StarTint(3))
+                : Paint(Loc.L("3성 잠김", "3rd locked"), Muted), bandTrack);
+        }
+        var starColor = stars >= 2 ? StarTint(stars) : stars == 1 ? Gold : Muted;
+        BandPanel(new Rect(612, 64, 124, 52), stars >= 2 ? Color.Lerp(Panel, starColor, 0.14f) : new Color(0.098f, 0.114f, 0.125f), starColor);
+        Label(620, 68, 108, 15, Loc.L("스타", "Stars"), bandTitleCentered);
+        Label(620, 85, 108, 25, Paint(stars > 0 ? StarEvolution.Stars(stars) : "—", starColor), bandStar);
+    }
+
+    // Right column beside the shorter preview: same lines as before, moved down under the band.
+    private void DrawBandSummary()
+    {
+        Label(517, 124, 217, 30, itemName ?? Loc.L("장비", "Gear"), heading);
+        Label(518, 154, 216, 20, EnhanceEffects.Name(selectedPath) + Loc.L(" 강화", " upgrade"), small);
+        var current = preview?.CurrentLevel ?? StatPatches.Registry.Find(itemId ?? "", selectedPath)?.Level ?? 0;
+        var next = preview?.NextLevel ?? Math.Max(current, Math.Min(current + 1, maxLevel.Value));
+        var stars = StatPatches.Registry.StarLevel(itemId ?? "");
+        Label(517, 173, 217, 34, itemId == null ? Loc.L("파괴됨", "Destroyed")
+            : current >= next ? $"+{current}" + Loc.L(" · 최대", " · max") : $"+{current} → +{next}", bandLevel);
+        Label(517, 207, 217, 22, itemId == null ? Loc.L("본체·부착물·탄약 소실", "Gear, mods and ammo lost") : stars >= 2
+            ? Loc.L($"{StarEvolution.Stars(stars)} 진화 완료 · 효과 ×{StarMultiplier(stars):0.##}", $"{StarEvolution.Stars(stars)} evolved · effect ×{StarMultiplier(stars):0.##}")
+            : Loc.L("1차 스타 완성 후 진화 가능", "Evolve after maxing 1st star"), small);
+        if (stars >= 2) Fill(new Rect(517, 230, 217, 2), StarTint(stars));
+        Fill(new Rect(24, 231, 712, 1), Line);
+    }
+
+    // Panel with a 3 px accent on its left edge.
+    private static void BandPanel(Rect rect, Color fill, Color accent)
+    {
+        Box(rect, fill, Line);
+        Fill(new Rect(rect.x + 1, rect.y + 1, 3, rect.height - 2), accent);
+    }
+
+    private void DrawPreview(bool band = false)
+    {
+        // The main window's band takes the preview's top 64 px (mockup A: 106 px preview).
+        var top = band ? 126f : 62f;
         if (Event.current.type == EventType.Repaint)
-            GUI.DrawTextureWithTexCoords(new Rect(24, 62, 480, 166), previewGrid, new Rect(0, 0, 20, 166f / 24));
-        var area = new Rect(38, 69, 449, 151);
+            GUI.DrawTextureWithTexCoords(new Rect(24, top, 480, 228 - top), previewGrid, new Rect(0, 0, 20, (228 - top) / 24));
+        var area = band ? new Rect(38, 130, 449, 94) : new Rect(38, 69, 449, 151);
         var sprite = GameBridge.Get(itemIcon, "Sprite") as Sprite;
         var shattering = resultCue == FeedbackCue.Destroy && Clock - resultStarted < ResultDuration;
         if (!shattering && sprite != null && sprite.texture != null && Event.current.type == EventType.Repaint)
@@ -281,6 +344,7 @@ public sealed partial class Plugin
         if (!shattering && (sprite == null || sprite.texture == null))
             Label(62, 127, 380, 30, itemId == null ? Loc.L("장비가 파괴되었습니다", "Gear destroyed") : Loc.L("장비 이미지를 불러오는 중…", "Loading gear image…"), small);
         DrawResultEffect(area);
+        if (band) { DrawBandSummary(); return; }
         Label(517, 76, 217, 38, itemName ?? Loc.L("장비", "Gear"), heading);
         if (transcendMode) { DrawTranscendPreview(); return; }
         Label(518, 112, 216, 25, evolutionMode ? Loc.L($"{evolutionTargetStars}차 스타 진화", $"{Loc.Tier(evolutionTargetStars)} star evolution")

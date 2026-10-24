@@ -41,6 +41,14 @@ public static class Loc
         _ => inEnglish ? "None" : "없음"
     };
     public static string TierName(InsuranceTier tier) => TierName(tier, english);
+    // One letter for the stash cell badge; X when not insured.
+    public static string TierLetter(InsuranceTier tier) => tier switch
+    {
+        InsuranceTier.Premium => "P",
+        InsuranceTier.Advanced => L("고", "A"),
+        InsuranceTier.Basic => L("일", "B"),
+        _ => "X"
+    };
 
     // Price basis labels come from the server as Korean data, not as errors.
     public static string PriceSource(string? source) => source switch

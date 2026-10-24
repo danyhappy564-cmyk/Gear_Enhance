@@ -233,6 +233,8 @@ public sealed class CoverageLink
 {
     public string ItemId { get; set; } = "";
     public InsuranceTier Tier { get; set; }
+    // The return chance fixed when it was bought.
+    public double Percent { get; set; }
 }
 
 public sealed class TranscendLink

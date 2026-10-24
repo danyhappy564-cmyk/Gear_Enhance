@@ -43,7 +43,21 @@ internal static class ItemMarkers
     {
         try { Mark(__instance); }
         catch (Exception ex) { Report(ex); }
+        try
+        {
+            // After a failure a pooled cell may still carry an old badge: keep hiding them.
+            if (badgeFailed) InsuranceBadge.Hide(__instance);
+            else Badge(__instance);
+        }
+        // A missing uGUI type would throw on every cell: report once and stop drawing badges.
+        catch (Exception ex)
+        {
+            if (!badgeFailed) Plugin.LogError("강화 보험 배지 오류(배지만 숨김): " + ex);
+            badgeFailed = true;
+            try { InsuranceBadge.Hide(__instance); } catch (Exception) { }
+        }
     }
+    private static bool badgeFailed;
     private static void Mark(object __instance)
     {
         // Registered views are refreshed only after a state/receipt change, never in Update.
@@ -85,15 +99,18 @@ internal static class ItemMarkers
             if (badge.Length > 0) __result += " <color=" + StarEvolution.ColorHex(StatPatches.Registry.StarLevel(owner)) + ">" + badge + "</color>";
             var transcend = badge.Length == 0 ? 0 : StatPatches.Registry.TranscendTotal(owner);
             if (transcend > 0) __result += " <color=#40D1D9>" + Loc.L("초월 ", "Transcend ") + transcend + "</color>";
-            // Enhancement insurance on its own line under the badge; plates show only the armor's badge.
-            if (badge.Length > 0 && owner == id && !GameBridge.IsArmorPart(item))
-                __result += "\n" + InsuranceLine(StatPatches.Registry.Coverage(id));
         }
         catch (Exception ex) { Report(ex); }
     }
-    internal static string InsuranceLine(InsuranceTier tier) => tier == InsuranceTier.None
-        ? "<color=#9EA5AB>" + Loc.L("보험 X", "Insured X") + "</color>"
-        : "<color=#73DB8C>" + Loc.TierName(tier) + Loc.L(" 보험 O", " insured O") + "</color>";
+    // Only the enhanced gear itself: plates share the armor's star badge, not its insurance.
+    private static void Badge(object view)
+    {
+        var item = GameBridge.Get(view, "Item");
+        var id = GameBridge.Get(item, "Id")?.ToString();
+        if (id == null || StatPatches.Registry.TotalLevel(id) == 0 || GameBridge.Get(view, "Examined") is not true || GameBridge.IsArmorPart(item))
+            InsuranceBadge.Hide(view);
+        else InsuranceBadge.Show(view, StatPatches.Registry.Coverage(id));
+    }
     private static void Kill(object __instance) => views.Remove(__instance);
     internal static void Refresh(string itemId)
     {

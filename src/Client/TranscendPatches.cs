@@ -165,6 +165,8 @@ internal static class TranscendPatches
             catch (Exception ex) { failed.Add(caller.DeclaringType?.Name + "." + caller.Name + ": " + ex.GetBaseException().Message); }
         }
         if (failed.Count > 0) throw new InvalidOperationException(string.Join("; ", failed));
+        Plugin.LogInfo($"초월 {getter.DeclaringType?.Name}.{getter.Name} 읽기 치환 {callers.Count}곳: "
+            + string.Join(", ", callers.Select(m => m.DeclaringType?.Name + "." + m.Name)));
     }
 
     // `x.Getter` → Read(x, x.Getter): the owner is kept on the stack with Dup, like BluntRead.
@@ -317,6 +319,12 @@ internal static class TranscendPatches
         {
             var weapon = GameBridge.Get(__instance, "Weapon") ?? GameBridge.Get(GameBridge.Get(__instance, "Controller"), "Item");
             var id = GameBridge.Get(weapon, "Id")?.ToString();
+            // In-game 2026-10-24: no line at all after full auto in the hideout range. The first
+            // build of the session and every enhanced weapon say what the hook saw.
+            if (fireRateLogged.Count < 256 && (fireRateLogged.Add("first") || id != null && Registry.Find(id) != null && fireRateLogged.Add("seen " + id)))
+                Plugin.LogInfo($"연사 준비 감지: 무기 {id ?? "?"} ({GameBridge.Get(weapon, "TemplateId")}) 기본 {GameBridge.Get(weapon, "FireRate")}rpm"
+                    + $" · 간격 {shotsTime.GetValue(__instance)} · 강화 기록 {(id != null && Registry.Find(id) != null ? "있음" : "없음")}"
+                    + $" · 이 총 3성 초월 {(id == null ? 0 : Registry.TranscendLevel(id, TranscendTrack.Third))} · 초월 기록 전체 {(Registry.HasTranscend ? "있음" : "없음")}");
             if (id == null || !(GameBridge.Get(weapon, "FireRate") is int baseRate) || baseRate <= 0 || !(shotsTime.GetValue(__instance) is float current)) return;
             var info = Weapon(weapon);
             if (info == null || info.Third <= 0)

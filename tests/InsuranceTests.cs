@@ -128,6 +128,21 @@ public sealed class InsuranceTests
     }
 
     [Fact]
+    public void Applied_plates_never_owe_a_difference_after_prices_move()
+    {
+        // In game 2026-10-24: every plate applied, yet the paid set priced lower than the
+        // current one (market move), so insurance asked for a difference no button could pay.
+        var rig = new Rig();
+        rig.Upgrade(3);
+        rig.State.Inserts[Vest.ToString()].PaidTemplates = [];
+        var insure = rig.Quote(EnhanceAction.Insure, InsuranceTier.Basic);
+        Assert.Equal(0, insure.UnregisteredParts);
+        Assert.Equal(0, insure.RegistrationFee);
+        Assert.True(insure.CanBuyInsurance);
+        Assert.Equal(0, rig.Quote().InsertSurcharge);
+    }
+
+    [Fact]
     public void Pricier_plate_swapped_in_later_pays_the_difference_for_every_level_held()
     {
         var rig = new Rig();
