@@ -225,6 +225,7 @@ public sealed partial class Plugin : BaseUnityPlugin
     }
 
     internal static void LogError(string text) => Instance?.Logger.LogError(text);
+    internal static void LogInfo(string text) => Instance?.Logger.LogInfo(text);
 
     private ConfigEntry<T> BindGeneral<T>(string section, string key, T defaultValue, string description) =>
         BindGeneral(section, key, defaultValue, new ConfigDescription(description));
@@ -369,6 +370,7 @@ public sealed partial class Plugin : BaseUnityPlugin
             await GameBridge.Flush(session);
             if (firstQuote)
             {
+                if (!weapon) await ApplyInserts(session);
                 if (!await SyncEffects(session))
                     throw Loc.Invalid("강화 기록을 동기화하지 못했습니다. 서버 모드 버전과 연결을 확인하고 다시 불러와 주세요.",
                         "Could not sync enhancement records. Check the server mod version and connection, then reload.");

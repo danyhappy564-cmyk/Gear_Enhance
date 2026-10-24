@@ -225,6 +225,14 @@ public sealed class EnhanceSnapshot
     // 1.3.0: transcendence levels per gear, and max durability added per armor item.
     public TranscendLink[] Transcend { get; set; } = Array.Empty<TranscendLink>();
     public DurabilityLink[] Durability { get; set; } = Array.Empty<DurabilityLink>();
+    // Enhancement insurance per gear, for the stash label under the badge.
+    public CoverageLink[] Coverage { get; set; } = Array.Empty<CoverageLink>();
+}
+
+public sealed class CoverageLink
+{
+    public string ItemId { get; set; } = "";
+    public InsuranceTier Tier { get; set; }
 }
 
 public sealed class TranscendLink

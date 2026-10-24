@@ -47,6 +47,8 @@ public sealed partial class Plugin
         try
         {
             await GameBridge.Flush(session);
+            // Plates swapped since the last sync are applied first, so the window shows the result.
+            if (!weapon) await ApplyInserts(session);
             var response = await GameBridge.WithTimeout(GameBridge.Query<EnhanceQuote>("/rf/gear-enhance/quote", new
             {
                 ProtocolVersion = EnhanceProtocol.Version, ItemId = itemId, Path = selectedPath, Settings = Settings(),
@@ -84,7 +86,7 @@ public sealed partial class Plugin
                 $"The registration fee changed to {registration.Cost:N0} ₽. Check it and press again."));
             return;
         }
-        RunManaged(registration, Loc.L("끼운 방탄판 등록 완료", "Inserted plates registered"));
+        RunManaged(registration, Loc.L("끼운 방탄판 적용 완료", "Inserted plates applied"));
     }
 
     private async void RunManaged(EnhanceQuote view, string done)
@@ -111,6 +113,8 @@ public sealed partial class Plugin
             var receipt = await GameBridge.WithTimeout(GameBridge.Query<EnhanceReceipt>("/rf/gear-enhance/receipt",
                 new { ProtocolVersion = EnhanceProtocol.Version, view.QuoteId }));
             result = done + Loc.L($" · {receipt.Paid:N0} ₽ 소모", $" · spent {receipt.Paid:N0} ₽");
+            // The game's own "insured" sound, as in the trader insurance screen.
+            if (view.Action == EnhanceAction.Insure) main.Enqueue(PlayInsured);
             await SyncEffects(session);
             main.Enqueue(ItemMarkers.RefreshAll);
         }
@@ -127,6 +131,17 @@ public sealed partial class Plugin
         }
     }
 
+    private void PlayInsured()
+    {
+        if (soundsEnabled?.Value != true || uiFeedbackUnavailable) return;
+        try { GameFeedback.PlayInsured(); }
+        catch (Exception ex)
+        {
+            uiFeedbackUnavailable = true;
+            Logger.LogWarning("보험 가입 소리 연결 실패: " + ex.GetBaseException().Message);
+        }
+    }
+
     // Header line of the main window and the panel: tier in its color, or none.
     private static string InsuranceStatus(InsuranceTier tier, double percent) => tier == InsuranceTier.None
         ? Paint(Loc.L("강화 보험 없음", "Not insured"), Muted)
@@ -140,7 +155,7 @@ public sealed partial class Plugin
             const float left = 64, width = 632, top = 104;
             Fill(new Rect(1, 55, WindowWidth - 2, ActiveWindowHeight - 56), new Color(0, 0, 0, 0.72f));
             Surface(new Rect(40, top, 680, 700), cardGradient, Gold);
-            Label(left, top + 12, 560, 34, Loc.L("강화 보험 · 방탄판 등록", "Enhancement insurance · Plates"), heading);
+            Label(left, top + 12, 560, 34, Loc.L("강화 보험 · 방탄판", "Enhancement insurance · Plates"), heading);
             GUI.enabled = !busy;
             if (UiButton(new Rect(670, top + 12, 36, 32), "×", secondary, UiInteraction.Close)) main.Enqueue(CloseInsurance);
             GUI.enabled = true;
@@ -158,14 +173,14 @@ public sealed partial class Plugin
             var tierName = Loc.TierName(insuranceTier);
             var caption = view == null ? Loc.L("견적 확인 중…", "Checking quote…")
                 : view.CanBuyInsurance ? Loc.L($"{tierName} 보험 가입  {view.Cost:N0} ₽", $"Buy {tierName} insurance  {view.Cost:N0} ₽")
-                : view.RegistrationFee > 0 ? Loc.L("아래에서 방탄판을 먼저 등록해 주세요", "Register the plates below first")
+                : view.RegistrationFee > 0 ? Loc.L("아래에서 방탄판 차액을 먼저 내 주세요", "Pay the plate difference below first")
                 : Loc.L("이미 같은 등급 이상 가입됨", "Already insured at this tier or higher");
             if (UiButton(buy, caption, primary) && view != null)
                 main.Enqueue(() => RunManaged(view, Loc.L($"{tierName} 강화 보험 가입 완료", $"{tierName} insurance purchased")));
             GUI.enabled = true;
             Label(left, top + 298, width, 40, Paint(Loc.L("한 번 잃으면 보험이 소모됩니다.", "Coverage is used up after one loss."), Caution)
-                + Loc.L(" 강화에 성공하거나 더 비싼 방탄판을 등록하면 강화 가치가 바뀌어 보험이 풀립니다(다시 가입).",
-                    " A successful upgrade or registering pricier plates changes the insured value and ends coverage (buy it again)."), richStatus);
+                + Loc.L(" 강화에 성공하거나 더 비싼 방탄판 차액을 내면 강화 가치가 바뀌어 보험이 풀립니다(다시 가입).",
+                    " A successful upgrade or paying for pricier plates changes the insured value and ends coverage (buy it again)."), richStatus);
 
             Fill(new Rect(left, top + 346, width, 1), Line);
             if (view != null && view.IsWeapon)
@@ -173,20 +188,22 @@ public sealed partial class Plugin
             else
             {
                 Label(left, top + 356, width, 26, view == null ? "" : Loc.L($"끼운 방탄판·내피 {view.InsertedParts}개 · ", $"Inserted plates/inserts: {view.InsertedParts} · ")
-                    + (view.UnregisteredParts > 0 ? Paint(Loc.L($"미등록 {view.UnregisteredParts}개", $"Unregistered: {view.UnregisteredParts}"), Caution)
-                        : Paint(Loc.L("모두 등록됨", "All registered"), Good))
+                    + (view.UnregisteredParts == 0 ? Paint(Loc.L("모두 적용됨", "All applied"), Good)
+                        : view.RegistrationFee > 0 ? Paint(Loc.L($"더 비싼 방탄판 · 차액 {view.RegistrationFee:N0} ₽ 필요", $"Pricier plates · {view.RegistrationFee:N0} ₽ difference due"), Caution)
+                        : Paint(Loc.L($"미적용 {view.UnregisteredParts}개", $"Not applied: {view.UnregisteredParts}"), Caution))
                     + (view.DurabilityPending > 0 ? Paint(Loc.L($" · 최대 내구도 초월 효과가 빠진 부품 {view.DurabilityPending}개", $" · {view.DurabilityPending} part(s) missing the max durability bonus"), Caution) : ""), richBody);
-                Label(left, top + 384, width, 58, Paint(Loc.L("방탄판·내피는 따로 강화할 수 없습니다.", "Plates and inserts cannot be enhanced alone."), Caution)
-                    + Loc.L(" 방어구를 강화(또는 등록)할 때 끼워 둔 것만 방어구 효과·표식을 받습니다. 새 방탄판은 등록하면 적용되고, 더 비싼 방탄판은 이미 올린 단계의 차액을 냅니다.",
-                        " Only those inserted when the armor is enhanced or registered share its effect and badge. Register new plates to apply it; pricier plates pay the difference for levels already gained."), richStatus);
+                // Slot rule (1.3.0): the armor remembers the plate value paid for, not each plate.
+                Label(left, top + 384, width, 58, Paint(Loc.L("방탄판은 칸 기준으로 자동 적용됩니다.", "Plates apply by slot, automatically."), Caution)
+                    + Loc.L(" 이 방어구에 값을 치른 방탄판 이하라면 새것·헌것·같은 종류 상관없이 끼우는 즉시 무료로 적용됩니다. 더 비싼 방탄판만 차액을 내고, 그 뒤로는 그 값까지 자유롭게 갈아끼웁니다.",
+                        " Plates worth no more than those already paid for apply for free the moment they go in, new or worn. Only pricier plates pay the difference; after that, swap freely up to that value."), richStatus);
                 GUI.enabled = !busy && !uncertain && view?.CanRegister == true;
                 var register = new Rect(left, top + 448, width, 42);
                 Surface(register, cardGradient, Gold);
                 // A registered plate taken out and put back returns without the 2-star max durability.
                 var registerCaption = view == null ? "—" : view.UnregisteredParts == 0 && view.DurabilityPending > 0 ? Loc.L("최대 내구도 다시 맞추기  무료", "Restore max durability  Free")
-                    : view.UnregisteredParts == 0 ? Loc.L("모두 등록됨", "All registered")
-                    : view.RegistrationFee > 0 ? Loc.L($"방탄판 등록  {view.RegistrationFee:N0} ₽", $"Register plates  {view.RegistrationFee:N0} ₽")
-                    : Loc.L("방탄판 등록  무료", "Register plates  Free");
+                    : view.UnregisteredParts == 0 ? Loc.L("모두 적용됨", "All applied")
+                    : view.RegistrationFee > 0 ? Loc.L($"차액 내고 적용  {view.RegistrationFee:N0} ₽", $"Pay difference and apply  {view.RegistrationFee:N0} ₽")
+                    : Loc.L("방탄판 적용  무료", "Apply plates  Free");
                 if (UiButton(register, registerCaption, secondary)) main.Enqueue(RegisterParts);
                 GUI.enabled = true;
             }

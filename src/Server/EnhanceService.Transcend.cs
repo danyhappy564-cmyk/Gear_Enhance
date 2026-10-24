@@ -195,7 +195,9 @@ public sealed partial class EnhanceService
             foreach (var item in SlotTree(items, armorId))
             {
                 var id = item.Id.ToString();
-                if (item.Upd?.Repairable == null || id != armorId && registered?.Contains(id) != true) continue;
+                if (id != armorId && registered?.Contains(id) != true) continue;
+                // A plate bought new carries no durability record (the game reads it as full);
+                // it is created below at the template maximum before the grant goes on.
                 var baseMax = backend.TemplateMaxDurability(item.Template);
                 if (double.IsFinite(baseMax) && baseMax > 0)
                     want[id] = (item, Math.Round(baseMax * TranscendEffects.MaxDurability(level, tuning) / 100, 2));
@@ -223,7 +225,13 @@ public sealed partial class EnhanceService
             if (held != null && held.ArmorId == armorId && Math.Abs(held.Amount - amount) < 0.005) continue;
             count++;
             if (changed == null) continue;
-            Grant(item.Upd!.Repairable!, amount - (held?.Amount ?? 0));
+            if (item.Upd?.Repairable == null)
+            {
+                var full = backend.TemplateMaxDurability(item.Template);
+                item.Upd ??= new Upd();
+                item.Upd.Repairable = new UpdRepairable { Durability = full, MaxDurability = full };
+            }
+            Grant(item.Upd.Repairable, amount - (held?.Amount ?? 0));
             SetGrant(state, id, new DurabilityGrant { Amount = amount, ArmorId = armorId });
             if (!changed.Contains(item)) changed.Add(item);
         }

@@ -277,11 +277,11 @@ public sealed class HooksTests : IDisposable
         Assert.Equal(0.8f, Run("Precision", gun, 1), 5);
         var args = new object[] { new MarkerView(gun), "K2" };
         typeof(ItemMarkers).GetMethod("Name", BindingFlags.Static | BindingFlags.NonPublic)!.Invoke(null, args);
-        Assert.Equal("K2 <color=#B989F5>★★ 진화 +30</color>", args[1]);
+        Assert.Equal("K2 <color=#B989F5>★★ 진화 +30</color>\n<color=#9EA5AB>보험 X</color>", args[1]);
         StatPatches.Registry.ApplyReceipt(new() { ItemId = "gun", Path = EnhancePath.Recoil, Level = 9, FailureMode = FailureMode.Downgrade, Evolved = true }, "pmc");
         args[1] = "K2";
         typeof(ItemMarkers).GetMethod("Name", BindingFlags.Static | BindingFlags.NonPublic)!.Invoke(null, args);
-        Assert.Equal("K2 <color=#B989F5>★★ 진화 +29</color>", args[1]);
+        Assert.Equal("K2 <color=#B989F5>★★ 진화 +29</color>\n<color=#9EA5AB>보험 X</color>", args[1]);
     }
 
     [Fact]
@@ -296,7 +296,14 @@ public sealed class HooksTests : IDisposable
         Assert.Equal(0.7f, Run("Precision", gun, 1), 5);
         var args = new object[] { new MarkerView(gun), "K2" };
         typeof(ItemMarkers).GetMethod("Name", BindingFlags.Static | BindingFlags.NonPublic)!.Invoke(null, args);
-        Assert.Equal("K2 <color=#F06A6A>★★★ 진화 +30</color>", args[1]);
+        Assert.Equal("K2 <color=#F06A6A>★★★ 진화 +30</color>\n<color=#9EA5AB>보험 X</color>", args[1]);
+        // Enhancement insurance from the snapshot: tier name and O on the second line.
+        StatPatches.Registry.Replace(new EnhanceSnapshot { ProfileId = "pmc",
+            Items = new[] { new EnhanceRecord { ItemId = "gun", Path = EnhancePath.Recoil, Level = 10, Evolved = true, StarLevel = 3 } },
+            Coverage = new[] { new CoverageLink { ItemId = "gun", Tier = InsuranceTier.Advanced } } }, "pmc");
+        args[1] = "K2";
+        typeof(ItemMarkers).GetMethod("Name", BindingFlags.Static | BindingFlags.NonPublic)!.Invoke(null, args);
+        Assert.EndsWith("\n<color=#73DB8C>" + Loc.TierName(InsuranceTier.Advanced) + " 보험 O</color>", (string)args[1]);
         Assert.Equal(FeedbackCue.Complete, GameFeedback.Result(new() { Success = true, IsEvolution = true, Evolved = true, StarLevel = 3 }, true));
         Assert.Equal(4, EmbeddedSounds.Index(FeedbackCue.Complete));
     }

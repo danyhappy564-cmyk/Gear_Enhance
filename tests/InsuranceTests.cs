@@ -145,6 +145,8 @@ public sealed class InsuranceTests
         var insure = rig.Quote(EnhanceAction.Insure, InsuranceTier.Premium);
         Assert.Equal(catchUp, insure.RegistrationFee);
         Assert.False(insure.CanBuyInsurance);
+        // The insurance · plates window loads this quote and enables its plate button from it.
+        Assert.True(insure.CanRegister);
         var register = rig.Quote(EnhanceAction.RegisterInserts);
         Assert.True(register.CanRegister);
         Assert.Equal(catchUp, register.Cost);
@@ -221,6 +223,8 @@ public sealed class InsuranceTests
         rig.Pay(high);
         Assert.Equal(InsuranceTier.Advanced, rig.State.Coverage[Vest.ToString()].Tier);
         Assert.Equal(55, rig.State.Coverage[Vest.ToString()].ReturnPercent);
+        // The stash label reads the tier from the snapshot.
+        Assert.Contains(rig.Service.Snapshot(Session).Coverage, link => link.ItemId == Vest.ToString() && link.Tier == InsuranceTier.Advanced);
         // Same or lower tier cannot be bought again; a higher one can.
         Assert.False(rig.Quote(EnhanceAction.Insure, InsuranceTier.Basic).CanBuyInsurance);
         Assert.True(rig.Quote(EnhanceAction.Insure, InsuranceTier.Premium).CanBuyInsurance);

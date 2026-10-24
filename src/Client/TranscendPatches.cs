@@ -42,6 +42,19 @@ internal static class TranscendPatches
         // inspection value moved in game). The callers' reads are rewritten instead.
         Try("발사속도 / fire rate", () => WrapReads(harmony, Getter(weapon, "FireRate"),
             Nested(Required("EFT.Player+FirearmController")), nameof(FireRateReads), "AutomaticFireOperation"));
+        // In-game report (2026-10-24): full auto still fired at the base rate after the
+        // rewrite. The burst operation's shot interval is checked and set once it is built.
+        Try("발사속도 확인 / fire rate check", () =>
+        {
+            var operation = Nested(Required("EFT.Player+FirearmController")).FirstOrDefault(t => t.Name == "AutomaticFireOperation")
+                ?? throw new TypeLoadException("AutomaticFireOperation");
+            shotsTime = AccessTools.Field(operation, "_shotsTime") ?? throw new MissingFieldException(operation.Name, "_shotsTime");
+            var ctor = operation.GetConstructors(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
+                .SingleOrDefault(c => c.GetParameters().Length == 1) ?? throw new MissingMethodException(operation.Name, ".ctor(controller)");
+            harmony.Patch(ctor, postfix: Hook(nameof(AutomaticCreated)));
+            // Overheating resets the interval from the base rate in Update; corrected ones redo it.
+            harmony.Patch(GameBridge.RequiredMethod(operation, "Update", 1), postfix: Hook(nameof(AutomaticUpdated)));
+        });
         Try("과열 / overheat", () => harmony.Patch(GameBridge.RequiredMethod(weapon, "GetShotOverheat", 3), postfix: Hook(nameof(Overheat))));
         Try("고장 / malfunction", () => harmony.Patch(GameBridge.RequiredMethod(Required("EFT.Player+FirearmController"),
             "GetTotalMalfunctionChance", 7), postfix: Hook(nameof(Malfunction))));
@@ -274,6 +287,61 @@ internal static class TranscendPatches
     {
         FireRate(weapon, ref rate);
         return rate;
+    }
+
+    private static FieldInfo shotsTime;
+    // Only operations whose rewritten read did not take: every other one leaves the postfix at
+    // the lookup. The reflection below runs per frame only for these, only while firing.
+    private sealed class CorrectedFire { internal object Weapon; internal int Rate; }
+    private static readonly ConditionalWeakTable<object, CorrectedFire> correctedOperations = new ConditionalWeakTable<object, CorrectedFire>();
+
+    private static void AutomaticUpdated(object __instance)
+    {
+        if (!Registry.HasTranscend || !correctedOperations.TryGetValue(__instance, out var fix)) return;
+        try
+        {
+            var multiplier = GameBridge.Get(GameBridge.Get(fix.Weapon, "MalfState"), "OverheatFirerateMult") is float value && value > 0 ? value : 1f;
+            var expected = 60f / (fix.Rate * multiplier);
+            if (shotsTime.GetValue(__instance) is float current && Math.Abs(current - expected) > 0.0001f) shotsTime.SetValue(__instance, expected);
+        }
+        catch (Exception) { correctedOperations.Remove(__instance); }
+    }
+    // One line per weapon per game session, so the in-game log shows what the shot timer got.
+    private static readonly HashSet<string> fireRateLogged = new HashSet<string>();
+
+    // Runs when a weapon with full auto is drawn (not per shot). The interval must already be
+    // 60 / (base + bonus) through the rewritten read; if it is not, it is set here and logged.
+    private static void AutomaticCreated(object __instance)
+    {
+        try
+        {
+            var weapon = GameBridge.Get(__instance, "Weapon") ?? GameBridge.Get(GameBridge.Get(__instance, "Controller"), "Item");
+            var id = GameBridge.Get(weapon, "Id")?.ToString();
+            if (id == null || !(GameBridge.Get(weapon, "FireRate") is int baseRate) || baseRate <= 0 || !(shotsTime.GetValue(__instance) is float current)) return;
+            var info = Weapon(weapon);
+            if (info == null || info.Third <= 0)
+            {
+                if (Registry.TranscendLevel(id, TranscendTrack.Third) > 0 && fireRateLogged.Count < 256 && fireRateLogged.Add(id))
+                    Plugin.LogInfo($"초월 발사속도 확인: {id} 기록은 있으나 효과 없음 (기록 {Registry.TranscendLevel(id, TranscendTrack.Third)}, 초월 전체 {Registry.HasTranscend})");
+                return;
+            }
+            var bonus = FireRateBonus(weapon, baseRate);
+            var expected = 60f / (baseRate + bonus);
+            var corrected = bonus > 0 && Math.Abs(current - expected) > 0.0001f;
+            if (corrected)
+            {
+                shotsTime.SetValue(__instance, expected);
+                correctedOperations.Remove(__instance);
+                correctedOperations.Add(__instance, new CorrectedFire { Weapon = weapon, Rate = baseRate + bonus });
+            }
+            if (fireRateLogged.Count < 256 && fireRateLogged.Add(id))
+                Plugin.LogInfo($"초월 발사속도 확인: {id} 기본 {baseRate}rpm + {bonus} (3성 초월 {info.Third}, 연사 {info.Automatic}) · 연사 간격 {current * 1000:0.0}ms"
+                    + (corrected ? $" → {expected * 1000:0.0}ms로 보정(코드 치환이 안 걸림)" : " (치환 정상)"));
+        }
+        catch (Exception ex)
+        {
+            if (fireRateLogged.Add("!")) Plugin.LogError("Gear Enhance: 초월 발사속도 확인 실패(사격은 정상) / fire rate check failed: " + ex.GetBaseException().Message);
+        }
     }
 
     private static void Overheat(object __instance, ref float __result)

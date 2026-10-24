@@ -2,6 +2,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using BepInEx.Configuration;
 using HarmonyLib;
 using Newtonsoft.Json;
@@ -67,6 +68,16 @@ public sealed partial class Plugin
         finally { backgroundSyncing = false; }
     }
 
+    // The windows run the same sync before they quote, so a swap the hook missed (or one
+    // still waiting for the window to close) is already applied when the numbers show.
+    // A timeout throws: the sync may still land later and drop the quote made after it, so the
+    // caller shows the error instead of quoting (reloading runs the sync again).
+    private async Task ApplyInserts(object active)
+    {
+        if (!await GameBridge.WithTimeout(GameBridge.SyncInserts(active, JsonConvert.SerializeObject(Settings()), autoRegister.Value)))
+            Logger.LogWarning("방탄판 맞추기 실패(서버가 거절). 보험·방탄판 창에서 적용할 수 있습니다.");
+    }
+
     private void Notify(string text)
     {
         try
@@ -96,10 +107,10 @@ internal static class InsertRules
         seen.Distinct().Count(p => registry.Find(p.Armor) != null && !registry.Registered(p.Armor, p.Part));
 
     internal static string Notice(int count, bool automatic) => automatic
-        ? Loc.L($"더 비싼 방탄판 {count}개는 차액을 내야 강화 효과를 받습니다. 강화 창 → 보험·방탄판 → 방탄판 등록",
-            $"{count} pricier plate(s) need the price difference paid before they share the enhancement. Enhance window → Insurance · plates → Register")
-        : Loc.L($"강화된 방어구에 끼운 방탄판 {count}개가 아직 등록되지 않았습니다. 강화 창 → 보험·방탄판 → 방탄판 등록",
-            $"{count} plate(s) in enhanced armor are not registered yet. Enhance window → Insurance · plates → Register");
+        ? Loc.L($"더 비싼 방탄판 {count}개는 차액을 내야 강화 효과를 받습니다. 강화 창 → 보험·방탄판 → 차액 내고 적용",
+            $"{count} pricier plate(s) need the price difference paid before they share the enhancement. Enhance window → Insurance · plates → Pay difference")
+        : Loc.L($"강화된 방어구에 끼운 방탄판 {count}개가 아직 적용되지 않았습니다. 강화 창 → 보험·방탄판 → 방탄판 적용",
+            $"{count} plate(s) in enhanced armor are not applied yet. Enhance window → Insurance · plates → Apply plates");
 }
 
 // The game raises this for every item placed in a slot (weapon mods and magazines too), so it

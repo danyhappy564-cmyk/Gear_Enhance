@@ -368,6 +368,25 @@ public sealed class TranscendTests
     }
 
     [Fact]
+    public void New_plate_without_a_durability_record_still_gets_the_max_durability_grant()
+    {
+        // In-game 2026-10-24: new side plates from a trader carry no Upd.Repairable (the game
+        // reads them as full), so the 2-star grant skipped them while they showed registered.
+        var rig = new Rig();
+        rig.Add(Twin, CheapPlateTpl, Stash, "hideout", 30);
+        rig.Item(Twin).Upd = null;
+        rig.Transcend(TranscendTrack.Second, 1);
+        rig.Move(Plate, Stash, "hideout");
+        rig.Move(Twin, Vest, "Front_plate");
+        Assert.Equal((1, 0), rig.Sync());
+        Assert.Contains(Twin.ToString(), rig.State.Inserts[Vest.ToString()].Ids);
+        Assert.Equal((31.8d, 31.8d), (rig.Rep(Twin).MaxDurability!.Value, rig.Rep(Twin).Durability!.Value));
+        Assert.True(rig.State.Grants.ContainsKey(Twin.ToString()));
+        Assert.Contains(rig.Changed, i => i.Id == Twin);
+        Assert.Equal(0, rig.Manage(EnhanceAction.RegisterInserts).DurabilityPending);
+    }
+
+    [Fact]
     public void Free_plates_register_on_insert_and_pricier_ones_wait_for_payment()
     {
         var rig = new Rig();

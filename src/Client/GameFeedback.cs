@@ -50,6 +50,15 @@ internal static class GameFeedback
     }
     internal static void Play(FeedbackCue cue) => PlayNamed(SoundName(cue));
     internal static void Play(UiInteraction cue) => PlayNamed(SoundName(cue));
+    // The trader insurance screen's confirmation sound; older names as fallbacks.
+    internal static void PlayInsured()
+    {
+        Gui();
+        if (play == null) { play = GameBridge.RequiredMethod(guiType, "PlayUISound", 1); soundType = play.GetParameters()[0].ParameterType; }
+        foreach (var name in new[] { "InsuranceInsured", "InsuranceItemOnInsure" })
+            if (Enum.IsDefined(soundType, name)) { PlayNamed(name); return; }
+        PlayNamed(SoundName(FeedbackCue.Success));
+    }
     private static void PlayNamed(string name)
     {
         var instance = Gui();

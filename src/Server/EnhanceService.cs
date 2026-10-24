@@ -251,6 +251,10 @@ public sealed partial class EnhanceService(SptEnhanceBackend backend, JsonUtil s
             quote.InsuranceFees[(int)option] = EnhanceRules.InsuranceFee(value, option, settings);
             quote.InsuranceChances[(int)option] = settings.ReturnPercent(option);
         }
+        // Both actions report it: the insurance · plates window loads the insurance quote and
+        // enables its plate button from this. Also offered when a registered part went back
+        // in and its added max durability is missing.
+        quote.CanRegister = !weapon && (unregistered > 0 || quote.DurabilityPending > 0);
         if (action == EnhanceAction.Insure)
         {
             // Plates worth more than the paid ones change the value; register them first.
@@ -258,12 +262,7 @@ public sealed partial class EnhanceService(SptEnhanceBackend backend, JsonUtil s
                 && (coverage == null || coverage.Tier < tier);
             quote.Cost = quote.CanBuyInsurance ? quote.InsuranceFees[(int)tier] : 0;
         }
-        else
-        {
-            // Also offered when a registered part went back in and its added max durability is missing.
-            quote.CanRegister = !weapon && (unregistered > 0 || quote.DurabilityPending > 0);
-            quote.Cost = quote.InsertSurcharge = quote.CanRegister ? registration : 0;
-        }
+        else quote.Cost = quote.InsertSurcharge = quote.CanRegister ? registration : 0;
         pending[session] = new(quote, Fingerprint(Tree(profile, itemId)), StateFingerprint(state, itemId), stars, settings.PriceBasis,
             settings.Transcend);
         return quote;
@@ -366,7 +365,9 @@ public sealed partial class EnhanceService(SptEnhanceBackend backend, JsonUtil s
                     .Select(p => new TranscendLink { ItemId = p.Key, Second = TranscendRules.Clamp(p.Value.Second),
                         Third = TranscendRules.Clamp(p.Value.Third) }).ToArray(),
                 Durability = state.Grants.Where(p => owned.ContainsKey(p.Key) && p.Value.Amount > 0)
-                    .Select(p => new DurabilityLink { ItemId = p.Key, Amount = p.Value.Amount }).ToArray()
+                    .Select(p => new DurabilityLink { ItemId = p.Key, Amount = p.Value.Amount }).ToArray(),
+                Coverage = state.Coverage.Where(p => owned.ContainsKey(p.Key) && p.Value.Tier != InsuranceTier.None)
+                    .Select(p => new CoverageLink { ItemId = p.Key, Tier = p.Value.Tier }).ToArray()
             };
         }
     }

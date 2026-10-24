@@ -16,6 +16,7 @@ public sealed class EffectRegistry
     // 1.3.0: transcendence levels per gear and max durability added per armor item.
     private volatile Dictionary<string, (int Second, int Third)> transcend = new Dictionary<string, (int, int)>();
     private volatile Dictionary<string, double> grants = new Dictionary<string, double>();
+    private volatile Dictionary<string, InsuranceTier> coverage = new Dictionary<string, InsuranceTier>();
     private volatile TranscendTuning transcendTuning = new TranscendTuning();
     private int version;
     public string ProfileId { get; private set; } = "";
@@ -31,9 +32,11 @@ public sealed class EffectRegistry
         inserts = new Dictionary<string, HashSet<string>>();
         transcend = new Dictionary<string, (int, int)>();
         grants = new Dictionary<string, double>();
+        coverage = new Dictionary<string, InsuranceTier>();
         ProfileId = "";
         Interlocked.Increment(ref version);
     }
+    public InsuranceTier Coverage(string id) => coverage.TryGetValue(id, out var tier) ? tier : InsuranceTier.None;
     public void ConfigureTranscend(TranscendTuning value)
     {
         value.Validate();
@@ -71,7 +74,11 @@ public sealed class EffectRegistry
         var added = new Dictionary<string, double>(StringComparer.Ordinal);
         foreach (var link in snapshot.Durability ?? Array.Empty<DurabilityLink>())
             if (!string.IsNullOrEmpty(link?.ItemId) && link!.Amount > 0 && !double.IsInfinity(link.Amount)) added[link.ItemId] = link.Amount;
-        records = next; inserts = links; transcend = levels; grants = added; ProfileId = expectedProfile;
+        var insured = new Dictionary<string, InsuranceTier>(StringComparer.Ordinal);
+        foreach (var link in snapshot.Coverage ?? Array.Empty<CoverageLink>())
+            if (!string.IsNullOrEmpty(link?.ItemId) && link!.Tier != InsuranceTier.None && Enum.IsDefined(typeof(InsuranceTier), link.Tier))
+                insured[link.ItemId] = link.Tier;
+        records = next; inserts = links; transcend = levels; grants = added; coverage = insured; ProfileId = expectedProfile;
         Interlocked.Increment(ref version);
     }
     public EnhanceRecord? Find(string id, EnhancePath path) =>
