@@ -10,12 +10,17 @@ public sealed class EffectRegistry
     private volatile Dictionary<string, Dictionary<EnhancePath, EnhanceRecord>> records
         = new Dictionary<string, Dictionary<EnhancePath, EnhanceRecord>>();
     private volatile EffectTuning tuning = new EffectTuning();
+    // Armor id → parts registered to it (1.2.0). Only these inherit while inserted.
+    private volatile Dictionary<string, HashSet<string>> inserts = new Dictionary<string, HashSet<string>>();
     public string ProfileId { get; private set; } = "";
     public void Clear()
     {
         records = new Dictionary<string, Dictionary<EnhancePath, EnhanceRecord>>();
+        inserts = new Dictionary<string, HashSet<string>>();
         ProfileId = "";
     }
+    public bool Registered(string armorId, string partId) =>
+        inserts.TryGetValue(armorId, out var parts) && parts.Contains(partId);
     public void Configure(EffectTuning value) { value.Validate(); tuning = value; }
     public void Replace(EnhanceSnapshot snapshot, string expectedProfile)
     {
@@ -29,7 +34,11 @@ public sealed class EffectRegistry
             if (!next.TryGetValue(item.ItemId, out var tracks)) next[item.ItemId] = tracks = new Dictionary<EnhancePath, EnhanceRecord>();
             tracks[item.Path] = new EnhanceRecord { ItemId = item.ItemId, Level = item.Level, Path = item.Path, Evolved = item.Evolved, StarLevel = StarEvolution.Level(item.Evolved, item.StarLevel) };
         }
-        records = next; ProfileId = expectedProfile;
+        var links = new Dictionary<string, HashSet<string>>(StringComparer.Ordinal);
+        foreach (var link in snapshot.Inserts ?? Array.Empty<InsertLink>())
+            if (!string.IsNullOrEmpty(link?.ArmorId))
+                links[link!.ArmorId] = new HashSet<string>(link.PartIds ?? Array.Empty<string>(), StringComparer.Ordinal);
+        records = next; inserts = links; ProfileId = expectedProfile;
     }
     public EnhanceRecord? Find(string id, EnhancePath path) =>
         records.TryGetValue(id, out var tracks) && tracks.TryGetValue(path, out var item) ? item : null;

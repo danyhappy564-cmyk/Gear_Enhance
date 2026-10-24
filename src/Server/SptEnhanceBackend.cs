@@ -9,6 +9,7 @@ using SPTarkov.Server.Core.Models.Eft.ItemEvent;
 using SPTarkov.Server.Core.Models.Eft.Profile;
 using SPTarkov.Server.Core.Models.Enums;
 using SPTarkov.Server.Core.Servers;
+using SPTarkov.Server.Core.Services.Commerce;
 using SPTarkov.Server.Core.Services.Ragfair;
 
 namespace GearEnhance;
@@ -17,7 +18,7 @@ namespace GearEnhance;
 // can be exercised on real SPT profile models without launching the game.
 [Injectable]
 public class SptEnhanceBackend(SaveServer saves, ItemHelper items, InventoryHelper inventory,
-    HandbookHelper handbook, RagfairPriceService flea)
+    HandbookHelper handbook, RagfairPriceService flea, MailSendService mail)
 {
     public virtual double Draw() => RandomNumberGenerator.GetInt32(int.MaxValue) / (double)int.MaxValue;
     public virtual SptProfile Profile(MongoId session) => saves.GetProfile(session);
@@ -26,6 +27,15 @@ public class SptEnhanceBackend(SaveServer saves, ItemHelper items, InventoryHelp
     public virtual bool Eligible(MongoId template) => new[] { BaseClasses.WEAPON, BaseClasses.ARMOR,
         BaseClasses.VEST, BaseClasses.HEADWEAR, BaseClasses.ARMORED_EQUIPMENT,
         BaseClasses.FACE_COVER, BaseClasses.VISORS }.Any(c => items.IsOfBaseclass(template, c));
+
+    // Slot names of a template (attachments, plate slots, visor slots). Grids, chambers
+    // and magazine cartridges are not slots, so ammo and stored loot never count as parts.
+    public virtual HashSet<string> SlotNames(MongoId template) => items.GetItem(template).Value?.Properties?.Slots?
+        .Select(s => s.Name).Where(n => !string.IsNullOrEmpty(n)).Select(n => n!).ToHashSet() ?? new HashSet<string>();
+
+    // Enhancement insurance return. The mail hook moves the records to the new ids.
+    public virtual void SendReturn(MongoId session, List<Item> tree, string text) =>
+        mail.SendSystemMessageToPlayer(session, text, tree);
 
     public virtual (double Price, string Source) Price(MongoId template, PriceBasis basis)
     {

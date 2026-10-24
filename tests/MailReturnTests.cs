@@ -36,12 +36,13 @@ public sealed class MailReturnTests
     private static readonly MongoId ScopeTpl = new("777777777777777777777777");
     private static readonly JsonUtil Json = new([new SptJsonConverterRegistrator()]);
 
-    private sealed class Backend(SptProfile saved) : SptEnhanceBackend(null!, null!, null!, null!, null!)
+    private sealed class Backend(SptProfile saved) : SptEnhanceBackend(null!, null!, null!, null!, null!, null!)
     {
         public override SptProfile Profile(MongoId session) => session == Session ? saved : null!;
         public override bool Eligible(MongoId template) => true;
         public override bool IsWeapon(MongoId template) => true;
         public override (double, string) Price(MongoId template, PriceBasis basis) => (100000, "북밸류");
+        public override HashSet<string> SlotNames(MongoId template) => new();
     }
 
     private sealed class Rig
@@ -249,6 +250,11 @@ public sealed class MailReturnTests
         Assert.NotNull(info);
         Assert.Contains(info!.Prefixes, p => p.PatchMethod.DeclaringType == typeof(MailReturnPatch));
         Assert.Contains(info.Postfixes, p => p.PatchMethod.DeclaringType == typeof(MailReturnPatch));
+        var raidEnd = Harmony.GetPatchInfo(typeof(SPTarkov.Server.Core.Services.InRaid.LocationLifecycleService).GetMethod("HandlePostRaidPmc",
+            BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance)!);
+        Assert.NotNull(raidEnd);
+        Assert.Contains(raidEnd!.Prefixes, p => p.PatchMethod.DeclaringType == typeof(RaidEndPatch));
+        Assert.Contains(raidEnd.Postfixes, p => p.PatchMethod.DeclaringType == typeof(RaidEndPatch));
     }
 
     [Fact]

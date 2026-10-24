@@ -18,6 +18,7 @@ public sealed partial class Plugin : BaseUnityPlugin
     private ConfigEntry<float> chance, chanceLoss, destructionChance, completionBonus, soundVolume, percent, growth;
     private ConfigEntry<float> destructionProtectionPrice, downgradeProtectionPrice;
     private ConfigEntry<float> evolutionChance, evolutionPrice, thirdStarChance, thirdStarBonus;
+    private ConfigEntry<float> basicReturn, advancedReturn, premiumReturn, basicFee, advancedFee, premiumFee;
     private ConfigEntry<bool> showDeveloperOptions, detailedLogging;
     private ConfigEntry<UiLanguage> language;
     private readonly DeveloperOptions developerOptions = new DeveloperOptions();
@@ -82,7 +83,7 @@ public sealed partial class Plugin : BaseUnityPlugin
         chanceLoss = BindDeveloper("2. 확률", "단계별 성공률 감소 (%p)", 5f, new ConfigDescription("기본: +1 시도 75%, +10 시도 30%. 0이면 같은 확률을 유지합니다.", new AcceptableValueRange<float>(0, 100)));
         always = BindDeveloper("2. 확률", "항상 성공 (100%)", false, "켜면 성공률 설정 대신 100%를 적용합니다. 비용은 소모됩니다.");
         maxLevel = BindDeveloper("2. 확률", "최대 강화 단계", 10, new ConfigDescription("각 항목 최대 단계. 효과 곡선·1차 스타 진화 조건도 함께 바뀝니다. 무기 고위험 시작은 선택 항목 +6 시도(+5→+6)로 고정됩니다.", new AcceptableValueRange<int>(1, 100)));
-        price = BindDeveloper("3. 비용", "기준 가격", PriceBasis.Handbook, "Handbook = 북밸류, Flea = SPT 플리 기준가. 장비 본체만 계산합니다.");
+        price = BindDeveloper("3. 비용", "기준 가격", PriceBasis.Handbook, "Handbook = 북밸류, Flea = SPT 플리 기준가. 무기는 본체만, 방어구는 슬롯에 끼운 방탄판·삽입물·바이저 가격을 더합니다.");
         percent = BindDeveloper("3. 비용", "기준 가격 대비 비용 (%)", 10f, new ConfigDescription("0이면 최소 비용만 적용됩니다.", new AcceptableValueRange<float>(0, 1000)));
         growth = BindDeveloper("3. 비용", "단계별 비용 배수", 1.25f, new ConfigDescription("기준가 × 비용 비율 × 배수^현재단계. 최대 1억 루블.", new AcceptableValueRange<float>(1, 3)));
         minimum = BindDeveloper("3. 비용", "최소 비용 (루블)", 1000, new ConfigDescription("창고 안의 잠기지 않은 루블을 사용합니다.", new AcceptableValueRange<int>(0, 100000000)));
@@ -106,6 +107,12 @@ public sealed partial class Plugin : BaseUnityPlugin
         evolutionPrice = BindDeveloper("10. 스타 강화 진화", "진화 기준가 대비 비용 (%)", 300f, new ConfigDescription("진화 비용 = 최소 200만 루블과 본체 기준가 × 이 값/100 중 큰 값. 기본3배, 1회 최대1억 루블.", new AcceptableValueRange<float>(0, 10000)));
         thirdStarChance = BindDeveloper("11. 3차 스타 진화", "3차 스타 성공률 (%)", 10f, new ConfigDescription("2차 스타 성공 및 전 항목 최대인 장비만 시도. 실패 시 보호 없이 파괴합니다.", new AcceptableValueRange<float>(0, 100)));
         thirdStarBonus = BindDeveloper("11. 3차 스타 진화", "3차 스타 총 추가 효과 (%)", (float)StarEvolution.ThirdDefaultBonus, new ConfigDescription("3차 스타 성공 시 기본 강화 효과의3배(+200%). 2차 배율에 중첩하지 않습니다. 반동15%→45%, 인체공학+10→+30. 감소율80%/추가인체공학50 상한, 빨간색 ★★★.", new AcceptableValueRange<float>(0, 300)));
+        basicReturn = BindDeveloper("12. 강화 보험", "일반 보험 반환 확률 (%)", 20f, new ConfigDescription("레이드에서 잃은 강화 장비가 강화된 상태로 우편 반환될 확률. 가입할 때의 값으로 고정됩니다.", new AcceptableValueRange<float>(0, 100)));
+        advancedReturn = BindDeveloper("12. 강화 보험", "고급 보험 반환 확률 (%)", 55f, new ConfigDescription("레이드에서 잃은 강화 장비가 강화된 상태로 우편 반환될 확률. 가입할 때의 값으로 고정됩니다.", new AcceptableValueRange<float>(0, 100)));
+        premiumReturn = BindDeveloper("12. 강화 보험", "프리미엄 보험 반환 확률 (%)", 90f, new ConfigDescription("레이드에서 잃은 강화 장비가 강화된 상태로 우편 반환될 확률. 가입할 때의 값으로 고정됩니다.", new AcceptableValueRange<float>(0, 100)));
+        basicFee = BindDeveloper("12. 강화 보험", "일반 보험료 (강화 가치 대비 %)", 5f, new ConfigDescription("강화 가치 = 지금 단계·스타까지 강화하는 데 드는 기본 비용 합계(방어구는 등록한 방탄판 가격 포함). 최소 비용 이상.", new AcceptableValueRange<float>(0, 1000)));
+        advancedFee = BindDeveloper("12. 강화 보험", "고급 보험료 (강화 가치 대비 %)", 15f, new ConfigDescription("강화 가치 = 지금 단계·스타까지 강화하는 데 드는 기본 비용 합계(방어구는 등록한 방탄판 가격 포함). 최소 비용 이상.", new AcceptableValueRange<float>(0, 1000)));
+        premiumFee = BindDeveloper("12. 강화 보험", "프리미엄 보험료 (강화 가치 대비 %)", 30f, new ConfigDescription("강화 가치 = 지금 단계·스타까지 강화하는 데 드는 기본 비용 합계(방어구는 등록한 방탄판 가격 포함). 최소 비용 이상.", new AcceptableValueRange<float>(0, 1000)));
         // Migrate the previous shipped default once; preserve custom developer odds.
         var balanceVersion = Config.Bind("0. 내부", "밸런스 설정 버전", 0,
             new ConfigDescription("내부 설정 이전용", null, new ConfigurationManagerAttributes { Browsable = false }));
@@ -224,7 +231,10 @@ public sealed partial class Plugin : BaseUnityPlugin
         DestructionProtectionPercent = destructionProtectionPrice.Value, DowngradeProtectionPercent = downgradeProtectionPrice.Value,
         EvolutionSuccessPercent = evolutionChance.Value, ThirdStarSuccessPercent = thirdStarChance.Value, EvolutionCostPercent = evolutionPrice.Value,
         PriceBasis = price.Value, CostPercent = percent.Value, CostPerLevel = growth.Value,
-        MinimumCost = minimum.Value, FailureMode = failure.Value, Effects = Tuning()
+        MinimumCost = minimum.Value, FailureMode = failure.Value, Effects = Tuning(),
+        BasicInsuranceReturnPercent = basicReturn.Value, AdvancedInsuranceReturnPercent = advancedReturn.Value,
+        PremiumInsuranceReturnPercent = premiumReturn.Value, BasicInsuranceFeePercent = basicFee.Value,
+        AdvancedInsuranceFeePercent = advancedFee.Value, PremiumInsuranceFeePercent = premiumFee.Value
     };
 
     private static void MenuPostfix(object __instance, object itemContext, object __result)
@@ -554,6 +564,7 @@ public sealed partial class Plugin : BaseUnityPlugin
             Logger.LogInfo($"강화 창 UI CPU: Repaint {repaintCount}회, 평균 {repaintTicks * 1000.0 / System.Diagnostics.Stopwatch.Frequency / repaintCount:0.00}ms, 최대 {maximumRepaintTicks * 1000.0 / System.Diagnostics.Stopwatch.Frequency:0.00}ms (GPU/FPS 측정 아님)");
         repaintCount = repaintTicks = maximumRepaintTicks = 0;
         visible = false; quote = preview = null; session = uiContext = selectedItem = itemIcon = null; generation++;
+        insuranceVisible = false; insuranceQuote = null; insuranceMessage = "";
         itemId = null;
         attemptTimeline.Reset(); pendingAttempt = null;
         feedbackAudio?.Stop();

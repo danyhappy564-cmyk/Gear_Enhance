@@ -46,18 +46,22 @@ internal static class StatPatches
         harmony.Patch(AccessTools.PropertyGetter(type, name) ?? throw new MissingMemberException(type.FullName, name),
             postfix: Hook(hook));
 
-    // Armor parts inside an enhanced armor's slot (plates, soft inserts, visors) get
-    // its effect while inserted. A plate's own enhancement counts if it is higher.
+    // Armor parts registered to an enhanced armor (plates, soft inserts, visors inserted
+    // when it was enhanced or registered later) get its effect while in its slots.
+    // A plate's own enhancement counts if it is higher.
     internal static double Amount(object item, EnhancePath path, bool inherit = false)
     {
         // The root of EFT's inventory can point to itself. All parent walks have
         // a hard bound; never recurse through the inventory graph.
         var best = 0.0;
+        string origin = null;
         for (var depth = 0; item != null && depth < (inherit ? 64 : 1); depth++)
         {
             var id = GameBridge.Get(item, "Id")?.ToString();
             if (id == null) break;
-            if (Registry.Find(id, path) != null) best = Math.Max(best, Registry.Amount(id, path));
+            origin ??= id;
+            if (Registry.Find(id, path) != null && (depth == 0 || Registry.Registered(id, origin)))
+                best = Math.Max(best, Registry.Amount(id, path));
             if (!inherit) break;
             var parent = GameBridge.SlotParent(item);
             if (ReferenceEquals(item, parent)) break;
@@ -66,8 +70,8 @@ internal static class StatPatches
         return best;
     }
 
-    // Id whose badge an armor part shows: its own, or the armor it is inserted into
-    // when that one is enhanced further. Loose items in a pocket never inherit.
+    // Id whose badge an armor part shows: its own, or the armor it is registered to and
+    // inserted into when that one is enhanced further. Loose items in a pocket never inherit.
     internal static string BadgeOwner(object item, string id)
     {
         var owner = id;
@@ -77,7 +81,7 @@ internal static class StatPatches
         {
             var parentId = GameBridge.Get(parent, "Id")?.ToString();
             if (parentId == null) break;
-            if (!GameBridge.IsWeapon(parent) && ArmorLevel(parentId) > ArmorLevel(owner)) owner = parentId;
+            if (!GameBridge.IsWeapon(parent) && Registry.Registered(parentId, id) && ArmorLevel(parentId) > ArmorLevel(owner)) owner = parentId;
             item = parent;
             parent = GameBridge.SlotParent(item);
         }

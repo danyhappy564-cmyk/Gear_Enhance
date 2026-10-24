@@ -32,6 +32,14 @@ public sealed class MailReturnLoader(EnhanceService service, ISptLogger<MailRetu
             logger.Error("Gear Enhance: 보험·플리 반환 우편 연결 실패. 돌아온 장비의 강화 기록은 이어지지 않습니다. "
                 + "Insurance/flea return mail hook failed; returned gear will lose its enhancement.", ex);
         }
+        RaidEndPatch.Service = service;
+        RaidEndPatch.Logger = logger;
+        try { new RaidEndPatch().Enable(); }
+        catch (Exception ex)
+        {
+            logger.Error("Gear Enhance: 강화 보험 레이드 종료 연결 실패. 잃은 강화 장비는 강화 보험으로 돌아오지 않습니다. "
+                + "Enhancement insurance raid-end hook failed; lost enhanced gear will not be returned by it.", ex);
+        }
         return Task.CompletedTask;
     }
 }

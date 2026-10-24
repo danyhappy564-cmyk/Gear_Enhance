@@ -88,7 +88,9 @@ public sealed class HooksTests : IDisposable
     [Fact]
     public void Durability_prefix_scales_actual_damage_argument_for_attached_plate()
     {
-        Record("vest", EnhancePath.ArmorDurability);
+        StatPatches.Registry.Replace(new EnhanceSnapshot { ProfileId = "pmc",
+            Items = new[] { new EnhanceRecord { ItemId = "vest", Path = EnhancePath.ArmorDurability, Level = 10 } },
+            Inserts = new[] { new InsertLink { ArmorId = "vest", PartIds = new[] { "plate" } } } }, "pmc");
         var vest = new TestItem("vest");
         var plate = new TestItem("plate") { CurrentAddress = new(new TestContainer(vest)) };
         Assert.Equal(7, Run("Durability", new TestArmor(plate), 10));
@@ -176,7 +178,7 @@ public sealed class HooksTests : IDisposable
             new EnhanceRecord { ItemId = "vest", Path = EnhancePath.ArmorDurability, Level = 10 },
             new EnhanceRecord { ItemId = "vest", Path = EnhancePath.Mobility, Level = 5 },
             new EnhanceRecord { ItemId = "plate", Path = EnhancePath.ArmorDurability, Level = 1 }
-        } }, "pmc");
+        }, Inserts = new[] { new InsertLink { ArmorId = "vest", PartIds = new[] { "plate" } } } }, "pmc");
         var vest = new TestItem("vest");
         var plate = new TestItem("plate") { CurrentAddress = new(new TestContainer(vest)) };
         // 1.2.0: an inserted plate takes the higher of its own and the armor's level.
@@ -187,10 +189,12 @@ public sealed class HooksTests : IDisposable
     [Fact]
     public void Plate_inserted_in_enhanced_armor_gets_its_effect_and_badge_until_removed()
     {
-        StatPatches.Registry.Replace(new EnhanceSnapshot { ProfileId = "pmc", Items = new[] {
+        var records = new[] {
             new EnhanceRecord { ItemId = "vest", Path = EnhancePath.ArmorDurability, Level = 10 },
             new EnhanceRecord { ItemId = "vest", Path = EnhancePath.Mobility, Level = 5 }
-        } }, "pmc");
+        };
+        StatPatches.Registry.Replace(new EnhanceSnapshot { ProfileId = "pmc", Items = records,
+            Inserts = new[] { new InsertLink { ArmorId = "vest", PartIds = new[] { "plate" } } } }, "pmc");
         var vest = Vest();
         var plate = Plate("plate", new TestContainer(vest));
         Assert.Equal(7, Run("Durability", new TestArmor(plate), 10), 4);
@@ -202,9 +206,15 @@ public sealed class HooksTests : IDisposable
         plate.CurrentAddress = new(new TestContainer(new TestItem("plain") { Template = new("5448e5284bdc2dcb718b4567") }));
         Assert.Equal(10, Run("Durability", new TestArmor(plate), 10), 4);
         Assert.Equal("Plate", Named(plate));
-        // A newly bought plate pushed into the enhanced armor gets it right away.
+        // 1.2.0: a newly bought plate pushed into the enhanced armor waits for registration,
+        // so swapping in a better plate after a cheap enhancement does not inherit it.
         var bought = Plate("bought", new TestContainer(vest));
+        Assert.Equal(10, Run("Durability", new TestArmor(bought), 10), 4);
+        Assert.Equal("Plate", Named(bought));
+        StatPatches.Registry.Replace(new EnhanceSnapshot { ProfileId = "pmc", Items = records,
+            Inserts = new[] { new InsertLink { ArmorId = "vest", PartIds = new[] { "plate", "bought" } } } }, "pmc");
         Assert.Equal(7, Run("Durability", new TestArmor(bought), 10), 4);
+        Assert.Equal("Plate <color=#D9B66F>★ +15</color>", Named(bought));
     }
 
     [Fact]

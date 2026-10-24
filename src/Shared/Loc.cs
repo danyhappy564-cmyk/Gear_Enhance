@@ -32,6 +32,16 @@ public static class Loc
         ? level + (level % 100 is 11 or 12 or 13 ? "th" : (level % 10) switch { 1 => "st", 2 => "nd", 3 => "rd", _ => "th" })
         : level + "차";
 
+    // Enhancement insurance tier names. The server mail passes english explicitly.
+    public static string TierName(InsuranceTier tier, bool inEnglish) => tier switch
+    {
+        InsuranceTier.Basic => inEnglish ? "Basic" : "일반",
+        InsuranceTier.Advanced => inEnglish ? "Advanced" : "고급",
+        InsuranceTier.Premium => inEnglish ? "Premium" : "프리미엄",
+        _ => inEnglish ? "None" : "없음"
+    };
+    public static string TierName(InsuranceTier tier) => TierName(tier, english);
+
     // Price basis labels come from the server as Korean data, not as errors.
     public static string PriceSource(string? source) => source switch
     {

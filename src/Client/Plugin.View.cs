@@ -8,19 +8,30 @@ public sealed partial class Plugin
 {
     private bool UiButton(Rect rect, string text, GUIStyle style, UiInteraction cue = UiInteraction.Button)
     {
+        if (InputLocked) { Locked(() => GUI.Button(rect, text, style)); return false; }
         if (!GUI.Button(rect, text, style)) return false;
         PlayInteraction(cue); return true;
     }
     private bool UiButton(Rect rect, GUIContent content, GUIStyle style)
     {
+        if (InputLocked) { Locked(() => GUI.Button(rect, content, style)); return false; }
         if (!GUI.Button(rect, content, style)) return false;
         PlayInteraction(UiInteraction.Button); return true;
     }
     private bool UiToggle(Rect rect, bool current, string text)
     {
+        if (InputLocked) { Locked(() => GUI.Toggle(rect, current, text)); return current; }
         var selected = GUI.Toggle(rect, current, text);
         if (selected != current) PlayInteraction(UiInteraction.CheckBox);
         return selected;
+    }
+    // Drawn but inert under the insurance overlay.
+    private static void Locked(Func<bool> draw)
+    {
+        var enabled = GUI.enabled;
+        GUI.enabled = false;
+        draw();
+        GUI.enabled = enabled;
     }
     private const float WindowWidth = 760, WindowHeight = 950;
     private static readonly Color Gold = new Color(0.84f, 0.74f, 0.55f);
@@ -36,7 +47,7 @@ public sealed partial class Plugin
     private readonly Dictionary<EnhancePath, Texture2D> glyphs = new Dictionary<EnhancePath, Texture2D>();
     private static readonly EnhancePath[] WeaponTracks = { EnhancePath.Recoil, EnhancePath.Ergonomics, EnhancePath.Precision };
     private static readonly EnhancePath[] ArmorTracks = { EnhancePath.ArmorDurability, EnhancePath.Mobility };
-    private GUIStyle noteStyle, statusStyle;
+    private GUIStyle noteStyle, statusStyle, noteStyleCentered;
     private GUIStyle resultTitleStyle, resultDetailStyle;
     private GUI.WindowFunction drawWindow, drawEvolutionWindow;
     private float ActiveWindowHeight => evolutionMode ? 910 : WindowHeight;
@@ -67,6 +78,7 @@ public sealed partial class Plugin
         small = TextStyle(13, Muted);
         centeredSmall = TextStyle(13, Muted, alignment: TextAnchor.MiddleCenter);
         noteStyle = TextStyle(13, Gold); noteStyle.wordWrap = true;
+        noteStyleCentered = TextStyle(17, Gold, FontStyle.Bold, TextAnchor.MiddleCenter);
         statusStyle = TextStyle(13, Muted); statusStyle.wordWrap = true;
         resultTitleStyle = TextStyle(40, Color.white, FontStyle.Bold, TextAnchor.MiddleCenter);
         resultDetailStyle = TextStyle(17, Color.white, alignment: TextAnchor.MiddleCenter); resultDetailStyle.wordWrap = true;
@@ -204,6 +216,7 @@ public sealed partial class Plugin
         Label(162, 16, 190, 24, "Gear Enhance · " + EnhanceProtocol.ModVersion, small);
         GUI.enabled = !busy && !resultVisible;
         if (!uncertain && itemId != null && UiButton(new Rect(608, 13, 92, 29), Loc.L("새로고침", "Refresh"), secondary)) main.Enqueue(RefreshQuote);
+        if (!uncertain && itemId != null && UiButton(new Rect(486, 13, 112, 29), Loc.L("보험·방탄판", "Insure·plates"), secondary, UiInteraction.Open)) main.Enqueue(OpenInsurance);
         if (UiButton(new Rect(712, 10, 32, 32), "×", secondary, UiInteraction.Close)) main.Enqueue(Close);
         GUI.enabled = true;
 
@@ -214,8 +227,9 @@ public sealed partial class Plugin
         for (var index = 0; index < options.Length; index++)
             DrawPath(new Rect(24 + index * (width + 12), 276, width, 76), options[index]);
         DrawEffects(); DrawCosts(); DrawProtection(); DrawActions();
-        if (!resultVisible) GUI.DragWindow(new Rect(0, 0, 598, 54));
         if (resultVisible) DrawResultPanel();
+        else if (insuranceVisible) DrawInsurancePanel();
+        if (!resultVisible) GUI.DragWindow(new Rect(0, 0, 480, 54));
     }
 
     private void DrawPreview()
@@ -334,7 +348,8 @@ public sealed partial class Plugin
         Label(407, 628, 309, 25, preview == null ? "" : Loc.L("보유 ", "Have ") + $"{preview.AvailableRoubles:N0} ₽ · BTC {preview.AvailableBitcoins:N0}", small);
         Label(24, 670, 515, 23, evolutionMode && evolutionTargetStars == 3 ? Loc.L("가격 기준: 3차 진화 4,000,000 ₽ 고정", "Price: 3rd evolution fixed at 4,000,000 ₽")
             : Loc.L("가격 기준: ", "Price: ") + (preview == null ? Loc.L("견적 확인 중", "checking quote") : Loc.PriceSource(preview.PriceSource))
-              + Loc.L(" · 장비 본체", " · gear body only"), small);
+              + (preview?.PartsPrice > 0 ? Loc.L(" · 본체+끼운 방탄판", " · body + inserted plates") : Loc.L(" · 장비 본체", " · gear body only"))
+              + (preview?.InsertSurcharge > 0 ? Loc.L($" · 방탄판 차액 +{preview.InsertSurcharge:N0} ₽", $" · plate catch-up +{preview.InsertSurcharge:N0} ₽") : ""), small);
         Label(562, 670, 174, 23, evolutionMode ? Loc.L("진화 전용 판정", "Evolution roll") : Loc.L("선택 항목 +6 시도부터 보호", "Protect from +6 try"), centeredSmall);
     }
 

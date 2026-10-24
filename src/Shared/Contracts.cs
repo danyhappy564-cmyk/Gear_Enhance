@@ -6,7 +6,9 @@ namespace GearEnhance;
 public enum PriceBasis { Handbook, Flea }
 public enum FailureMode { KeepItem, ZeroDurability, Destroy, Downgrade }
 public enum EnhancePath { Recoil, Ergonomics, Precision, ArmorDurability, Mobility }
-public enum EnhanceAction { Upgrade, Evolve, EvolveThird }
+public enum EnhanceAction { Upgrade, Evolve, EvolveThird, Insure, RegisterInserts }
+// Enhancement insurance (1.2.0): bought in the enhancement window, separate from traders.
+public enum InsuranceTier { None, Basic, Advanced, Premium }
 
 public static class EnhanceProtocol
 {
@@ -38,7 +40,19 @@ public sealed class EnhanceSettings
     public double EvolutionSuccessPercent { get; set; } = 30;
     public double ThirdStarSuccessPercent { get; set; } = 10;
     public double EvolutionCostPercent { get; set; } = 300;
+    // Chance that lost gear comes back enhanced, and fee as % of its enhancement value.
+    public double BasicInsuranceReturnPercent { get; set; } = 20;
+    public double AdvancedInsuranceReturnPercent { get; set; } = 55;
+    public double PremiumInsuranceReturnPercent { get; set; } = 90;
+    public double BasicInsuranceFeePercent { get; set; } = 5;
+    public double AdvancedInsuranceFeePercent { get; set; } = 15;
+    public double PremiumInsuranceFeePercent { get; set; } = 30;
     public EffectTuning Effects { get; set; } = new EffectTuning();
+
+    public double ReturnPercent(InsuranceTier tier) => tier == InsuranceTier.Premium ? PremiumInsuranceReturnPercent
+        : tier == InsuranceTier.Advanced ? AdvancedInsuranceReturnPercent : tier == InsuranceTier.Basic ? BasicInsuranceReturnPercent : 0;
+    public double FeePercent(InsuranceTier tier) => tier == InsuranceTier.Premium ? PremiumInsuranceFeePercent
+        : tier == InsuranceTier.Advanced ? AdvancedInsuranceFeePercent : tier == InsuranceTier.Basic ? BasicInsuranceFeePercent : 0;
 
     public void Validate()
     {
@@ -50,6 +64,10 @@ public sealed class EnhanceSettings
             || !Finite(EvolutionSuccessPercent) || EvolutionSuccessPercent < 0 || EvolutionSuccessPercent > 100
             || !Finite(ThirdStarSuccessPercent) || ThirdStarSuccessPercent < 0 || ThirdStarSuccessPercent > 100
             || !Finite(EvolutionCostPercent) || EvolutionCostPercent < 0 || EvolutionCostPercent > 10000
+            || !Percent(BasicInsuranceReturnPercent) || !Percent(AdvancedInsuranceReturnPercent) || !Percent(PremiumInsuranceReturnPercent)
+            || !Finite(BasicInsuranceFeePercent) || BasicInsuranceFeePercent < 0 || BasicInsuranceFeePercent > 1000
+            || !Finite(AdvancedInsuranceFeePercent) || AdvancedInsuranceFeePercent < 0 || AdvancedInsuranceFeePercent > 1000
+            || !Finite(PremiumInsuranceFeePercent) || PremiumInsuranceFeePercent < 0 || PremiumInsuranceFeePercent > 1000
             || MaxLevel < 1 || MaxLevel > 100
             || !Finite(CostPercent) || CostPercent < 0 || CostPercent > 1000
             || !Finite(CostPerLevel) || CostPerLevel < 1 || CostPerLevel > 3
@@ -63,6 +81,7 @@ public sealed class EnhanceSettings
     }
 
     private static bool Finite(double value) => !double.IsNaN(value) && !double.IsInfinity(value);
+    private static bool Percent(double value) => Finite(value) && value >= 0 && value <= 100;
 }
 
 public sealed class EnhanceProtection
@@ -81,7 +100,7 @@ public sealed class EnhanceQuote
     public int BaseCost { get; set; }
     public long DestructionProtectionFee { get; set; }
     public long DowngradeProtectionFee { get; set; }
-    public int ProtectionCost => Cost - BaseCost - BoostCost;
+    public int ProtectionCost => Cost - BaseCost - BoostCost - InsertSurcharge;
     public bool ChanceBoost { get; set; }
     public int BoostCost { get; set; }
     public int BoostBitcoins { get; set; }
@@ -118,6 +137,24 @@ public sealed class EnhanceQuote
     public bool Complete { get; set; }
     public bool CompletesOnSuccess { get; set; }
     public double NextGainMultiplier { get; set; }
+    public EnhanceAction Action { get; set; }
+    // Armor: value of the parts in its slots (plates, soft inserts, visors), already in the price.
+    public double PartsPrice { get; set; }
+    public int InsertedParts { get; set; }
+    public int UnregisteredParts { get; set; }
+    // Catch-up for parts worth more than the ones paid for at earlier levels.
+    public int InsertSurcharge { get; set; }
+    // Shown with the insurance quote; charged by a separate registration.
+    public int RegistrationFee { get; set; }
+    public bool CanRegister { get; set; }
+    public bool CanBuyInsurance { get; set; }
+    public InsuranceTier InsuranceTier { get; set; }
+    public InsuranceTier CurrentInsurance { get; set; }
+    public double CurrentInsurancePercent { get; set; }
+    public long InsuredValue { get; set; }
+    // Indexed by InsuranceTier; [0] is unused.
+    public int[] InsuranceFees { get; set; } = new int[4];
+    public double[] InsuranceChances { get; set; } = new double[4];
 }
 
 public sealed class EnhanceReceipt
@@ -136,6 +173,9 @@ public sealed class EnhanceReceipt
     public int StarLevel { get; set; }
     public long CompletedUnixSeconds { get; set; }
     public EnhancePath Path { get; set; }
+    // Upgrade for receipts written before 1.2.0.
+    public EnhanceAction Action { get; set; }
+    public InsuranceTier InsuranceTier { get; set; }
 }
 
 public sealed class EnhanceRecord
@@ -151,6 +191,14 @@ public sealed class EnhanceSnapshot
 {
     public string ProfileId { get; set; } = "";
     public EnhanceRecord[] Items { get; set; } = Array.Empty<EnhanceRecord>();
+    // Parts registered to each enhanced armor; only these share its effect while inserted.
+    public InsertLink[] Inserts { get; set; } = Array.Empty<InsertLink>();
+}
+
+public sealed class InsertLink
+{
+    public string ArmorId { get; set; } = "";
+    public string[] PartIds { get; set; } = Array.Empty<string>();
 }
 
 public sealed class ApiReply<T> where T : class

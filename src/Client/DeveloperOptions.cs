@@ -78,6 +78,17 @@ internal static class ConfigText
         ["9. 강화 보호"] = "9. Protection",
         ["10. 스타 강화 진화"] = "10. Star evolution",
         ["11. 3차 스타 진화"] = "11. 3rd star evolution",
+        ["12. 강화 보험"] = "12. Enhancement insurance",
+        ["일반 보험 반환 확률 (%)"] = "Basic insurance return chance (%)",
+        ["고급 보험 반환 확률 (%)"] = "Advanced insurance return chance (%)",
+        ["프리미엄 보험 반환 확률 (%)"] = "Premium insurance return chance (%)",
+        ["레이드에서 잃은 강화 장비가 강화된 상태로 우편 반환될 확률. 가입할 때의 값으로 고정됩니다."]
+            = "Chance that enhanced gear lost in a raid is mailed back still enhanced. Fixed at the value when bought.",
+        ["일반 보험료 (강화 가치 대비 %)"] = "Basic insurance fee (% of value)",
+        ["고급 보험료 (강화 가치 대비 %)"] = "Advanced insurance fee (% of value)",
+        ["프리미엄 보험료 (강화 가치 대비 %)"] = "Premium insurance fee (% of value)",
+        ["강화 가치 = 지금 단계·스타까지 강화하는 데 드는 기본 비용 합계(방어구는 등록한 방탄판 가격 포함). 최소 비용 이상."]
+            = "Value = the base cost of reaching the current levels and stars (armor includes its registered plates). At least the minimum cost.",
 
         ["개발자 옵션 표시"] = "Show developer options",
         ["확률·비용·항상 성공·실패·능력치·보호·진화 밸런스 설정을 표시합니다. 바꾼 뒤 F12 창을 닫았다 다시 열면 적용됩니다. 기본은 숨김입니다."]
@@ -95,7 +106,8 @@ internal static class ConfigText
         ["각 항목 최대 단계. 효과 곡선·1차 스타 진화 조건도 함께 바뀝니다. 무기 고위험 시작은 선택 항목 +6 시도(+5→+6)로 고정됩니다."]
             = "Max level of each track. Also changes the effect curve and the 1st star evolution condition. Weapon high risk always starts at the +6 attempt (+5 → +6).",
         ["기준 가격"] = "Base price",
-        ["Handbook = 북밸류, Flea = SPT 플리 기준가. 장비 본체만 계산합니다."] = "Handbook = handbook value, Flea = SPT flea price. Only the gear body is counted.",
+        ["Handbook = 북밸류, Flea = SPT 플리 기준가. 무기는 본체만, 방어구는 슬롯에 끼운 방탄판·삽입물·바이저 가격을 더합니다."]
+            = "Handbook = handbook value, Flea = SPT flea price. Weapons count the body only; armor adds the plates, inserts and visors in its slots.",
         ["기준 가격 대비 비용 (%)"] = "Cost of base price (%)",
         ["0이면 최소 비용만 적용됩니다."] = "0 uses only the minimum cost.",
         ["단계별 비용 배수"] = "Cost multiplier per level",

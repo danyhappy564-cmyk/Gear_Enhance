@@ -33,11 +33,13 @@ public sealed class EnhanceTests
         public override double Draw() => DrawValue ?? base.Draw();
         // These are SPT's real removal methods, not a copied payment/deletion algorithm.
         private readonly InventoryHelper native = new(null!, null!, null!, null!, null!, null!, null!, null!);
-        public MemoryBackend(SptProfile saved) : base(null!, null!, null!, null!, null!) => Saved = saved;
+        public MemoryBackend(SptProfile saved) : base(null!, null!, null!, null!, null!, null!) => Saved = saved;
         public override SptProfile Profile(MongoId session) => session == Session ? Saved : null!;
         public override bool Eligible(MongoId template) => IsEligible;
         public override bool IsWeapon(MongoId template) => WeaponCategory;
         public override (double, string) Price(MongoId template, PriceBasis basis) => (BasePrice, "북밸류");
+        // No template slots: attachments never count as armor parts in these tests.
+        public override HashSet<string> SlotNames(MongoId template) => new();
         public override void RemoveMoney(PmcData profile, MongoId id, int count, MongoId session,
             ItemEventRouterResponse output) => native.RemoveItemByCount(profile, id, count, session, output);
         public override void RemoveMaterial(PmcData profile, MongoId id, int count, MongoId session,
