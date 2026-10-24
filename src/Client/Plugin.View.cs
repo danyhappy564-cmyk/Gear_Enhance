@@ -62,7 +62,7 @@ public sealed partial class Plugin
     private GUIStyle richBody, richStatus, richSmall, richCentered, richHeading, headerButton;
     private GUIStyle resultTitleStyle, resultDetailStyle;
     private GUI.WindowFunction drawWindow, drawEvolutionWindow;
-    private float ActiveWindowHeight => evolutionMode ? 910 : WindowHeight;
+    private float ActiveWindowHeight => evolutionMode || transcendMode ? 910 : WindowHeight;
     private GUIStyle heading, body, small, centeredSmall, pathHeading, large, value, selectedValue, chanceValue, costValue;
     private GUIStyle card, primary, secondary, frame;
     private float UiScale => Mathf.Max(0.1f, Mathf.Min(1.1f,
@@ -121,6 +121,7 @@ public sealed partial class Plugin
         frame = new GUIStyle(windowSkin.window) { padding = new RectOffset(), border = new RectOffset() };
         foreach (var state in new[] { frame.normal, frame.hover, frame.active, frame.focused,
             frame.onNormal, frame.onHover, frame.onActive, frame.onFocused }) state.background = null;
+        EnsureTranscendSkin();
         windowSkin.toggle.fontSize = 13;
         windowSkin.toggle.wordWrap = true;
         var gridPixels = new Color32[24 * 24];
@@ -203,7 +204,8 @@ public sealed partial class Plugin
             GUI.matrix = Matrix4x4.TRS(Vector3.zero, Quaternion.identity, Vector3.one * scale);
             window.x = Mathf.Clamp(window.x, 0, Math.Max(0, Screen.width / scale - WindowWidth));
             window.y = Mathf.Clamp(window.y, 0, Math.Max(0, Screen.height / scale - ActiveWindowHeight));
-            window = GUI.Window(GetInstanceID() + (evolutionMode ? 1 : 0), window, evolutionMode ? drawEvolutionWindow : drawWindow, "", frame);
+            window = GUI.Window(GetInstanceID() + (evolutionMode ? 1 : transcendMode ? 2 : 0), window,
+                evolutionMode ? drawEvolutionWindow : transcendMode ? drawTranscendWindow : drawWindow, "", frame);
         }
         finally
         {
@@ -231,9 +233,17 @@ public sealed partial class Plugin
         Fill(new Rect(WindowWidth - 14, WindowHeight - 1, 14, 1), accent);
         Fill(new Rect(WindowWidth - 1, WindowHeight - 14, 1, 14), accent);
         Label(23, 9, 200, 36, Loc.L("장비 강화", "Enhance"), heading);
-        Label(162, 16, 132, 24, "Gear Enhance · " + EnhanceProtocol.ModVersion, small);
+        // ★★ gear: the transcendence button takes the version label's place.
+        if (!CanTranscend) Label(162, 16, 132, 24, "Gear Enhance · " + EnhanceProtocol.ModVersion, small);
         if (itemId != null && quote != null) Label(296, 16, 152, 24, InsuranceStatus(quote.CurrentInsurance, quote.CurrentInsurancePercent), richSmall);
         GUI.enabled = !busy && !resultVisible;
+        if (CanTranscend)
+        {
+            var transcend = new Rect(150, 13, 136, 29);
+            Surface(transcend, transcendCard, Cyan);
+            if (UiButton(transcend, Loc.L("초월 강화 · ", "Transcend · ") + StatPatches.Registry.TranscendTotal(itemId), transcendButton, UiInteraction.Open))
+                main.Enqueue(OpenTranscend);
+        }
         if (!uncertain && itemId != null && UiButton(new Rect(608, 13, 92, 29), Loc.L("새로고침", "Refresh"), secondary)) main.Enqueue(RefreshQuote);
         if (!uncertain && itemId != null && UiButton(new Rect(452, 13, 146, 29), weapon ? Loc.L("강화 보험", "Insure")
             : Loc.L("보험·방탄판", "Insure · plates"), headerButton, UiInteraction.Open)) main.Enqueue(OpenInsurance);
@@ -272,6 +282,7 @@ public sealed partial class Plugin
             Label(62, 127, 380, 30, itemId == null ? Loc.L("장비가 파괴되었습니다", "Gear destroyed") : Loc.L("장비 이미지를 불러오는 중…", "Loading gear image…"), small);
         DrawResultEffect(area);
         Label(517, 76, 217, 38, itemName ?? Loc.L("장비", "Gear"), heading);
+        if (transcendMode) { DrawTranscendPreview(); return; }
         Label(518, 112, 216, 25, evolutionMode ? Loc.L($"{evolutionTargetStars}차 스타 진화", $"{Loc.Tier(evolutionTargetStars)} star evolution")
             : EnhanceEffects.Name(selectedPath) + Loc.L(" 강화", " upgrade"), small);
         var current = preview?.CurrentLevel ?? StatPatches.Registry.Find(itemId ?? "", selectedPath)?.Level ?? 0;
@@ -446,9 +457,9 @@ public sealed partial class Plugin
     private void DrawChanceBoost(float x, float y, float width)
     {
         var stars = evolutionMode ? evolutionTargetStars : 1;
-        var coins = SuccessBoost.Bitcoins(evolutionMode, stars);
-        var fee = SuccessBoost.Roubles(evolutionMode, stars);
-        var points = SuccessBoost.Points(evolutionMode);
+        var coins = transcendMode ? SuccessBoost.TranscendBitcoins : SuccessBoost.Bitcoins(evolutionMode, stars);
+        var fee = transcendMode ? SuccessBoost.TranscendRoubles : SuccessBoost.Roubles(evolutionMode, stars);
+        var points = transcendMode ? SuccessBoost.TranscendPoints : SuccessBoost.Points(evolutionMode);
         GUI.enabled = !busy && !resultVisible && !uncertain && (chanceBoost || quote?.ChanceBoostAvailable == true);
         var enabled = UiToggle(new Rect(x, y, width, 28), chanceBoost,
             Loc.L($" 성공률 +{points}%p · BTC {coins}개 + {fee:N0} ₽ (보유 {preview?.AvailableBitcoins ?? 0:N0}개)",

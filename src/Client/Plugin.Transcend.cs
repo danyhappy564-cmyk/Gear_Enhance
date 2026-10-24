@@ -8,7 +8,7 @@ public sealed partial class Plugin
 {
     private const string TranscendSection = "13. 초월 강화";
     private DevSetting<string> secondChances, thirdChances;
-    private DevSetting<float> secondPity, thirdPity, pityCap, secondCost, thirdCost, transcendGrowth;
+    private DevSetting<float> secondPity, thirdPity, pityCap, secondCost, thirdCost, transcendGrowth, transcendProtection;
     private DevSetting<float> horizontalStep, durabilityStep, fireRateStep, fireRateFlat, malfunctionStep, overheatStep, bluntStep, bluntClass;
     private DevSetting<int> secondMinimum, thirdMinimum;
     private DevSetting<bool> requireMaterials;
@@ -32,6 +32,8 @@ public sealed partial class Plugin
         secondMinimum = BindDeveloper(TranscendSection, "2성 최소 비용 (루블)", 1000000, new ConfigDescription("한 번 시도의 최소 비용입니다.", new AcceptableValueRange<int>(0, 100000000)));
         thirdMinimum = BindDeveloper(TranscendSection, "3성 최소 비용 (루블)", 3000000, new ConfigDescription("한 번 시도의 최소 비용입니다.", new AcceptableValueRange<int>(0, 100000000)));
         transcendGrowth = BindDeveloper(TranscendSection, "초월 단계별 비용 배수", 1.5f, new ConfigDescription("단계가 오를수록 비용에 곱하는 배수입니다.", new AcceptableValueRange<float>(1, 3)));
+        transcendProtection = BindDeveloper(TranscendSection, "초월 하락 방지 비용 (기본 비용 대비 %)", 100f, new ConfigDescription(
+            "4·5단계 시도에만 씁니다. 추가 비용 = 이번 초월 기본 비용 × 이 값/100(단계 제곱 없음). 100이면 하락 방지를 켰을 때 비용이 2배.", new AcceptableValueRange<float>(0, 1000)));
         requireMaterials = BindDeveloper(TranscendSection, "초월 재료 요구", true, "끄면 재료 없이 루블만 냅니다. 재료는 성공·실패와 관계없이 소모됩니다.");
         horizontalStep = BindDeveloper(TranscendSection, "수평 반동 감소 / 단계 (%)", 6f, new ConfigDescription(
             "총기 2성 초월. 뒤로 차는 힘과 좌우로 튀는 각도를 함께 줄입니다. 반동 제어 강화와 합쳐 최대 80%.", new AcceptableValueRange<float>(0, 16)));
@@ -67,7 +69,7 @@ public sealed partial class Plugin
             SecondPityStep = secondPity.Value, ThirdPityStep = thirdPity.Value, PityCap = pityCap.Value,
             SecondCostPercent = secondCost.Value, ThirdCostPercent = thirdCost.Value,
             SecondMinimumCost = secondMinimum.Value, ThirdMinimumCost = thirdMinimum.Value,
-            CostGrowth = transcendGrowth.Value, RequireMaterials = requireMaterials.Value,
+            CostGrowth = transcendGrowth.Value, DowngradeProtectionPercent = transcendProtection.Value, RequireMaterials = requireMaterials.Value,
             HorizontalRecoilPerLevel = horizontalStep.Value, MaxDurabilityPerLevel = durabilityStep.Value,
             FireRatePercentPerLevel = fireRateStep.Value, FireRateFlatPerLevel = fireRateFlat.Value,
             MalfunctionPerLevel = malfunctionStep.Value, OverheatPerLevel = overheatStep.Value,

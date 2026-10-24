@@ -302,7 +302,7 @@ public sealed partial class Plugin : BaseUnityPlugin
             uiContext = context; selectedItem = item;
             itemId = GameBridge.Get(item, "Id")?.ToString() ?? throw Loc.Invalid("아이템 ID가 없습니다.", "No item ID.");
             weapon = GameBridge.IsWeapon(item);
-            evolutionMode = false;
+            evolutionMode = transcendMode = false;
             selectedPath = StatPatches.Registry.Find(itemId)?.Path ?? (weapon ? EnhancePath.Recoil : EnhancePath.ArmorDurability);
             itemName = GameBridge.Get(item, "ShortName")?.ToString() ?? itemId;
             var manager = GameBridge.RuntimeType("EFT.LocalizationManager");
@@ -376,7 +376,13 @@ public sealed partial class Plugin : BaseUnityPlugin
                 message = resultMessage ?? StarEvolution.Stars(evolutionTargetStars) + Loc.L(" 스타 강화 진화를 완료했습니다.", " star evolution complete.");
                 return;
             }
-            if (!evolutionMode && (StatPatches.Registry.Find(itemId, selectedPath)?.Level ?? 0) >= maxLevel.Value)
+            if (transcendMode && StatPatches.Registry.TranscendLevel(itemId, transcendTrack) >= TranscendRules.MaxLevel)
+            {
+                preview = null;
+                message = resultMessage ?? Loc.L("이 초월은 최대 단계입니다. 다른 탭을 골라 주세요.", "This transcendence track is at the maximum level. Choose the other tab.");
+                return;
+            }
+            if (!evolutionMode && !transcendMode && (StatPatches.Registry.Find(itemId, selectedPath)?.Level ?? 0) >= maxLevel.Value)
             {
                 preview = null;
                 message = resultMessage ?? Loc.L("이 항목은 최대 단계입니다. 다른 항목을 선택해 주세요.", "This track is at the maximum level. Choose another track.");
@@ -385,9 +391,11 @@ public sealed partial class Plugin : BaseUnityPlugin
             var response = await GameBridge.WithTimeout(GameBridge.Query<EnhanceQuote>(
                 "/rf/gear-enhance/quote", new { ProtocolVersion = EnhanceProtocol.Version, ItemId = itemId, Path = selectedPath, Settings = Settings(),
                     Protection = new EnhanceProtection { Destruction = protectDestruction, Downgrade = protectDowngrade }, ChanceBoost = chanceBoost,
-                    Action = evolutionMode ? evolutionTargetStars == 3 ? EnhanceAction.EvolveThird : EnhanceAction.Evolve : EnhanceAction.Upgrade }));
+                    Action = transcendMode ? EnhanceAction.Transcend : evolutionMode ? evolutionTargetStars == 3 ? EnhanceAction.EvolveThird : EnhanceAction.Evolve : EnhanceAction.Upgrade,
+                    Track = transcendMode ? transcendTrack : TranscendTrack.None }));
             if (current != generation) { message = SettingsChanged; return; }
-            quote = preview = response; weapon = response.IsWeapon; message = resultMessage ?? ""; destructionConfirmed = false;
+            quote = preview = response; weapon = response.IsWeapon;
+            if (response.Action == EnhanceAction.Transcend) transcendAutomatic = response.Automatic; message = resultMessage ?? ""; destructionConfirmed = false;
             chanceBoost = response.ChanceBoost;
             protectDestruction = response.Protection.Destruction; protectDowngrade = response.Protection.Downgrade;
         }
@@ -397,7 +405,7 @@ public sealed partial class Plugin : BaseUnityPlugin
 
     private void SelectPath(EnhancePath path)
     {
-        if (busy || resultVisible || evolutionMode || selectedPath == path) return;
+        if (busy || resultVisible || evolutionMode || transcendMode || selectedPath == path) return;
         selectedPath = path; quote = preview = null; generation++; RefreshQuote();
     }
 
@@ -405,7 +413,9 @@ public sealed partial class Plugin : BaseUnityPlugin
     {
         if (busy || resultVisible || quote == null || uncertain) return;
         if (attemptTimeline.Active) return;
-        var duration = evolutionMode ? evolutionAttemptDuration : attemptDuration;
+        // Transcendence reuses the evolution charge sound and its length.
+        var grand = evolutionMode || transcendMode;
+        var duration = grand ? evolutionAttemptDuration : attemptDuration;
         if (quote.ExpiresWithin(DateTimeOffset.UtcNow.ToUnixTimeSeconds(), duration + QuoteSubmitMargin))
         {
             LoadQuote(Loc.L("견적 유효 시간이 얼마 남지 않아 새로 불러왔습니다. 비용을 확인하고 다시 눌러 주세요.",
@@ -416,15 +426,15 @@ public sealed partial class Plugin : BaseUnityPlugin
         attemptUsesAudioClock = false;
         if (soundsEnabled.Value && providedSounds.Value && feedbackAudio != null && !providedFeedbackUnavailable)
         {
-            try { started = feedbackAudio.StartAttempt(soundVolume.Value / 100, evolutionMode); attemptUsesAudioClock = true; }
+            try { started = feedbackAudio.StartAttempt(soundVolume.Value / 100, grand); attemptUsesAudioClock = true; }
             catch (Exception ex) { ProvidedAudioFailed(ex); }
         }
         if (!soundsEnabled.Value) LogDetailed("강화 충전음 생략: F12 효과음 OFF");
-        if (!attemptUsesAudioClock && soundsEnabled.Value) PlayFeedback(evolutionMode ? FeedbackCue.EvolutionAttempt : FeedbackCue.Attempt, false);
+        if (!attemptUsesAudioClock && soundsEnabled.Value) PlayFeedback(grand ? FeedbackCue.EvolutionAttempt : FeedbackCue.Attempt, false);
         if (!attemptTimeline.Begin(started, duration)) return;
         attemptWallStart = Clock;
         pendingAttempt = quote; pendingDestructionConfirmation = destructionConfirmed; pendingGeneration = generation;
-        busy = true; quote = null; message = Loc.L("강화 진행 중…", "Enhancing…");
+        busy = true; quote = null; message = transcendMode ? Loc.L("초월 진행 중…", "Transcending…") : Loc.L("강화 진행 중…", "Enhancing…");
     }
 
     private void SetChanceBoost(bool enabled)
@@ -467,11 +477,13 @@ public sealed partial class Plugin : BaseUnityPlugin
                     : Loc.L($"강화 실패 · {receipt.Paid:N0} ₽ 소모", $"Failed · spent {receipt.Paid:N0} ₽") + "\n" + FailureText(receipt.FailureMode);
             if (receipt.Success && receipt.IsEvolution) message = Loc.L($"스타 강화 진화 성공! {StarEvolution.Stars(receipt.StarLevel)} {StarEvolution.ColorName(receipt.StarLevel)} 표식 · 진화 보너스 적용",
                 $"Star evolution succeeded! {StarEvolution.Stars(receipt.StarLevel)} {StarEvolution.ColorName(receipt.StarLevel)} marker · evolution bonus applied");
+            else if (receipt.Transcend != TranscendTrack.None)
+                message = ResultText.Title(receipt, false) + " · " + ResultText.Detail(receipt) + Loc.L($" · {receipt.Paid:N0} ₽ 소모", $" · spent {receipt.Paid:N0} ₽");
             else if (receipt.Success && attempt.CompletesOnSuccess) message += Loc.L(" · 1차 스타 전 항목 완성! 진화 창을 열 수 있습니다.", " · All 1st star tracks maxed! Star evolution is open.");
             StatPatches.Registry.ApplyReceipt(receipt, GameBridge.ProfileId(session));
             completed = true;
             ShowResultFeedback(receipt);
-            QueueFeedback(GameFeedback.Result(receipt, receipt.IsEvolution && receipt.Success));
+            QueueFeedback(GameFeedback.Result(receipt, (receipt.IsEvolution || receipt.Transcend != TranscendTrack.None) && receipt.Success));
             RefreshGameplay();
             await SyncEffects(session);
             if (!receipt.Success && receipt.FailureMode == FailureMode.Destroy) { itemId = null; selectedItem = null; itemIcon = null; preview = null; }
@@ -611,7 +623,7 @@ public sealed partial class Plugin : BaseUnityPlugin
         feedbackAudio?.Stop();
         resultSprite = null; resultStarted = -100;
         resultVisible = false; resultReceipt = null;
-        evolutionMode = false;
+        evolutionMode = transcendMode = false;
         if (blocker != null) Destroy(blocker);
         blocker = null;
     }

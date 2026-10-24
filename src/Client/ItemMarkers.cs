@@ -65,7 +65,9 @@ internal static class ItemMarkers
         var image = GameBridge.Get(__instance, "MainImage");
         if (GameBridge.Get(image, "color") is not Color color || color.g < 0.9f || color.b < 0.9f) return;
         // Same gold background used by GridItemView for native repair buffs.
-        background.SetValue(__instance, StatPatches.Registry.StarLevel(owner) >= 3
+        // One background color per cell: transcended gear shows cyan over its star color (approved mockup).
+        background.SetValue(__instance, StatPatches.Registry.TranscendTotal(owner) > 0 ? new Color(64f / 255, 209f / 255, 217f / 255, 56f / 255)
+            : StatPatches.Registry.StarLevel(owner) >= 3
             ? new Color(232f / 255, 70f / 255, 70f / 255, 65f / 255)
             : StatPatches.Registry.IsEvolved(owner) ? new Color(163f / 255, 103f / 255, 232f / 255, 65f / 255)
             : new Color(209f / 255, 153f / 255, 45f / 255, 32f / 255));
@@ -81,6 +83,8 @@ internal static class ItemMarkers
             var owner = id == null ? null : StatPatches.BadgeOwner(item, id);
             var badge = owner == null ? "" : StatPatches.Registry.Badge(owner);
             if (badge.Length > 0) __result += " <color=" + StarEvolution.ColorHex(StatPatches.Registry.StarLevel(owner)) + ">" + badge + "</color>";
+            var transcend = badge.Length == 0 ? 0 : StatPatches.Registry.TranscendTotal(owner);
+            if (transcend > 0) __result += " <color=#40D1D9>" + Loc.L("초월 ", "Transcend ") + transcend + "</color>";
         }
         catch (Exception ex) { Report(ex); }
     }

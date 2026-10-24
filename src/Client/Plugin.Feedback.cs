@@ -39,7 +39,9 @@ public sealed partial class Plugin
     {
         if (resultReceipt == null) return;
         var receipt = resultReceipt;
-        var tint = receipt.Success ? resultComplete ? StarTint(StarEvolution.Level(true, receipt.StarLevel)) : new Color(0.36f, 0.86f, 0.58f)
+        var transcend = receipt.Transcend != TranscendTrack.None;
+        var tint = transcend ? receipt.Success ? Cyan : receipt.DowngradePrevented ? Good : receipt.FailureMode == FailureMode.Downgrade ? Danger : Caution
+            : receipt.Success ? resultComplete ? StarTint(StarEvolution.Level(true, receipt.StarLevel)) : new Color(0.36f, 0.86f, 0.58f)
             : receipt.DestructionPrevented || receipt.DowngradePrevented ? Gold : Danger;
         Fill(new Rect(1, 55, WindowWidth - 2, ActiveWindowHeight - 56), new Color(0, 0, 0, 0.65f));
         Surface(new Rect(70, 295, 620, 305), cardGradient, tint);
@@ -49,8 +51,9 @@ public sealed partial class Plugin
         Label(90, 315, 580, 70, ResultText.Title(receipt, resultComplete), resultTitleStyle);
         GUI.color = previous;
         Label(100, 393, 560, 66, ResultText.Detail(receipt), resultDetailStyle);
-        Label(100, 467, 560, 27, Loc.L($"{EnhanceEffects.Name(receipt.Path)} · {receipt.Paid:N0} ₽ + BTC {receipt.BitcoinsPaid}개 소모",
-            $"{EnhanceEffects.Name(receipt.Path)} · spent {receipt.Paid:N0} ₽ + {receipt.BitcoinsPaid} BTC"), centeredSmall);
+        var what = transcend ? ResultText.Track(receipt.Transcend) : EnhanceEffects.Name(receipt.Path);
+        Label(100, 467, 560, 27, Loc.L($"{what} · {receipt.Paid:N0} ₽ + BTC {receipt.BitcoinsPaid}개", $"{what} · spent {receipt.Paid:N0} ₽ + {receipt.BitcoinsPaid} BTC")
+            + (transcend ? Loc.L(" + 재료 소모", " + materials") : Loc.L(" 소모", "")), centeredSmall);
         if (resultComplete) Label(100, 493, 560, 27, Loc.L($"{StarEvolution.Stars(receipt.StarLevel)} 진화 효과 ×{StarMultiplier(receipt.StarLevel):0.##} · {StarEvolution.ColorName(receipt.StarLevel)} 표식 적용",
             $"{StarEvolution.Stars(receipt.StarLevel)} evolution effect ×{StarMultiplier(receipt.StarLevel):0.##} · {StarEvolution.ColorName(receipt.StarLevel)} marker applied"), centeredSmall);
         GUI.enabled = !busy;
@@ -65,7 +68,8 @@ public sealed partial class Plugin
         var elapsed = Clock - resultStarted;
         if (elapsed < 0 || elapsed >= ResultDuration || Event.current.type != EventType.Repaint) return;
         var progress = (float)(elapsed / ResultDuration);
-        var tint = resultCue == FeedbackCue.Success ? resultComplete ? StarTint(StarEvolution.Level(true, resultReceipt?.StarLevel ?? 0)) : Gold : Danger;
+        var tint = resultCue == FeedbackCue.Success && resultReceipt?.Transcend > TranscendTrack.None ? Cyan
+            : resultCue == FeedbackCue.Success ? resultComplete ? StarTint(StarEvolution.Level(true, resultReceipt?.StarLevel ?? 0)) : Gold : Danger;
         Fill(new Rect(24, 62, 712, 166), new Color(tint.r, tint.g, tint.b, 0.20f * (1 - progress)));
         if (resultCue != FeedbackCue.Destroy || resultSprite == null || resultSprite.texture == null) return;
         // Nine pieces of the cached preview, clipped inside its own area. No new

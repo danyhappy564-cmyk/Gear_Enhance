@@ -42,6 +42,8 @@ public sealed class EffectRegistry
     }
     public int TranscendLevel(string id, TranscendTrack track) => !transcend.TryGetValue(id, out var levels) ? 0
         : track == TranscendTrack.Third ? levels.Third : track == TranscendTrack.Second ? levels.Second : 0;
+    // Both tracks together, 0..10: the stash marker and the main window button.
+    public int TranscendTotal(string id) => TranscendLevel(id, TranscendTrack.Second) + TranscendLevel(id, TranscendTrack.Third);
     public double Grant(string id) => grants.TryGetValue(id, out var amount) ? amount : 0;
     public bool Registered(string armorId, string partId) =>
         inserts.TryGetValue(armorId, out var parts) && parts.Contains(partId);

@@ -279,6 +279,8 @@ public sealed class TranscendTests
         var safe = rig.Quote(TranscendTrack.Second, protect: true);
         Assert.True(safe.Protection.Downgrade);
         Assert.Equal(safe.BaseCost + safe.DowngradeProtectionFee, safe.Cost);
+        // 1.3.0 decision A: a flat 100% of the base cost, not the 1.2.0 level² fee (5.6× at →4).
+        Assert.Equal(safe.BaseCost, safe.DowngradeProtectionFee);
         rig.Pay(safe);
         Assert.Equal(3, rig.State.Transcend[Vest.ToString()].Second);
         Assert.True(rig.Service.Receipt(Session, safe.QuoteId)!.DowngradePrevented);
@@ -286,6 +288,25 @@ public sealed class TranscendTests
         rig.Backend.DrawValue = 0;
         rig.Pay(rig.Quote(TranscendTrack.Second));
         Assert.Equal((4, 0d), (rig.State.Transcend[Vest.ToString()].Second, rig.State.Transcend[Vest.ToString()].SecondPity));
+    }
+
+    [Fact]
+    public void Downgrade_protection_fee_follows_its_own_percent_and_the_window_numbers_match_the_quote()
+    {
+        Assert.Equal(1500000, TranscendRules.ProtectionFee(3000000, new TranscendTuning { DowngradeProtectionPercent = 50 }));
+        Assert.Equal(0, TranscendRules.ProtectionFee(3000000, new TranscendTuning { DowngradeProtectionPercent = 0 }));
+        Assert.Throws<ArgumentException>(() => new TranscendTuning { DowngradeProtectionPercent = 1001 }.Validate());
+        var rig = new Rig();
+        rig.Settings = new EnhanceSettings { Transcend = new TranscendTuning { DowngradeProtectionPercent = 40 } };
+        rig.State.Transcend[Vest.ToString()] = new TranscendRecord { Second = 4 };
+        var quote = rig.Quote(TranscendTrack.Second);
+        Assert.Equal((long)Math.Ceiling(quote.BaseCost * 0.4), quote.DowngradeProtectionFee);
+        // The client draws effects with the same shared function the quote uses.
+        var tuning = rig.Settings.Transcend;
+        Assert.Equal(TranscendEffects.Display(quote.TranscendKind, 4, tuning).Main, quote.CurrentEffect);
+        Assert.Equal(TranscendEffects.Display(quote.TranscendKind, 5, tuning).Main, quote.NextEffect);
+        Assert.Equal((25d, 0d, 2), TranscendEffects.Display(TranscendKind.ArmorClass, 5, tuning));
+        Assert.Equal((30d, 24d), (TranscendEffects.Display(TranscendKind.Reliability, 3, tuning).Main, TranscendEffects.Display(TranscendKind.Reliability, 3, tuning).Secondary));
     }
 
     [Fact]

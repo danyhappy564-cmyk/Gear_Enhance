@@ -32,6 +32,9 @@ public sealed class TranscendTuning
     public int ThirdMinimumCost { get; set; } = 3000000;
     public double CostGrowth { get; set; } = 1.5;
     public bool RequireMaterials { get; set; } = true;
+    // Downgrade protection for level 4 and 5 attempts: this percent of the base cost, flat
+    // (the 1.2.0 level² fee would be 5 to 9 times the base cost at these minimum costs).
+    public double DowngradeProtectionPercent { get; set; } = 100;
     public double HorizontalRecoilPerLevel { get; set; } = 6;
     public double MaxDurabilityPerLevel { get; set; } = 6;
     public double FireRatePercentPerLevel { get; set; } = 6;
@@ -48,7 +51,7 @@ public sealed class TranscendTuning
             || !Range(SecondPityStep, 0, 100) || !Range(ThirdPityStep, 0, 100) || !Range(PityCap, 0, 100)
             || !Range(SecondCostPercent, 0, 10000) || !Range(ThirdCostPercent, 0, 10000)
             || SecondMinimumCost < 0 || SecondMinimumCost > 100000000 || ThirdMinimumCost < 0 || ThirdMinimumCost > 100000000
-            || !Range(CostGrowth, 1, 3)
+            || !Range(CostGrowth, 1, 3) || !Range(DowngradeProtectionPercent, 0, 1000)
             || !Range(HorizontalRecoilPerLevel, 0, 16) || !Range(MaxDurabilityPerLevel, 0, 20)
             || !Range(FireRatePercentPerLevel, 0, 20) || !Range(FireRateFlatPerLevel, 0, 200)
             || !Range(MalfunctionPerLevel, 0, 20) || !Range(OverheatPerLevel, 0, 20)
@@ -118,6 +121,9 @@ public static class TranscendRules
         return total;
     }
 
+    public static long ProtectionFee(int baseCost, TranscendTuning tuning) =>
+        baseCost < 0 ? 0 : (long)Math.Ceiling(baseCost * tuning.DowngradeProtectionPercent / 100);
+
     public static int Clamp(int level) => Math.Max(0, Math.Min(MaxLevel, level));
 
     private static double Minimum(TranscendTrack track, TranscendTuning tuning) =>
@@ -186,6 +192,19 @@ public static class TranscendEffects
         track == TranscendTrack.Second ? weapon ? TranscendKind.HorizontalRecoil : TranscendKind.MaxDurability
         : track == TranscendTrack.Third ? weapon ? automatic ? TranscendKind.FireRate : TranscendKind.Reliability : TranscendKind.ArmorClass
         : TranscendKind.None;
+
+    // What a level gives, as the window shows it: the main effect (percent), the second line
+    // (overheat % for Reliability, the rpm limit for FireRate) and the armor class bonus.
+    public static (double Main, double Secondary, int Class) Display(TranscendKind kind, int level, TranscendTuning tuning) => kind switch
+    {
+        TranscendKind.HorizontalRecoil => (HorizontalRecoil(level, tuning), 0, 0),
+        TranscendKind.MaxDurability => (MaxDurability(level, tuning), 0, 0),
+        TranscendKind.FireRate => (FireRatePercent(level, tuning), FireRateFlat(level, tuning), 0),
+        TranscendKind.Reliability => (Malfunction(level, tuning), Overheat(level, tuning), 0),
+        // Blunt reduction of a part below the class cap; capped parts get more.
+        TranscendKind.ArmorClass => (Blunt(level, 1, tuning), 0, ClassBonus(level)),
+        _ => (0, 0, 0)
+    };
 
     public static double HorizontalRecoil(int level, TranscendTuning tuning) => TranscendRules.Clamp(level) * tuning.HorizontalRecoilPerLevel;
     public static double MaxDurability(int level, TranscendTuning tuning) => TranscendRules.Clamp(level) * tuning.MaxDurabilityPerLevel;

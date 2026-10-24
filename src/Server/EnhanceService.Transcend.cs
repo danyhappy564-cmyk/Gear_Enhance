@@ -105,7 +105,7 @@ public sealed partial class EnhanceService
         // Nothing is ever destroyed; only the drop from level 4 and 5 attempts can be prevented.
         quote.Protection = new() { Downgrade = protection?.Downgrade == true && quote.DowngradeProtectionAvailable };
         quote.DowngradeProtectionFee = quote.DowngradeProtectionAvailable
-            ? ProtectionCosts.Fee(quote.BaseCost, next, settings.DowngradeProtectionPercent) : 0;
+            ? TranscendRules.ProtectionFee(quote.BaseCost, tuning) : 0;
         quote.Cost = ProtectionCosts.Total(quote.BaseCost, 0, quote.Protection.Downgrade ? quote.DowngradeProtectionFee : 0);
         quote.Cost = ProtectionCosts.Total(quote.Cost, quote.BoostCost, 0);
         quote.InsertSurcharge = weapon ? 0 : EnhanceRules.InsertSurcharge(partsPrice - paidParts, tracks, stars, settings, record.Second, record.Third);
@@ -121,29 +121,11 @@ public sealed partial class EnhanceService
     // Current and next effect of the chosen track, in percent unless named otherwise.
     private static void Describe(EnhanceQuote quote, TranscendKind kind, int level, int next, TranscendTuning tuning)
     {
-        (quote.CurrentEffect, quote.NextEffect, quote.EffectCap) = kind switch
-        {
-            TranscendKind.HorizontalRecoil => (TranscendEffects.HorizontalRecoil(level, tuning), TranscendEffects.HorizontalRecoil(next, tuning),
-                TranscendEffects.HorizontalRecoil(TranscendRules.MaxLevel, tuning)),
-            TranscendKind.MaxDurability => (TranscendEffects.MaxDurability(level, tuning), TranscendEffects.MaxDurability(next, tuning),
-                TranscendEffects.MaxDurability(TranscendRules.MaxLevel, tuning)),
-            TranscendKind.FireRate => (TranscendEffects.FireRatePercent(level, tuning), TranscendEffects.FireRatePercent(next, tuning),
-                TranscendEffects.FireRatePercent(TranscendRules.MaxLevel, tuning)),
-            TranscendKind.Reliability => (TranscendEffects.Malfunction(level, tuning), TranscendEffects.Malfunction(next, tuning),
-                TranscendEffects.Malfunction(TranscendRules.MaxLevel, tuning)),
-            // Blunt reduction of a part below the class cap; capped parts get more (client shows it per part).
-            TranscendKind.ArmorClass => (TranscendEffects.Blunt(level, 1, tuning), TranscendEffects.Blunt(next, 1, tuning),
-                TranscendEffects.Blunt(TranscendRules.MaxLevel, 1, tuning)),
-            _ => (0d, 0d, 0d)
-        };
-        (quote.CurrentSecondary, quote.NextSecondary) = kind switch
-        {
-            TranscendKind.FireRate => (TranscendEffects.FireRateFlat(level, tuning), TranscendEffects.FireRateFlat(next, tuning)),
-            TranscendKind.Reliability => (TranscendEffects.Overheat(level, tuning), TranscendEffects.Overheat(next, tuning)),
-            _ => (0d, 0d)
-        };
-        if (kind == TranscendKind.ArmorClass)
-            (quote.CurrentClassBonus, quote.NextClassBonus) = (TranscendEffects.ClassBonus(level), TranscendEffects.ClassBonus(next));
+        var now = TranscendEffects.Display(kind, level, tuning);
+        var after = TranscendEffects.Display(kind, next, tuning);
+        (quote.CurrentEffect, quote.NextEffect, quote.EffectCap) = (now.Main, after.Main, TranscendEffects.Display(kind, TranscendRules.MaxLevel, tuning).Main);
+        (quote.CurrentSecondary, quote.NextSecondary) = (now.Secondary, after.Secondary);
+        (quote.CurrentClassBonus, quote.NextClassBonus) = (now.Class, after.Class);
     }
 
     // A success resets the track's pity; a failure adds to it and, from DropFrom, drops one

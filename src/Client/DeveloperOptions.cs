@@ -101,6 +101,9 @@ internal static class ConfigText
         ["한 번 시도의 최소 비용입니다."] = "Minimum cost of one attempt.",
         ["초월 단계별 비용 배수"] = "Transcendence cost multiplier per level",
         ["단계가 오를수록 비용에 곱하는 배수입니다."] = "Multiplied into the cost for each level already held.",
+        ["초월 하락 방지 비용 (기본 비용 대비 %)"] = "Transcendence downgrade protection (% of base cost)",
+        ["4·5단계 시도에만 씁니다. 추가 비용 = 이번 초월 기본 비용 × 이 값/100(단계 제곱 없음). 100이면 하락 방지를 켰을 때 비용이 2배."]
+            = "Level 4 and 5 attempts only. Extra fee = this attempt's base cost × this/100 (no level squared). At 100, protection doubles the cost.",
         ["초월 재료 요구"] = "Require transcendence materials",
         ["끄면 재료 없이 루블만 냅니다. 재료는 성공·실패와 관계없이 소모됩니다."]
             = "When off, only roubles are paid. Materials are used up on success and failure alike.",

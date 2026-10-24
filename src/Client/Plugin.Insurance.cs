@@ -62,7 +62,7 @@ public sealed partial class Plugin
     private async void RegisterParts()
     {
         var shown = insuranceQuote;
-        if (busy || uncertain || itemId == null || shown == null || shown.UnregisteredParts == 0) return;
+        if (busy || uncertain || itemId == null || shown == null || !shown.CanRegister) return;
         busy = true;
         EnhanceQuote registration = null;
         try
@@ -174,14 +174,17 @@ public sealed partial class Plugin
             {
                 Label(left, top + 356, width, 26, view == null ? "" : Loc.L($"끼운 방탄판·내피 {view.InsertedParts}개 · ", $"Inserted plates/inserts: {view.InsertedParts} · ")
                     + (view.UnregisteredParts > 0 ? Paint(Loc.L($"미등록 {view.UnregisteredParts}개", $"Unregistered: {view.UnregisteredParts}"), Caution)
-                        : Paint(Loc.L("모두 등록됨", "All registered"), Good)), richBody);
+                        : Paint(Loc.L("모두 등록됨", "All registered"), Good))
+                    + (view.DurabilityPending > 0 ? Paint(Loc.L($" · 최대 내구도 초월 효과가 빠진 부품 {view.DurabilityPending}개", $" · {view.DurabilityPending} part(s) missing the max durability bonus"), Caution) : ""), richBody);
                 Label(left, top + 384, width, 58, Paint(Loc.L("방탄판·내피는 따로 강화할 수 없습니다.", "Plates and inserts cannot be enhanced alone."), Caution)
                     + Loc.L(" 방어구를 강화(또는 등록)할 때 끼워 둔 것만 방어구 효과·표식을 받습니다. 새 방탄판은 등록하면 적용되고, 더 비싼 방탄판은 이미 올린 단계의 차액을 냅니다.",
                         " Only those inserted when the armor is enhanced or registered share its effect and badge. Register new plates to apply it; pricier plates pay the difference for levels already gained."), richStatus);
-                GUI.enabled = !busy && !uncertain && view?.UnregisteredParts > 0;
+                GUI.enabled = !busy && !uncertain && view?.CanRegister == true;
                 var register = new Rect(left, top + 448, width, 42);
                 Surface(register, cardGradient, Gold);
-                var registerCaption = view == null ? "—" : view.UnregisteredParts == 0 ? Loc.L("모두 등록됨", "All registered")
+                // A registered plate taken out and put back returns without the 2-star max durability.
+                var registerCaption = view == null ? "—" : view.UnregisteredParts == 0 && view.DurabilityPending > 0 ? Loc.L("최대 내구도 다시 맞추기  무료", "Restore max durability  Free")
+                    : view.UnregisteredParts == 0 ? Loc.L("모두 등록됨", "All registered")
                     : view.RegistrationFee > 0 ? Loc.L($"방탄판 등록  {view.RegistrationFee:N0} ₽", $"Register plates  {view.RegistrationFee:N0} ₽")
                     : Loc.L("방탄판 등록  무료", "Register plates  Free");
                 if (UiButton(register, registerCaption, secondary)) main.Enqueue(RegisterParts);
