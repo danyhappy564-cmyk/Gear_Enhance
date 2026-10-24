@@ -146,7 +146,7 @@ public sealed class GameApiTests
     }
 
     // 1.3.0 transcendence hooks (TranscendPatches): names, argument counts and the IL the
-    // transpilers rewrite, against the real game. Inlining is not checked here (in game only).
+    // transpilers rewrite, against the real game. Whether the JIT inlines a getter is seen in game only.
     [GameAssemblyFact]
     public void Transcend_recoil_hooks_rebuild_the_backward_kick_and_angle_range()
     {
@@ -193,10 +193,13 @@ public sealed class GameApiTests
             malfunction.Parameters.Select(p => p.Name).ToArray());
         Assert.Equal(new[] { "System.Double&", "System.Single&", "System.Single&", "System.Single&" },
             malfunction.Parameters.Skip(2).Take(4).Select(p => p.ParameterType.FullName).ToArray());
-        // Shots read the getter (automatic fire interval) rather than the template field.
-        Assert.Contains(game.MainModule.Types.SelectMany(t => t.NestedTypes.Prepend(t)).SelectMany(t => t.Methods)
-            .Where(m => m.HasBody && m.DeclaringType.FullName.Contains("FirearmController")),
-            m => m.Body.Instructions.Any(i => i.Operand is MethodReference r && r.Name == "get_FireRate" && r.DeclaringType.Name == "Weapon"));
+        // Shots read the getter (automatic fire interval) rather than the template field. The
+        // getter is inlined in game, so TranscendPatches rewrites these reads in the callers.
+        var automatic = firearm.NestedTypes.Single(t => t.Name == "AutomaticFireOperation");
+        AssertCalls(automatic.Methods.Single(m => m.IsConstructor && !m.IsStatic), "get_FireRate");
+        AssertCalls(automatic.Methods.Single(m => m.Name == "Update"), "get_FireRate");
+        var rate = weapon.Properties.Single(p => p.Name == "FireRate").GetMethod;
+        Assert.True(rate.Body.CodeSize < 20, "FireRate getter is no longer tiny: " + rate.Body.CodeSize);
         var ctor = Assert.Single(weapon.Methods, m => m.IsConstructor && !m.IsStatic && m.Parameters.Count == 2 && m.Parameters[0].ParameterType.FullName == "System.String");
         Assert.Contains(ctor.Body.Instructions, i => i.Operand is MethodReference r && r.DeclaringType.Name == "RangedItemAttribute" && r.Name == ".ctor");
         var ids = game.MainModule.GetType("EFT.InventoryLogic.EItemAttributeId");
@@ -216,6 +219,10 @@ public sealed class GameApiTests
         Assert.Equal("System.Int32", armor.Properties.Single(p => p.Name == "ArmorClass").GetMethod.ReturnType.FullName);
         var damage = Assert.Single(armor.Methods, m => m.Name == "ApplyDamage" && m.Parameters.Count == 7);
         AssertCalls(damage, "get_ArmorClass");
+        AssertCalls(Assert.Single(armor.Methods, m => m.Name == "SetPenetrationStatus"), "get_ArmorClass");
+        AssertCalls(game.MainModule.GetType("EFT.Player").Methods.Single(m => m.Name == "TryGetArmorResistData"), "get_ArmorClass");
+        foreach (var name in new[] { "EFT.InventoryLogic.ArmorHolderComponent", "EFT.InventoryLogic.ArmorPlatesFormatter", "EFT.UI.MultiLineInfo" })
+            Assert.NotNull(game.MainModule.GetType(name));
         var code = damage.Body.Instructions.ToList();
         static bool Reads(Mono.Cecil.Cil.Instruction i, string name) => i.Operand is FieldReference f && f.Name == name && i.OpCode.Code == Mono.Cecil.Cil.Code.Ldfld
             || i.Operand is MethodReference m && m.Name == "get_" + name;

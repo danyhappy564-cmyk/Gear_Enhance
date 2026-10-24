@@ -23,6 +23,24 @@ namespace EFT.InventoryLogic
         int IArmorComponentTemplate.ArmorClass => armorClass;
         float IArmorComponentTemplate.BluntThroughput => BluntThroughput;
     }
+    // Like the game: one-line getters that the shot and hit code reads (inlined in game).
+    public sealed class Weapon(string id, int rate, params GearEnhanceClientTests.TestFireMode[] modes)
+    {
+        public string Id { get; } = id;
+        public GearEnhanceClientTests.TestFireMode[] WeapFireType { get; } = modes;
+        public int bFirerate = rate;
+        public int FireRate => bFirerate;
+        public sealed class AutomaticFireOperation(Weapon weapon)
+        {
+            public float ShotsTime = 60f / weapon.FireRate;
+            public int Unrelated() => weapon.bFirerate;
+        }
+    }
+    public sealed class ArmorComponent(GearEnhanceClientTests.TestItem item, int armorClass)
+    {
+        public GearEnhanceClientTests.TestItem Item { get; } = item;
+        public int ArmorClass => armorClass;
+    }
     public sealed class TestPlateComponent(GearEnhanceClientTests.TestItem item, int armorClass, float blunt)
     {
         public GearEnhanceClientTests.TestItem Item { get; } = item;
@@ -240,6 +258,47 @@ namespace GearEnhanceClientTests
             Assert.Null(TranscendEffects.ParseChances("60, 50, 40"));
             Assert.Null(TranscendEffects.ParseChances("60, 50, 40, 30, 120"));
             Assert.Null(TranscendEffects.ParseChances(null));
+        }
+
+        [Fact]
+        public void Inlined_getters_are_rewritten_in_their_callers()
+        {
+            Load([new TranscendLink { ItemId = "auto", Third = 5 }, new TranscendLink { ItemId = "vest", Third = 5 }]);
+            var getter = typeof(EFT.InventoryLogic.Weapon).GetProperty("FireRate")!.GetMethod!;
+            var types = TranscendPatches.Nested(typeof(EFT.InventoryLogic.Weapon)).ToList();
+            Assert.Contains(typeof(EFT.InventoryLogic.Weapon.AutomaticFireOperation), types);
+            var callers = TranscendPatches.Callers(types, getter);
+            Assert.Contains(callers, m => m.IsConstructor && m.DeclaringType == typeof(EFT.InventoryLogic.Weapon.AutomaticFireOperation));
+            Assert.DoesNotContain(callers, m => m.Name == "Unrelated" || m.Name == "get_FireRate");
+
+            // `weapon.FireRate` → ShotFireRate(weapon, weapon.FireRate): +min(50 × 5, 600 × 30%) = +180.
+            var gun = new EFT.InventoryLogic.Weapon("auto", 600, TestFireMode.fullauto);
+            var rate = new[] { new CodeInstruction(OpCodes.Ldarg_0), new CodeInstruction(OpCodes.Callvirt, getter), new CodeInstruction(OpCodes.Ret) };
+            Assert.Equal(780, EmitInt(rate, "FireRateReads", gun));
+            Assert.Equal(300, EmitInt(rate, "FireRateReads", new EFT.InventoryLogic.Weapon("semi", 300, TestFireMode.single)));
+            Assert.Equal(600, gun.bFirerate);
+            var plate = new EFT.InventoryLogic.ArmorComponent(new("vest"), 4);
+            var armorClass = new[] { new CodeInstruction(OpCodes.Ldarg_0),
+                new CodeInstruction(OpCodes.Call, typeof(EFT.InventoryLogic.ArmorComponent).GetProperty("ArmorClass")!.GetMethod!), new CodeInstruction(OpCodes.Ret) };
+            Assert.Equal(6, EmitInt(armorClass, "ArmorClassReads", plate));
+            // Other getters with the same name (the template's class) are left alone.
+            var template = typeof(EFT.InventoryLogic.IArmorComponentTemplate).GetProperty("ArmorClass")!.GetMethod!;
+            Assert.Equal(3, Patched("ArmorClassReads", new[] { new CodeInstruction(OpCodes.Ldarg_0), new CodeInstruction(OpCodes.Callvirt, template),
+                new CodeInstruction(OpCodes.Ret) }).Count());
+            Assert.False(TranscendPatches.CallsToken(new byte[] { 0x28, 1, 2, 3 }, 0x03020100));
+            Assert.True(TranscendPatches.CallsToken(new byte[] { 0x00, 0x6F, 0, 1, 2, 3, 0x2A }, 0x03020100));
+        }
+
+        private static int EmitInt(IEnumerable<CodeInstruction> source, string transpiler, object owner)
+        {
+            var generated = new DynamicMethod("TranscendFixture", typeof(int), new[] { owner.GetType() }, typeof(TranscendPatches), true);
+            var il = generated.GetILGenerator();
+            foreach (var instruction in Patched(transpiler, source))
+            {
+                if (instruction.operand is MethodInfo method) il.Emit(instruction.opcode, method);
+                else il.Emit(instruction.opcode);
+            }
+            return (int)generated.Invoke(null, new[] { owner })!;
         }
 
         private static IEnumerable<CodeInstruction> Patched(string transpiler, IEnumerable<CodeInstruction> source) =>

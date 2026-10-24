@@ -37,13 +37,17 @@ internal static class TranscendPatches
             harmony.Patch(GameBridge.RequiredMethod(shot, "SubscribeToWeapon", 4), postfix: Hook(nameof(RecoilAngle)));
             harmony.Patch(GameBridge.RequiredMethod(shot, "CalculateRecoilParameters", 0), postfix: Hook(nameof(RecoilAngle)));
         });
-        Try("발사속도 / fire rate", () => harmony.Patch(AccessTools.PropertyGetter(weapon, "FireRate")
-            ?? throw new MissingMemberException(weapon.FullName, "FireRate"), postfix: Hook(nameof(FireRate))));
+        // Fire rate and armor class are one-line getters that the game's JIT inlines into its
+        // callers, so a postfix on the getter is skipped in the shot and hit code (only the
+        // inspection value moved in game). The callers' reads are rewritten instead.
+        Try("발사속도 / fire rate", () => WrapReads(harmony, Getter(weapon, "FireRate"),
+            Nested(Required("EFT.Player+FirearmController")), nameof(FireRateReads), "AutomaticFireOperation"));
         Try("과열 / overheat", () => harmony.Patch(GameBridge.RequiredMethod(weapon, "GetShotOverheat", 3), postfix: Hook(nameof(Overheat))));
         Try("고장 / malfunction", () => harmony.Patch(GameBridge.RequiredMethod(Required("EFT.Player+FirearmController"),
             "GetTotalMalfunctionChance", 7), postfix: Hook(nameof(Malfunction))));
-        Try("방어등급 / armor class", () => harmony.Patch(AccessTools.PropertyGetter(armor, "ArmorClass")
-            ?? throw new MissingMemberException(armor.FullName, "ArmorClass"), postfix: Hook(nameof(ArmorClass))));
+        Try("방어등급 / armor class", () => WrapReads(harmony, Getter(armor, "ArmorClass"),
+            Nested(armor, Required("EFT.InventoryLogic.ArmorHolderComponent"), Required("EFT.InventoryLogic.ArmorPlatesFormatter"),
+                Required("EFT.UI.MultiLineInfo")).Append(Required("EFT.Player")), nameof(ArmorClassReads), "SetPenetrationStatus", "ApplyDamage"));
         Try("둔탁상 / blunt damage", () => harmony.Patch(GameBridge.RequiredMethod(armor, "ApplyDamage", 7), transpiler: Hook(nameof(BluntRead))));
         Try("상인 판매가 / trader price", () =>
         {
@@ -73,11 +77,107 @@ internal static class TranscendPatches
         var realism = AccessTools.TypeByName("RealismMod.ApplyArmorDamagePatch");
         var prefix = realism == null ? null : AccessTools.Method(realism, "Prefix");
         if (prefix == null) return null;
-        try { harmony.Patch(prefix, transpiler: Hook(nameof(BluntRead))); installed = true; return null; }
+        try
+        {
+            harmony.Patch(prefix, transpiler: Hook(nameof(BluntRead)));
+            // Its class reads are inlined like the game's; a prefix without any is left as it is.
+            harmony.Patch(prefix, transpiler: Hook(nameof(ArmorClassReads)));
+            installed = true;
+            return null;
+        }
         catch (Exception ex) { return ex.GetBaseException().Message; }
     }
 
     private static Type Required(string name) => GameBridge.RuntimeType(name) ?? throw new TypeLoadException(name);
+
+    private static MethodInfo Getter(Type type, string name) =>
+        AccessTools.PropertyGetter(type, name) ?? throw new MissingMemberException(type.FullName, name);
+
+    // The types and their nested types (closures, fire operations). Bounded: nesting is finite
+    // and each type is visited once.
+    internal static IEnumerable<Type> Nested(params Type[] roots)
+    {
+        var seen = new HashSet<Type>();
+        var queue = new Queue<Type>(roots);
+        while (queue.Count > 0 && seen.Count < 4096)
+        {
+            var type = queue.Dequeue();
+            if (!seen.Add(type)) continue;
+            foreach (var nested in type.GetNestedTypes(BindingFlags.Public | BindingFlags.NonPublic)) queue.Enqueue(nested);
+        }
+        return seen;
+    }
+
+    // Methods declared on the types whose IL calls the getter: a call or callvirt opcode followed
+    // by the getter's token. Only same-module callers carry that token, which is all of them
+    // here (the getters and the callers are in Assembly-CSharp).
+    internal static List<MethodBase> Callers(IEnumerable<Type> types, MethodInfo getter)
+    {
+        var token = getter.MetadataToken;
+        var found = new List<MethodBase>();
+        const BindingFlags all = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly;
+        foreach (var type in types)
+        {
+            if (type.IsGenericTypeDefinition) continue;
+            foreach (var method in type.GetMethods(all).Cast<MethodBase>().Concat(type.GetConstructors(all)))
+            {
+                if (method.IsAbstract || method.ContainsGenericParameters || method.Module != getter.Module) continue;
+                byte[] il;
+                try { il = method.GetMethodBody()?.GetILAsByteArray(); }
+                catch (Exception) { continue; }
+                if (il != null && CallsToken(il, token)) found.Add(method);
+            }
+        }
+        return found;
+    }
+
+    internal static bool CallsToken(byte[] il, int token)
+    {
+        for (var i = 0; i + 4 < il.Length; i++)
+            if ((il[i] == 0x28 || il[i] == 0x6F) && BitConverter.ToInt32(il, i + 1) == token) return true;
+        return false;
+    }
+
+    // Rewrites every caller; the named callers (the shot and hit code) must be among them.
+    private static void WrapReads(Harmony harmony, MethodInfo getter, IEnumerable<Type> types, string transpiler, params string[] required)
+    {
+        var callers = Callers(types, getter);
+        foreach (var name in required)
+            if (!callers.Any(m => m.Name == name || m.DeclaringType?.Name == name))
+                throw new MissingMethodException("caller of " + getter.DeclaringType?.Name + "." + getter.Name, name);
+        var failed = new List<string>();
+        foreach (var caller in callers)
+        {
+            try { harmony.Patch(caller, transpiler: Hook(transpiler)); }
+            catch (Exception ex) { failed.Add(caller.DeclaringType?.Name + "." + caller.Name + ": " + ex.GetBaseException().Message); }
+        }
+        if (failed.Count > 0) throw new InvalidOperationException(string.Join("; ", failed));
+    }
+
+    // `x.Getter` → Read(x, x.Getter): the owner is kept on the stack with Dup, like BluntRead.
+    private static IEnumerable<CodeInstruction> WrapCalls(IEnumerable<CodeInstruction> instructions, string owner, string getter, string read)
+    {
+        foreach (var instruction in instructions)
+        {
+            if ((instruction.opcode == OpCodes.Call || instruction.opcode == OpCodes.Callvirt) && instruction.operand is MethodInfo method
+                && method.Name == getter && method.DeclaringType?.FullName == owner)
+            {
+                var duplicate = new CodeInstruction(OpCodes.Dup);
+                duplicate.MoveLabelsFrom(instruction);
+                duplicate.MoveBlocksFrom(instruction);
+                yield return duplicate;
+                yield return instruction;
+                yield return new CodeInstruction(OpCodes.Call, Method(read));
+            }
+            else yield return instruction;
+        }
+    }
+
+    private static IEnumerable<CodeInstruction> FireRateReads(IEnumerable<CodeInstruction> instructions) =>
+        WrapCalls(instructions, "EFT.InventoryLogic.Weapon", "get_FireRate", nameof(ShotFireRate));
+
+    private static IEnumerable<CodeInstruction> ArmorClassReads(IEnumerable<CodeInstruction> instructions) =>
+        WrapCalls(instructions, "EFT.InventoryLogic.ArmorComponent", "get_ArmorClass", nameof(ReadArmorClass));
     private static HarmonyMethod Hook(string name) => new HarmonyMethod(typeof(TranscendPatches), name);
     private static MethodInfo Method(string name) => typeof(TranscendPatches).GetMethod(name, BindingFlags.Static | BindingFlags.NonPublic);
 
@@ -169,6 +269,13 @@ internal static class TranscendPatches
         __result += FireRateBonus(__instance, __result);
     }
 
+    // Called from the rewritten game code (FireRateReads).
+    internal static int ShotFireRate(object weapon, int rate)
+    {
+        FireRate(weapon, ref rate);
+        return rate;
+    }
+
     private static void Overheat(object __instance, ref float __result)
     {
         if (!Registry.HasTranscend) return;
@@ -218,6 +325,13 @@ internal static class TranscendPatches
         if (level > 0) __result = TranscendEffects.ArmorClass(level, __result);
     }
 
+    // Called from the rewritten game code (ArmorClassReads).
+    internal static int ReadArmorClass(object component, int value)
+    {
+        ArmorClass(component, ref value);
+        return value;
+    }
+
     // Replaces the template blunt throughput read inside the armor damage code.
     internal static float Blunt(object component, float value)
     {
@@ -227,7 +341,7 @@ internal static class TranscendPatches
         return value * (float)(1 - TranscendEffects.Blunt(level, TemplateClass(GameBridge.Get(component, "Template")), Tuning) / 100);
     }
 
-    // The template's own class (the patched ArmorClass getter already adds the bonus). Game
+    // The template's own class (the rewritten ArmorClass reads already add the bonus). Game
     // templates implement IArmorComponentTemplate.ArmorClass explicitly over an `armorClass`
     // field, so a plain name lookup finds nothing: read it through the interface.
     private static PropertyInfo templateClass;

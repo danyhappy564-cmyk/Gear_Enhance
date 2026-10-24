@@ -212,9 +212,9 @@
 |---|---|---|
 | 뒤로 차는 힘 | `ShotEffector.OnWeaponParametersChanged` 뒤 → `CurrentRecoilEffect.BasicPlayerRecoilPositionStrength` × (1−감소) | 반동 제어 강화·스타와 합쳐 80% 상한(`HorizontalWithCap`). 무기 교체·부착물 변경 때만 |
 | 좌우 튐 각도 | `ShotEffector.SubscribeToWeapon`·`CalculateRecoilParameters` 뒤 → `BasicPlayerRecoilDegreeRange` 가운데 기준 축소, `BasicRecoilRadian` 다시 계산 | 9.1의 `CalculateBaseRecoilParameters` 대신 그것을 부르는 두 곳(무기를 바로 얻을 수 있음). 동기화 후 `RefreshGameplay`가 다시 부름 |
-| 발사속도 | `Weapon.FireRate` getter + 반올림 정수 | 연사·점사(`fullauto`/`burst`) 총만 |
+| 발사속도 | ~~`Weapon.FireRate` getter~~ → **13절**: 그 값을 읽는 게임 코드(`AutomaticFireOperation` 생성자·`Update` 등 4곳)를 치환, 반올림 정수 | 연사·점사(`fullauto`/`burst`) 총만 |
 | 고장·과열 | `FirearmController.GetTotalMalfunctionChance`(합계와 출처 4개 같이), `Weapon.GetShotOverheat` | 반자동·볼트액션만 |
-| 방어등급 | `ArmorComponent.ArmorClass` getter, 6 상한(6 이상은 그대로) | 본체 + 등록·삽입 부품 |
+| 방어등급 | ~~`ArmorComponent.ArmorClass` getter~~ → **13절**: 읽는 곳(관통 판정·피해·화면 10곳) 치환, 6 상한(6 이상은 그대로) | 본체 + 등록·삽입 부품 |
 | 둔탁상 | `ArmorComponent.ApplyDamage`의 `Template.BluntThroughput` 읽기 1곳을 코드 치환 | **Realism 탄도**: `RealismMod.ApplyArmorDamagePatch.Prefix`의 같은 읽기도 치환(`Start()`에서 찾음, 없으면 건너뜀) |
 | 상인 판매가 | `PriceCalculator.CalculateBasePriceForSingleItem`·`CalculateBuyoutBasePriceForSingleItem`의 `RepairableComponent.MaxDurability/Durability` 읽기를 "부여량 뺀 값"으로 | 플리 수수료(클라 계산)도 같은 함수라 함께 낮아짐 |
 | 검사 화면 | `Weapon` 생성자 뒤 `Recoil back`·`FireRate` 속성의 표시 함수를 감쌈 | 보일 때 기록을 읽음 |
@@ -239,3 +239,13 @@
 - 자동 검사: 서버 1개(+기존 1개에 단언 추가), 클라 `client-tests/TranscendUiTests.cs` 4개.
 - 인게임 미확인: 전부(창 배치·글자 잘림·버튼 동작·표식 색).
 
+## 13. 5단계 인게임 확인 1차 (2026-10-24 20:40)
+
+- **사용자 제보**: 3성 초월 총의 검사 화면 rpm은 올랐는데 실제 연사 속도는 그대로.
+- **원인**: `Weapon.FireRate`(`=> Template.bFirerate`)와 `ArmorComponent.ArmorClass`(`=> Template.ArmorClass`)는 IL 12바이트짜리 한 줄 getter다. 게임(Mono) JIT는 20바이트 미만 메서드를 부르는 쪽 코드 안에 복사해 넣으므로(인라인), Harmony가 getter에 붙인 postfix를 연사·관통 코드가 건너뛴다. 검사 화면 숫자는 별도 표시 함수를 감싸서 올라갔다. 11절에 "인라인 여부 미확인"으로 적어 두고 대비하지 않은 것이 원인.
+- **수정**: getter postfix를 없애고, getter를 부르는 게임 메서드를 시작 때 찾아(IL에서 `call/callvirt` + getter 토큰) 각각 `x.Getter` → `Read(x, x.Getter)`로 치환. 부르는 쪽 코드를 바꾸므로 인라인과 상관없다.
+  - 발사속도 4곳: `AutomaticFireOperation` 생성자·`Update`(연사 간격), `GetTotalMalfunctionChance`, `CalculateBaseAimingVolume`(비율만 써서 결과 같음).
+  - 방어등급 10곳: `SetPenetrationStatus`(관통 판정)·`ApplyDamage`(피해)·`Player.TryGetArmorResistData`·`ToString`·판 툴팁·`MultiLineInfo`·검사 화면 표시 함수 4개. Realism `ApplyArmorDamagePatch.Prefix`에도 같은 치환.
+  - 꼭 있어야 하는 곳(`AutomaticFireOperation`, `SetPenetrationStatus`·`ApplyDamage`)을 못 찾으면 그 효과만 꺼지고 로그에 남는다.
+- 검사: 실제 Assembly-CSharp에서 찾는 곳 목록 확인(위 14곳, Player 전체 검색 3ms), getter가 20바이트 미만인지 서버 검사로 고정, 치환 결과 모의 실행(600rpm 5단계 → 780).
+- 인게임 미확인: 연사 체감, 방어등급 실제 관통, 등급 표시.
