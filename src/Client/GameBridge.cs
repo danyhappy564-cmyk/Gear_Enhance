@@ -25,6 +25,25 @@ internal static class GameBridge
     internal static object Get(object instance, string name)
     {
         if (instance == null) return null;
+        var member = Member(instance, name);
+        var target = instance is Type ? null : instance;
+        return member is PropertyInfo property ? property.GetValue(target)
+            : member is FieldInfo field ? field.GetValue(target) : null;
+    }
+
+    // Same lookup as Get. Returns false when the member is missing or read-only.
+    internal static bool Set(object instance, string name, object value)
+    {
+        if (instance == null) return false;
+        var member = Member(instance, name);
+        var target = instance is Type ? null : instance;
+        if (member is FieldInfo field && !field.IsInitOnly) { field.SetValue(target, value); return true; }
+        if (member is PropertyInfo property && property.GetSetMethod(true) != null) { property.SetValue(target, value); return true; }
+        return false;
+    }
+
+    private static MemberInfo Member(object instance, string name)
+    {
         var type = instance as Type ?? instance.GetType();
         if (!members.TryGetValue((type, name), out var member))
         {
@@ -41,9 +60,7 @@ internal static class GameBridge
             }
             if (member != null) members.TryAdd((type, name), member);
         }
-        var target = instance is Type ? null : instance;
-        return member is PropertyInfo property ? property.GetValue(target)
-            : member is FieldInfo field ? field.GetValue(target) : null;
+        return member;
     }
 
     internal static MethodInfo RequiredMethod(Type type, string name, int count) =>
@@ -113,6 +130,8 @@ internal static class GameBridge
             RequiredMethod(hands.GetType(), "WeaponModified", 0).Invoke(hands, null);
         var shot = Get(Get(player, "ProceduralWeaponAnimation"), "Shootingg");
         if (shot != null) RequiredMethod(shot.GetType(), "OnWeaponParametersChanged", 0).Invoke(shot, null);
+        // Left/right kick range (1.3.0 transcendence) is only rebuilt by this call.
+        if (shot != null && Get(shot, "_weapon") != null) RequiredMethod(shot.GetType(), "CalculateRecoilParameters", 0).Invoke(shot, null);
     }
 
     internal static void AddInteraction(object interactions, Action action)

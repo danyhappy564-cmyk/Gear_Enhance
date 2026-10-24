@@ -21,7 +21,8 @@ public sealed class LanguageTests : IDisposable
     [Fact]
     public void Every_f12_section_key_and_description_has_an_english_pair()
     {
-        var awake = Source("Plugin.cs");
+        // 1.3.0 transcendence entries live in their own partial file.
+        var awake = Source("Plugin.cs") + Source("Plugin.Transcend.cs");
         var binds = Regex.Matches(awake, @"Bind(?:General|Developer)\((?<args>(?:[^;])*?)\);", RegexOptions.Singleline);
         Assert.True(binds.Count >= 25, binds.Count.ToString());
         var missing = new List<string>();
@@ -37,7 +38,7 @@ public sealed class LanguageTests : IDisposable
             foreach (var key in new[] { name + " / 단계" + unit, name + " 상한" + unit })
                 if (!ConfigText.Has(key)) missing.Add(key);
         }
-        foreach (var section in new[] { "5. 무기 효과", "6. 방어구 효과" }) if (!ConfigText.Has(section)) missing.Add(section);
+        foreach (var section in new[] { "5. 무기 효과", "6. 방어구 효과", "13. 초월 강화" }) if (!ConfigText.Has(section)) missing.Add(section);
         Assert.Empty(missing);
     }
 

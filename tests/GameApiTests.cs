@@ -145,6 +145,110 @@ public sealed class GameApiTests
             Assert.NotEqual("EFT.InventoryLogic.Slot", type.FullName);
     }
 
+    // 1.3.0 transcendence hooks (TranscendPatches): names, argument counts and the IL the
+    // transpilers rewrite, against the real game. Inlining is not checked here (in game only).
+    [GameAssemblyFact]
+    public void Transcend_recoil_hooks_rebuild_the_backward_kick_and_angle_range()
+    {
+        using var game = Game();
+        var shot = game.MainModule.GetType("ShotEffector");
+        AssertCalls(shot.Methods.Single(m => m.Name == "OnWeaponParametersChanged" && m.Parameters.Count == 0), "RecalculateRecoilParamsOnChangeWeapon");
+        AssertCalls(shot.Methods.Single(m => m.Name == "SubscribeToWeapon" && m.Parameters.Count == 4), "CalculateBaseRecoilParameters");
+        AssertCalls(shot.Methods.Single(m => m.Name == "CalculateRecoilParameters" && m.Parameters.Count == 0), "CalculateBaseRecoilParameters");
+        Assert.Contains(shot.Fields, f => f.Name == "_weapon");
+        Assert.Contains(shot.Properties, p => p.Name == "CurrentRecoilEffect");
+        Assert.Contains(game.MainModule.GetType("EFT.InventoryLogic.IWeapon").Properties, p => p.Name == "Item");
+        // Weapon implements it explicitly, so TranscendPatches.ShotWeapon falls back to the weapon itself.
+        Assert.DoesNotContain(game.MainModule.GetType("EFT.InventoryLogic.Weapon").Properties, p => p.Name == "Item");
+        Assert.Contains(game.MainModule.GetType("EFT.InventoryLogic.Weapon").Properties, p => p.Name == "EFT.InventoryLogic.IWeapon.Item");
+        // FirearmController.Item (malfunction hook) is a plain property.
+        Assert.Contains(game.MainModule.GetType("EFT.Player").NestedTypes.Single(t => t.Name == "FirearmController").Properties, p => p.Name == "Item");
+        foreach (var name in new[] { "EFT.Animations.NewRecoil.NewRecoilShotEffect", "EFT.Animations.OldRecoilShotEffect" })
+        {
+            var effect = game.MainModule.GetType(name);
+            foreach (var field in new[] { "BasicPlayerRecoilPositionStrength", "BasicPlayerRecoilDegreeRange", "BasicRecoilRadian" })
+                Assert.Equal("UnityEngine.Vector2", effect.Fields.Single(f => f.Name == field).FieldType.FullName);
+        }
+        // The backward kick is written only on weapon change, from the template force.
+        var recalc = game.MainModule.GetType("EFT.Animations.NewRecoil.NewRecoilShotEffect").Methods.Single(m => m.Name == "RecalculateRecoilParamsOnChangeWeapon");
+        Assert.Contains(recalc.Body.Instructions, i => i.OpCode.Code == Mono.Cecil.Cil.Code.Stfld && i.Operand is FieldReference f && f.Name == "BasicPlayerRecoilPositionStrength");
+    }
+
+    [GameAssemblyFact]
+    public void Transcend_weapon_hooks_fire_rate_overheat_malfunction_and_display_exist()
+    {
+        using var game = Game();
+        var weapon = game.MainModule.GetType("EFT.InventoryLogic.Weapon");
+        Assert.Equal("System.Int32", weapon.Properties.Single(p => p.Name == "FireRate").GetMethod.ReturnType.FullName);
+        Assert.Contains(weapon.Properties, p => p.Name == "WeapFireType");
+        var modes = weapon.NestedTypes.Single(t => t.Name == "EFireMode");
+        Assert.Contains(modes.Fields, f => f.Name == "fullauto");
+        Assert.Contains(modes.Fields, f => f.Name == "burst");
+        var overheat = Assert.Single(weapon.Methods, m => m.Name == "GetShotOverheat" && m.Parameters.Count == 3);
+        Assert.Equal("System.Single", overheat.ReturnType.FullName);
+        var firearm = game.MainModule.GetType("EFT.Player").NestedTypes.Single(t => t.Name == "FirearmController");
+        var malfunction = Assert.Single(firearm.Methods, m => m.Name == "GetTotalMalfunctionChance" && m.Parameters.Count == 7);
+        Assert.Equal("System.Single", malfunction.ReturnType.FullName);
+        Assert.Equal(new[] { "ammoToFire", "overheat", "durabilityMalfChance", "magMalfChance", "ammoMalfChance", "overheatMalfChance", "weaponDurability" },
+            malfunction.Parameters.Select(p => p.Name).ToArray());
+        Assert.Equal(new[] { "System.Double&", "System.Single&", "System.Single&", "System.Single&" },
+            malfunction.Parameters.Skip(2).Take(4).Select(p => p.ParameterType.FullName).ToArray());
+        // Shots read the getter (automatic fire interval) rather than the template field.
+        Assert.Contains(game.MainModule.Types.SelectMany(t => t.NestedTypes.Prepend(t)).SelectMany(t => t.Methods)
+            .Where(m => m.HasBody && m.DeclaringType.FullName.Contains("FirearmController")),
+            m => m.Body.Instructions.Any(i => i.Operand is MethodReference r && r.Name == "get_FireRate" && r.DeclaringType.Name == "Weapon"));
+        var ctor = Assert.Single(weapon.Methods, m => m.IsConstructor && !m.IsStatic && m.Parameters.Count == 2 && m.Parameters[0].ParameterType.FullName == "System.String");
+        Assert.Contains(ctor.Body.Instructions, i => i.Operand is MethodReference r && r.DeclaringType.Name == "RangedItemAttribute" && r.Name == ".ctor");
+        var ids = game.MainModule.GetType("EFT.InventoryLogic.EItemAttributeId");
+        Assert.Contains(ids.Fields, f => f.Name == "RecoilBack");
+        Assert.Contains(ids.Fields, f => f.Name == "FireRate");
+        var attribute = game.MainModule.GetType("EFT.InventoryLogic.ItemAttribute");
+        foreach (var field in new[] { "Id", "Base", "StringValue" }) Assert.Contains(attribute.Fields, f => f.Name == field);
+        Assert.Contains(game.MainModule.GetType("EFT.InventoryLogic.RangedItemAttribute").Fields, f => f.Name == "Delta");
+        Assert.Contains(game.MainModule.GetType("EFT.InventoryLogic.Item").Fields, f => f.Name == "Attributes");
+    }
+
+    [GameAssemblyFact]
+    public void Transcend_armor_hooks_read_one_blunt_value_and_the_class_getter()
+    {
+        using var game = Game();
+        var armor = game.MainModule.GetType("EFT.InventoryLogic.ArmorComponent");
+        Assert.Equal("System.Int32", armor.Properties.Single(p => p.Name == "ArmorClass").GetMethod.ReturnType.FullName);
+        var damage = Assert.Single(armor.Methods, m => m.Name == "ApplyDamage" && m.Parameters.Count == 7);
+        AssertCalls(damage, "get_ArmorClass");
+        var code = damage.Body.Instructions.ToList();
+        static bool Reads(Mono.Cecil.Cil.Instruction i, string name) => i.Operand is FieldReference f && f.Name == name && i.OpCode.Code == Mono.Cecil.Cil.Code.Ldfld
+            || i.Operand is MethodReference m && m.Name == "get_" + name;
+        Assert.Equal(1, Enumerable.Range(0, code.Count - 1).Count(n => Reads(code[n], "Template") && Reads(code[n + 1], "BluntThroughput")));
+        Assert.Contains(armor.Fields.Concat(armor.BaseType.Resolve().Fields), f => f.Name == "Template");
+        // Templates implement the class explicitly; TranscendPatches.TemplateClass reads it via the interface.
+        Assert.Contains(game.MainModule.GetType("EFT.InventoryLogic.IArmorComponentTemplate").Properties, p => p.Name == "ArmorClass");
+        foreach (var name in new[] { "EFT.InventoryLogic.VestTemplate", "EFT.InventoryLogic.ArmoredEquipmentTemplate" })
+        {
+            var template = game.MainModule.GetType(name);
+            Assert.Contains(template.Properties, p => p.Name == "EFT.InventoryLogic.IArmorComponentTemplate.ArmorClass");
+            Assert.Contains(template.Fields, f => f.Name == "armorClass");
+        }
+    }
+
+    [GameAssemblyFact]
+    public void Transcend_trader_price_reads_repairable_fields()
+    {
+        using var game = Game();
+        var price = game.MainModule.GetType("EFT.Trading.PriceCalculator");
+        var repairable = game.MainModule.GetType("EFT.InventoryLogic.RepairableComponent");
+        Assert.Equal("System.Single", repairable.Fields.Single(f => f.Name == "MaxDurability").FieldType.FullName);
+        Assert.Equal("System.Single", repairable.Fields.Single(f => f.Name == "Durability").FieldType.FullName);
+        Assert.Contains(game.MainModule.GetType("EFT.InventoryLogic.ItemComponent").Fields, f => f.Name == "Item");
+        foreach (var (name, count) in new[] { ("CalculateBasePriceForSingleItem", 3), ("CalculateBuyoutBasePriceForSingleItem", 4) })
+        {
+            var method = Assert.Single(price.Methods, m => m.Name == name && m.Parameters.Count == count);
+            foreach (var field in new[] { "MaxDurability", "Durability" })
+                Assert.Contains(method.Body.Instructions, i => i.OpCode.Code == Mono.Cecil.Cil.Code.Ldfld && i.Operand is FieldReference f
+                    && f.Name == field && f.DeclaringType.FullName == "EFT.InventoryLogic.RepairableComponent");
+        }
+    }
+
     private static void AssertCalls(MethodDefinition caller, string target) =>
         Assert.Contains(caller.Body.Instructions, i => i.Operand is MethodReference method && method.Name == target);
 }

@@ -1,6 +1,7 @@
 #nullable enable
 using System;
 using System.Collections.Generic;
+using System.Threading;
 
 namespace GearEnhance;
 
@@ -12,13 +13,36 @@ public sealed class EffectRegistry
     private volatile EffectTuning tuning = new EffectTuning();
     // Armor id → parts registered to it (1.2.0). Only these inherit while inserted.
     private volatile Dictionary<string, HashSet<string>> inserts = new Dictionary<string, HashSet<string>>();
+    // 1.3.0: transcendence levels per gear and max durability added per armor item.
+    private volatile Dictionary<string, (int Second, int Third)> transcend = new Dictionary<string, (int, int)>();
+    private volatile Dictionary<string, double> grants = new Dictionary<string, double>();
+    private volatile TranscendTuning transcendTuning = new TranscendTuning();
+    private int version;
     public string ProfileId { get; private set; } = "";
+    // Bumped on every change; per-weapon caches compare it instead of re-reading ids.
+    public int Version => Volatile.Read(ref version);
+    // Hot hooks leave at once while nothing is transcended or granted.
+    public bool HasTranscend => transcend.Count > 0;
+    public bool HasGrants => grants.Count > 0;
+    public TranscendTuning TranscendTuning => transcendTuning;
     public void Clear()
     {
         records = new Dictionary<string, Dictionary<EnhancePath, EnhanceRecord>>();
         inserts = new Dictionary<string, HashSet<string>>();
+        transcend = new Dictionary<string, (int, int)>();
+        grants = new Dictionary<string, double>();
         ProfileId = "";
+        Interlocked.Increment(ref version);
     }
+    public void ConfigureTranscend(TranscendTuning value)
+    {
+        value.Validate();
+        transcendTuning = value;
+        Interlocked.Increment(ref version);
+    }
+    public int TranscendLevel(string id, TranscendTrack track) => !transcend.TryGetValue(id, out var levels) ? 0
+        : track == TranscendTrack.Third ? levels.Third : track == TranscendTrack.Second ? levels.Second : 0;
+    public double Grant(string id) => grants.TryGetValue(id, out var amount) ? amount : 0;
     public bool Registered(string armorId, string partId) =>
         inserts.TryGetValue(armorId, out var parts) && parts.Contains(partId);
     public void Configure(EffectTuning value) { value.Validate(); tuning = value; }
@@ -38,7 +62,15 @@ public sealed class EffectRegistry
         foreach (var link in snapshot.Inserts ?? Array.Empty<InsertLink>())
             if (!string.IsNullOrEmpty(link?.ArmorId))
                 links[link!.ArmorId] = new HashSet<string>(link.PartIds ?? Array.Empty<string>(), StringComparer.Ordinal);
-        records = next; inserts = links; ProfileId = expectedProfile;
+        var levels = new Dictionary<string, (int, int)>(StringComparer.Ordinal);
+        foreach (var link in snapshot.Transcend ?? Array.Empty<TranscendLink>())
+            if (!string.IsNullOrEmpty(link?.ItemId) && (link!.Second > 0 || link.Third > 0))
+                levels[link.ItemId] = (TranscendRules.Clamp(link.Second), TranscendRules.Clamp(link.Third));
+        var added = new Dictionary<string, double>(StringComparer.Ordinal);
+        foreach (var link in snapshot.Durability ?? Array.Empty<DurabilityLink>())
+            if (!string.IsNullOrEmpty(link?.ItemId) && link!.Amount > 0 && !double.IsInfinity(link.Amount)) added[link.ItemId] = link.Amount;
+        records = next; inserts = links; transcend = levels; grants = added; ProfileId = expectedProfile;
+        Interlocked.Increment(ref version);
     }
     public EnhanceRecord? Find(string id, EnhancePath path) =>
         records.TryGetValue(id, out var tracks) && tracks.TryGetValue(path, out var item) ? item : null;
@@ -79,6 +111,21 @@ public sealed class EffectRegistry
     public void ApplyReceipt(EnhanceReceipt receipt, string expectedProfile)
     {
         if (string.IsNullOrEmpty(expectedProfile)) throw Loc.Invalid("PMC 프로필이 없습니다.", "No PMC profile.");
+        // Insurance and registration never change levels. A transcendence receipt carries
+        // the track's level in Level and names some enhancement Path: never a track level.
+        if (receipt.Action == EnhanceAction.Insure || receipt.Action == EnhanceAction.RegisterInserts) return;
+        if (receipt.Action == EnhanceAction.Transcend)
+        {
+            if (ProfileId != expectedProfile || !TranscendRules.Valid(receipt.Transcend)) return;
+            var levels = new Dictionary<string, (int Second, int Third)>(transcend, StringComparer.Ordinal);
+            levels.TryGetValue(receipt.ItemId, out var current);
+            var level = TranscendRules.Clamp(receipt.Level);
+            current = receipt.Transcend == TranscendTrack.Third ? (current.Second, level) : (level, current.Third);
+            if (current.Second == 0 && current.Third == 0) levels.Remove(receipt.ItemId); else levels[receipt.ItemId] = current;
+            transcend = levels;
+            Interlocked.Increment(ref version);
+            return;
+        }
         var next = ProfileId == expectedProfile
             ? new Dictionary<string, Dictionary<EnhancePath, EnhanceRecord>>(records, StringComparer.Ordinal)
             : new Dictionary<string, Dictionary<EnhancePath, EnhanceRecord>>(StringComparer.Ordinal);
@@ -109,6 +156,7 @@ public sealed class EffectRegistry
         }
         else if (receipt.FailureMode == FailureMode.Destroy) next.Remove(receipt.ItemId);
         records = next; ProfileId = expectedProfile;
+        Interlocked.Increment(ref version);
     }
     public double Amount(string id, EnhancePath path)
     {

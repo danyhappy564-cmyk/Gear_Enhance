@@ -199,6 +199,35 @@ public static class TranscendEffects
     public static double Overheat(int level, TranscendTuning tuning) => Math.Min(100, TranscendRules.Clamp(level) * tuning.OverheatPerLevel);
     public static int ClassBonus(int level) => level >= 5 ? 2 : level >= 3 ? 1 : 0;
 
+    // Backward kick reduction to apply on top of the enhancement recoil reduction, so the
+    // two together never exceed the 80% limit (1 − kept × (1 − this) ≤ 0.8).
+    public static double HorizontalWithCap(double existingPercent, double transcendPercent)
+    {
+        var kept = 1 - Math.Max(0, Math.Min(80, existingPercent)) / 100;
+        var limit = kept <= 0.2 ? 0 : (1 - 0.2 / kept) * 100;
+        return Math.Max(0, Math.Min(Math.Min(80, transcendPercent), limit));
+    }
+
+    // Left/right kick range narrowed around its centre.
+    public static (float Low, float High) Narrow(float low, float high, double percent)
+    {
+        var centre = (low + high) / 2;
+        var half = (high - low) / 2 * (float)(1 - Math.Max(0, Math.Min(80, percent)) / 100);
+        return (centre - half, centre + half);
+    }
+
+    // F12 text "60, 50, 40, 30, 20" → five chances, or null when it is not that.
+    public static double[]? ParseChances(string? text)
+    {
+        var parts = (text ?? "").Split(new[] { ',', '/', ' ' }, StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length != TranscendRules.MaxLevel) return null;
+        var values = new double[parts.Length];
+        for (var i = 0; i < parts.Length; i++)
+            if (!double.TryParse(parts[i], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out values[i])
+                || double.IsNaN(values[i]) || values[i] < 0 || values[i] > 100) return null;
+        return values;
+    }
+
     // A part's class with the bonus, never above the cap; parts at or above it keep theirs.
     public static int ArmorClass(int level, int partClass) =>
         partClass <= 0 || partClass >= ClassCap ? partClass : Math.Min(ClassCap, partClass + ClassBonus(level));

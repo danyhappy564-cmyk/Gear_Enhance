@@ -14,6 +14,7 @@ public sealed partial class Plugin : BaseUnityPlugin
 {
     internal static Plugin Instance;
     private Harmony harmony;
+    private bool patched;
     private ConfigEntry<bool> menuEnabled, soundsEnabled, providedSounds, detailedLogging;
     private ConfigEntry<float> soundVolume;
     private ConfigEntry<string> developerPassword;
@@ -119,6 +120,7 @@ public sealed partial class Plugin : BaseUnityPlugin
         basicFee = BindDeveloper("12. 강화 보험", "일반 보험료 (강화 가치 대비 %)", 5f, new ConfigDescription("강화 가치 = 지금 단계·스타까지 강화하는 데 드는 기본 비용 합계(방어구는 등록한 방탄판 가격 포함). 최소 비용 이상.", new AcceptableValueRange<float>(0, 1000)));
         advancedFee = BindDeveloper("12. 강화 보험", "고급 보험료 (강화 가치 대비 %)", 15f, new ConfigDescription("강화 가치 = 지금 단계·스타까지 강화하는 데 드는 기본 비용 합계(방어구는 등록한 방탄판 가격 포함). 최소 비용 이상.", new AcceptableValueRange<float>(0, 1000)));
         premiumFee = BindDeveloper("12. 강화 보험", "프리미엄 보험료 (강화 가치 대비 %)", 30f, new ConfigDescription("강화 가치 = 지금 단계·스타까지 강화하는 데 드는 기본 비용 합계(방어구는 등록한 방탄판 가격 포함). 최소 비용 이상.", new AcceptableValueRange<float>(0, 1000)));
+        BindTranscend();
         // Migrate the previous shipped default once; preserve custom developer odds.
         var balanceVersion = Config.Bind("0. 내부", "밸런스 설정 버전", 0,
             new ConfigDescription("내부 설정 이전용", null, new ConfigurationManagerAttributes { Browsable = false }));
@@ -136,6 +138,7 @@ public sealed partial class Plugin : BaseUnityPlugin
         PrepareFeedback();
         LogDetailed($"강화 효과음 설정: 사용={soundsEnabled.Value}, 전용={providedSounds.Value}, 음량={soundVolume.Value:0.##}%, 준비={feedbackAudio != null}, 충전={attemptDuration:0.000}초");
         StatPatches.Registry.Configure(Tuning());
+        ConfigureTranscend();
         Config.SettingChanged += (_, args) => main.Enqueue(() =>
         {
             if (ReferenceEquals(args.ChangedSetting, detailedLogging))
@@ -166,7 +169,7 @@ public sealed partial class Plugin : BaseUnityPlugin
                 return;
             }
             generation++; quote = preview = null; destructionConfirmed = false;
-            try { StatPatches.Registry.Configure(Tuning()); RefreshGameplay(); }
+            try { StatPatches.Registry.Configure(Tuning()); ConfigureTranscend(); RefreshGameplay(); }
             catch (Exception ex) { Logger.LogWarning(ex); }
             if (visible && !busy) message = SettingsChanged;
         });
@@ -177,9 +180,13 @@ public sealed partial class Plugin : BaseUnityPlugin
             GameBridge.RuntimeType("EFT.InGameStatus");
             GameBridge.RuntimeType("EFT.InventoryLogic.BackEndInventoryController");
             StatPatches.Install(harmony);
+            // Each transcendence effect stands alone: a missing hook disables only that effect.
+            foreach (var failed in TranscendPatches.Install(harmony))
+                Logger.LogError("Gear Enhance: 초월 효과 연결 실패(나머지 기능은 정상) / transcendence hook failed: " + failed);
             ItemMarkers.Install(harmony);
             var target = GameBridge.RequiredMethod(GameBridge.RuntimeType("EFT.UI.ItemUiContext"), "GetItemContextInteractions", 2);
             harmony.Patch(target, postfix: new HarmonyMethod(typeof(Plugin), nameof(MenuPostfix)));
+            patched = true;
             Logger.LogInfo("Gear Enhance " + EnhanceProtocol.ModVersion + ": 독립 강화·장비 표식·효과음 로드 · 개발자 옵션 "
                 + (developerUnlocked ? "열림" : "잠김(기본 밸런스)"));
         }
@@ -188,6 +195,15 @@ public sealed partial class Plugin : BaseUnityPlugin
             harmony?.UnpatchSelf();
             Logger.LogError("SPT API 연결 실패로 Gear Enhance 패치를 취소했습니다: " + ex);
         }
+    }
+
+    // After every plugin's Awake, so mods loaded after this one can be found.
+    private void Start()
+    {
+        if (!patched) return;
+        var error = TranscendPatches.InstallRealism(harmony, out var installed);
+        if (error != null) Logger.LogError("Gear Enhance: Realism 탄도 둔탁상 연결 실패(초월 둔탁상 감소가 Realism 탄도에서는 빠짐) / Realism blunt hook failed: " + error);
+        else if (installed) Logger.LogInfo("Gear Enhance: Realism 탄도 둔탁상에 초월 효과 연결 / transcendence blunt reduction linked to Realism ballistics");
     }
 
     private static string SettingsChanged => Loc.L("설정이 바뀌었습니다. 견적을 다시 불러와 주세요.", "Settings changed. Reload the quote.");
@@ -253,8 +269,14 @@ public sealed partial class Plugin : BaseUnityPlugin
         MinimumCost = minimum.Value, FailureMode = failure.Value, Effects = Tuning(),
         BasicInsuranceReturnPercent = basicReturn.Value, AdvancedInsuranceReturnPercent = advancedReturn.Value,
         PremiumInsuranceReturnPercent = premiumReturn.Value, BasicInsuranceFeePercent = basicFee.Value,
-        AdvancedInsuranceFeePercent = advancedFee.Value, PremiumInsuranceFeePercent = premiumFee.Value
+        AdvancedInsuranceFeePercent = advancedFee.Value, PremiumInsuranceFeePercent = premiumFee.Value,
+        Transcend = TranscendTuning()
     };
+    private void ConfigureTranscend()
+    {
+        try { StatPatches.Registry.ConfigureTranscend(TranscendTuning()); }
+        catch (System.Exception ex) { Logger.LogWarning("Gear Enhance: F12 초월 설정을 적용하지 못해 이전 값을 씁니다: " + ex.Message); }
+    }
 
     private static void MenuPostfix(object __instance, object itemContext, object __result)
     {

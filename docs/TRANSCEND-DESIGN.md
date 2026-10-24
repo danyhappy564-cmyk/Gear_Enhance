@@ -203,3 +203,24 @@
 | 비트코인 상승 | +5%p, BTC 3 + 100만 ₽, 천장과 합산 | 3절 |
 
 남은 일(3단계 이후): 클라이언트 효과 패치, 상인 판매가 보정, F12 `13. 초월 강화`(지금은 서버 기본값만 쓰임), 초월 창·표식. 플리 등록 수수료는 SPT가 최대 내구도 비율로 매겨 조금 비싸짐(플레이어 손해 쪽이라 그대로 둠).
+
+## 11. 3단계 클라이언트 효과 결과 (2026-10-24)
+
+새 파일 `src/Client/TranscendPatches.cs`(효과 패치), `src/Client/Plugin.Transcend.cs`(F12 `13. 초월 강화` 19개, 비밀번호 잠금). 자동 검사: 클라 `client-tests/TranscendHooksTests.cs` 10개, 게임 DLL 대조 `tests/GameApiTests.cs` 4개 추가.
+
+| 효과 | 실제로 건 곳 | 비고 |
+|---|---|---|
+| 뒤로 차는 힘 | `ShotEffector.OnWeaponParametersChanged` 뒤 → `CurrentRecoilEffect.BasicPlayerRecoilPositionStrength` × (1−감소) | 반동 제어 강화·스타와 합쳐 80% 상한(`HorizontalWithCap`). 무기 교체·부착물 변경 때만 |
+| 좌우 튐 각도 | `ShotEffector.SubscribeToWeapon`·`CalculateRecoilParameters` 뒤 → `BasicPlayerRecoilDegreeRange` 가운데 기준 축소, `BasicRecoilRadian` 다시 계산 | 9.1의 `CalculateBaseRecoilParameters` 대신 그것을 부르는 두 곳(무기를 바로 얻을 수 있음). 동기화 후 `RefreshGameplay`가 다시 부름 |
+| 발사속도 | `Weapon.FireRate` getter + 반올림 정수 | 연사·점사(`fullauto`/`burst`) 총만 |
+| 고장·과열 | `FirearmController.GetTotalMalfunctionChance`(합계와 출처 4개 같이), `Weapon.GetShotOverheat` | 반자동·볼트액션만 |
+| 방어등급 | `ArmorComponent.ArmorClass` getter, 6 상한(6 이상은 그대로) | 본체 + 등록·삽입 부품 |
+| 둔탁상 | `ArmorComponent.ApplyDamage`의 `Template.BluntThroughput` 읽기 1곳을 코드 치환 | **Realism 탄도**: `RealismMod.ApplyArmorDamagePatch.Prefix`의 같은 읽기도 치환(`Start()`에서 찾음, 없으면 건너뜀) |
+| 상인 판매가 | `PriceCalculator.CalculateBasePriceForSingleItem`·`CalculateBuyoutBasePriceForSingleItem`의 `RepairableComponent.MaxDurability/Durability` 읽기를 "부여량 뺀 값"으로 | 플리 수수료(클라 계산)도 같은 함수라 함께 낮아짐 |
+| 검사 화면 | `Weapon` 생성자 뒤 `Recoil back`·`FireRate` 속성의 표시 함수를 감쌈 | 보일 때 기록을 읽음 |
+
+- 매 발사·피격 훅은 초월 장비가 하나도 없으면 바로 끝나고, 무기는 인스턴스별 캐시(`ConditionalWeakTable` + 기록 버전) 1번 조회, 방어구는 64단계 제한 부모 걷기.
+- 효과 하나의 훅을 못 찾으면 그 효과만 꺼지고 로그에 남는다(나머지 기능은 정상).
+- 클라 기록(`EffectRegistry`)이 초월 영수증을 일반 강화 단계로 잘못 적던 문제를 막았다(초월 영수증의 `Level`은 초월 단계).
+- **이름 조회 함정 2개 발견·수정**: `Weapon`은 `IWeapon.Item`을 명시적으로 구현(`Item IWeapon.Item => this`)해서 `_weapon.Item`을 이름으로 못 찾음 → 무기 자신을 씀. 방어구 템플릿도 `IArmorComponentTemplate.ArmorClass`가 명시적 구현(`armorClass` 필드) → 인터페이스 속성으로 읽음. 둘 다 게임 DLL 대조 검사로 고정.
+- 인게임 미확인: 전부. 특히 짧은 getter(`ArmorClass`·`FireRate`) 인라인 여부, 반동 체감, Realism 같이 쓸 때.

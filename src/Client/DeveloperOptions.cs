@@ -80,6 +80,52 @@ internal static class ConfigText
         ["10. 스타 강화 진화"] = "10. Star evolution",
         ["11. 3차 스타 진화"] = "11. 3rd star evolution",
         ["12. 강화 보험"] = "12. Enhancement insurance",
+        ["13. 초월 강화"] = "13. Transcendence",
+        ["2성 초월 성공률 (→1~→5, %)"] = "2-star transcendence chance (→1 to →5, %)",
+        ["3성 초월 성공률 (→1~→5, %)"] = "3-star transcendence chance (→1 to →5, %)",
+        ["다섯 숫자를 쉼표로 구분합니다. 형식이 틀리면 기본값을 씁니다."] = "Five numbers separated by commas. A wrong format uses the defaults.",
+        ["2성 천장 (실패당 %p)"] = "2-star pity (%p per failure)",
+        ["3성 천장 (실패당 %p)"] = "3-star pity (%p per failure)",
+        ["실패할 때마다 그 장비의 다음 2성 초월 성공률에 더합니다. 성공하면 0으로 돌아갑니다."]
+            = "Each failure adds this to that gear's next 2-star chance. A success resets it to 0.",
+        ["실패할 때마다 그 장비의 다음 3성 초월 성공률에 더합니다. 성공하면 0으로 돌아갑니다."]
+            = "Each failure adds this to that gear's next 3-star chance. A success resets it to 0.",
+        ["천장 최대 (%p)"] = "Pity cap (%p)",
+        ["쌓이는 천장의 최대치입니다."] = "The most pity that can build up.",
+        ["2성 비용 (기준가 대비 %)"] = "2-star cost (% of base price)",
+        ["3성 비용 (기준가 대비 %)"] = "3-star cost (% of base price)",
+        ["비용 = 최소 비용과 기준가 × 이 값/100 × 배수^현재단계 중 큰 값. 방어구는 끼운 부품 가격을 더합니다. 최대 1억 루블."]
+            = "Cost = the larger of the minimum cost and base price × this/100 × multiplier^current level. Armor adds its inserted parts. Max 100,000,000 roubles.",
+        ["2성 최소 비용 (루블)"] = "2-star minimum cost (roubles)",
+        ["3성 최소 비용 (루블)"] = "3-star minimum cost (roubles)",
+        ["한 번 시도의 최소 비용입니다."] = "Minimum cost of one attempt.",
+        ["초월 단계별 비용 배수"] = "Transcendence cost multiplier per level",
+        ["단계가 오를수록 비용에 곱하는 배수입니다."] = "Multiplied into the cost for each level already held.",
+        ["초월 재료 요구"] = "Require transcendence materials",
+        ["끄면 재료 없이 루블만 냅니다. 재료는 성공·실패와 관계없이 소모됩니다."]
+            = "When off, only roubles are paid. Materials are used up on success and failure alike.",
+        ["수평 반동 감소 / 단계 (%)"] = "Horizontal recoil reduction / level (%)",
+        ["총기 2성 초월. 뒤로 차는 힘과 좌우로 튀는 각도를 함께 줄입니다. 반동 제어 강화와 합쳐 최대 80%."]
+            = "Weapon 2-star transcendence. Reduces the backward kick and the left/right kick angle. At most 80% together with the recoil track.",
+        ["최대 내구도 증가 / 단계 (%)"] = "Max durability bonus / level (%)",
+        ["방어구 2성 초월. 원래 최대 내구도 기준. 바꾸면 다음 강화·초월·등록 때 다시 맞춰집니다."]
+            = "Armor 2-star transcendence. Based on the original max durability. A change applies at the next enhancement, transcendence or registration.",
+        ["발사속도 증가 / 단계 (%)"] = "Fire rate bonus / level (%)",
+        ["총기 3성 초월(연사·점사 가능 총). 아래 상한과 비교해 작은 값을 더합니다."]
+            = "Weapon 3-star transcendence (guns with auto or burst). Adds the smaller of this and the limit below.",
+        ["발사속도 증가 상한 / 단계 (rpm)"] = "Fire rate bonus limit / level (rpm)",
+        ["단계당 더하는 발사속도의 최대치입니다."] = "The most fire rate added per level.",
+        ["고장 확률 감소 / 단계 (%)"] = "Malfunction chance reduction / level (%)",
+        ["총기 3성 초월(반자동·볼트액션 총)."] = "Weapon 3-star transcendence (semi-auto and bolt-action guns).",
+        ["과열 증가 감소 / 단계 (%)"] = "Overheat buildup reduction / level (%)",
+        ["총기 3성 초월(반자동·볼트액션 총). 한 발당 쌓이는 과열을 줄입니다."]
+            = "Weapon 3-star transcendence (semi-auto and bolt-action guns). Less overheat per shot.",
+        ["둔탁상 감소 / 단계 (%)"] = "Blunt damage reduction / level (%)",
+        ["방어구 3성 초월. 막았을 때 몸에 들어오는 피해를 줄입니다. 3단계 +1클, 5단계 +2클(최대 6클)."]
+            = "Armor 3-star transcendence. Less damage gets through when the armor stops a hit. +1 class at level 3, +2 at level 5 (max class 6).",
+        ["6클 대체 둔탁상 감소 / 클 (%)"] = "Class 6 substitute blunt reduction / class (%)",
+        ["이미 6클 이상이라 등급을 못 올리는 부품이 1클 대신 받는 둔탁상 감소입니다."]
+            = "Blunt reduction a part at class 6 or above gets for each class it cannot gain.",
         ["일반 보험 반환 확률 (%)"] = "Basic insurance return chance (%)",
         ["고급 보험 반환 확률 (%)"] = "Advanced insurance return chance (%)",
         ["프리미엄 보험 반환 확률 (%)"] = "Premium insurance return chance (%)",
