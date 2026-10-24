@@ -238,6 +238,27 @@ public sealed class GameApiTests
         }
     }
 
+    // 1.3.0 plate auto-register: the slot insert hook, the item event sender and the notice.
+    [GameAssemblyFact]
+    public void Plate_insert_hook_sender_and_notice_exist()
+    {
+        using var game = Game();
+        var address = game.MainModule.GetType("EFT.InventoryLogic.SlotItemAddress");
+        var raise = Assert.Single(address.Methods, m => m.Name == "RaiseAddEvent" && m.Parameters.Count == 3);
+        Assert.Equal(new[] { "EFT.InventoryLogic.Item", "EFT.InventoryLogic.CommandStatus" },
+            raise.Parameters.Take(2).Select(p => p.ParameterType.FullName).ToArray());
+        Assert.Contains(game.MainModule.GetType("EFT.InventoryLogic.CommandStatus").Fields, f => f.Name == "Succeed");
+        Assert.Contains(address.Fields, f => f.Name == "Slot");
+        Assert.Contains(game.MainModule.GetType("EFT.InventoryLogic.Slot").Properties, p => p.Name == "ParentItem");
+        var session = game.MainModule.GetType("EFT.ClientBackendSession");
+        Assert.Single(session.Methods, m => m.Name == "SendOperationRightNow" && m.Parameters.Count == 2);
+        Assert.Single(session.Methods, m => m.Name == "FlushOperationQueue" && m.Parameters.Count == 0);
+        var notice = Assert.Single(game.MainModule.GetType("EFT.Communications.NotificationManager").Methods,
+            m => m.Name == "DisplayWarningNotification" && m.Parameters.Count == 2);
+        Assert.Equal("System.String", notice.Parameters[0].ParameterType.FullName);
+        Assert.True(notice.Parameters[1].IsOptional);
+    }
+
     [GameAssemblyFact]
     public void Transcend_trader_price_reads_repairable_fields()
     {

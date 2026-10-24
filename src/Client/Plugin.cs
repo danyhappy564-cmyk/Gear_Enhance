@@ -86,6 +86,7 @@ public sealed partial class Plugin : BaseUnityPlugin
         ((ConfigurationManagerAttributes)developerPassword.Description.Tags[0]).CustomDrawer = DrawPassword;
         developerOptions.SetVisible(developerUnlocked);
         menuEnabled = BindGeneral("1. 기본", "강화 메뉴 사용", true, "창고의 무기·방어구 우클릭에 장비 강화를 표시합니다. 방탄판·내피는 방어구와 함께 강화되므로 표시하지 않습니다.");
+        BindInserts();
         chance = BindDeveloper("2. 확률", "성공률 (%)", 75f, new ConfigDescription("+0에서 +1로 강화할 때 성공률. 이후 현재 단계 × 단계별 감소량만큼 줄어듭니다.", new AcceptableValueRange<float>(0, 100)));
         chanceLoss = BindDeveloper("2. 확률", "단계별 성공률 감소 (%p)", 5f, new ConfigDescription("기본: +1 시도 75%, +10 시도 30%. 0이면 같은 확률을 유지합니다.", new AcceptableValueRange<float>(0, 100)));
         always = BindDeveloper("2. 확률", "항상 성공 (100%)", false, "켜면 성공률 설정 대신 100%를 적용합니다. 비용은 소모됩니다.");
@@ -184,6 +185,9 @@ public sealed partial class Plugin : BaseUnityPlugin
             foreach (var failed in TranscendPatches.Install(harmony))
                 Logger.LogError("Gear Enhance: 초월 효과 연결 실패(나머지 기능은 정상) / transcendence hook failed: " + failed);
             ItemMarkers.Install(harmony);
+            // Optional: without it plates still register from the insurance · plates window.
+            try { InsertWatch.Install(harmony); }
+            catch (Exception ex) { Logger.LogError("Gear Enhance: 방탄판 자동 등록 연결 실패(보험·방탄판 창 등록은 정상) / plate auto-register hook failed: " + ex.GetBaseException().Message); }
             var target = GameBridge.RequiredMethod(GameBridge.RuntimeType("EFT.UI.ItemUiContext"), "GetItemContextInteractions", 2);
             harmony.Patch(target, postfix: new HarmonyMethod(typeof(Plugin), nameof(MenuPostfix)));
             patched = true;
@@ -265,6 +269,7 @@ public sealed partial class Plugin : BaseUnityPlugin
         HighRiskDestructionPercent = destructionChance.Value,
         DestructionProtectionPercent = destructionProtectionPrice.Value, DowngradeProtectionPercent = downgradeProtectionPrice.Value,
         EvolutionSuccessPercent = evolutionChance.Value, ThirdStarSuccessPercent = thirdStarChance.Value, EvolutionCostPercent = evolutionPrice.Value,
+        InsertSurchargePercent = insertSurcharge.Value,
         PriceBasis = price.Value, CostPercent = percent.Value, CostPerLevel = growth.Value,
         MinimumCost = minimum.Value, FailureMode = failure.Value, Effects = Tuning(),
         BasicInsuranceReturnPercent = basicReturn.Value, AdvancedInsuranceReturnPercent = advancedReturn.Value,
@@ -570,6 +575,7 @@ public sealed partial class Plugin : BaseUnityPlugin
     {
         for (var n = 0; n < 32 && main.TryDequeue(out var action); n++) action();
         if (syncWanted && !visible && !busy && !backgroundSyncing && Clock >= nextBackgroundSync) BackgroundSync();
+        TickInserts();
         try { feedbackAudio?.Tick(); }
         catch (Exception ex) { ProvidedAudioFailed(ex); }
         if (pendingAttempt != null && (attemptTimeline.TryComplete(AttemptClock) || AudioClockStalled() && attemptTimeline.ForceComplete()))

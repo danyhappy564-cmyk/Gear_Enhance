@@ -46,8 +46,9 @@ public static class EnhanceRules
         return (long)Math.Min(total, 10_000_000_000d);
     }
 
-    // Plates worth more than the ones paid for: charge the price difference for every
-    // level and evolution already held, so swapping in better plates later is not cheaper.
+    // Plates worth more than the ones paid for: charge the price difference for the average
+    // attempts of every level and evolution already held, so enhancing with cheap plates and
+    // swapping in better ones later costs what enhancing with the better ones would on average.
     public static int InsertSurcharge(double priceDifference, IReadOnlyDictionary<EnhancePath, int>? tracks, int stars, EnhanceSettings settings,
         int second = 0, int third = 0)
     {
@@ -56,14 +57,19 @@ public static class EnhanceRules
         var total = 0.0;
         foreach (var level in tracks?.Values ?? Enumerable.Empty<int>())
             for (var step = 0; step < Math.Clamp(level, 0, 100); step++)
-                total += priceDifference * settings.CostPercent / 100 * Math.Pow(settings.CostPerLevel, step);
-        if (stars >= 2) total += priceDifference * settings.EvolutionCostPercent / 100;
-        total += TranscendRules.Surcharge(priceDifference, second, third, settings.Transcend);
-        total = Math.Ceiling(total);
+                total += priceDifference * settings.CostPercent / 100 * Math.Pow(settings.CostPerLevel, step)
+                    * Attempts(EnhanceProgression.Success(step, settings));
+        if (stars >= 2) total += priceDifference * settings.EvolutionCostPercent / 100
+            * Attempts(settings.AlwaysSucceed ? 100 : settings.EvolutionSuccessPercent);
+        total += TranscendRules.Surcharge(priceDifference, second, third, settings.Transcend, settings.AlwaysSucceed);
+        total = Math.Ceiling(total * settings.InsertSurchargePercent / 100);
         if (!double.IsFinite(total) || total > 100000000)
             throw Loc.Invalid("방탄판 등록비가 1억 루블을 초과합니다. F12 설정을 낮춰 주세요.", "The plate registration fee exceeds 100,000,000 roubles. Lower the F12 settings.");
         return (int)total;
     }
+
+    // Average attempts at this chance; below 1% counts as 1%.
+    private static double Attempts(double successPercent) => 100 / Math.Clamp(successPercent, 1, 100);
 
     public static int InsuranceFee(long value, InsuranceTier tier, EnhanceSettings settings)
     {

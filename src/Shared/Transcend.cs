@@ -111,14 +111,33 @@ public static class TranscendRules
         return total;
     }
 
-    // Plate price difference over the held levels (no minimum), like the enhancement surcharge.
-    public static double Surcharge(double priceDifference, int second, int third, TranscendTuning tuning)
+    // Plate price difference over the held levels (no minimum), like the enhancement surcharge:
+    // each level costs the average number of attempts it takes, pity included (one attempt
+    // when every attempt succeeds).
+    public static double Surcharge(double priceDifference, int second, int third, TranscendTuning tuning, bool alwaysSucceed = false)
     {
         if (double.IsNaN(priceDifference) || double.IsInfinity(priceDifference) || priceDifference <= 0) return 0;
         var total = 0.0;
-        for (var step = 0; step < Clamp(second); step++) total += Step(priceDifference, TranscendTrack.Second, step, tuning);
-        for (var step = 0; step < Clamp(third); step++) total += Step(priceDifference, TranscendTrack.Third, step, tuning);
+        foreach (var (track, held) in new[] { (TranscendTrack.Second, second), (TranscendTrack.Third, third) })
+            for (var step = 0; step < Clamp(held); step++)
+                total += Step(priceDifference, track, step, tuning)
+                    * (alwaysSucceed ? 1 : ExpectedAttempts(Success(track, step, tuning), PityStep(track, tuning), tuning.PityCap));
         return total;
+    }
+
+    // Average attempts until a success when every failure adds `pityStep` (up to `cap`) to
+    // the chance. A chance below 1% counts as 1%. Bounded: at most 1000 attempts are summed.
+    public static double ExpectedAttempts(double chance, double pityStep, double cap)
+    {
+        var expected = 0.0;
+        var stillFailing = 1.0;
+        for (var failures = 0; failures < 1000 && stillFailing > 1e-9; failures++)
+        {
+            expected += stillFailing;
+            var now = Math.Min(100, Math.Max(1, chance + Math.Min(Math.Max(0, cap), Math.Max(0, pityStep) * failures)));
+            stillFailing *= 1 - now / 100;
+        }
+        return expected;
     }
 
     public static long ProtectionFee(int baseCost, TranscendTuning tuning) =>

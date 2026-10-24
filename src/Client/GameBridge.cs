@@ -167,6 +167,19 @@ internal static class GameBridge
         return completion.Source.Task;
     }
 
+    // 1.3.0 plate sync after an insert: the server answers with the changed items (max
+    // durability) the same way as an enhancement, so the game applies them itself.
+    internal static Task<bool> SyncInserts(object session, string settings, bool autoRegister)
+    {
+        var method = RequiredMethod(session.GetType(), "SendOperationRightNow", 2);
+        var completion = new CallbackCompletion();
+        var callback = Delegate.CreateDelegate(method.GetParameters()[1].ParameterType, completion,
+            typeof(CallbackCompletion).GetMethod(nameof(CallbackCompletion.Complete)));
+        method.Invoke(session, new object[] {
+            new { Action = "GearEnhanceInserts", protocolVersion = EnhanceProtocol.Version, settings, autoRegister }, callback });
+        return completion.Source.Task;
+    }
+
     private sealed class CallbackCompletion
     {
         internal readonly TaskCompletionSource<bool> Source = new TaskCompletionSource<bool>();

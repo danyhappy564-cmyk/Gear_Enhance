@@ -25,6 +25,8 @@ public sealed class TranscendTests
     private static readonly MongoId Plate = new("444444444444444444444444");
     private static readonly MongoId Spare = new("666666666666666666666666");
     private static readonly MongoId Gun = new("888888888888888888888888");
+    private static readonly MongoId Other = new("555555555555555555555555");
+    private static readonly MongoId Twin = new("aaaaaaaaaaaaaaaaaaaaaaab");
     private static readonly MongoId VestTpl = new("aaaaaaaaaaaaaaaaaaaaaaaa");
     private static readonly MongoId CheapPlateTpl = new("bbbbbbbbbbbbbbbbbbbbbbbb");
     private static readonly MongoId DearPlateTpl = new("cccccccccccccccccccccccc");
@@ -110,7 +112,7 @@ public sealed class TranscendTests
             Backend.Service = Service;
         }
 
-        private void Add(MongoId id, MongoId template, MongoId parent, string slot, double durability) =>
+        public void Add(MongoId id, MongoId template, MongoId parent, string slot, double durability) =>
             Pmc.Inventory!.Items!.Add(new Item { Id = id, Template = template, ParentId = parent.ToString(), SlotId = slot,
                 Upd = new() { Repairable = new() { Durability = durability, MaxDurability = durability } } });
 
@@ -134,6 +136,12 @@ public sealed class TranscendTests
         public void Transcend(TranscendTrack track, int times, MongoId? item = null)
         {
             for (var n = 0; n < times; n++) Pay(Quote(track, item));
+        }
+        // The item event the client sends after a plate goes into armor.
+        public (int Registered, int Revoked) Sync(bool autoRegister = true)
+        {
+            LastOutput = new() { ProfileChanges = new() { [Session] = new() { Items = new() { NewItems = [], ChangedItems = [], DeletedItems = [] } } } };
+            return Service.ReconcileInserts(Session, Pmc, Settings, autoRegister, LastOutput);
         }
         public void Move(MongoId id, MongoId parent, string slot)
         {
@@ -328,6 +336,7 @@ public sealed class TranscendTests
     public void Swapping_plates_moves_the_grant_and_never_repairs_for_free()
     {
         var rig = new Rig();
+        rig.Add(Other, VestTpl, Stash, "hideout", 50);
         rig.Transcend(TranscendTrack.Second, 1);
         rig.Rep(Plate).Durability = 20;
         rig.Move(Plate, Stash, "hideout");
@@ -338,21 +347,85 @@ public sealed class TranscendTests
         Assert.True(register.RegistrationFee > 0);
         rig.Pay(register);
         Assert.Equal((42.4d, 42.4d), (rig.Rep(Spare).MaxDurability!.Value, rig.Rep(Spare).Durability!.Value));
+        // Taken out and left loose, the old plate keeps its grant: nothing is trimmed on a quick swap.
+        Assert.Equal((31.8d, 20d), (rig.Rep(Plate).MaxDurability!.Value, rig.Rep(Plate).Durability!.Value));
+        Assert.True(rig.State.Grants.ContainsKey(Plate.ToString()));
+
+        // In other armor it loses the grant; the damage stays.
+        rig.Move(Plate, Other, "Front_plate");
+        Assert.Equal((0, 1), rig.Sync());
         Assert.Equal((30d, 20d), (rig.Rep(Plate).MaxDurability!.Value, rig.Rep(Plate).Durability!.Value));
         Assert.False(rig.State.Grants.ContainsKey(Plate.ToString()));
+        Assert.Contains(rig.Changed, i => i.Id == Plate);
 
-        // The damaged plate goes back in: it is already registered, but its grant is missing.
+        // Back in the vest (already registered): only the maximum comes back, never a free repair.
         rig.Move(Spare, Stash, "hideout");
         rig.Move(Plate, Vest, "Front_plate");
-        var resync = rig.Manage(EnhanceAction.RegisterInserts);
-        Assert.Equal(0, resync.UnregisteredParts);
-        Assert.Equal(2, resync.DurabilityPending);
-        Assert.True(resync.CanRegister);
-        Assert.Equal(0, resync.Cost);
-        rig.Pay(resync);
+        rig.Sync();
         Assert.Equal((31.8d, 20d), (rig.Rep(Plate).MaxDurability!.Value, rig.Rep(Plate).Durability!.Value));
-        Assert.Equal((40d, 40d), (rig.Rep(Spare).MaxDurability!.Value, rig.Rep(Spare).Durability!.Value));
+        Assert.Equal((42.4d, 42.4d), (rig.Rep(Spare).MaxDurability!.Value, rig.Rep(Spare).Durability!.Value));
         Assert.Equal(0, rig.Manage(EnhanceAction.RegisterInserts).DurabilityPending);
+    }
+
+    [Fact]
+    public void Free_plates_register_on_insert_and_pricier_ones_wait_for_payment()
+    {
+        var rig = new Rig();
+        rig.Add(Twin, CheapPlateTpl, Stash, "hideout", 30);
+        rig.Sync();
+        Assert.Contains(Plate.ToString(), rig.State.Inserts[Vest.ToString()].Ids);
+
+        rig.Move(Plate, Stash, "hideout");
+        rig.Move(Spare, Vest, "Front_plate");
+        Assert.Equal((0, 0), rig.Sync());
+        Assert.DoesNotContain(Spare.ToString(), rig.State.Inserts[Vest.ToString()].Ids);
+        Assert.True(rig.Manage(EnhanceAction.RegisterInserts).RegistrationFee > 0);
+
+        // A plate like the paid one costs nothing: it registers by itself, unless switched off.
+        rig.Move(Spare, Stash, "hideout");
+        rig.Move(Twin, Vest, "Front_plate");
+        Assert.Equal((0, 0), rig.Sync(autoRegister: false));
+        Assert.DoesNotContain(Twin.ToString(), rig.State.Inserts[Vest.ToString()].Ids);
+        Assert.False(rig.State.AutoRegisterInserts);
+        Assert.Equal((1, 0), rig.Sync());
+        Assert.Contains(Twin.ToString(), rig.State.Inserts[Vest.ToString()].Ids);
+        Assert.Equal([CheapPlateTpl.ToString()], rig.State.Inserts[Vest.ToString()].PaidTemplates);
+    }
+
+    [Fact]
+    public void Raid_end_takes_the_grant_from_a_plate_moved_into_other_armor()
+    {
+        var rig = new Rig();
+        rig.Add(Other, VestTpl, Stash, "hideout", 50);
+        rig.Transcend(TranscendTrack.Second, 2);
+        Assert.Equal(33.6d, rig.Rep(Plate).MaxDurability!.Value);
+        var capture = rig.Service.BeginRaidEnd(Session);
+        rig.Move(Plate, Other, "Front_plate");
+        Assert.Equal((0, 0), rig.Service.CompleteRaidEnd(Session, capture!, null));
+        Assert.Equal((30d, 30d), (rig.Rep(Plate).MaxDurability!.Value, rig.Rep(Plate).Durability!.Value));
+        Assert.False(rig.State.Grants.ContainsKey(Plate.ToString()));
+        Assert.Equal(56d, rig.Rep(Vest).MaxDurability!.Value);
+    }
+
+    [Fact]
+    public void Pricier_plates_pay_the_average_attempts_of_every_held_level()
+    {
+        var settings = new EnhanceSettings();
+        var tracks = new Dictionary<EnhancePath, int> { [EnhancePath.ArmorDurability] = 10 };
+        // +10: 25,000 × Σ 1.25^k ÷ (75% - 5%k) = 2,039,594; ★★: 750,000 ÷ 30%; 2-star 2 levels with pity.
+        Assert.Equal(5087507, EnhanceRules.InsertSurcharge(250000, tracks, 2, settings, 2, 0));
+        settings.InsertSurchargePercent = 50;
+        Assert.Equal(2543754, EnhanceRules.InsertSurcharge(250000, tracks, 2, settings, 2, 0));
+        settings.InsertSurchargePercent = 100;
+        settings.AlwaysSucceed = true;
+        // Every attempt succeeds: one attempt per level, the 1.2.0 amount.
+        Assert.Equal(Math.Ceiling(Enumerable.Range(0, 10).Sum(k => 25000 * Math.Pow(1.25, k))), EnhanceRules.InsertSurcharge(250000, tracks, 1, settings));
+        Assert.Equal(0, EnhanceRules.InsertSurcharge(-5, tracks, 2, settings, 2, 0));
+        Assert.Equal(1, TranscendRules.ExpectedAttempts(100, 0, 0));
+        // Below 1% counts as 1%; the sum stops at 1000 attempts.
+        Assert.InRange(TranscendRules.ExpectedAttempts(0, 0, 0), 99.9, 100);
+        // 60%, then 65%, 70%... after each failure: 1 + 0.4 + 0.4 × 0.35 + ...
+        Assert.Equal(1.5949, TranscendRules.ExpectedAttempts(60, 5, 30), 3);
     }
 
     [Fact]

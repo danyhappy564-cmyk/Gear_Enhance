@@ -81,6 +81,12 @@ internal static class ConfigText
         ["11. 3차 스타 진화"] = "11. 3rd star evolution",
         ["12. 강화 보험"] = "12. Enhancement insurance",
         ["13. 초월 강화"] = "13. Transcendence",
+        ["방탄판 자동 등록"] = "Auto-register plates",
+        ["강화된 방어구에 방탄판·내피·바이저를 끼우면 바로 그 방어구 단계를 받습니다(같거나 더 싼 방탄판, 무료). 더 비싼 방탄판은 보험·방탄판 창에서 차액을 내고 등록합니다. 끄면 모두 버튼으로 등록합니다."]
+            = "Plates, soft inserts and visors put into enhanced armor get its level at once (same or cheaper plates, free). Pricier plates are registered in the insurance · plates window for the price difference. When off, every plate is registered with the button.",
+        ["방탄판 차액 배율 (%)"] = "Plate price difference multiplier (%)",
+        ["더 비싼 방탄판 차액 = 가격 차이 × 가진 단계마다 (그 단계 비용 비율 × 평균 시도 횟수) × 이 값/100. 100이면 처음부터 그 방탄판으로 강화한 평균 비용과 같습니다."]
+            = "Pricier plate fee = price difference × for each held level (that level's cost ratio × average attempts) × this/100. At 100 it equals the average cost of enhancing with that plate from the start.",
         ["2성 초월 성공률 (→1~→5, %)"] = "2-star transcendence chance (→1 to →5, %)",
         ["3성 초월 성공률 (→1~→5, %)"] = "3-star transcendence chance (→1 to →5, %)",
         ["다섯 숫자를 쉼표로 구분합니다. 형식이 틀리면 기본값을 씁니다."] = "Five numbers separated by commas. A wrong format uses the defaults.",

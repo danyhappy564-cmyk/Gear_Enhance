@@ -33,6 +33,10 @@ public sealed class EnhanceState
     // 1.3.0: transcendence per gear, and max durability added to armor items by it.
     public Dictionary<string, TranscendRecord> Transcend { get; set; } = new();
     public Dictionary<string, DurabilityGrant> Grants { get; set; } = new();
+    // Plates inserted into enhanced armor register on their own when that is free; the raid
+    // end does the same with the settings and switch the client last sent.
+    public EnhanceSettings? LastSettings { get; set; }
+    public bool AutoRegisterInserts { get; set; } = true;
 }
 
 public sealed class InsertRecord
@@ -84,6 +88,7 @@ public sealed partial class EnhanceService(SptEnhanceBackend backend, JsonUtil s
             var profile = GetPmc(session);
             var target = GetTarget(profile, itemId);
             var state = State(session);
+            state.LastSettings = settings;
             // Discard metadata only for items no longer owned by this profile. Insured
             // losses, flea listings and unread mail keep theirs until they come back.
             var owned = Tracked(session, profile).Keys.ToHashSet();
@@ -602,6 +607,10 @@ public sealed partial class EnhanceService(SptEnhanceBackend backend, JsonUtil s
             }
             // Granted parts lost outside recorded gear (a plate moved into other armor).
             StripGrants(saved!, capture.InsuranceCount, capture.Granted.Where(id => !owned.Contains(id) && !handled.Contains(id)), state);
+            // Plates moved between armor during the raid: the client reloads the profile after
+            // the raid, so the item values changed here reach it.
+            var pmc = saved!.CharacterData?.PmcData;
+            if (pmc != null) ReconcileInserts(pmc, state, state.LastSettings ?? new EnhanceSettings(), state.AutoRegisterInserts, new List<Item>());
             return (returned, forfeited);
         }
     }

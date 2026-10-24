@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using SPTarkov.Server.Core.Models.Common;
 using SPTarkov.Server.Core.Models.Eft.Common;
 using SPTarkov.Server.Core.Models.Eft.Common.Tables;
+using SPTarkov.Server.Core.Models.Eft.ItemEvent;
 using SPTarkov.Server.Core.Models.Eft.Profile;
 
 namespace GearEnhance;
@@ -201,11 +202,15 @@ public sealed partial class EnhanceService
             }
         var count = 0;
         // Items away (flea, mail, insurance) keep their grant until they are back in the stash.
+        // A part taken out and left loose keeps it too: it does nothing there, and dropping it
+        // would trim a damaged part's durability on every quick swap. It is lost once the part
+        // sits in armor that does not give it (this one at a lower level, or another armor).
         var present = new Dictionary<string, Item>();
         foreach (var item in items) present.TryAdd(item.Id.ToString(), item);
         foreach (var (id, grant) in state.Grants.Where(g => g.Value.ArmorId == armorId && !want.ContainsKey(g.Key)).ToArray())
         {
             if (!present.TryGetValue(id, out var item) || item.Upd?.Repairable == null) continue;
+            if (id != armorId && Holder(items, id) == null) continue;
             count++;
             if (changed == null) continue;
             Grant(item.Upd.Repairable, -grant.Amount);
@@ -223,6 +228,94 @@ public sealed partial class EnhanceService
             if (!changed.Contains(item)) changed.Add(item);
         }
         return count;
+    }
+
+    // The armor a part sits in through slots (a plate in a vest, a visor on a helmet), or null
+    // when it is loose (stash, backpack, rig pocket). Bounded walk up the parents.
+    private string? Holder(List<Item> items, string partId)
+    {
+        var byId = new Dictionary<string, Item>();
+        foreach (var item in items) byId.TryAdd(item.Id.ToString(), item);
+        if (!byId.TryGetValue(partId, out var current)) return null;
+        for (var depth = 0; depth < 64; depth++)
+        {
+            if (current.ParentId == null || current.SlotId == null || !byId.TryGetValue(current.ParentId, out var parent)) return null;
+            if (!backend.SlotNames(parent.Template).Contains(current.SlotId)) return null;
+            if (backend.Eligible(parent.Template) && !backend.IsWeapon(parent.Template) && !backend.IsArmorPart(parent.Template))
+                return parent.Id.ToString();
+            current = parent;
+        }
+        return null;
+    }
+
+    // After plates move (the client sends this when one goes into armor, and the raid end runs
+    // it): a grant on a part now inside other armor is taken back; enhanced armor registers its
+    // inserted parts when that costs nothing (same or cheaper than the paid set); transcended
+    // armor then grants its parts. Pricier parts wait for the paid registration.
+    internal (int Registered, int Revoked) ReconcileInserts(PmcData profile, EnhanceState state, EnhanceSettings settings, bool autoRegister,
+        List<Item> changed)
+    {
+        settings.Validate();
+        var items = InventoryItems(profile);
+        var revoked = 0;
+        foreach (var (id, grant) in state.Grants.ToArray())
+        {
+            var item = items.FirstOrDefault(i => i.Id.ToString() == id);
+            if (item?.Upd?.Repairable == null || id == grant.ArmorId) continue;
+            var holder = Holder(items, id);
+            if (holder == null || holder == grant.ArmorId) continue;
+            Grant(item.Upd.Repairable, -grant.Amount);
+            RemoveGrant(state, id);
+            if (!changed.Contains(item)) changed.Add(item);
+            revoked++;
+        }
+        var registered = 0;
+        var present = items.Select(i => i.Id.ToString()).ToHashSet();
+        foreach (var armorId in state.Tracks.Where(t => t.Value.Values.Any(level => level > 0)).Select(t => t.Key).Where(present.Contains).ToArray())
+        {
+            var armor = items.First(i => i.Id.ToString() == armorId);
+            if (backend.IsWeapon(armor.Template) || backend.IsArmorPart(armor.Template)) continue;
+            var parts = Parts(profile, armorId);
+            EnsureInserts(state, armorId, parts);
+            if (autoRegister && Unregistered(state, armorId, parts) > 0 && Free(state, armorId, parts, settings))
+            {
+                Enroll(state, armorId, parts, settings.PriceBasis);
+                registered++;
+            }
+            if (state.Transcend.GetValueOrDefault(armorId)?.Second > 0) SyncGrants(profile, state, armorId, settings.Transcend, changed);
+        }
+        return (registered, revoked);
+    }
+
+    private bool Free(EnhanceState state, string armorId, List<Item> parts, EnhanceSettings settings)
+    {
+        var partsPrice = PartsValue(parts.Select(p => p.Template.ToString()), settings.PriceBasis);
+        var paidParts = PartsValue(state.Inserts.GetValueOrDefault(armorId)?.PaidTemplates, settings.PriceBasis);
+        if (partsPrice <= paidParts) return true;
+        var transcend = state.Transcend.GetValueOrDefault(armorId);
+        try
+        {
+            return EnhanceRules.InsertSurcharge(partsPrice - paidParts, state.Tracks.GetValueOrDefault(armorId), Stars(state, armorId), settings,
+                transcend?.Second ?? 0, transcend?.Third ?? 0) == 0;
+        }
+        catch (InvalidOperationException) { return false; }
+    }
+
+    public (int Registered, int Revoked) ReconcileInserts(MongoId session, PmcData profile, EnhanceSettings settings, bool autoRegister,
+        ItemEventRouterResponse output)
+    {
+        lock (sync)
+        {
+            ArgumentNullException.ThrowIfNull(settings);
+            var state = State(session);
+            state.LastSettings = settings;
+            state.AutoRegisterInserts = autoRegister;
+            var changed = output.ProfileChanges?[session]?.Items?.ChangedItems
+                ?? throw Loc.Invalid("SPT 아이템 응답을 준비할 수 없습니다.", "Cannot prepare the SPT item response.");
+            // Registration changes the armor's value and quote; an open quote must be reloaded.
+            pending.Remove(session);
+            return ReconcileInserts(profile, state, settings, autoRegister, changed);
+        }
     }
 
     // Raising the maximum also fills a full item, so it stays full; a damaged one keeps its

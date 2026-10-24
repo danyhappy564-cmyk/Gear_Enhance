@@ -141,7 +141,7 @@ public sealed class EnhanceTests
     {
         var rig = new Rig();
         var quote = rig.Quote();
-        var router = new EnhanceEvents(rig.Service, new HttpResponseUtil(Json, null!));
+        var router = new EnhanceEvents(rig.Service, new HttpResponseUtil(Json, null!), Json);
         var data = Json.Deserialize<EnhanceOperation>("{\"Action\":\"GearEnhance\",\"quoteId\":\"" + quote.QuoteId + "\"}")!;
         Assert.Equal(typeof(EnhanceOperation), router.GetBodyType("GearEnhance"));
         await router.HandleItemEvent("GearEnhance", rig.Pmc, data, Session, rig.Output);

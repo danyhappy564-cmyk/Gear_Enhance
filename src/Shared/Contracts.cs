@@ -40,6 +40,8 @@ public sealed class EnhanceSettings
     public double EvolutionSuccessPercent { get; set; } = 30;
     public double ThirdStarSuccessPercent { get; set; } = 10;
     public double EvolutionCostPercent { get; set; } = 300;
+    // Pricier plates pay the difference for the average attempts of every held level; this scales it.
+    public double InsertSurchargePercent { get; set; } = 100;
     // Chance that lost gear comes back enhanced, and fee as % of its enhancement value.
     public double BasicInsuranceReturnPercent { get; set; } = 20;
     public double AdvancedInsuranceReturnPercent { get; set; } = 55;
@@ -65,6 +67,7 @@ public sealed class EnhanceSettings
             || !Finite(EvolutionSuccessPercent) || EvolutionSuccessPercent < 0 || EvolutionSuccessPercent > 100
             || !Finite(ThirdStarSuccessPercent) || ThirdStarSuccessPercent < 0 || ThirdStarSuccessPercent > 100
             || !Finite(EvolutionCostPercent) || EvolutionCostPercent < 0 || EvolutionCostPercent > 10000
+            || !Finite(InsertSurchargePercent) || InsertSurchargePercent < 0 || InsertSurchargePercent > 1000
             || !Percent(BasicInsuranceReturnPercent) || !Percent(AdvancedInsuranceReturnPercent) || !Percent(PremiumInsuranceReturnPercent)
             || !Finite(BasicInsuranceFeePercent) || BasicInsuranceFeePercent < 0 || BasicInsuranceFeePercent > 1000
             || !Finite(AdvancedInsuranceFeePercent) || AdvancedInsuranceFeePercent < 0 || AdvancedInsuranceFeePercent > 1000

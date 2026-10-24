@@ -41,6 +41,18 @@ public sealed record EnhanceOperation : BaseInteractionRequestData
     public bool ConfirmDestruction { get; set; }
 }
 
+// Sent by the client right after a plate goes into armor (1.3.0). The settings travel as
+// the same JSON the quote route reads, so both parse them alike.
+public sealed record InsertOperation : BaseInteractionRequestData
+{
+    [JsonPropertyName("protocolVersion")]
+    public int ProtocolVersion { get; set; }
+    [JsonPropertyName("settings")]
+    public string Settings { get; set; } = "";
+    [JsonPropertyName("autoRegister")]
+    public bool AutoRegister { get; set; }
+}
+
 [Injectable]
 public sealed class EnhanceQueries(JsonUtil json, EnhanceService service) : StaticRouter(json,
 [
@@ -73,12 +85,25 @@ public sealed class EnhanceQueries(JsonUtil json, EnhanceService service) : Stat
 }
 
 [Injectable]
-public sealed class EnhanceEvents(EnhanceService service, HttpResponseUtil responses) : ItemEventRouter(
+public sealed class EnhanceEvents(EnhanceService service, HttpResponseUtil responses, JsonUtil json) : ItemEventRouter(
 [
     new ItemRouteAction<EnhanceOperation>("GearEnhance", (_, profile, body, session, output, _) =>
     {
         try { service.Execute(session, profile, body.QuoteId, body.ConfirmDestruction, output); }
         // The native error popup has no language channel, so show both texts.
+        catch (Exception ex) when (ex is ArgumentException or InvalidOperationException)
+        { responses.AppendErrorToOutput(output, Loc.EnglishOf(ex) is { } english ? ex.Message + "\n" + english : ex.Message); }
+        return ValueTask.FromResult(output);
+    }),
+    new ItemRouteAction<InsertOperation>("GearEnhanceInserts", (_, profile, body, session, output, _) =>
+    {
+        try
+        {
+            EnhanceProtocol.Validate(body.ProtocolVersion);
+            var settings = json.Deserialize<EnhanceSettings>(body.Settings)
+                ?? throw Loc.Argument("방탄판 맞추기 설정을 읽을 수 없습니다.", "Cannot read the plate sync settings.");
+            service.ReconcileInserts(session, profile, settings, body.AutoRegister, output);
+        }
         catch (Exception ex) when (ex is ArgumentException or InvalidOperationException)
         { responses.AppendErrorToOutput(output, Loc.EnglishOf(ex) is { } english ? ex.Message + "\n" + english : ex.Message); }
         return ValueTask.FromResult(output);
