@@ -14,19 +14,23 @@ public sealed partial class Plugin : BaseUnityPlugin
 {
     internal static Plugin Instance;
     private Harmony harmony;
-    private ConfigEntry<bool> menuEnabled, always, soundsEnabled, providedSounds, highRiskEnabled;
-    private ConfigEntry<float> chance, chanceLoss, destructionChance, completionBonus, soundVolume, percent, growth;
-    private ConfigEntry<float> destructionProtectionPrice, downgradeProtectionPrice;
-    private ConfigEntry<float> evolutionChance, evolutionPrice, thirdStarChance, thirdStarBonus;
-    private ConfigEntry<float> basicReturn, advancedReturn, premiumReturn, basicFee, advancedFee, premiumFee;
-    private ConfigEntry<bool> showDeveloperOptions, detailedLogging;
+    private ConfigEntry<bool> menuEnabled, soundsEnabled, providedSounds, detailedLogging;
+    private ConfigEntry<float> soundVolume;
+    private ConfigEntry<string> developerPassword;
+    // Developer balance settings: saved values apply only while the password unlocks them.
+    private bool developerUnlocked;
+    private DevSetting<bool> always, highRiskEnabled;
+    private DevSetting<float> chance, chanceLoss, destructionChance, completionBonus, percent, growth;
+    private DevSetting<float> destructionProtectionPrice, downgradeProtectionPrice;
+    private DevSetting<float> evolutionChance, evolutionPrice, thirdStarChance, thirdStarBonus;
+    private DevSetting<float> basicReturn, advancedReturn, premiumReturn, basicFee, advancedFee, premiumFee;
     private ConfigEntry<UiLanguage> language;
     private readonly DeveloperOptions developerOptions = new DeveloperOptions();
-    private ConfigEntry<int> maxLevel, minimum;
-    private ConfigEntry<PriceBasis> price;
-    private ConfigEntry<FailureMode> failure;
-    private readonly Dictionary<EnhancePath, (ConfigEntry<float> Step, ConfigEntry<float> Cap)> effectConfig
-        = new Dictionary<EnhancePath, (ConfigEntry<float>, ConfigEntry<float>)>();
+    private DevSetting<int> maxLevel, minimum;
+    private DevSetting<PriceBasis> price;
+    private DevSetting<FailureMode> failure;
+    private readonly Dictionary<EnhancePath, (DevSetting<float> Step, DevSetting<float> Cap)> effectConfig
+        = new Dictionary<EnhancePath, (DevSetting<float>, DevSetting<float>)>();
     private object session, uiContext, selectedItem, itemIcon;
     private string itemId, itemName;
     private EnhancePath selectedPath;
@@ -75,9 +79,11 @@ public sealed partial class Plugin : BaseUnityPlugin
             "Auto: Korean Windows → 한국어, otherwise English. Close and reopen F12 to refresh its text.\n"
             + "Auto: 한국어 윈도우면 한국어, 그 외는 영어. F12 글자는 창을 닫았다 다시 열면 바뀝니다."));
         ApplyLanguage();
-        showDeveloperOptions = BindGeneral(DeveloperOptions.DeveloperSection, "개발자 옵션 표시", false,
-            "확률·비용·항상 성공·실패·능력치·보호·진화 밸런스 설정을 표시합니다. 바꾼 뒤 F12 창을 닫았다 다시 열면 적용됩니다. 기본은 숨김입니다.");
-        developerOptions.SetVisible(showDeveloperOptions.Value);
+        developerPassword = BindGeneral(DeveloperOptions.DeveloperSection, "개발자 옵션 비밀번호", "",
+            "비밀번호를 넣으면 확률·비용·항상 성공·실패·능력치·보호·진화·보험 밸런스 설정이 표시되고 적용됩니다. 잠겨 있으면 기본 밸런스로 강화합니다(바꿔 둔 값은 지우지 않음). 입력 후 F12 창을 닫았다 다시 열면 표시됩니다.");
+        developerUnlocked = DeveloperLock.Matches(developerPassword.Value);
+        ((ConfigurationManagerAttributes)developerPassword.Description.Tags[0]).CustomDrawer = DrawPassword;
+        developerOptions.SetVisible(developerUnlocked);
         menuEnabled = BindGeneral("1. 기본", "강화 메뉴 사용", true, "창고의 무기·방어구 우클릭에 장비 강화를 표시합니다. 방탄판·내피는 방어구와 함께 강화되므로 표시하지 않습니다.");
         chance = BindDeveloper("2. 확률", "성공률 (%)", 75f, new ConfigDescription("+0에서 +1로 강화할 때 성공률. 이후 현재 단계 × 단계별 감소량만큼 줄어듭니다.", new AcceptableValueRange<float>(0, 100)));
         chanceLoss = BindDeveloper("2. 확률", "단계별 성공률 감소 (%p)", 5f, new ConfigDescription("기본: +1 시도 75%, +10 시도 30%. 0이면 같은 확률을 유지합니다.", new AcceptableValueRange<float>(0, 100)));
@@ -118,13 +124,13 @@ public sealed partial class Plugin : BaseUnityPlugin
             new ConfigDescription("내부 설정 이전용", null, new ConfigurationManagerAttributes { Browsable = false }));
         if (balanceVersion.Value < 1)
         {
-            if (evolutionChance.Value == 50f) evolutionChance.Value = 30f;
+            if (evolutionChance.Entry.Value == 50f) evolutionChance.Entry.Value = 30f;
             balanceVersion.Value = 1;
         }
         if (balanceVersion.Value < 2)
         {
-            completionBonus.Value = (float)StarEvolution.UpgradeLegacyBonus(2, completionBonus.Value);
-            thirdStarBonus.Value = (float)StarEvolution.UpgradeLegacyBonus(3, thirdStarBonus.Value);
+            completionBonus.Entry.Value = (float)StarEvolution.UpgradeLegacyBonus(2, completionBonus.Entry.Value);
+            thirdStarBonus.Entry.Value = (float)StarEvolution.UpgradeLegacyBonus(3, thirdStarBonus.Entry.Value);
             balanceVersion.Value = 2;
         }
         PrepareFeedback();
@@ -143,10 +149,14 @@ public sealed partial class Plugin : BaseUnityPlugin
                 ItemMarkers.RefreshAll();
                 return;
             }
-            if (ReferenceEquals(args.ChangedSetting, showDeveloperOptions))
+            if (ReferenceEquals(args.ChangedSetting, developerPassword))
             {
-                developerOptions.SetVisible(showDeveloperOptions.Value);
-                return;
+                var unlocked = DeveloperLock.Matches(developerPassword.Value);
+                if (unlocked == developerUnlocked) return;
+                developerUnlocked = unlocked;
+                developerOptions.SetVisible(unlocked);
+                Logger.LogInfo(unlocked ? "Gear Enhance: 개발자 옵션 열림" : "Gear Enhance: 개발자 옵션 잠김 (기본 밸런스 적용)");
+                // Effective balance values changed: fall through to refresh quotes and effects.
             }
             if (ReferenceEquals(args.ChangedSetting, soundsEnabled) || ReferenceEquals(args.ChangedSetting, providedSounds)
                 || ReferenceEquals(args.ChangedSetting, soundVolume))
@@ -170,7 +180,8 @@ public sealed partial class Plugin : BaseUnityPlugin
             ItemMarkers.Install(harmony);
             var target = GameBridge.RequiredMethod(GameBridge.RuntimeType("EFT.UI.ItemUiContext"), "GetItemContextInteractions", 2);
             harmony.Patch(target, postfix: new HarmonyMethod(typeof(Plugin), nameof(MenuPostfix)));
-            Logger.LogInfo("Gear Enhance " + EnhanceProtocol.ModVersion + ": 독립 강화·장비 표식·효과음 로드");
+            Logger.LogInfo("Gear Enhance " + EnhanceProtocol.ModVersion + ": 독립 강화·장비 표식·효과음 로드 · 개발자 옵션 "
+                + (developerUnlocked ? "열림" : "잠김(기본 밸런스)"));
         }
         catch (Exception ex)
         {
@@ -200,11 +211,19 @@ public sealed partial class Plugin : BaseUnityPlugin
     private ConfigEntry<T> BindGeneral<T>(string section, string key, T defaultValue, ConfigDescription description) =>
         Config.Bind(section, key, defaultValue, new ConfigDescription(description.Description, description.AcceptableValues,
             developerOptions.Describe(section, key, description.Description, false)));
-    private ConfigEntry<T> BindDeveloper<T>(string section, string key, T defaultValue, string description) =>
+    // F12 shows the password as asterisks, with the lock state beside it.
+    private void DrawPassword(ConfigEntryBase entry)
+    {
+        var current = entry.BoxedValue as string ?? "";
+        var typed = GUILayout.PasswordField(current, '*', GUILayout.ExpandWidth(true));
+        if (typed != current) entry.BoxedValue = typed;
+        GUILayout.Label(developerUnlocked ? Loc.L("열림", "Unlocked") : Loc.L("잠김", "Locked"), GUILayout.Width(70));
+    }
+    private DevSetting<T> BindDeveloper<T>(string section, string key, T defaultValue, string description) =>
         BindDeveloper(section, key, defaultValue, new ConfigDescription(description));
-    private ConfigEntry<T> BindDeveloper<T>(string section, string key, T defaultValue, ConfigDescription description) =>
-        Config.Bind(section, key, defaultValue, new ConfigDescription(description.Description, description.AcceptableValues,
-            developerOptions.Describe(section, key, description.Description)));
+    private DevSetting<T> BindDeveloper<T>(string section, string key, T defaultValue, ConfigDescription description) =>
+        new DevSetting<T>(Config.Bind(section, key, defaultValue, new ConfigDescription(description.Description, description.AcceptableValues,
+            developerOptions.Describe(section, key, description.Description))), () => developerUnlocked);
 
     private void BindEffect(EnhancePath path, string section, float step, float cap)
     {

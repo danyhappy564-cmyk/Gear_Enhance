@@ -21,3 +21,41 @@ public sealed class DeveloperOptionsTests
         Assert.Contains("항상 성공", chance.DispName);
     }
 }
+
+public sealed class DeveloperLockTests
+{
+    // The real password is never in the repository; only its hash is.
+    [Fact]
+    public void Only_the_matching_password_unlocks_and_the_hash_is_salted()
+    {
+        var hash = GearEnhance.DeveloperLock.HashOf("test-password");
+        Assert.Equal(64, GearEnhance.DeveloperLock.PasswordHash.Length);
+        Assert.True(GearEnhance.DeveloperLock.Matches("test-password", hash));
+        Assert.True(GearEnhance.DeveloperLock.Matches("  test-password ", hash));
+        Assert.False(GearEnhance.DeveloperLock.Matches("Test-password", hash));
+        Assert.False(GearEnhance.DeveloperLock.Matches("", hash));
+        Assert.False(GearEnhance.DeveloperLock.Matches(null, hash));
+        Assert.False(GearEnhance.DeveloperLock.Matches("test-password"));
+        Assert.NotEqual(hash, System.BitConverter.ToString(System.Security.Cryptography.SHA256.HashData(
+            System.Text.Encoding.UTF8.GetBytes("test-password"))).Replace("-", "").ToLowerInvariant());
+    }
+
+    [Fact]
+    public void Locked_settings_use_the_default_and_keep_the_saved_value()
+    {
+        var path = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "gear-lock-" + System.Guid.NewGuid().ToString("N") + ".cfg");
+        try
+        {
+            var file = new BepInEx.Configuration.ConfigFile(path, false);
+            var entry = file.Bind("2. 확률", "항상 성공 (100%)", false);
+            entry.Value = true;
+            var unlocked = false;
+            var setting = new GearEnhance.DevSetting<bool>(entry, () => unlocked);
+            Assert.False(setting.Value);
+            Assert.True(entry.Value);
+            unlocked = true;
+            Assert.True(setting.Value);
+        }
+        finally { System.IO.File.Delete(path); }
+    }
+}

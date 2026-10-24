@@ -10,6 +10,7 @@ internal sealed class ConfigurationManagerAttributes
     public string Category;
     public string DispName;
     public string Description;
+    public System.Action<BepInEx.Configuration.ConfigEntryBase> CustomDrawer;
 }
 
 public enum UiLanguage { Auto, Korean, English }
@@ -90,9 +91,9 @@ internal static class ConfigText
         ["강화 가치 = 지금 단계·스타까지 강화하는 데 드는 기본 비용 합계(방어구는 등록한 방탄판 가격 포함). 최소 비용 이상."]
             = "Enhancement value = the base cost of reaching the current levels and stars (armor includes its registered plates). At least the minimum cost.",
 
-        ["개발자 옵션 표시"] = "Show developer options",
-        ["확률·비용·항상 성공·실패·능력치·보호·진화 밸런스 설정을 표시합니다. 바꾼 뒤 F12 창을 닫았다 다시 열면 적용됩니다. 기본은 숨김입니다."]
-            = "Shows the chance, cost, always-succeed, failure, stat, protection and evolution balance settings. Close and reopen F12 after changing it. Hidden by default.",
+        ["개발자 옵션 비밀번호"] = "Developer options password",
+        ["비밀번호를 넣으면 확률·비용·항상 성공·실패·능력치·보호·진화·보험 밸런스 설정이 표시되고 적용됩니다. 잠겨 있으면 기본 밸런스로 강화합니다(바꿔 둔 값은 지우지 않음). 입력 후 F12 창을 닫았다 다시 열면 표시됩니다."]
+            = "Enter the password to show and apply the chance, cost, always-succeed, failure, stat, protection, evolution and insurance balance settings. While locked, enhancing uses the default balance (changed values are kept, not deleted). Close and reopen F12 after entering it.",
         ["강화 메뉴 사용"] = "Enable the Enhance gear menu",
         ["창고의 무기·방어구 우클릭에 장비 강화를 표시합니다. 방탄판·내피는 방어구와 함께 강화되므로 표시하지 않습니다."]
             = "Adds \"Enhance gear\" to the right-click menu of weapons and armor in the stash. Plates and inserts are enhanced with their armor, so they do not get it.",
