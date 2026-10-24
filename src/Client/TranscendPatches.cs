@@ -209,11 +209,12 @@ internal static class TranscendPatches
         var version = Registry.Version;
         if (info.Version != version)
         {
-            var id = GameBridge.Get(weapon, "Id")?.ToString();
+            var id = CloneLinks.EffectId(weapon, out var settled);
             info.Second = id == null ? 0 : Registry.TranscendLevel(id, TranscendTrack.Second);
             info.Third = id == null ? 0 : Registry.TranscendLevel(id, TranscendTrack.Third);
             info.Automatic = info.Third > 0 && Automatic(weapon);
-            info.Version = version;
+            // A hideout copy not linked yet is looked up again on the next read.
+            if (settled) info.Version = version;
         }
         return info.Second > 0 || info.Third > 0 ? info : null;
     }
@@ -318,7 +319,7 @@ internal static class TranscendPatches
         try
         {
             var weapon = GameBridge.Get(__instance, "Weapon") ?? GameBridge.Get(GameBridge.Get(__instance, "Controller"), "Item");
-            var id = GameBridge.Get(weapon, "Id")?.ToString();
+            var id = CloneLinks.EffectId(weapon);
             // In-game 2026-10-24: no line at all after full auto in the hideout range. The first
             // build of the session and every enhanced weapon say what the hook saw.
             if (fireRateLogged.Count < 256 && (fireRateLogged.Add("first") || id != null && Registry.Find(id) != null && fireRateLogged.Add("seen " + id)))
@@ -383,7 +384,7 @@ internal static class TranscendPatches
         var best = 0;
         for (var depth = 0; item != null && depth < 64; depth++)
         {
-            var id = GameBridge.Get(item, "Id")?.ToString();
+            var id = CloneLinks.EffectId(item);
             if (id == null) break;
             origin ??= id;
             if (depth == 0 || Registry.Registered(id, origin)) best = Math.Max(best, Registry.TranscendLevel(id, TranscendTrack.Third));

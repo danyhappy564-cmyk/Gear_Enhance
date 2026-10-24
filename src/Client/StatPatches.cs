@@ -58,7 +58,7 @@ internal static class StatPatches
         string origin = null;
         for (var depth = 0; item != null && depth < (inherit ? 64 : 1); depth++)
         {
-            var id = GameBridge.Get(item, "Id")?.ToString();
+            var id = CloneLinks.EffectId(item);
             if (id == null) break;
             origin ??= id;
             if (Registry.Find(id, path) != null && (depth == 0 || Registry.Registered(id, origin)))
