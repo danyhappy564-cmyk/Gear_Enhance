@@ -83,18 +83,19 @@ internal static class ConfigText
         ["고급 보험 반환 확률 (%)"] = "Advanced insurance return chance (%)",
         ["프리미엄 보험 반환 확률 (%)"] = "Premium insurance return chance (%)",
         ["레이드에서 잃은 강화 장비가 강화된 상태로 우편 반환될 확률. 가입할 때의 값으로 고정됩니다."]
-            = "Chance that enhanced gear lost in a raid is mailed back still enhanced. Fixed at the value when bought.",
+            = "Chance that enhanced gear lost in a raid is mailed back still enhanced. Locked in when the insurance is bought.",
         ["일반 보험료 (강화 가치 대비 %)"] = "Basic insurance fee (% of value)",
         ["고급 보험료 (강화 가치 대비 %)"] = "Advanced insurance fee (% of value)",
         ["프리미엄 보험료 (강화 가치 대비 %)"] = "Premium insurance fee (% of value)",
         ["강화 가치 = 지금 단계·스타까지 강화하는 데 드는 기본 비용 합계(방어구는 등록한 방탄판 가격 포함). 최소 비용 이상."]
-            = "Value = the base cost of reaching the current levels and stars (armor includes its registered plates). At least the minimum cost.",
+            = "Enhancement value = the base cost of reaching the current levels and stars (armor includes its registered plates). At least the minimum cost.",
 
         ["개발자 옵션 표시"] = "Show developer options",
         ["확률·비용·항상 성공·실패·능력치·보호·진화 밸런스 설정을 표시합니다. 바꾼 뒤 F12 창을 닫았다 다시 열면 적용됩니다. 기본은 숨김입니다."]
             = "Shows the chance, cost, always-succeed, failure, stat, protection and evolution balance settings. Close and reopen F12 after changing it. Hidden by default.",
-        ["강화 메뉴 사용"] = "Enable enhance menu",
-        ["창고의 무기·방어구 우클릭에 장비 강화를 표시합니다."] = "Adds Enhance gear to the right-click menu of weapons and armor in the stash.",
+        ["강화 메뉴 사용"] = "Enable the Enhance gear menu",
+        ["창고의 무기·방어구 우클릭에 장비 강화를 표시합니다. 방탄판·내피는 방어구와 함께 강화되므로 표시하지 않습니다."]
+            = "Adds \"Enhance gear\" to the right-click menu of weapons and armor in the stash. Plates and inserts are enhanced with their armor, so they do not get it.",
         ["성공률 (%)"] = "Success chance (%)",
         ["+0에서 +1로 강화할 때 성공률. 이후 현재 단계 × 단계별 감소량만큼 줄어듭니다."]
             = "Chance for +0 → +1. It then drops by current level × per-level loss.",
@@ -108,7 +109,7 @@ internal static class ConfigText
         ["기준 가격"] = "Base price",
         ["Handbook = 북밸류, Flea = SPT 플리 기준가. 무기는 본체만, 방어구는 슬롯에 끼운 방탄판·삽입물·바이저 가격을 더합니다."]
             = "Handbook = handbook value, Flea = SPT flea price. Weapons count the body only; armor adds the plates, inserts and visors in its slots.",
-        ["기준 가격 대비 비용 (%)"] = "Cost of base price (%)",
+        ["기준 가격 대비 비용 (%)"] = "Cost (% of base price)",
         ["0이면 최소 비용만 적용됩니다."] = "0 uses only the minimum cost.",
         ["단계별 비용 배수"] = "Cost multiplier per level",
         ["기준가 × 비용 비율 × 배수^현재단계. 최대 1억 루블."] = "Base price × cost % × multiplier^current level. Max 100,000,000 roubles.",
@@ -116,7 +117,7 @@ internal static class ConfigText
         ["창고 안의 잠기지 않은 루블을 사용합니다."] = "Uses unlocked roubles in the stash.",
         ["실패 처리"] = "On failure",
         ["일반 구간 실패 처리. KeepItem: 비용만 / ZeroDurability: 현재 내구도 0 / Destroy: 본체·부착물·탄약 삭제 / Downgrade: 선택 항목 -1. 무기 고위험 구간에서는 아래 파괴·하락 규칙이 우선합니다."]
-            = "Normal failure. KeepItem: fee only / ZeroDurability: current durability 0 / Destroy: delete gear, mods and ammo / Downgrade: selected track -1. In the weapon high-risk range the destruction/downgrade rules below apply instead.",
+            = "Failure outside the high-risk range. KeepItem: fee only / ZeroDurability: current durability 0 / Destroy: delete gear, mods and ammo / Downgrade: selected track -1. In the weapon high-risk range the destruction/downgrade rules below apply instead.",
         ["무기 고위험 강화"] = "Weapon high risk",
         ["선택한 무기 항목의 다음 단계가 +6 이상이면(+5→+6부터) 실패 시 파괴 또는 해당 항목 -1. 다른 항목 단계는 무관합니다. 방어구는 일반 실패 처리를 따릅니다."]
             = "When the selected weapon track's next level is +6 or more (from +5 → +6), failure destroys the gear or drops that track by 1. Other tracks do not matter. Armor uses the normal failure rule.",
@@ -134,7 +135,7 @@ internal static class ConfigText
         ["장비 페널티 완화 / 단계 (%)"] = "Gear penalty relief / level (%)",
         ["장비 페널티 완화 상한 (%)"] = "Gear penalty relief cap (%)",
         ["최대 효과 기준 = 이 값 × 최대 단계와 효과 상한 중 작은 값. 실제 단계별 증가량은 후반 1→4배 곡선으로 배분됩니다. 기존 장비에도 적용됩니다."]
-            = "Max effect = the smaller of this value × max level and the effect cap. Per-level gains follow a 1 → 4x late curve. Also applies to existing gear.",
+            = "Max effect = the smaller of this value × max level and the effect cap. Per-level gains grow toward later levels (up to 4x). Also applies to existing gear.",
         ["진화 보너스 적용 전 상한. 보너스 후 안전 한계는 감소율 80%, 인체공학 추가 50입니다."]
             = "Cap before the evolution bonus. After the bonus the safety limits are 80% reduction and +50 ergonomics.",
         ["자세한 로그 남기기"] = "Detailed logging",
@@ -161,7 +162,7 @@ internal static class ConfigText
         ["진화 성공률 (%)"] = "Evolution chance (%)",
         ["1차 스타 전 항목 최대 달성 후 별도 진화 창에서 사용합니다. 실패 시 파괴, 보호 불가."]
             = "Used in the separate evolution window after every 1st star track is maxed. Failure destroys the gear; no protection.",
-        ["진화 기준가 대비 비용 (%)"] = "Evolution cost of base price (%)",
+        ["진화 기준가 대비 비용 (%)"] = "Evolution cost (% of base price)",
         ["진화 비용 = 최소 200만 루블과 본체 기준가 × 이 값/100 중 큰 값. 기본3배, 1회 최대1억 루블."]
             = "Evolution cost = the larger of 2,000,000 roubles and base price × this/100. Default 3x, max 100,000,000 roubles per try.",
         ["3차 스타 성공률 (%)"] = "3rd star chance (%)",

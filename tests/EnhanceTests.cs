@@ -36,6 +36,8 @@ public sealed class EnhanceTests
         public MemoryBackend(SptProfile saved) : base(null!, null!, null!, null!, null!, null!) => Saved = saved;
         public override SptProfile Profile(MongoId session) => session == Session ? Saved : null!;
         public override bool Eligible(MongoId template) => IsEligible;
+        public bool Part { get; set; }
+        public override bool IsArmorPart(MongoId template) => Part;
         public override bool IsWeapon(MongoId template) => WeaponCategory;
         public override (double, string) Price(MongoId template, PriceBasis basis) => (BasePrice, "북밸류");
         // No template slots: attachments never count as armor parts in these tests.

@@ -45,14 +45,14 @@ public sealed class LanguageTests : IDisposable
     public void Switching_language_rewrites_only_the_f12_presentation()
     {
         var options = new DeveloperOptions();
-        var general = options.Describe("1. 기본", "강화 메뉴 사용", "창고의 무기·방어구 우클릭에 장비 강화를 표시합니다.", false);
+        var general = options.Describe("1. 기본", "강화 메뉴 사용", "창고의 무기·방어구 우클릭에 장비 강화를 표시합니다. 방탄판·내피는 방어구와 함께 강화되므로 표시하지 않습니다.", false);
         var developer = options.Describe("2. 확률", "성공률 (%)", "+0에서 +1로 강화할 때 성공률. 이후 현재 단계 × 단계별 감소량만큼 줄어듭니다.");
         Assert.Equal("1. 기본", general.Category); Assert.Equal("강화 메뉴 사용", general.DispName);
         Assert.Null(general.Browsable); Assert.False(developer.Browsable);
         options.SetLanguage(true);
         Assert.Equal("1. General", general.Category);
-        Assert.Equal("Enable enhance menu", general.DispName);
-        Assert.StartsWith("Adds Enhance gear", general.Description);
+        Assert.Equal("Enable the Enhance gear menu", general.DispName);
+        Assert.StartsWith("Adds \"Enhance gear\"", general.Description);
         Assert.Equal("99. Developer options", developer.Category);
         Assert.Equal("2. Chance · Success chance (%)", developer.DispName);
         options.SetVisible(true);

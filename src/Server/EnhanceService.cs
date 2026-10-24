@@ -186,6 +186,10 @@ public sealed class EnhanceService(SptEnhanceBackend backend, JsonUtil serialize
             quote.PartsPrice = partsPrice;
             quote.InsertedParts = parts.Count;
             quote.UnregisteredParts = Unregistered(state, itemId, parts);
+            // Shown in the window header so the coverage is visible without opening it.
+            var coverage = state.Coverage.GetValueOrDefault(itemId);
+            quote.CurrentInsurance = coverage?.Tier ?? InsuranceTier.None;
+            quote.CurrentInsurancePercent = coverage?.ReturnPercent ?? 0;
             quote.InsertSurcharge = legacy ? 0 : EnhanceRules.InsertSurcharge(partsPrice - paidParts, tracks, stars, settings);
             quote.Cost = ProtectionCosts.Total(quote.Cost, quote.InsertSurcharge, 0);
             // One current quote per profile; opening another item invalidates the old one.
@@ -322,7 +326,9 @@ public sealed class EnhanceService(SptEnhanceBackend backend, JsonUtil serialize
                 Inserts = state.Inserts.Where(p => owned.ContainsKey(p.Key) && p.Value.Ids.Count > 0)
                     .Select(p => new InsertLink { ArmorId = p.Key, PartIds = p.Value.Ids.ToArray() }).ToArray(),
                 ProfileId = profile.Id.ToString() ?? "",
-                Items = state.Tracks.Where(p => owned.ContainsKey(p.Key))
+                // A part enhanced alone before 1.2.0 keeps its record, but only the armor
+                // it is registered to gives it an effect now.
+                Items = state.Tracks.Where(p => owned.ContainsKey(p.Key) && !backend.IsArmorPart(owned[p.Key].Template))
                     .SelectMany(p => p.Value.Where(track => track.Value > 0 && track.Value <= 100
                         && EnhanceEffects.Allowed(track.Key, backend.IsWeapon(owned[p.Key].Template)))
                         .Select(track => new EnhanceRecord { ItemId = p.Key, Path = track.Key, Level = track.Value,
@@ -535,7 +541,7 @@ public sealed class EnhanceService(SptEnhanceBackend backend, JsonUtil serialize
                     var ids = tree.Select(i => i.Id.ToString()).ToHashSet();
                     // Mail first: if sending fails, the trader package and records stay as they were.
                     backend.SendReturn(session, tree, $"강화 보험({Loc.TierName(coverage.Tier, false)} {coverage.ReturnPercent:0.##}%): 레이드에서 잃은 장비를 강화된 상태로 되찾았습니다. "
-                        + $"Enhancement insurance ({Loc.TierName(coverage.Tier, true)} {coverage.ReturnPercent:0.##}%): your lost gear came back enhanced.");
+                        + $"Enhancement insurance ({Loc.TierName(coverage.Tier, true)} {coverage.ReturnPercent:0.##}%): the gear you lost in a raid was returned still enhanced.");
                     StripTraderInsurance(saved!, capture.InsuranceCount, ids);
                     handled.UnionWith(ids);
                     returned++;
@@ -654,6 +660,9 @@ public sealed class EnhanceService(SptEnhanceBackend backend, JsonUtil serialize
         if (!backend.Eligible(target.Template)
             || !tree.Any(i => i.Upd?.Repairable is { MaxDurability: > 0 }))
             throw Loc.Invalid("내구도가 있는 무기 또는 방어구만 강화할 수 있습니다.", "Only weapons or armor with durability can be enhanced.");
+        if (backend.IsArmorPart(target.Template))
+            throw Loc.Invalid("방탄판·내피·헬멧 부착 방호구는 따로 강화할 수 없습니다. 방어구에 끼운 채 방어구를 강화하면 함께 적용됩니다.",
+                "Plates, soft inserts and helmet add-ons cannot be enhanced alone. Enhance the armor they are inserted in; they share its effect.");
         if (tree.Any(i => i.Upd?.PinLockState?.ToString() == "Locked"))
             throw Loc.Invalid("잠긴 장비나 부착물의 잠금을 먼저 해제해 주세요.", "Unlock the locked gear or attachments first.");
         return target;

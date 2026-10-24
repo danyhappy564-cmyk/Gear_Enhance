@@ -78,7 +78,7 @@ public sealed partial class Plugin : BaseUnityPlugin
         showDeveloperOptions = BindGeneral(DeveloperOptions.DeveloperSection, "개발자 옵션 표시", false,
             "확률·비용·항상 성공·실패·능력치·보호·진화 밸런스 설정을 표시합니다. 바꾼 뒤 F12 창을 닫았다 다시 열면 적용됩니다. 기본은 숨김입니다.");
         developerOptions.SetVisible(showDeveloperOptions.Value);
-        menuEnabled = BindGeneral("1. 기본", "강화 메뉴 사용", true, "창고의 무기·방어구 우클릭에 장비 강화를 표시합니다.");
+        menuEnabled = BindGeneral("1. 기본", "강화 메뉴 사용", true, "창고의 무기·방어구 우클릭에 장비 강화를 표시합니다. 방탄판·내피는 방어구와 함께 강화되므로 표시하지 않습니다.");
         chance = BindDeveloper("2. 확률", "성공률 (%)", 75f, new ConfigDescription("+0에서 +1로 강화할 때 성공률. 이후 현재 단계 × 단계별 감소량만큼 줄어듭니다.", new AcceptableValueRange<float>(0, 100)));
         chanceLoss = BindDeveloper("2. 확률", "단계별 성공률 감소 (%p)", 5f, new ConfigDescription("기본: +1 시도 75%, +10 시도 30%. 0이면 같은 확률을 유지합니다.", new AcceptableValueRange<float>(0, 100)));
         always = BindDeveloper("2. 확률", "항상 성공 (100%)", false, "켜면 성공률 설정 대신 100%를 적용합니다. 비용은 소모됩니다.");
@@ -246,7 +246,7 @@ public sealed partial class Plugin : BaseUnityPlugin
             if (!GameBridge.InStash(__instance)) return;
             var view = GameBridge.Get(itemContext, "ViewType")?.ToString();
             var item = GameBridge.Get(itemContext, "Item");
-            if ((view == "Inventory" || view == "TradingPlayer") && GameBridge.Eligible(item))
+            if ((view == "Inventory" || view == "TradingPlayer") && GameBridge.Eligible(item) && !GameBridge.IsArmorPart(item))
                 GameBridge.AddInteraction(__result, () => plugin.Open(__instance, item));
         }
         catch (Exception ex) { plugin.Logger.LogError(ex); }
@@ -425,7 +425,7 @@ public sealed partial class Plugin : BaseUnityPlugin
                         $"Failed · {EnhanceEffects.Name(receipt.Path)} dropped to +{receipt.Level} · spent {receipt.Paid:N0} ₽")
                     : Loc.L($"강화 실패 · {receipt.Paid:N0} ₽ 소모", $"Failed · spent {receipt.Paid:N0} ₽") + "\n" + FailureText(receipt.FailureMode);
             if (receipt.Success && receipt.IsEvolution) message = Loc.L($"스타 강화 진화 성공! {StarEvolution.Stars(receipt.StarLevel)} {StarEvolution.ColorName(receipt.StarLevel)} 표식 · 진화 보너스 적용",
-                $"Star evolution success! {StarEvolution.Stars(receipt.StarLevel)} {StarEvolution.ColorName(receipt.StarLevel)} marker · evolution bonus applied");
+                $"Star evolution succeeded! {StarEvolution.Stars(receipt.StarLevel)} {StarEvolution.ColorName(receipt.StarLevel)} marker · evolution bonus applied");
             else if (receipt.Success && attempt.CompletesOnSuccess) message += Loc.L(" · 1차 스타 전 항목 완성! 진화 창을 열 수 있습니다.", " · All 1st star tracks maxed! Star evolution is open.");
             StatPatches.Registry.ApplyReceipt(receipt, GameBridge.ProfileId(session));
             completed = true;
@@ -509,7 +509,7 @@ public sealed partial class Plugin : BaseUnityPlugin
 
     private static string FailureText(FailureMode mode) => mode == FailureMode.Destroy
         ? Loc.L("본체·부착물·탄창·탄약이 함께 파괴됩니다.", "Gear, attachments, magazines and ammo are destroyed together.")
-        : mode == FailureMode.ZeroDurability ? Loc.L("본체·부품의 현재 내구도 0 · 최대 내구도 유지", "Current durability of gear and parts 0 · max durability kept")
+        : mode == FailureMode.ZeroDurability ? Loc.L("본체·부품의 현재 내구도 0 · 최대 내구도 유지", "Gear and parts drop to 0 durability · max durability kept")
         : mode == FailureMode.Downgrade ? Loc.L("선택 항목의 강화 단계 -1 · 다른 항목과 장비 유지", "Selected track -1 · other tracks and gear kept")
         : Loc.L("비용만 소모 · 장비와 기존 강화 단계 유지", "Fee only · gear and levels kept");
 

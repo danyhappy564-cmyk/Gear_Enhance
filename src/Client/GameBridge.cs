@@ -59,21 +59,34 @@ internal static class GameBridge
             ?.IsInstanceOfType(Get(context, "_inventoryController")) == true;
     }
 
-    internal static bool Eligible(object item)
+    private const string ArmoredEquipment = "57bef4c42459772e8d35a53b";
+    private static readonly string[] EligibleBases = { "5422acb9af1c889c16000029", "5448e54d4bdc2dcc718b4568",
+        "5448e5284bdc2dcb718b4567", "5a341c4086f77401f2541505", ArmoredEquipment, "5a341c4686f77469e155819e", "5448e5724bdc2ddf718b4568" };
+    // Worn armor: vest, rig, helmet, face cover, eyewear. Other armored equipment is a part.
+    private static readonly string[] WornArmorBases = { "5448e54d4bdc2dcc718b4568", "5448e5284bdc2dcb718b4567",
+        "5a341c4086f77401f2541505", "5a341c4686f77469e155819e", "5448e5724bdc2ddf718b4568" };
+
+    // Read the game's already-linked template ancestry. Cycles are bounded. No
+    // allocations: badge getters call this for every item cell drawn.
+    private static bool HasBase(object item, string[] bases)
     {
-        // Read the game's already-linked template ancestry. Cycles are bounded.
         var template = Get(item, "Template");
-        var seen = new System.Collections.Generic.HashSet<object>();
-        var bases = new[] { "5422acb9af1c889c16000029", "5448e54d4bdc2dcc718b4568",
-            "5448e5284bdc2dcb718b4567", "5a341c4086f77401f2541505",
-            "57bef4c42459772e8d35a53b", "5a341c4686f77469e155819e", "5448e5724bdc2ddf718b4568" };
-        for (var n = 0; template != null && n < 64 && seen.Add(template); n++)
+        for (var n = 0; template != null && n < 64; n++)
         {
-            if (bases.Contains(Get(template, "_id")?.ToString())) return true;
-            template = Get(template, "Parent");
+            if (Array.IndexOf(bases, Get(template, "_id")?.ToString()) >= 0) return true;
+            var parent = Get(template, "Parent");
+            if (ReferenceEquals(parent, template)) break;
+            template = parent;
         }
         return false;
     }
+    private static readonly string[] ArmoredBase = { ArmoredEquipment };
+
+    internal static bool Eligible(object item) => HasBase(item, EligibleBases);
+
+    // Plates, soft inserts and helmet add-ons share their armor's enhancement (1.2.0) and
+    // are never enhanced alone. Matches SptEnhanceBackend.IsArmorPart on the server.
+    internal static bool IsArmorPart(object item) => HasBase(item, ArmoredBase) && !HasBase(item, WornArmorBases);
 
     internal static bool IsWeapon(object item) => RuntimeType("EFT.InventoryLogic.Weapon")?.IsInstanceOfType(item) == true;
     internal static string ProfileId(object session) => Get(Get(session, "Profile"), "Id")?.ToString() ?? "";

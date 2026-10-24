@@ -48,7 +48,8 @@ internal static class StatPatches
 
     // Armor parts registered to an enhanced armor (plates, soft inserts, visors inserted
     // when it was enhanced or registered later) get its effect while in its slots.
-    // A plate's own enhancement counts if it is higher.
+    // Parts are never enhanced alone since 1.2.0 and the server leaves their older
+    // records out, so in practice the armor's level is the one used.
     internal static double Amount(object item, EnhancePath path, bool inherit = false)
     {
         // The root of EFT's inventory can point to itself. All parent walks have

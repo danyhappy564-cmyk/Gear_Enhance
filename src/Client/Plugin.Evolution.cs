@@ -81,7 +81,7 @@ public sealed partial class Plugin
         GUI.enabled = !busy && !resultVisible;
         var back = new Rect(24, 843, 233, 48);
         Surface(back, cardGradient, Line);
-        if (UiButton(back, Loc.L("일반 강화로 돌아가기", "Back to enhance"), secondary, UiInteraction.Close)) main.Enqueue(ReturnFromEvolution);
+        if (UiButton(back, Loc.L("일반 강화로 돌아가기", "Back to enhancing"), secondary, UiInteraction.Close)) main.Enqueue(ReturnFromEvolution);
         var expired = quote != null && DateTimeOffset.UtcNow.ToUnixTimeSeconds() >= quote.ExpiresUnixSeconds;
         var evolved = StatPatches.Registry.StarLevel(itemId ?? "") >= evolutionTargetStars;
         GUI.enabled = !busy && !resultVisible && !uncertain && itemId != null && !evolved

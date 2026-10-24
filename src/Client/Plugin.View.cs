@@ -41,6 +41,17 @@ public sealed partial class Plugin
     private static readonly Color Danger = new Color(0.94f, 0.30f, 0.24f);
     private static readonly Color Muted = new Color(0.62f, 0.65f, 0.67f);
     private static readonly Color Line = new Color(0.25f, 0.28f, 0.30f);
+    // Text colors (1.2.0): good news green, caution orange, loss red, tiers by color.
+    private static readonly Color Good = new Color(0.45f, 0.86f, 0.55f);
+    private static readonly Color Caution = new Color(0.97f, 0.64f, 0.30f);
+    private static readonly Color Loss = new Color(0.96f, 0.45f, 0.40f);
+    private static Color TierColor(InsuranceTier tier) => tier == InsuranceTier.Basic ? new Color(0.70f, 0.86f, 0.62f)
+        : tier == InsuranceTier.Advanced ? new Color(0.45f, 0.70f, 0.98f)
+        : tier == InsuranceTier.Premium ? new Color(0.98f, 0.78f, 0.36f) : Muted;
+    // Rich text only wraps our own fixed strings and numbers, never server or item text.
+    private static string Paint(string text, Color color) =>
+        "<color=#" + ((int)(Mathf.Clamp01(color.r) * 255)).ToString("X2") + ((int)(Mathf.Clamp01(color.g) * 255)).ToString("X2")
+        + ((int)(Mathf.Clamp01(color.b) * 255)).ToString("X2") + ">" + text + "</color>";
     private static readonly Color Panel = new Color(0.045f, 0.055f, 0.065f, 0.98f);
     private readonly List<Texture2D> skinTextures = new List<Texture2D>();
     private Texture2D panelGradient, headerGradient, selectedGradient, cardGradient, goldGradient, previewGrid;
@@ -48,6 +59,7 @@ public sealed partial class Plugin
     private static readonly EnhancePath[] WeaponTracks = { EnhancePath.Recoil, EnhancePath.Ergonomics, EnhancePath.Precision };
     private static readonly EnhancePath[] ArmorTracks = { EnhancePath.ArmorDurability, EnhancePath.Mobility };
     private GUIStyle noteStyle, statusStyle, noteStyleCentered;
+    private GUIStyle richBody, richStatus, richSmall, richCentered, richHeading, headerButton;
     private GUIStyle resultTitleStyle, resultDetailStyle;
     private GUI.WindowFunction drawWindow, drawEvolutionWindow;
     private float ActiveWindowHeight => evolutionMode ? 910 : WindowHeight;
@@ -100,6 +112,12 @@ public sealed partial class Plugin
         secondary.normal.textColor = secondary.hover.textColor = secondary.active.textColor = Color.white;
         primary = new GUIStyle(secondary) { fontSize = 20 };
         primary.normal.textColor = primary.hover.textColor = primary.active.textColor = new Color(0.055f, 0.05f, 0.04f);
+        richBody = new GUIStyle(body) { richText = true };
+        richStatus = new GUIStyle(statusStyle) { richText = true };
+        richSmall = new GUIStyle(small) { richText = true };
+        richCentered = new GUIStyle(centeredSmall) { richText = true };
+        richHeading = new GUIStyle(pathHeading) { richText = true };
+        headerButton = new GUIStyle(secondary) { fontSize = 15 };
         frame = new GUIStyle(windowSkin.window) { padding = new RectOffset(), border = new RectOffset() };
         foreach (var state in new[] { frame.normal, frame.hover, frame.active, frame.focused,
             frame.onNormal, frame.onHover, frame.onActive, frame.onFocused }) state.background = null;
@@ -213,10 +231,12 @@ public sealed partial class Plugin
         Fill(new Rect(WindowWidth - 14, WindowHeight - 1, 14, 1), accent);
         Fill(new Rect(WindowWidth - 1, WindowHeight - 14, 1, 14), accent);
         Label(23, 9, 200, 36, Loc.L("장비 강화", "Enhance"), heading);
-        Label(162, 16, 190, 24, "Gear Enhance · " + EnhanceProtocol.ModVersion, small);
+        Label(162, 16, 132, 24, "Gear Enhance · " + EnhanceProtocol.ModVersion, small);
+        if (itemId != null && quote != null) Label(296, 16, 152, 24, InsuranceStatus(quote.CurrentInsurance, quote.CurrentInsurancePercent), richSmall);
         GUI.enabled = !busy && !resultVisible;
         if (!uncertain && itemId != null && UiButton(new Rect(608, 13, 92, 29), Loc.L("새로고침", "Refresh"), secondary)) main.Enqueue(RefreshQuote);
-        if (!uncertain && itemId != null && UiButton(new Rect(486, 13, 112, 29), Loc.L("보험·방탄판", "Insure·plates"), secondary, UiInteraction.Open)) main.Enqueue(OpenInsurance);
+        if (!uncertain && itemId != null && UiButton(new Rect(452, 13, 146, 29), weapon ? Loc.L("강화 보험", "Insure")
+            : Loc.L("보험·방탄판", "Insure · plates"), headerButton, UiInteraction.Open)) main.Enqueue(OpenInsurance);
         if (UiButton(new Rect(712, 10, 32, 32), "×", secondary, UiInteraction.Close)) main.Enqueue(Close);
         GUI.enabled = true;
 
@@ -284,7 +304,7 @@ public sealed partial class Plugin
         Label(textX, rect.y + 12, textWidth, 26, EnhanceEffects.Name(path) + " +" + (StatPatches.Registry.Find(itemId ?? "", path)?.Level ?? 0), pathHeading);
         var description = path == EnhancePath.Recoil ? Loc.L("수직·수평 반동 감소", "Lower V/H recoil")
             : path == EnhancePath.Ergonomics ? Loc.L("인체공학 증가", "More ergonomics") : path == EnhancePath.Precision ? Loc.L("탄 퍼짐 감소", "Less dispersion")
-            : path == EnhancePath.ArmorDurability ? Loc.L("피격 시 내구도 소모 감소", "Less durability loss on hit") : Loc.L("장비 페널티 완화", "Lighter gear penalties");
+            : path == EnhancePath.ArmorDurability ? Loc.L("피격 시 내구도 소모 감소", "Less durability loss when hit") : Loc.L("장비 페널티 완화", "Lighter gear penalties");
         Label(textX, rect.y + 39, textWidth, 24, description, centeredSmall);
         GUI.enabled = true;
     }
@@ -348,9 +368,9 @@ public sealed partial class Plugin
         Label(407, 628, 309, 25, preview == null ? "" : Loc.L("보유 ", "Have ") + $"{preview.AvailableRoubles:N0} ₽ · BTC {preview.AvailableBitcoins:N0}", small);
         Label(24, 670, 515, 23, evolutionMode && evolutionTargetStars == 3 ? Loc.L("가격 기준: 3차 진화 4,000,000 ₽ 고정", "Price: 3rd evolution fixed at 4,000,000 ₽")
             : Loc.L("가격 기준: ", "Price: ") + (preview == null ? Loc.L("견적 확인 중", "checking quote") : Loc.PriceSource(preview.PriceSource))
-              + (preview?.PartsPrice > 0 ? Loc.L(" · 본체+끼운 방탄판", " · body + inserted plates") : Loc.L(" · 장비 본체", " · gear body only"))
-              + (preview?.InsertSurcharge > 0 ? Loc.L($" · 방탄판 차액 +{preview.InsertSurcharge:N0} ₽", $" · plate catch-up +{preview.InsertSurcharge:N0} ₽") : ""), small);
-        Label(562, 670, 174, 23, evolutionMode ? Loc.L("진화 전용 판정", "Evolution roll") : Loc.L("선택 항목 +6 시도부터 보호", "Protect from +6 try"), centeredSmall);
+              + (preview?.PartsPrice > 0 ? Loc.L(" · 본체+방탄판", " · body + plates") : Loc.L(" · 장비 본체", " · gear body only"))
+              + (preview?.InsertSurcharge > 0 ? Paint(Loc.L($" · 방탄판 차액 +{preview.InsertSurcharge:N0} ₽", $" · plate fee +{preview.InsertSurcharge:N0} ₽"), Caution) : ""), richSmall);
+        Label(562, 670, 174, 23, evolutionMode ? Loc.L("진화 전용 판정", "Evolution roll") : Loc.L("선택 항목 +6 시도부터 보호", "Protection from +6 tries"), centeredSmall);
     }
 
     private void DrawActions()

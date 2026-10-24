@@ -28,6 +28,13 @@ public class SptEnhanceBackend(SaveServer saves, ItemHelper items, InventoryHelp
         BaseClasses.VEST, BaseClasses.HEADWEAR, BaseClasses.ARMORED_EQUIPMENT,
         BaseClasses.FACE_COVER, BaseClasses.VISORS }.Any(c => items.IsOfBaseclass(template, c));
 
+    // Plates, soft inserts and helmet add-ons (visors, ear/neck armor): armor that only
+    // works inside another piece. From 1.2.0 they share the gear's enhancement instead of
+    // being enhanced alone. Worn armor (vests, rigs, helmets, face covers, eyewear) is not a part.
+    public virtual bool IsArmorPart(MongoId template) => items.IsOfBaseclass(template, BaseClasses.ARMORED_EQUIPMENT)
+        && !new[] { BaseClasses.ARMOR, BaseClasses.VEST, BaseClasses.HEADWEAR, BaseClasses.FACE_COVER, BaseClasses.VISORS }
+            .Any(c => items.IsOfBaseclass(template, c));
+
     // Slot names of a template (attachments, plate slots, visor slots). Grids, chambers
     // and magazine cartridges are not slots, so ammo and stored loot never count as parts.
     public virtual HashSet<string> SlotNames(MongoId template) => items.GetItem(template).Value?.Properties?.Slots?

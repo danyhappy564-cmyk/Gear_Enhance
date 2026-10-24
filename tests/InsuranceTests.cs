@@ -43,6 +43,7 @@ public sealed class InsuranceTests
         public override SptProfile Profile(MongoId session) => session == Session ? Saved : null!;
         public override bool Eligible(MongoId template) => template != LootTpl && template != RubleTpl;
         public override bool IsWeapon(MongoId template) => false;
+        public override bool IsArmorPart(MongoId template) => template == CheapPlateTpl || template == DearPlateTpl;
         public override HashSet<string> SlotNames(MongoId template) => template == VestTpl ? ["Front_plate", "Back_plate"] : [];
         public override (double, string) Price(MongoId template, PriceBasis basis) =>
             (template == VestTpl ? 100000 : template == CheapPlateTpl ? 10000 : template == DearPlateTpl ? 50000 : 1000, "북밸류");
@@ -99,14 +100,14 @@ public sealed class InsuranceTests
         public void SwapPlate()
         {
             var cheap = Pmc.Inventory!.Items!.Single(i => i.Id == Plate);
-            var dear = Pmc.Inventory.Items.Single(i => i.Id == Spare);
+            var dear = Pmc.Inventory!.Items!.Single(i => i.Id == Spare);
             cheap.ParentId = Stash.ToString(); cheap.SlotId = "hideout";
             dear.ParentId = Vest.ToString(); dear.SlotId = "Front_plate";
         }
         public List<Item> Lose()
         {
             var tree = Pmc.Inventory!.Items!.Where(i => i.Id == Vest || i.ParentId == Vest.ToString()).ToList();
-            Pmc.Inventory.Items.RemoveAll(tree.Contains);
+            Pmc.Inventory!.Items!.RemoveAll(tree.Contains);
             return tree;
         }
     }
@@ -166,6 +167,26 @@ public sealed class InsuranceTests
         rig.Upgrade(1);
         Assert.Equal(2, rig.State.Tracks[Vest.ToString()][EnhancePath.ArmorDurability]);
         Assert.Equal(4, rig.State.Tracks[Plate.ToString()][EnhancePath.ArmorDurability]);
+        // 1.2.0: the plate's own (pre-1.2.0) record is kept but gives no effect, so the
+        // client only sees the armor's level on it, and it cannot be enhanced alone.
+        var snapshot = rig.Service.Snapshot(Session);
+        Assert.DoesNotContain(snapshot.Items, record => record.ItemId == Plate.ToString());
+        Assert.Contains(snapshot.Items, record => record.ItemId == Vest.ToString() && record.Level == 2);
+        Assert.Contains(snapshot.Inserts, link => link.ArmorId == Vest.ToString() && link.PartIds.Contains(Plate.ToString()));
+    }
+
+    [Fact]
+    public void Plates_and_inserts_cannot_be_enhanced_or_insured_alone()
+    {
+        var rig = new Rig();
+        foreach (var action in new[] { EnhanceAction.Upgrade, EnhanceAction.Insure, EnhanceAction.RegisterInserts })
+        {
+            var error = Assert.ThrowsAny<Exception>(() => rig.Service.Quote(Session, Spare.ToString(), Rig.Sure,
+                EnhancePath.ArmorDurability, null, action, false, InsuranceTier.Basic));
+            Assert.Contains("따로 강화할 수 없습니다", error.Message);
+        }
+        // The vest itself is unaffected.
+        Assert.True(rig.Quote().Cost > 0);
     }
 
     [Fact]

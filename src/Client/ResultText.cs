@@ -6,7 +6,7 @@ internal static class ResultText
         ? receipt.IsEvolution ? receipt.StarLevel >= 3 ? Loc.L("3차 스타 강화 진화 성공!", "3rd star evolved!") : Loc.L("스타 강화 진화 성공!", "Star evolved!")
             : Loc.L("강화 성공!", "Enhanced!")
         : receipt.FailureMode == FailureMode.Destroy ? Loc.L("장비 파괴", "Gear destroyed")
-        : receipt.FailureMode == FailureMode.Downgrade ? Loc.L("강화 단계 하락", "Level dropped") : Loc.L("강화 실패", "Enhance failed");
+        : receipt.FailureMode == FailureMode.Downgrade ? Loc.L("강화 단계 하락", "Level dropped") : Loc.L("강화 실패", "Enhancement failed");
     internal static string Detail(EnhanceReceipt receipt) => receipt.Success
         ? receipt.IsEvolution ? StarEvolution.Stars(StarEvolution.Level(true, receipt.StarLevel))
                 + Loc.L(" 진화 완료 · 모든 강화 효과에 추가 보너스 적용", " evolved · bonus applied to every effect")

@@ -57,6 +57,31 @@ public sealed class HooksTests : IDisposable
         return (float)args[1];
     }
 
+    // 1.2.0: parts get no "Enhance gear" menu entry; worn armor and weapons keep it.
+    [Fact]
+    public void Plates_inserts_and_helmet_add_ons_are_parts_but_worn_armor_is_not()
+    {
+        TestItem Of(string id, TestTemplate? parent = null) => new(id) { Template = new(id, parent) };
+        var plate = Of("644120aa86ffbe10ee032b6f", Armored);
+        var insert = Of("65649eb40bf0ed77b8044453", Armored);
+        var visor = Of("5a16b672fcdbcb001912fa83", Armored);
+        var helmet = Of("5a341c4086f77401f2541505", Armored);
+        var armor = Of("5448e54d4bdc2dcc718b4568", Armored);
+        var rig = Vest();
+        var gun = Of("5447b5cf4bdc2d65278b4567", new("5422acb9af1c889c16000029"));
+        foreach (var part in new[] { plate, insert, visor })
+        {
+            Assert.True(GameBridge.Eligible(part));
+            Assert.True(GameBridge.IsArmorPart(part));
+        }
+        foreach (var worn in new[] { helmet, armor, rig, gun })
+        {
+            Assert.True(GameBridge.Eligible(worn));
+            Assert.False(GameBridge.IsArmorPart(worn));
+        }
+        Assert.False(GameBridge.IsArmorPart(new TestItem("loot") { Template = new("543be5cb4bdc2deb348b4568") }));
+    }
+
     [Fact]
     public void Recoil_postfix_scales_existing_attachment_multiplier_once_per_call()
     {

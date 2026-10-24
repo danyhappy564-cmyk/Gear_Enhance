@@ -40,6 +40,7 @@ public sealed class MailReturnTests
     {
         public override SptProfile Profile(MongoId session) => session == Session ? saved : null!;
         public override bool Eligible(MongoId template) => true;
+        public override bool IsArmorPart(MongoId template) => false;
         public override bool IsWeapon(MongoId template) => true;
         public override (double, string) Price(MongoId template, PriceBasis basis) => (100000, "북밸류");
         public override HashSet<string> SlotNames(MongoId template) => new();
