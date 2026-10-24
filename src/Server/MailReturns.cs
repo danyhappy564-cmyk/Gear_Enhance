@@ -19,7 +19,13 @@ public sealed class MailReturnLoader(EnhanceService service, ISptLogger<MailRetu
     {
         MailReturnPatch.Service = service;
         MailReturnPatch.Logger = logger;
-        try { new MailReturnPatch().Enable(); }
+        try
+        {
+            new MailReturnPatch().Enable();
+            // One line in the server log confirms the 1.2.0 server half is loaded.
+            logger.Info($"Gear Enhance {EnhanceProtocol.ModVersion}: 보험·플리 반환 장비 강화 기록 연결 준비 완료. "
+                + "Insurance/flea return records hook ready.");
+        }
         catch (Exception ex)
         {
             // Enhancement itself keeps working; only returned mail stays unlinked.

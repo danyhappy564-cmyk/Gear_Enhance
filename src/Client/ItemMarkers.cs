@@ -55,7 +55,8 @@ internal static class ItemMarkers
             if (unknown.Count >= 65536) unknown.Clear();
             if (unknown.Add(id)) Plugin.RequestSync();
         }
-        if (id == null || StatPatches.Registry.TotalLevel(id) == 0
+        var owner = id == null ? null : StatPatches.BadgeOwner(item, id);
+        if (owner == null || StatPatches.Registry.TotalLevel(owner) == 0
             || GameBridge.Get(__instance, "Examined") is not true
             || GameBridge.Get(__instance, "_hasResizeConflict") is true
             || GameBridge.Get(__instance, "IsConflicting") is true) return;
@@ -64,9 +65,9 @@ internal static class ItemMarkers
         var image = GameBridge.Get(__instance, "MainImage");
         if (GameBridge.Get(image, "color") is not Color color || color.g < 0.9f || color.b < 0.9f) return;
         // Same gold background used by GridItemView for native repair buffs.
-        background.SetValue(__instance, StatPatches.Registry.StarLevel(id) >= 3
+        background.SetValue(__instance, StatPatches.Registry.StarLevel(owner) >= 3
             ? new Color(232f / 255, 70f / 255, 70f / 255, 65f / 255)
-            : StatPatches.Registry.IsEvolved(id) ? new Color(163f / 255, 103f / 255, 232f / 255, 65f / 255)
+            : StatPatches.Registry.IsEvolved(owner) ? new Color(163f / 255, 103f / 255, 232f / 255, 65f / 255)
             : new Color(209f / 255, 153f / 255, 45f / 255, 32f / 255));
         updateColor.Invoke(__instance, null);
     }
@@ -75,9 +76,11 @@ internal static class ItemMarkers
         try
         {
             if (GameBridge.Get(__instance, "Examined") is not true) return;
-            var id = GameBridge.Get(GameBridge.Get(__instance, "Item"), "Id")?.ToString();
-            var badge = id == null ? "" : StatPatches.Registry.Badge(id);
-            if (badge.Length > 0) __result += " <color=" + StarEvolution.ColorHex(StatPatches.Registry.StarLevel(id)) + ">" + badge + "</color>";
+            var item = GameBridge.Get(__instance, "Item");
+            var id = GameBridge.Get(item, "Id")?.ToString();
+            var owner = id == null ? null : StatPatches.BadgeOwner(item, id);
+            var badge = owner == null ? "" : StatPatches.Registry.Badge(owner);
+            if (badge.Length > 0) __result += " <color=" + StarEvolution.ColorHex(StatPatches.Registry.StarLevel(owner)) + ">" + badge + "</color>";
         }
         catch (Exception ex) { Report(ex); }
     }
@@ -88,7 +91,9 @@ internal static class ItemMarkers
         foreach (var view in views.ToArray())
         {
             if (view is UnityEngine.Object instance && instance == null) { views.Remove(view); continue; }
-            if (GameBridge.Get(GameBridge.Get(view, "Item"), "Id")?.ToString() == itemId)
+            // Plates inside the enhanced armor show its badge, so they redraw with it.
+            var item = GameBridge.Get(view, "Item");
+            if (GameBridge.Get(item, "Id")?.ToString() == itemId || InsertedIn(item, itemId))
                 update?.Invoke(view, null);
         }
     }
@@ -98,9 +103,21 @@ internal static class ItemMarkers
         foreach (var view in views.ToArray())
         {
             if (view is UnityEngine.Object instance && instance == null) { views.Remove(view); continue; }
-            var id = GameBridge.Get(GameBridge.Get(view, "Item"), "Id")?.ToString();
-            if (id != null && StatPatches.Registry.TotalLevel(id) > 0) update?.Invoke(view, null);
+            var item = GameBridge.Get(view, "Item");
+            var id = GameBridge.Get(item, "Id")?.ToString();
+            if (id != null && StatPatches.Registry.TotalLevel(StatPatches.BadgeOwner(item, id)) > 0) update?.Invoke(view, null);
         }
+    }
+    private static bool InsertedIn(object item, string itemId)
+    {
+        var parent = GameBridge.SlotParent(item);
+        for (var depth = 0; parent != null && !ReferenceEquals(parent, item) && depth < 64; depth++)
+        {
+            if (GameBridge.Get(parent, "Id")?.ToString() == itemId) return true;
+            item = parent;
+            parent = GameBridge.SlotParent(item);
+        }
+        return false;
     }
     internal static void Clear() { views.Clear(); unknown.Clear(); }
 }

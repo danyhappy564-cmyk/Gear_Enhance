@@ -78,10 +78,12 @@ internal static class GameBridge
     internal static bool IsWeapon(object item) => RuntimeType("EFT.InventoryLogic.Weapon")?.IsInstanceOfType(item) == true;
     internal static string ProfileId(object session) => Get(Get(session, "Profile"), "Id")?.ToString() ?? "";
 
-    internal static object ParentItem(object item)
+    // Only a slot (armor plate slot, helmet visor slot) links a part to its gear.
+    // A grid (rig pocket, backpack) never does.
+    internal static object SlotParent(object item)
     {
-        var address = Get(item, "CurrentAddress");
-        return Get(Get(address, "Container"), "ParentItem");
+        var container = Get(Get(item, "CurrentAddress"), "Container");
+        return RuntimeType("EFT.InventoryLogic.Slot")?.IsInstanceOfType(container) == true ? Get(container, "ParentItem") : null;
     }
 
     internal static void RefreshGameplay()

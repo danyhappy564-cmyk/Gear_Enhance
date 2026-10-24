@@ -10,8 +10,8 @@ public enum EnhanceAction { Upgrade, Evolve, EvolveThird }
 
 public static class EnhanceProtocol
 {
-    public const int Version = 7;
-    public const string ModVersion = "1.1.0";
+    public const int Version = 8;
+    public const string ModVersion = "1.2.0";
     public static void Validate(int version)
     {
         if (version != Version)

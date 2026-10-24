@@ -16,6 +16,10 @@ using SPTarkov.Server.Core.Utils;
 using SPTarkov.Server.Core.Utils.Json;
 using Xunit;
 
+// SPT's JsonUtil builds its converter cache lazily and not thread-safely; parallel
+// test classes occasionally hit a NullReferenceException inside System.Text.Json.
+[assembly: CollectionBehavior(DisableTestParallelization = true)]
+
 namespace GearEnhanceTests;
 
 // Insurance returns and expired flea offers arrive as SPT mail with new ids.
@@ -148,6 +152,53 @@ public sealed class MailReturnTests
         rig.Collect(mailed);
         var newGun = mailed.Single(i => i.Template == GunTpl).Id.ToString();
         Assert.Equal(30, rig.Service.Snapshot(Session).Items.Where(r => r.ItemId == newGun).Sum(r => r.Level));
+    }
+
+    // 1.0.0 pruned an insured gun's records the moment any enhancement window opened
+    // while it waited for the trader. Updated before the return mail, the receipts rebuild it.
+    [Fact]
+    public void Insured_gun_pruned_by_1_0_0_is_rebuilt_from_its_receipts_on_return()
+    {
+        var rig = new Rig();
+        var gun = Gun.ToString();
+        rig.State.Tracks.Clear(); rig.State.EvolvedItems.Clear(); rig.State.ThirdStarItems.Clear();
+        rig.State.Receipts.AddRange(new EnhanceReceipt[]
+        {
+            new() { ItemId = gun, Path = EnhancePath.Recoil, Level = 1, Success = true },
+            new() { ItemId = Other.ToString(), Path = EnhancePath.Recoil, Level = 9, Success = true },
+            new() { ItemId = gun, Path = EnhancePath.Recoil, Level = 2, Success = true },
+            new() { ItemId = gun, Path = EnhancePath.Ergonomics, Level = 2, Success = true },
+            new() { ItemId = gun, Path = EnhancePath.Ergonomics, Level = 1, FailureMode = FailureMode.Downgrade },
+            new() { ItemId = gun, Path = EnhancePath.Precision, Level = 1, Success = true },
+            new() { ItemId = gun, Path = EnhancePath.Precision, Level = 0, FailureMode = FailureMode.Downgrade },
+            new() { ItemId = gun, Path = EnhancePath.Recoil, Level = 2, FailureMode = FailureMode.KeepItem, Evolved = true, StarLevel = 2 }
+        });
+        var lost = rig.TakeGun();
+        rig.Saved.InsuranceList!.Add(new Insurance { TraderId = new MongoId(), Items = lost });
+        var mailed = rig.Mail(lost);
+        var newGun = mailed.Single(i => i.Template == GunTpl).Id.ToString();
+        var tracks = rig.State.Tracks[newGun];
+        Assert.Equal(2, tracks[EnhancePath.Recoil]);
+        Assert.Equal(1, tracks[EnhancePath.Ergonomics]);
+        Assert.False(tracks.ContainsKey(EnhancePath.Precision));
+        Assert.Contains(newGun, rig.State.EvolvedItems);
+        Assert.DoesNotContain(newGun, rig.State.ThirdStarItems);
+        Assert.False(rig.State.Tracks.ContainsKey(gun));
+        Assert.False(rig.State.Tracks.ContainsKey(Other.ToString()));
+    }
+
+    [Fact]
+    public void Receipts_never_revive_destroyed_or_fully_downgraded_gear()
+    {
+        var state = new EnhanceState();
+        state.Receipts.Add(new() { ItemId = "a", Path = EnhancePath.Recoil, Level = 6, Success = true });
+        state.Receipts.Add(new() { ItemId = "a", Path = EnhancePath.Recoil, Level = 6, FailureMode = FailureMode.Destroy });
+        state.Receipts.Add(new() { ItemId = "b", Path = EnhancePath.Recoil, Level = 1, Success = true });
+        state.Receipts.Add(new() { ItemId = "b", Path = EnhancePath.Recoil, Level = 0, FailureMode = FailureMode.Downgrade });
+        Assert.False(EnhanceService.RecoverFromReceipts(state, "a"));
+        Assert.False(EnhanceService.RecoverFromReceipts(state, "b"));
+        Assert.False(EnhanceService.RecoverFromReceipts(state, "never"));
+        Assert.Empty(state.Tracks);
     }
 
     [Fact]

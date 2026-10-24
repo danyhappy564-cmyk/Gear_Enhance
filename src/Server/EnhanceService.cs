@@ -301,7 +301,8 @@ public sealed class EnhanceService(SptEnhanceBackend backend, JsonUtil serialize
             var moved = 0;
             foreach (var (old, next) in pairs)
             {
-                if (old == next || inventory.Contains(old) || !Recorded(state, old) || Recorded(state, next)) continue;
+                if (old == next || inventory.Contains(old) || Recorded(state, next)) continue;
+                if (!Recorded(state, old) && !RecoverFromReceipts(state, old)) continue;
                 if (state.Levels.Remove(old, out var level)) state.Levels[next] = level;
                 if (state.Paths.Remove(old, out var path)) state.Paths[next] = path;
                 if (state.Tracks.Remove(old, out var tracks)) state.Tracks[next] = tracks;
@@ -311,6 +312,25 @@ public sealed class EnhanceService(SptEnhanceBackend backend, JsonUtil serialize
             }
             return moved;
         }
+    }
+
+    // 1.0.0 pruned the records of insured or listed gear whenever the window opened.
+    // Its receipts (the last 100 attempts) survive; rebuild what they prove for that
+    // exact id. A downgrade to 0 leaves no track; a destroyed item never comes back.
+    internal static bool RecoverFromReceipts(EnhanceState state, string id)
+    {
+        var receipts = state.Receipts.Where(r => r?.ItemId == id).ToList();
+        if (receipts.Count == 0 || receipts[^1] is { Success: false, FailureMode: FailureMode.Destroy }) return false;
+        var tracks = new Dictionary<EnhancePath, int>();
+        foreach (var receipt in receipts)
+            if (Enum.IsDefined(receipt.Path) && receipt.Level >= 0 && receipt.Level <= 100) tracks[receipt.Path] = receipt.Level;
+        foreach (var path in tracks.Where(t => t.Value == 0).Select(t => t.Key).ToArray()) tracks.Remove(path);
+        if (tracks.Count == 0) return false;
+        state.Tracks[id] = tracks;
+        var stars = StarEvolution.Level(receipts[^1].Evolved, receipts[^1].StarLevel);
+        if (stars >= 2) state.EvolvedItems.Add(id);
+        if (stars >= 3) state.ThirdStarItems.Add(id);
+        return true;
     }
 
     private static bool Recorded(EnhanceState state, string id) => state.Levels.ContainsKey(id) || state.Paths.ContainsKey(id)

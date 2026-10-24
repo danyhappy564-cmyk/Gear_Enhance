@@ -46,22 +46,45 @@ internal static class StatPatches
         harmony.Patch(AccessTools.PropertyGetter(type, name) ?? throw new MissingMemberException(type.FullName, name),
             postfix: Hook(hook));
 
+    // Armor parts inside an enhanced armor's slot (plates, soft inserts, visors) get
+    // its effect while inserted. A plate's own enhancement counts if it is higher.
     internal static double Amount(object item, EnhancePath path, bool inherit = false)
     {
         // The root of EFT's inventory can point to itself. All parent walks have
         // a hard bound; never recurse through the inventory graph.
+        var best = 0.0;
         for (var depth = 0; item != null && depth < (inherit ? 64 : 1); depth++)
         {
             var id = GameBridge.Get(item, "Id")?.ToString();
-            if (id == null) return 0;
-            var record = Registry.Find(id, path);
-            if (record != null) return Registry.Amount(id, path);
-            var parent = GameBridge.ParentItem(item);
+            if (id == null) break;
+            if (Registry.Find(id, path) != null) best = Math.Max(best, Registry.Amount(id, path));
+            if (!inherit) break;
+            var parent = GameBridge.SlotParent(item);
             if (ReferenceEquals(item, parent)) break;
             item = parent;
         }
-        return 0;
+        return best;
     }
+
+    // Id whose badge an armor part shows: its own, or the armor it is inserted into
+    // when that one is enhanced further. Loose items in a pocket never inherit.
+    internal static string BadgeOwner(object item, string id)
+    {
+        var owner = id;
+        if (!GameBridge.Eligible(item) || GameBridge.IsWeapon(item)) return owner;
+        var parent = GameBridge.SlotParent(item);
+        for (var depth = 0; parent != null && !ReferenceEquals(parent, item) && depth < 64; depth++)
+        {
+            var parentId = GameBridge.Get(parent, "Id")?.ToString();
+            if (parentId == null) break;
+            if (!GameBridge.IsWeapon(parent) && ArmorLevel(parentId) > ArmorLevel(owner)) owner = parentId;
+            item = parent;
+            parent = GameBridge.SlotParent(item);
+        }
+        return owner;
+    }
+    private static int ArmorLevel(string id) => (Registry.Find(id, EnhancePath.ArmorDurability)?.Level ?? 0)
+        + (Registry.Find(id, EnhancePath.Mobility)?.Level ?? 0);
 
     private static void Recoil(object __instance, ref float __result)
     {

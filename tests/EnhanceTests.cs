@@ -280,7 +280,7 @@ public sealed class EnhanceTests
     {
         var rig = new Rig();
         var router = new EnhanceQueries(Json, rig.Service);
-        var request = "{\"ProtocolVersion\":7,\"ItemId\":\"" + Target + "\",\"Settings\":{\"AlwaysSucceed\":true,\"SuccessPercent\":0}}";
+        var request = "{\"ProtocolVersion\":" + EnhanceProtocol.Version + ",\"ItemId\":\"" + Target + "\",\"Settings\":{\"AlwaysSucceed\":true,\"SuccessPercent\":0}}";
         var result = await router.HandleStaticAsync("/rf/gear-enhance/quote", request, Session, "");
         var reply = Json.Deserialize<ApiReply<EnhanceQuote>>((string)result)!;
         Assert.True(reply.Ok, reply.Error);
@@ -443,7 +443,7 @@ public sealed class EnhanceTests
         var rig = new Rig();
         rig.Execute(rig.Quote());
         var router = new EnhanceQueries(Json, rig.Service);
-        var result = await router.HandleStaticAsync("/rf/gear-enhance/state", "{\"ProtocolVersion\":7}", Session, "");
+        var result = await router.HandleStaticAsync("/rf/gear-enhance/state", "{\"ProtocolVersion\":" + EnhanceProtocol.Version + "}", Session, "");
         var client = Newtonsoft.Json.JsonConvert.DeserializeObject<ApiReply<EnhanceSnapshot>>((string)result)!;
         Assert.True(client.Ok, client.Error);
         Assert.Equal(EnhancePath.Recoil, client.Data!.Items.Single().Path);

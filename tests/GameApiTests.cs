@@ -129,6 +129,22 @@ public sealed class GameApiTests
         Assert.Equal("ItemIcon", icon.ReturnType.FullName);
     }
 
+    [GameAssemblyFact]
+    public void Plates_and_visors_sit_in_slots_that_name_their_parent_armor()
+    {
+        using var game = Game();
+        var item = game.MainModule.GetType("EFT.InventoryLogic.Item");
+        Assert.Contains(item.Properties, p => p.Name == "CurrentAddress");
+        var address = game.MainModule.GetType("EFT.InventoryLogic.ItemAddress");
+        Assert.Contains(address.Fields, f => f.Name == "Container");
+        var slot = game.MainModule.GetType("EFT.InventoryLogic.Slot");
+        Assert.Contains(slot.Properties, p => p.Name == "ParentItem");
+        // Armor plate slots are ArmorSlot : Slot; grids (pockets) are not slots.
+        Assert.Equal("EFT.InventoryLogic.Slot", game.MainModule.GetType("ArmorSlot").BaseType.FullName);
+        for (TypeDefinition? type = game.MainModule.GetType("EFT.InventoryLogic.Grid"); type != null; type = type.BaseType?.Resolve())
+            Assert.NotEqual("EFT.InventoryLogic.Slot", type.FullName);
+    }
+
     private static void AssertCalls(MethodDefinition caller, string target) =>
         Assert.Contains(caller.Body.Instructions, i => i.Operand is MethodReference method && method.Name == target);
 }

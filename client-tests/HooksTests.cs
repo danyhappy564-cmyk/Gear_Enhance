@@ -12,15 +12,41 @@ public class TestItem
     public int Reads { get; private set; }
     public string Id { get { Reads++; return id; } }
     public TestAddress? CurrentAddress { get; set; }
+    public TestTemplate? Template { get; set; }
     public TestItem(string id) => this.id = id;
 }
-public record TestAddress(TestContainer Container);
-public record TestContainer(TestItem ParentItem);
+public record TestAddress(object Container);
+// Armor plate slots and helmet visor slots are EFT Slots; pockets are grids.
+public class TestContainer(TestItem parentItem) : EFT.InventoryLogic.Slot { public TestItem ParentItem { get; } = parentItem; }
+public record TestGrid(TestItem ParentItem);
+public record TestTemplate(string _id, TestTemplate? Parent = null);
 public record TestArmor(TestItem Item);
 
 public sealed class HooksTests : IDisposable
 {
-    public HooksTests() { StatPatches.Registry.Clear(); StatPatches.Registry.Configure(new()); }
+    public HooksTests()
+    {
+        StatPatches.Registry.Clear(); StatPatches.Registry.Configure(new());
+        // Seed the runtime type cache so the .NET test host never scans for game types.
+        var cache = (System.Collections.Concurrent.ConcurrentDictionary<string, Type>)typeof(GameBridge)
+            .GetField("runtimeTypes", BindingFlags.Static | BindingFlags.NonPublic)!.GetValue(null)!;
+        cache["EFT.InventoryLogic.Slot"] = typeof(EFT.InventoryLogic.Slot);
+        cache["EFT.InventoryLogic.Weapon"] = typeof(TestWeapon);
+    }
+    public class TestWeapon;
+    private static readonly TestTemplate Armored = new("57bef4c42459772e8d35a53b");
+    private static TestItem Vest() => new("vest") { Template = new("5448e5284bdc2dcb718b4567") };
+    private static TestItem Plate(string id, object? container) => new(id)
+    {
+        Template = new("644120aa86ffbe10ee032b6f", Armored),
+        CurrentAddress = container == null ? null : new(container)
+    };
+    private static string Named(TestItem item)
+    {
+        var args = new object[] { new MarkerView(item), "Plate" };
+        typeof(ItemMarkers).GetMethod("Name", BindingFlags.Static | BindingFlags.NonPublic)!.Invoke(null, args);
+        return (string)args[1];
+    }
     public void Dispose() => StatPatches.Registry.Clear();
     private static void Record(string id, EnhancePath path, int level = 10) => StatPatches.Registry.Replace(
         new EnhanceSnapshot { ProfileId = "pmc", Items = new[] { new EnhanceRecord { ItemId = id, Path = path, Level = level } } }, "pmc");
@@ -64,7 +90,7 @@ public sealed class HooksTests : IDisposable
     {
         Record("vest", EnhancePath.ArmorDurability);
         var vest = new TestItem("vest");
-        var plate = new TestItem("plate") { CurrentAddress = new(new(vest)) };
+        var plate = new TestItem("plate") { CurrentAddress = new(new TestContainer(vest)) };
         Assert.Equal(7, Run("Durability", new TestArmor(plate), 10));
         Assert.Equal(-10, Run("Durability", new TestArmor(plate), -10));
         Assert.Equal(10, Run("Durability", new TestArmor(new("other")), 10));
@@ -93,9 +119,13 @@ public sealed class HooksTests : IDisposable
     public void Native_parent_cycle_has_bounded_reads()
     {
         var a = new TestItem("a"); var b = new TestItem("b");
-        a.CurrentAddress = new(new(b)); b.CurrentAddress = new(new(a));
+        a.CurrentAddress = new(new TestContainer(b)); b.CurrentAddress = new(new TestContainer(a));
         Assert.Equal(0, StatPatches.Amount(a, EnhancePath.ArmorDurability, true));
         Assert.InRange(a.Reads + b.Reads, 1, 64);
+        // Badge and redraw walks are bounded the same way.
+        a.Template = b.Template = new("644120aa86ffbe10ee032b6f", Armored);
+        Assert.Equal("Plate", Named(a));
+        Assert.InRange(a.Reads + b.Reads, 1, 200);
     }
 
     [Fact]
@@ -148,9 +178,54 @@ public sealed class HooksTests : IDisposable
             new EnhanceRecord { ItemId = "plate", Path = EnhancePath.ArmorDurability, Level = 1 }
         } }, "pmc");
         var vest = new TestItem("vest");
-        var plate = new TestItem("plate") { CurrentAddress = new(new(vest)) };
-        Assert.Equal(9.842105f, Run("Durability", new TestArmor(plate), 10), 4);
+        var plate = new TestItem("plate") { CurrentAddress = new(new TestContainer(vest)) };
+        // 1.2.0: an inserted plate takes the higher of its own and the armor's level.
+        Assert.Equal(7, Run("Durability", new TestArmor(plate), 10), 4);
         Assert.Equal(-9.473684f, Run("Mobility", new TestArmor(plate), -10), 4);
+    }
+
+    [Fact]
+    public void Plate_inserted_in_enhanced_armor_gets_its_effect_and_badge_until_removed()
+    {
+        StatPatches.Registry.Replace(new EnhanceSnapshot { ProfileId = "pmc", Items = new[] {
+            new EnhanceRecord { ItemId = "vest", Path = EnhancePath.ArmorDurability, Level = 10 },
+            new EnhanceRecord { ItemId = "vest", Path = EnhancePath.Mobility, Level = 5 }
+        } }, "pmc");
+        var vest = Vest();
+        var plate = Plate("plate", new TestContainer(vest));
+        Assert.Equal(7, Run("Durability", new TestArmor(plate), 10), 4);
+        Assert.Equal("Plate <color=#D9B66F>★ +15</color>", Named(plate));
+        // Swapped into another armor's slot or kept loose in the enhanced rig's pocket: nothing.
+        plate.CurrentAddress = new(new TestGrid(vest));
+        Assert.Equal(10, Run("Durability", new TestArmor(plate), 10), 4);
+        Assert.Equal("Plate", Named(plate));
+        plate.CurrentAddress = new(new TestContainer(new TestItem("plain") { Template = new("5448e5284bdc2dcb718b4567") }));
+        Assert.Equal(10, Run("Durability", new TestArmor(plate), 10), 4);
+        Assert.Equal("Plate", Named(plate));
+        // A newly bought plate pushed into the enhanced armor gets it right away.
+        var bought = Plate("bought", new TestContainer(vest));
+        Assert.Equal(7, Run("Durability", new TestArmor(bought), 10), 4);
+    }
+
+    [Fact]
+    public void Separately_enhanced_plate_keeps_its_higher_level_inside_weaker_armor()
+    {
+        StatPatches.Registry.Replace(new EnhanceSnapshot { ProfileId = "pmc", Items = new[] {
+            new EnhanceRecord { ItemId = "vest", Path = EnhancePath.ArmorDurability, Level = 2 },
+            new EnhanceRecord { ItemId = "plate", Path = EnhancePath.ArmorDurability, Level = 10 }
+        } }, "pmc");
+        var plate = Plate("plate", new TestContainer(Vest()));
+        Assert.Equal(7, Run("Durability", new TestArmor(plate), 10), 4);
+        Assert.Equal("Plate <color=#D9B66F>★ +10</color>", Named(plate));
+    }
+
+    [Fact]
+    public void Weapon_attachments_never_show_the_weapon_badge()
+    {
+        Record("gun", EnhancePath.Recoil);
+        var gun = new TestItem("gun") { Template = new("5422acb9af1c889c16000029") };
+        var scope = new TestItem("scope") { CurrentAddress = new(new TestContainer(gun)) };
+        Assert.Equal("Plate", Named(scope));
     }
 
     [Fact]
