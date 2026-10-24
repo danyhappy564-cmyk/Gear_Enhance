@@ -301,15 +301,15 @@ internal static class TranscendPatches
     private sealed class CorrectedFire { internal object Weapon; internal int Rate; }
     private static readonly ConditionalWeakTable<object, CorrectedFire> correctedOperations = new ConditionalWeakTable<object, CorrectedFire>();
 
-    // Shots of one trigger pull of a transcended weapon: a gap over 0.4 s starts a new burst.
+    // Shots of one trigger pull of a player weapon: a gap over 0.4 s starts a new burst.
     // After 12 shots the measured rate is logged, at most 8 times per game session.
-    private sealed class Burst { internal float Start, Last; internal int Shots; internal int Rate; internal bool Logged; }
+    private sealed class Burst { internal float Start, Last; internal int Shots; internal int Rate; internal bool Logged; internal string Id; }
     private static readonly ConditionalWeakTable<object, Burst> bursts = new ConditionalWeakTable<object, Burst>();
     private static int burstLogs;
 
     private static void AutomaticShot(object __instance)
     {
-        if (burstLogs >= 8 || !Registry.HasTranscend || !bursts.TryGetValue(__instance, out var burst)) return;
+        if (burstLogs >= 8 || !bursts.TryGetValue(__instance, out var burst)) return;
         var now = Time.realtimeSinceStartup;
         if (burst.Shots == 0 || now - burst.Last > 0.4f) { burst.Start = now; burst.Shots = 0; burst.Logged = false; }
         burst.Shots++;
@@ -319,7 +319,7 @@ internal static class TranscendPatches
         burstLogs++;
         var measured = (burst.Shots - 1) * 60f / Math.Max(0.001f, now - burst.Start);
         var interval = shotsTime.GetValue(__instance) is float value ? value * 1000 : 0;
-        Plugin.LogInfo($"초월 발사속도 실측: {burst.Shots}발 {measured:0}rpm (목표 {burst.Rate}rpm, 지금 간격 {interval:0.0}ms, FPS {1f / Math.Max(0.0001f, Time.unscaledDeltaTime):0})");
+        Plugin.LogInfo($"발사속도 실측: {burst.Id} {burst.Shots}발 {measured:0}rpm (목표 {burst.Rate}rpm, 지금 간격 {interval:0.0}ms, FPS {1f / Math.Max(0.0001f, Time.unscaledDeltaTime):0})");
     }
 
     private static void AutomaticUpdated(object __instance)
@@ -351,6 +351,12 @@ internal static class TranscendPatches
                     + $" · 간격 {shotsTime.GetValue(__instance)} · 강화 기록 {(id != null && Registry.Find(id) != null ? "있음" : "없음")}"
                     + $" · 이 총 3성 초월 {(id == null ? 0 : Registry.TranscendLevel(id, TranscendTrack.Third))} · 초월 기록 전체 {(Registry.HasTranscend ? "있음" : "없음")} · 월드 {CloneLinks.WorldName()}");
             if (id == null || !(GameBridge.Get(weapon, "FireRate") is int baseRate) || baseRate <= 0 || !(shotsTime.GetValue(__instance) is float current)) return;
+            // The player's own weapons are timed too (unenhanced ones for comparison); bots never.
+            if (GameBridge.Get(GameBridge.Get(__instance, "Player"), "IsAI") is false)
+            {
+                bursts.Remove(__instance);
+                bursts.Add(__instance, new Burst { Rate = baseRate, Id = id });
+            }
             var info = Weapon(weapon);
             if (info == null || info.Third <= 0)
             {
@@ -361,8 +367,7 @@ internal static class TranscendPatches
             var bonus = FireRateBonus(weapon, baseRate);
             var expected = 60f / (baseRate + bonus);
             var corrected = bonus > 0 && Math.Abs(current - expected) > 0.0001f;
-            bursts.Remove(__instance);
-            bursts.Add(__instance, new Burst { Rate = baseRate + bonus });
+            if (bursts.TryGetValue(__instance, out var timed)) timed.Rate = baseRate + bonus;
             if (corrected)
             {
                 shotsTime.SetValue(__instance, expected);
