@@ -7,9 +7,9 @@ namespace GearEnhance;
 
 // The hideout (3D) hands the PMC a copy of its equipment with new ids (in game 2026-10-24: the
 // range K2 was 6adcb94a…, the profile's 6ad38711…), so no record matched and nothing applied.
-// Outside raids an item under equipment other than the PMC's own maps to the item at the same
-// slot path in the PMC's equipment when the templates match. Raid items keep their ids and are
-// never mapped (bots' equipment must not borrow the player's records).
+// In the hideout world only, an item under equipment other than the PMC's own maps to the item
+// at the same slot path in the PMC's equipment when the templates match. Raid items keep their
+// ids and are never mapped (bots' equipment must not borrow the player's records).
 internal static class CloneLinks
 {
     private sealed class Link { internal int Version = -1; internal string Id; }
@@ -18,7 +18,7 @@ internal static class CloneLinks
     private const string Pending = "\0";
     private static readonly ConditionalWeakTable<object, Link> links = new ConditionalWeakTable<object, Link>();
     private static readonly ConditionalWeakTable<object, Link>.CreateValueCallback newLink = _ => new Link();
-    private static Type slotType, equipmentType, statusType;
+    private static Type slotType;
 
     // Id the records are kept under: the item's own, or its original for a hideout copy.
     // Cached per item instance until the records change, so hot getters pay one lookup.
@@ -43,14 +43,17 @@ internal static class CloneLinks
         return found ?? id;
     }
 
+    // In game 2026-10-24 the first version (InRaid false + world MainPlayer's equipment) still
+    // left the range K2 unlinked. The hideout scene is now told by its own world type, which no
+    // raid uses, and the first answer per reason is logged once.
     private static string Original(object item)
     {
-        statusType ??= GameBridge.RuntimeType("EFT.InGameStatus");
-        if (GameBridge.Get(statusType, "InRaid") is not false) return null;
+        var world = World();
+        if (world == null) return null;
+        if (!InHideout(world)) return null;
         slotType ??= GameBridge.RuntimeType("EFT.InventoryLogic.Slot");
-        equipmentType ??= GameBridge.RuntimeType("EFT.InventoryLogic.InventoryEquipment");
         var own = GameBridge.Get(GameBridge.Get(GameBridge.Get(StatPatches.Session, "Profile"), "Inventory"), "Equipment");
-        if (own == null || slotType == null || equipmentType == null) return Pending;
+        if (own == null || slotType == null) return Why("PMC 장비 없음", Pending);
         // Slot names from the item up to its equipment root. Bounded: no cycles.
         var path = new List<string>();
         var current = item;
@@ -60,24 +63,38 @@ internal static class CloneLinks
             if (container == null || !slotType.IsInstanceOfType(container)) break;
             path.Add(GameBridge.Get(container, "ID") as string);
             current = GameBridge.Get(container, "ParentItem");
-            if (current == null) return Pending;
+            if (current == null) return Why("슬롯 부모 없음", Pending);
         }
-        // Loose items are settled as they are, except in the hideout scene, where a copy may
-        // be read before it is slotted (a world player exists only there outside raids).
-        if (path.Count == 0) return GameBridge.Get(World(), "MainPlayer") == null ? null : Pending;
-        if (ReferenceEquals(current, own) || !equipmentType.IsInstanceOfType(current)) return null;
-        // Only the equipment of the player the world is showing (the hideout PMC), never
-        // another owner's that happens to share slots and templates.
-        var player = GameBridge.Get(World(), "MainPlayer");
-        var shown = GameBridge.Get(GameBridge.Get(GameBridge.Get(player, "Profile"), "Inventory"), "Equipment");
-        if (shown == null) return Pending;
-        if (!ReferenceEquals(current, shown)) return null;
+        // A copy read before it is slotted is tried again; loose items stay as they are.
+        if (path.Count == 0) return Pending;
+        if (ReferenceEquals(current, own)) return Why("원본 장비(연결 불필요)", null);
+        // The hideout world holds only the PMC, so any other equipment root is its copy.
+        if (!(GameBridge.Get(current, "AllSlots") is IEnumerable)) return Why("장비 루트 아님: " + current.GetType().Name, null);
         var target = own;
         for (var index = path.Count - 1; index >= 0 && target != null; index--)
             target = GameBridge.Get(Slot(target, path[index]), "ContainedItem");
-        if (target == null || ReferenceEquals(target, item)
-            || GameBridge.Get(target, "StringTemplateId") as string != GameBridge.Get(item, "StringTemplateId") as string) return null;
-        return GameBridge.Get(target, "Id")?.ToString();
+        if (target == null) return Why("원본 같은 칸 비었음: " + string.Join("/", path), null);
+        if (ReferenceEquals(target, item)) return null;
+        if (GameBridge.Get(target, "StringTemplateId") as string != GameBridge.Get(item, "StringTemplateId") as string)
+            return Why("원본 같은 칸 템플릿 다름: " + string.Join("/", path), null);
+        var id = GameBridge.Get(target, "Id")?.ToString();
+        return Why("연결 성공 " + string.Join("/", path) + " → " + id, id);
+    }
+
+    internal static string WorldName() => World()?.GetType().Name ?? "없음";
+
+    private static bool InHideout(object world)
+    {
+        for (var type = world.GetType(); type != null; type = type.BaseType)
+            if (type.Name == "HideoutGameWorld") return true;
+        return false;
+    }
+
+    private static readonly HashSet<string> reasons = new HashSet<string>();
+    private static string Why(string reason, string result)
+    {
+        if (reasons.Count < 64 && reasons.Add(reason)) Plugin.LogInfo("은신처 장비 연결: " + reason);
+        return result;
     }
 
     private static Type worldSingleton;

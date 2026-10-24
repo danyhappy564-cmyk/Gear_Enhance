@@ -325,7 +325,7 @@ internal static class TranscendPatches
             if (fireRateLogged.Count < 256 && (fireRateLogged.Add("first") || id != null && Registry.Find(id) != null && fireRateLogged.Add("seen " + id)))
                 Plugin.LogInfo($"연사 준비 감지: 무기 {id ?? "?"} ({GameBridge.Get(weapon, "TemplateId")}) 기본 {GameBridge.Get(weapon, "FireRate")}rpm"
                     + $" · 간격 {shotsTime.GetValue(__instance)} · 강화 기록 {(id != null && Registry.Find(id) != null ? "있음" : "없음")}"
-                    + $" · 이 총 3성 초월 {(id == null ? 0 : Registry.TranscendLevel(id, TranscendTrack.Third))} · 초월 기록 전체 {(Registry.HasTranscend ? "있음" : "없음")}");
+                    + $" · 이 총 3성 초월 {(id == null ? 0 : Registry.TranscendLevel(id, TranscendTrack.Third))} · 초월 기록 전체 {(Registry.HasTranscend ? "있음" : "없음")} · 월드 {CloneLinks.WorldName()}");
             if (id == null || !(GameBridge.Get(weapon, "FireRate") is int baseRate) || baseRate <= 0 || !(shotsTime.GetValue(__instance) is float current)) return;
             var info = Weapon(weapon);
             if (info == null || info.Third <= 0)
