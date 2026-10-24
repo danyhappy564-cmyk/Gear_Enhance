@@ -195,8 +195,8 @@ internal static class ConfigText
         ["진화 보너스 적용 전 상한. 보너스 후 안전 한계는 감소율 80%, 인체공학 추가 50입니다."]
             = "Cap before the evolution bonus. After the bonus the safety limits are 80% reduction and +50 ergonomics.",
         ["자세한 로그 남기기"] = "Detailed logging",
-        ["체크한 동안 효과음 설정·재생·대체 경로와 강화 창 UI CPU 진단을 LogOutput.log에 남깁니다. 실제 오류·경고는 체크와 관계없이 기록합니다."]
-            = "While on, writes sound setup/playback/fallback and window UI CPU diagnostics to LogOutput.log. Real errors and warnings are always logged.",
+        ["체크한 동안 효과음 설정·재생·대체 경로, 강화 창 UI CPU, 초월 발사속도 실측, 은신처 장비 연결 진단을 LogOutput.log에 남깁니다. 실제 오류·경고는 체크와 관계없이 기록합니다."]
+            = "While on, writes sound setup/playback/fallback, window UI CPU, measured transcendence fire rate and hideout gear link diagnostics to LogOutput.log. Real errors and warnings are always logged.",
         ["강화 효과음"] = "Enhancement sounds",
         ["강화 중·결과·버튼·항목·체크박스·창 여닫기에 효과음을 재생합니다. 끄더라도 게이지 시간은 유지합니다."]
             = "Plays sounds for charging, results, buttons, tracks, check boxes and opening/closing the window. The gauge time stays the same when off.",

@@ -104,7 +104,7 @@ public sealed partial class Plugin : BaseUnityPlugin
         BindEffect(EnhancePath.Precision, "5. 무기 효과", 1, 10);
         BindEffect(EnhancePath.ArmorDurability, "6. 방어구 효과", 3, 30);
         BindEffect(EnhancePath.Mobility, "6. 방어구 효과", 2, 20);
-        detailedLogging = BindGeneral("7. 피드백", "자세한 로그 남기기", false, "체크한 동안 효과음 설정·재생·대체 경로와 강화 창 UI CPU 진단을 LogOutput.log에 남깁니다. 실제 오류·경고는 체크와 관계없이 기록합니다.");
+        detailedLogging = BindGeneral("7. 피드백", "자세한 로그 남기기", false, "체크한 동안 효과음 설정·재생·대체 경로, 강화 창 UI CPU, 초월 발사속도 실측, 은신처 장비 연결 진단을 LogOutput.log에 남깁니다. 실제 오류·경고는 체크와 관계없이 기록합니다.");
         soundsEnabled = BindGeneral("7. 피드백", "강화 효과음", true, "강화 중·결과·버튼·항목·체크박스·창 여닫기에 효과음을 재생합니다. 끄더라도 게이지 시간은 유지합니다.");
         providedSounds = BindGeneral("7. 피드백", "전용 강화 음원 사용", true, "사용자 제공 음원6개 사용. 끄면 기존 게임 UI 소리를 사용합니다. 전용 음원 오류 시에도 기본음으로 대체합니다.");
         soundVolume = BindGeneral("7. 피드백", "전용 음원 음량 (%)", 70f, new ConfigDescription("게임의 마스터/인터페이스 음량에 추가로 곱합니다. 0이면 전용 음원 무음. 기본 게임음 모드에서는 게임 소리 설정을 사용합니다.", new AcceptableValueRange<float>(0, 100)));
@@ -225,7 +225,9 @@ public sealed partial class Plugin : BaseUnityPlugin
     }
 
     internal static void LogError(string text) => Instance?.Logger.LogError(text);
-    internal static void LogInfo(string text) => Instance?.Logger.LogInfo(text);
+    // Diagnostics (fire rate timing, hideout links, patched readers): only with "자세한 로그 남기기".
+    internal static bool Detailed => Instance?.detailedLogging?.Value == true;
+    internal static void LogInfo(string text) { if (Detailed) Instance.Logger.LogInfo(text); }
 
     private ConfigEntry<T> BindGeneral<T>(string section, string key, T defaultValue, string description) =>
         BindGeneral(section, key, defaultValue, new ConfigDescription(description));

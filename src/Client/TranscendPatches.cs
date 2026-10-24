@@ -352,7 +352,7 @@ internal static class TranscendPatches
                     + $" · 이 총 3성 초월 {(id == null ? 0 : Registry.TranscendLevel(id, TranscendTrack.Third))} · 초월 기록 전체 {(Registry.HasTranscend ? "있음" : "없음")} · 월드 {CloneLinks.WorldName()}");
             if (id == null || !(GameBridge.Get(weapon, "FireRate") is int baseRate) || baseRate <= 0 || !(shotsTime.GetValue(__instance) is float current)) return;
             // The player's own weapons are timed too (unenhanced ones for comparison); bots never.
-            if (GameBridge.Get(GameBridge.Get(__instance, "Player"), "IsAI") is false)
+            if (Plugin.Detailed && GameBridge.Get(GameBridge.Get(__instance, "Player"), "IsAI") is false)
             {
                 bursts.Remove(__instance);
                 bursts.Add(__instance, new Burst { Rate = baseRate, Id = id });
