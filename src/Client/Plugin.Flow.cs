@@ -278,9 +278,12 @@ public sealed partial class Plugin
             destructionConfirmed = true;
         }
         if (instant) { StartInstant(); return; }
-        // Star evolution and ??? use the long evolution charge; the rest the normal one.
-        var grand = quote.Action == EnhanceAction.Evolve || quote.Action == EnhanceAction.EvolveThird || quote.Action == EnhanceAction.Mystery;
-        var duration = grand ? evolutionAttemptDuration : attemptDuration;
+        // Design 7: star evolution and ??? have their own 4.412 s charges; enhance,
+        // transcend and mythic use the trimmed 3.647 s charge. The gauge is the clip length.
+        var cue = quote.Action == EnhanceAction.Mystery ? FeedbackCue.MysteryAttempt
+            : quote.Action == EnhanceAction.Evolve || quote.Action == EnhanceAction.EvolveThird ? FeedbackCue.EvolutionAttempt : FeedbackCue.Attempt;
+        var duration = cue == FeedbackCue.MysteryAttempt ? mysteryAttemptDuration
+            : cue == FeedbackCue.EvolutionAttempt ? evolutionAttemptDuration : attemptDuration;
         if (quote.ExpiresWithin(DateTimeOffset.UtcNow.ToUnixTimeSeconds(), duration + QuoteSubmitMargin))
         {
             LoadQuote(Loc.L("견적 유효 시간이 얼마 남지 않아 새로 불러왔습니다. 비용을 확인하고 다시 눌러 주세요.",
@@ -291,11 +294,11 @@ public sealed partial class Plugin
         attemptUsesAudioClock = false;
         if (soundsEnabled.Value && providedSounds.Value && feedbackAudio != null && !providedFeedbackUnavailable)
         {
-            try { started = feedbackAudio.StartAttempt(soundVolume.Value / 100, grand); attemptUsesAudioClock = true; }
+            try { started = feedbackAudio.StartAttempt(soundVolume.Value / 100, cue); attemptUsesAudioClock = true; }
             catch (Exception ex) { ProvidedAudioFailed(ex); }
         }
         if (!soundsEnabled.Value) LogDetailed("강화 충전음 생략: F12 효과음 OFF");
-        if (!attemptUsesAudioClock && soundsEnabled.Value) PlayFeedback(grand ? FeedbackCue.EvolutionAttempt : FeedbackCue.Attempt, false);
+        if (!attemptUsesAudioClock && soundsEnabled.Value) PlayFeedback(cue, false);
         if (!attemptTimeline.Begin(started, duration)) return;
         attemptWallStart = Clock;
         pendingAttempt = quote; pendingDestructionConfirmation = destructionConfirmed; pendingGeneration = generation;

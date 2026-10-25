@@ -46,6 +46,7 @@ public sealed partial class Plugin : BaseUnityPlugin
     private EnhancementAudio feedbackAudio;
     private double attemptDuration = 1;
     private double evolutionAttemptDuration = 1;
+    private double mysteryAttemptDuration = 1;
     private readonly AttemptTimeline attemptTimeline = new AttemptTimeline();
     private EnhanceQuote pendingAttempt;
     private bool pendingDestructionConfirmation;
@@ -395,6 +396,7 @@ public sealed partial class Plugin : BaseUnityPlugin
             var charge = EmbeddedSounds.Load(0);
             attemptDuration = charge.Duration;
             evolutionAttemptDuration = EmbeddedSounds.Load(5).Duration;
+            mysteryAttemptDuration = EmbeddedSounds.Load(EmbeddedSounds.Index(FeedbackCue.MysteryAttempt)).Duration;
             if (providedSounds.Value && feedbackAudio == null) feedbackAudio = new EnhancementAudio(gameObject, charge, LogDetailed, () => detailedLogging.Value);
         }
         catch (Exception ex) { ProvidedAudioFailed(ex); }
@@ -405,10 +407,6 @@ public sealed partial class Plugin : BaseUnityPlugin
         if (!providedFeedbackUnavailable)
             Logger.LogWarning("전용 강화 음원 재생 불가, 게임 기본음으로 대체: " + ex.GetBaseException().Message);
         providedFeedbackUnavailable = true;
-    }
-    private void QueueFeedback(FeedbackCue cue)
-    {
-        main.Enqueue(() => PlayFeedback(cue));
     }
     private void PlayFeedback(FeedbackCue cue, bool allowProvided = true)
     {

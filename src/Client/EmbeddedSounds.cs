@@ -75,6 +75,7 @@ internal sealed class WaveSound
 
 internal static class EmbeddedSounds
 {
+    internal const int Count = 10;
     internal static int Index(FeedbackCue cue) => cue switch
     {
         FeedbackCue.Attempt => 0,
@@ -84,14 +85,21 @@ internal static class EmbeddedSounds
         FeedbackCue.Failure => 2,
         FeedbackCue.Downgrade => 2,
         FeedbackCue.Destroy => 3,
+        FeedbackCue.MysteryConfirm => 6,
+        FeedbackCue.MysteryAttempt => 7,
+        FeedbackCue.MythicAchieved => 8,
+        FeedbackCue.MythicUp => 9,
         _ => throw new ArgumentOutOfRangeException(nameof(cue))
     };
+    // 1.4.0: the normal charge is the user's charge with its silent first 0.765 s cut
+    // (design 7.1); evolution keeps its 4.412 s blend. 6~9 are the synthesized ??? / mythic sounds.
     internal static WaveSound Load(int index)
     {
         var name = index switch
         {
-            0 => "charge", 1 => "success", 2 => "failure", 3 => "destroy",
+            0 => "charge_trimmed", 1 => "success", 2 => "failure", 3 => "destroy",
             4 => "star2", 5 => "evolution_charge",
+            6 => "myth_confirm", 7 => "myth_charge", 8 => "myth_success", 9 => "myth_up",
             _ => throw new ArgumentOutOfRangeException(nameof(index))
         };
         using (var stream = typeof(EmbeddedSounds).Assembly.GetManifestResourceStream("GearEnhance.Audio." + name + ".wav"))

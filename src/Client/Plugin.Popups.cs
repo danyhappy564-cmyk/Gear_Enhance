@@ -44,7 +44,9 @@ public sealed partial class Plugin
     {
         popup = kind; popupStarted = Clock; popupSkip = false; confirmInstant = instant;
         if (kind != PopupKind.RerollConfirm) popupQuote = quote;
-        PlayInteraction(UiInteraction.Open);
+        // ??? has its own question sound; its 1.22 s thump matches the glow below (design 7.1).
+        if (kind == PopupKind.MysteryConfirm) PlayFeedback(FeedbackCue.MysteryConfirm);
+        else PlayInteraction(UiInteraction.Open);
     }
 
     private void CancelConfirm()
@@ -81,7 +83,14 @@ public sealed partial class Plugin
         popup = PopupKind.Result; popupStarted = Clock;
         var grand = receipt.Success && (receipt.IsEvolution || receipt.Transcend != TranscendTrack.None
             || receipt.Action == EnhanceAction.Mystery || receipt.Action == EnhanceAction.Mythic);
-        if (receipt.Action != EnhanceAction.BuyTicket) QueueFeedback(GameFeedback.Result(receipt, grand));
+        if (receipt.Action == EnhanceAction.BuyTicket) return;
+        var cue = GameFeedback.Result(receipt, grand);
+        // Design 7.1: the popup's effects start when its result sound does.
+        main.Enqueue(() =>
+        {
+            if (popup == PopupKind.Result && ReferenceEquals(resultReceipt, receipt)) popupStarted = Clock;
+            PlayFeedback(cue);
+        });
     }
 
     private void DismissResult()

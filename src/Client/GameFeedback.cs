@@ -4,22 +4,31 @@ using HarmonyLib;
 
 namespace GearEnhance;
 
-internal enum FeedbackCue { Attempt, Success, Failure, Destroy, Complete, Downgrade, EvolutionAttempt }
+// New cues go at the end (1.4.0: the ??? question/charge and the two mythic results).
+internal enum FeedbackCue { Attempt, Success, Failure, Destroy, Complete, Downgrade, EvolutionAttempt, MysteryConfirm, MysteryAttempt, MythicAchieved, MythicUp }
 internal enum UiInteraction { Button, CheckBox, Open, Close }
 internal static class GameFeedback
 {
     private static Type soundType, singletonType, guiType;
     private static MethodInfo play, mixerGroup, playClip;
-    internal static string SoundName(FeedbackCue cue) => cue == FeedbackCue.Attempt || cue == FeedbackCue.EvolutionAttempt ? "MenuInstallModFunc"
-        : cue == FeedbackCue.Success ? "RepairComplete" : cue == FeedbackCue.Destroy ? "MenuWeaponDisassemble"
-        : cue == FeedbackCue.Complete ? "QuestCompleted" : "ErrorMessage";
+    internal static string SoundName(FeedbackCue cue) => cue switch
+    {
+        FeedbackCue.Attempt or FeedbackCue.EvolutionAttempt or FeedbackCue.MysteryAttempt => "MenuInstallModFunc",
+        FeedbackCue.Success => "RepairComplete", FeedbackCue.Destroy => "MenuWeaponDisassemble",
+        FeedbackCue.Complete or FeedbackCue.MythicAchieved or FeedbackCue.MythicUp => "QuestCompleted",
+        FeedbackCue.MysteryConfirm => "MenuInspectorWindowOpen",
+        _ => "ErrorMessage"
+    };
     internal static string SoundName(UiInteraction cue) => cue switch
     {
         UiInteraction.CheckBox => "MenuCheckBox", UiInteraction.Open => "MenuInspectorWindowOpen",
         UiInteraction.Close => "MenuInspectorWindowClose", _ => "ButtonClick"
     };
+    // ??? success = mythic reached, a mythic step = myth_up (design 7); ??? failure destroys.
     internal static FeedbackCue Result(EnhanceReceipt receipt, bool complete) => receipt.Success
-        ? complete ? FeedbackCue.Complete : FeedbackCue.Success
+        ? receipt.Action == EnhanceAction.Mystery ? FeedbackCue.MythicAchieved
+        : receipt.Action == EnhanceAction.Mythic ? FeedbackCue.MythicUp
+        : complete ? FeedbackCue.Complete : FeedbackCue.Success
         : receipt.FailureMode == FailureMode.Destroy ? FeedbackCue.Destroy
         : receipt.FailureMode == FailureMode.Downgrade ? FeedbackCue.Downgrade : FeedbackCue.Failure;
 

@@ -6,8 +6,8 @@ namespace GearEnhance;
 
 internal sealed class EnhancementAudio : IDisposable
 {
-    private readonly WaveSound[] waves = new WaveSound[6];
-    private readonly AudioClip[] clips = new AudioClip[6];
+    private readonly WaveSound[] waves = new WaveSound[EmbeddedSounds.Count];
+    private readonly AudioClip[] clips = new AudioClip[EmbeddedSounds.Count];
     private readonly GameObject host;
     private readonly Action<string> log;
     private readonly Func<bool> detailedLogging;
@@ -73,10 +73,10 @@ internal sealed class EnhancementAudio : IDisposable
         source.volume = Mathf.Clamp01(volume); source.clip = null;
         playbackVolume = source.volume;
     }
-    internal double StartAttempt(float volume, bool evolution)
+    // cue: Attempt, EvolutionAttempt or MysteryAttempt (the gauge follows that clip's length).
+    internal double StartAttempt(float volume, FeedbackCue cue)
     {
         Prepare(volume);
-        var cue = evolution ? FeedbackCue.EvolutionAttempt : FeedbackCue.Attempt;
         playbackStart = AudioSettings.dspTime + (nativeRoute ? 0 : 0.05);
         if (nativeRoute) PlayNative(cue, 0);
         else { source.clip = clips[EmbeddedSounds.Index(cue)]; source.PlayScheduled(playbackStart); }

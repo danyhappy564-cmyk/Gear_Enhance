@@ -10,7 +10,7 @@ public sealed class SoundTests
     [InlineData(0, 0.7f)]
     [InlineData(12000, 0.7f)]
     [InlineData(12000, 0f)]
-    [InlineData(211765, 1f)]
+    [InlineData(175045, 1f)]
     public void Ui_audio_recovery_keeps_remaining_stereo_frames_and_scales_only_our_clip(int offset, float volume)
     {
         var wave = EmbeddedSounds.Load(0);
@@ -36,12 +36,16 @@ public sealed class SoundTests
     }
 
     [Theory]
-    [InlineData(0, "charge", 211766, 48000, 2, "E614D77CA16F837821E4B50C502464CFB693BA5E5028645FEA36967DE03E140B")]
+    [InlineData(0, "charge_trimmed", 175046, 48000, 2, "A278A74051752E25347DCB2E72C0E82EA00746BAC8B14AC3D069563EB822AD58")]
     [InlineData(1, "success", 44100, 44100, 2, "028E08883B7740DD9F881F56BAEE7348AC7BA4741F9B74CEAECE4494FFBB9DCB")]
     [InlineData(2, "failure", 108288, 48000, 2, "0207580EA45EA1A9B9C5B95E917955FC7F4BC76680878BAA1F3AFBE649275DF6")]
     [InlineData(3, "destroy", 51577, 48000, 1, "409E4225A5A81B7CDCE88E1398C27BACEBF72E3ACFD8FEBE2A9E717D0ABB2A51")]
     [InlineData(4, "star2", 183764, 44100, 2, "83EF2077A8FC4B4DF187A4DD9BEDD32AF9D89C8270443729D4835B4D121DA3B6")]
     [InlineData(5, "evolution_charge", 211766, 48000, 2, "13A0EC246A4EDD5FCD2E832CD4764F6BAC8C8720F9EF5B14F826848A385DDD07")]
+    [InlineData(6, "myth_confirm", 91200, 48000, 2, "E0E1E9F3EBAE8D134AE37A4AFE802FC930575B1161E411C50B6B624561D6213D")]
+    [InlineData(7, "myth_charge", 211766, 48000, 2, "AE65885933E1F376C751D6A7663DD6D34394DA75A8F0B6A9F2240FE5C1D21483")]
+    [InlineData(8, "myth_success", 182400, 48000, 2, "7C4BD1F8C71123822E146ED80A64D094BC68FD5A6D08B858F96C2D3A4F537521")]
+    [InlineData(9, "myth_up", 72000, 48000, 2, "9C1D0CFCB84D7C74685D9B4A64D2957F9CFAB0E5F781A370211F5ED66FDA316F")]
     public void Actual_embedded_audio_matches_the_converted_user_files_and_preserves_sample_count(
         int index, string name, int frames, int rate, int channels, string sha256)
     {
@@ -66,15 +70,21 @@ public sealed class SoundTests
     [InlineData((int)FeedbackCue.Failure, 2)]
     [InlineData((int)FeedbackCue.Downgrade, 2)]
     [InlineData((int)FeedbackCue.Destroy, 3)]
+    [InlineData((int)FeedbackCue.MysteryConfirm, 6)]
+    [InlineData((int)FeedbackCue.MysteryAttempt, 7)]
+    [InlineData((int)FeedbackCue.MythicAchieved, 8)]
+    [InlineData((int)FeedbackCue.MythicUp, 9)]
     public void Each_outcome_selects_the_file_requested_by_the_user(int cue, int index) =>
         Assert.Equal(index, EmbeddedSounds.Index((FeedbackCue)cue));
 
     [Fact]
     public void Gauge_uses_the_actual_charge_audio_duration_and_scheduled_audio_clock()
     {
+        // 1.4.0 (design 7.1): the normal charge is trimmed to 3.647 s; evolution and ??? stay 4.412 s.
         var duration = EmbeddedSounds.Load(0).Duration;
-        Assert.Equal(4.411791666666667, duration, 12);
-        Assert.Equal(duration, EmbeddedSounds.Load(5).Duration);
+        Assert.Equal(175046 / 48000.0, duration, 12);
+        Assert.Equal(4.411791666666667, EmbeddedSounds.Load(5).Duration, 12);
+        Assert.Equal(EmbeddedSounds.Load(5).Duration, EmbeddedSounds.Load(EmbeddedSounds.Index(FeedbackCue.MysteryAttempt)).Duration);
         const double scheduledStart = 1000.05;
         var timeline = new AttemptTimeline();
         Assert.True(timeline.Begin(scheduledStart, duration));
@@ -117,5 +127,24 @@ public sealed class SoundTests
         Assert.Equal(FeedbackCue.Downgrade, GameFeedback.Result(new() { FailureMode = FailureMode.Downgrade }, true));
         Assert.Equal(FeedbackCue.Failure, GameFeedback.Result(new() { FailureMode = FailureMode.KeepItem }, false));
         Assert.Equal(FeedbackCue.Destroy, GameFeedback.Result(new() { FailureMode = FailureMode.Destroy }, false));
+        // ??? success = mythic reached, mythic step = myth_up, ??? failure = destroy (design 7).
+        Assert.Equal(FeedbackCue.MythicAchieved, GameFeedback.Result(new() { Success = true, Action = EnhanceAction.Mystery }, true));
+        Assert.Equal(FeedbackCue.MythicUp, GameFeedback.Result(new() { Success = true, Action = EnhanceAction.Mythic }, true));
+        Assert.Equal(FeedbackCue.Destroy, GameFeedback.Result(new() { Action = EnhanceAction.Mystery, FailureMode = FailureMode.Destroy }, false));
+        Assert.Equal(FeedbackCue.Downgrade, GameFeedback.Result(new() { Action = EnhanceAction.Mythic, FailureMode = FailureMode.Downgrade }, false));
+        Assert.Equal(FeedbackCue.Complete, GameFeedback.Result(new() { Success = true, Action = EnhanceAction.Transcend }, true));
+    }
+
+    [Fact]
+    public void Every_cue_has_an_embedded_sound_and_a_game_fallback()
+    {
+        foreach (FeedbackCue cue in Enum.GetValues(typeof(FeedbackCue)))
+        {
+            Assert.InRange(EmbeddedSounds.Index(cue), 0, EmbeddedSounds.Count - 1);
+            Assert.False(string.IsNullOrEmpty(GameFeedback.SoundName(cue)));
+        }
+        Assert.Equal("MenuInstallModFunc", GameFeedback.SoundName(FeedbackCue.MysteryAttempt));
+        Assert.Equal("QuestCompleted", GameFeedback.SoundName(FeedbackCue.MythicAchieved));
+        Assert.Equal("MenuInspectorWindowOpen", GameFeedback.SoundName(FeedbackCue.MysteryConfirm));
     }
 }

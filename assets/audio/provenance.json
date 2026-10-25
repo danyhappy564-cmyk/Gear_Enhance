@@ -1,7 +1,7 @@
 {
   "origin": "User attachments, 2026-10-22",
   "license": "Not supplied by the user; separate from source code MIT license",
-  "conversion": "First four and star2: plain PCM16 decode. Evolution charge: user-requested crop of heartbeat tail and blend with original charge; details per asset.",
+  "conversion": "First four and star2: plain PCM16 decode. Evolution charge: user-requested crop of heartbeat tail and blend with original charge; details per asset. 1.4.0: normal charge trimmed by 0.765 s; four synthesized ??? / mythic sounds (tools/make_sounds.py).",
   "assets": [
     {
       "name": "failure",
@@ -34,13 +34,14 @@
       "originalName": "강화중소리.mp3",
       "source": "assets/audio/source/charge.mp3",
       "sourceSha256": "8905a40fc4847e9daf856ba1895e46d48c6a4cacb1922d712a5598918192df88",
-      "output": "src/Client/Audio/charge.wav",
+      "output": "assets/audio/edited/charge_full.wav",
       "sha256": "e614d77ca16f837821e4b50c502464cfb693ba5e5028645fea36967de03e140b",
       "channels": 2,
       "sampleRate": 48000,
       "frames": 211766,
       "durationSeconds": 4.411791666666667,
-      "sampleBits": 16
+      "sampleBits": 16,
+      "note": "1.4.0: no longer embedded; input of the trimmed charge and of evolution_charge."
     },
     {
       "name": "destroy",
@@ -86,6 +87,71 @@
       "heartbeatCropDuration": 4.411791666666667,
       "ffmpegFilter": "[0:a]volume=0.8[charge];[1:a]atrim=start=27.305124433107:duration=4.411791666667,asetpts=PTS-STARTPTS,aresample=48000,aformat=channel_layouts=stereo,volume=0.45,afade=t=in:d=0.04,afade=t=out:st=4.341791666667:d=0.07[heart];[charge][heart]amix=inputs=2:duration=first:normalize=0,atrim=end_sample=211766[mix]",
       "otherInput": "src/Client/Audio/charge.wav"
+    },
+    {
+      "name": "charge_trimmed",
+      "originalName": "강화중소리.mp3 (edited)",
+      "source": "assets/audio/edited/charge_full.wav",
+      "output": "src/Client/Audio/charge_trimmed.wav",
+      "transform": "User request 2026-10-25: first 0.765 s (near silence) removed, 5 ms fade-in; tools/make_sounds.py trim_charge",
+      "sha256": "a278a74051752e25347dcb2e72c0e82ea00746bac8b14ac3d069563eb822ad58",
+      "channels": 2,
+      "sampleRate": 48000,
+      "frames": 175046,
+      "durationSeconds": 3.6467916666666667,
+      "sampleBits": 16
+    },
+    {
+      "name": "myth_confirm",
+      "originalName": null,
+      "source": "tools/make_sounds.py",
+      "output": "src/Client/Audio/myth_confirm.wav",
+      "transform": "Synthesized in this repository (no external samples), seeded and reproducible",
+      "sha256": "e0e1e9f3ebae8d134ae37a4afe802fc930575b1161e411c50b6b624561d6213d",
+      "channels": 2,
+      "sampleRate": 48000,
+      "frames": 91200,
+      "durationSeconds": 1.9,
+      "sampleBits": 16
+    },
+    {
+      "name": "myth_charge",
+      "originalName": null,
+      "source": "tools/make_sounds.py",
+      "output": "src/Client/Audio/myth_charge.wav",
+      "transform": "Synthesized in this repository (no external samples), seeded and reproducible",
+      "sha256": "ae65885933e1f376c751d6a7663dd6d34394da75a8f0b6a9f2240fe5c1d21483",
+      "channels": 2,
+      "sampleRate": 48000,
+      "frames": 211766,
+      "durationSeconds": 4.411791666666667,
+      "sampleBits": 16
+    },
+    {
+      "name": "myth_success",
+      "originalName": null,
+      "source": "tools/make_sounds.py",
+      "output": "src/Client/Audio/myth_success.wav",
+      "transform": "Synthesized in this repository (no external samples), seeded and reproducible",
+      "sha256": "7c4bd1f8c71123822e146ed80a64d094bc68fd5a6d08b858f96c2d3a4f537521",
+      "channels": 2,
+      "sampleRate": 48000,
+      "frames": 182400,
+      "durationSeconds": 3.8,
+      "sampleBits": 16
+    },
+    {
+      "name": "myth_up",
+      "originalName": null,
+      "source": "tools/make_sounds.py",
+      "output": "src/Client/Audio/myth_up.wav",
+      "transform": "Synthesized in this repository (no external samples), seeded and reproducible",
+      "sha256": "9c1d0cfcb84d7c74685d9b4a64d2957f9cfab0e5f781a370211f5ed66fda316f",
+      "channels": 2,
+      "sampleRate": 48000,
+      "frames": 72000,
+      "durationSeconds": 1.5,
+      "sampleBits": 16
     }
   ]
 }

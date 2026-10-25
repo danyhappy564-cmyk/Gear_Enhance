@@ -176,8 +176,8 @@
 | 신화 강화 성공 | **합성 `myth_up`** (1.5초, 올라가는 세 음 종소리 + 반짝임) |
 | ??? 실패 | 사용자 `destroy` |
 
-- 합성 음원: `assets/audio/synth/*.wav`(48kHz 스테레오 PCM16), 만드는 스크립트 `tools/make_sounds.py`(외부 음원 없음, 같은 결과가 다시 나옴). 크기는 사용자 음원에 맞춤(평균 -15~-23 dB).
-- 1.4.0 구현 때 `src/Client/Audio/`로 옮겨 DLL에 넣고 `EnhancementAudio`에 연결. 실제 게임 청취는 미확인.
+- 합성 음원: `src/Client/Audio/myth_*.wav`(4단계 전에는 `assets/audio/synth/`, 48kHz 스테레오 PCM16), 만드는 스크립트 `tools/make_sounds.py`(외부 음원 없음, 같은 결과가 다시 나옴). 크기는 사용자 음원에 맞춤(평균 -15~-23 dB).
+- 4단계(2026-10-25)에서 `src/Client/Audio/`로 옮겨 DLL에 넣고 `EnhancementAudio`에 연결함(`FeedbackCue` 끝에 MysteryConfirm·MysteryAttempt·MythicAchieved·MythicUp 추가, 리소스 번호 6~9). 일반 충전은 `charge_trimmed`(0번), 원본 변환본은 `assets/audio/edited/charge_full.wav`. 실제 게임 청취는 미확인.
 
 ### 7.1 소리와 연출 맞추기 (사용자 요청 2026-10-25)
 

@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """Synthesizes the 1.4.0 ??? / Mythic sounds (no external samples) and writes the
-trimmed user charge sound to assets/audio/edited/.
+trimmed user charge sound (from assets/audio/edited/charge_full.wav) into the DLL
+resources, src/Client/Audio/.
 
 Loudness is set to sit with the user-provided sounds (charge ≈ -24 dB mean, star2 ≈ -16 dB).
 
-python3 tools/make_sounds.py [out_dir]   (default: assets/audio/synth)
+python3 tools/make_sounds.py [out_dir]   (default: src/Client/Audio)
 
 Output: 48 kHz stereo PCM16 WAV, same format as src/Client/Audio. The random
 generator is seeded, so running it again writes byte-identical files.
@@ -207,13 +208,12 @@ def trim_charge(src, dst, start=0.765, fade=0.005):
 
 def main():
     root = os.path.join(os.path.dirname(__file__), '..')
-    src = os.path.join(root, 'src', 'Client', 'Audio', 'charge.wav')
-    if os.path.exists(src):
-        edited = os.path.join(root, 'assets', 'audio', 'edited')
-        os.makedirs(edited, exist_ok=True)
-        trim_charge(src, os.path.join(edited, 'charge_trimmed.wav'))
-    out = sys.argv[1] if len(sys.argv) > 1 else os.path.join(root, 'assets', 'audio', 'synth')
+    # 1.4.0: outputs go straight into the DLL resources (src/Client/Audio).
+    out = sys.argv[1] if len(sys.argv) > 1 else os.path.join(root, 'src', 'Client', 'Audio')
     os.makedirs(out, exist_ok=True)
+    src = os.path.join(root, 'assets', 'audio', 'edited', 'charge_full.wav')
+    if os.path.exists(src):
+        trim_charge(src, os.path.join(out, 'charge_trimmed.wav'))
     for name, make in [('myth_confirm', myth_confirm), ('myth_charge', myth_charge), ('myth_success', myth_success), ('myth_up', myth_up)]:
         stereo = make()
         path = os.path.join(out, name + '.wav')
