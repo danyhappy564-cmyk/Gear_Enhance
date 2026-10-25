@@ -146,6 +146,8 @@ public sealed partial class Plugin
                         var perLevel = Loc.L($"단계당 +{MythicTuned.WeaponPercentPerLevel:0.#}%", $"+{MythicTuned.WeaponPercentPerLevel:0.#}% per level");
                         (result.EffectLabel, result.EffectNow, result.EffectNext) = (Loc.L("탄 데미지", "Bullet damage"), "???", perLevel);
                         (result.EffectLabel2, result.EffectNow2, result.EffectNext2) = (Loc.L("관통력", "Penetration"), "???", perLevel);
+                        result.Note = Loc.L($"신화 1단계부터 이 총에 든 탄의 불이익이 단계당 {MythicEffects.AmmoPenaltyCut(1):0.#}%씩 줄어듭니다",
+                            $"From Mythic 1 the rounds in this gun lose {MythicEffects.AmmoPenaltyCut(1):0.#}% of their penalties per level"); result.NoteColor = Soft;
                     }
                     else (result.EffectLabel, result.EffectNow, result.EffectNext) = (Loc.L("보호 부위", "Protected zones"),
                         Loc.L("기존", "Before"), Loc.L($"+{zones.Count}곳", $"+{zones.Count}"));
@@ -170,10 +172,14 @@ public sealed partial class Plugin
                 if (receipt.Success)
                 {
                     result.Title = Loc.L("신화 강화 성공", "Mythic level up"); result.Tint = Myth; result.MythicLite = true;
-                    result.Line = Loc.L("신화  ", "Mythic  ") + $"{StageText.Roman(from)} → {StageText.Roman(receipt.Level)}";
+                    result.Line = Loc.L("신화  ", "Mythic  ") + $"{from} → {receipt.Level}";
                     (result.EffectLabel, result.EffectNow, result.EffectNext) = MythicEffect(from, receipt.Level);
                     // Damage and penetration rise by the same percent; both get their own row.
-                    if (weapon) (result.EffectLabel2, result.EffectNow2, result.EffectNext2) = (Loc.L("관통력", "Penetration"), result.EffectNow, result.EffectNext);
+                    if (weapon)
+                    {
+                        (result.EffectLabel2, result.EffectNow2, result.EffectNext2) = (Loc.L("관통력", "Penetration"), result.EffectNow, result.EffectNext);
+                        result.Note = AmmoPenaltyNote(receipt.Level); result.NoteColor = Soft;
+                    }
                 }
                 else Fallback(result, receipt, attempt, Loc.L("신화", "Mythic"), from);
                 break;
@@ -191,7 +197,7 @@ public sealed partial class Plugin
                 if (receipt.Success)
                 {
                     result.Title = Loc.L("초월 성공", "Transcended"); result.Tint = Cyan; result.Glow = true;
-                    result.Line = ResultText.Track(receipt.Transcend) + $"  {StageText.Roman(from)} → {StageText.Roman(receipt.Level)}";
+                    result.Line = ResultText.Track(receipt.Transcend) + $"  {from} → {receipt.Level}";
                     var kind = TranscendEffects.Kind(weapon, receipt.Transcend, transcendAutomatic);
                     var now = TranscendEffects.Display(kind, from, Tuned);
                     var after = TranscendEffects.Display(kind, receipt.Level, Tuned);
@@ -290,7 +296,7 @@ public sealed partial class Plugin
         else if (receipt.FailureMode == FailureMode.Downgrade)
         {
             result.Title = Loc.L("단계 하락", "Level dropped"); result.Tint = Caution;
-            result.Line = track + $"  {StageText.Roman(from)} → {StageText.Roman(receipt.Level)}";
+            result.Line = track + $"  {from} → {receipt.Level}";
         }
         else
         {
@@ -300,6 +306,11 @@ public sealed partial class Plugin
         }
         result.Note = pity;
     }
+
+    // The rounds' bad values a mythic gun takes away, named (user 2026-10-26: say what changed).
+    private static string AmmoPenaltyNote(int level) => Loc.L(
+        $"이 총에 든 탄의 불이익 {MythicEffects.AmmoPenaltyCut(level):0.#}% 감소 · 명중률 −, 반동 +, 내구도 소모 +, 과열 +, 고장 확률",
+        $"Rounds in this gun lose {MythicEffects.AmmoPenaltyCut(level):0.#}% of their penalties · accuracy −, recoil +, wear +, heat +, malfunction chance");
 
     private (string, string, string) MythicEffect(int from, int to) => weapon
         ? (Loc.L("탄 데미지", "Bullet damage"), $"+{MythicEffects.WeaponPercent(from, MythicTuned):0.#}%", $"+{MythicEffects.WeaponPercent(to, MythicTuned):0.#}%")
@@ -452,8 +463,8 @@ public sealed partial class Plugin
                 var view = subject;
                 if (view == null) return null;
                 var fraction = attemptTimeline.Fraction(AttemptClock);
-                var what = view.Action == EnhanceAction.Transcend ? ResultText.Track(view.Transcend) + $" {StageText.Roman(view.CurrentLevel)} → {StageText.Roman(view.NextLevel)}"
-                    : view.Action == EnhanceAction.Mythic ? Loc.L("신화 ", "Mythic ") + $"{StageText.Roman(view.CurrentLevel)} → {StageText.Roman(view.NextLevel)}"
+                var what = view.Action == EnhanceAction.Transcend ? ResultText.Track(view.Transcend) + $" {view.CurrentLevel} → {view.NextLevel}"
+                    : view.Action == EnhanceAction.Mythic ? Loc.L("신화 ", "Mythic ") + $"{view.CurrentLevel} → {view.NextLevel}"
                     : view.Action == EnhanceAction.Mystery ? "???"
                     : view.IsEvolution ? $"{StarEvolution.Stars(view.CurrentStars)} → {StarEvolution.Stars(view.NextStars)}"
                     : EnhanceEffects.Name(view.Path) + $" +{view.CurrentLevel} → +{view.NextLevel}";

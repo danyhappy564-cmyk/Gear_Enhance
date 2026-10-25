@@ -36,6 +36,8 @@ public sealed class EnhanceTests
         public MemoryBackend(SptProfile saved) : base(null!, null!, null!, null!, null!, null!) => Saved = saved;
         public override SptProfile Profile(MongoId session) => session == Session ? Saved : null!;
         public override bool Eligible(MongoId template) => IsEligible;
+        public double TemplateDurability { get; set; }
+        public override double TemplateMaxDurability(MongoId template) => TemplateDurability;
         public bool Part { get; set; }
         public override bool IsArmorPart(MongoId template) => Part;
         public override bool IsWeapon(MongoId template) => WeaponCategory;
@@ -173,6 +175,19 @@ public sealed class EnhanceTests
         Assert.Equal(2000, rig.Money);
         Assert.Single(rig.Output.ProfileChanges![Session].Items!.DeletedItems!);
         Assert.Single(rig.Output.ProfileChanges[Session].Items!.ChangedItems!);
+    }
+
+    [Fact]
+    public void Gear_without_saved_durability_uses_its_template_and_a_zero_failure_still_applies()
+    {
+        // User 2026-10-26: modded helmets and masks new from a trader carry no Upd.Repairable yet.
+        var rig = new Rig();
+        rig.Item.Upd = null;
+        Assert.Throws<InvalidOperationException>(() => rig.Quote());
+        rig.Backend.TemplateDurability = 60;
+        rig.Execute(rig.Quote(0, FailureMode.ZeroDurability));
+        Assert.Equal(0, rig.Item.Upd!.Repairable!.Durability);
+        Assert.Equal(60, rig.Item.Upd.Repairable.MaxDurability);
     }
 
     [Theory]

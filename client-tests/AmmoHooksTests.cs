@@ -132,7 +132,9 @@ public sealed class AmmoHooksTests : IDisposable
     {
         var ammo = In(gun);
         Assert.Equal(0, Int(ammo, 10, 1));
-        Load(4); Assert.Equal(10, Int(ammo, 10, 1));
+        // 20 % of a bad value a level (user 2026-10-26): recoil +10 is +2 at IV, +0 at V.
+        Load(4); Assert.Equal(2, Int(ammo, 10, 1));
+        Load(1); Assert.Equal(8, Int(ammo, 10, 1));
         Load(0); Assert.Equal(10, Int(ammo, 10, 1));
         Load(5); Assert.Equal(0, Int(ammo, 10, 1));
         StatPatches.Registry.Clear(); Assert.Equal(10, Int(ammo, 10, 1));

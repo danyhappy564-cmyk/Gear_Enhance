@@ -23,7 +23,7 @@ internal static class AmmoPatches
     private static readonly Dictionary<FieldInfo, int> fields = new Dictionary<FieldInfo, int>();
     private static readonly Dictionary<MethodBase, (int Getter, int Field)> sites = new Dictionary<MethodBase, (int, int)>();
     private static MethodInfo templateFactor;
-    private static bool enabled, reported, hasMax;
+    private static bool enabled, reported, hasAny;
     private static int snapshotVersion = -1;
     // The registry deliberately exposes single-id reads only. Inspect its snapshot only
     // when Version changes; no registry edit or scan is needed on a shot/frame.
@@ -100,7 +100,7 @@ internal static class AmmoPatches
                 harmony.Patch(caller, transpiler: Hook(nameof(Reads)));
             enabled = true;
             var changed = sites.Where(s => s.Value.Getter + s.Value.Field > 0).Select(s => s.Key).OrderBy(m => m.MetadataToken).ToArray();
-            Plugin.LogInfo($"신화 V 탄 불이익 연결 / mythic V ammo: getter {sites.Values.Sum(s => s.Getter)}, field {sites.Values.Sum(s => s.Field)}, callers {changed.Length}: "
+            Plugin.LogInfo($"신화 탄 불이익 감소 연결 / mythic ammo penalties: getter {sites.Values.Sum(s => s.Getter)}, field {sites.Values.Sum(s => s.Field)}, callers {changed.Length}: "
                 + string.Join(", ", changed.Select(m => m.DeclaringType?.FullName + "." + m.Name)));
         }
         catch { enabled = false; throw; }
@@ -151,17 +151,17 @@ internal static class AmmoPatches
         {
             var version = Registry.Version;
             var records = (Dictionary<string, (int Level, string[] Zones)>)mythic.GetValue(Registry);
-            hasMax = false;
+            hasAny = false;
             foreach (var entry in records)
             {
-                if (entry.Value.Level < MythicRules.MaxLevel) continue;
+                if (entry.Value.Level < 1) continue;
                 var track = Registry.Find(entry.Key);
                 if (track == null || track.Path != EnhancePath.Recoil && track.Path != EnhancePath.Ergonomics && track.Path != EnhancePath.Precision) continue;
-                hasMax = true; break;
+                hasAny = true; break;
             }
             snapshotVersion = version;
         }
-        return hasMax;
+        return hasAny;
     }
 
     private sealed class WeaponInfo { internal int Version = -1, Level; }
@@ -200,11 +200,12 @@ internal static class AmmoPatches
         return info.Weapon;
     }
 
-    private static bool Qualified(object weapon)
+    // The player's own gun's mythic level, 0 for anything else (a bot's looted gun, stash ammo).
+    private static int Stage(object weapon)
     {
-        if (weapon == null || !MythicPatches.Main(out var profile, out var equipment) || equipment == null || profile != Registry.ProfileId) return false;
+        if (weapon == null || !MythicPatches.Main(out var profile, out var equipment) || equipment == null || profile != Registry.ProfileId) return 0;
         var heldBy = owner(weapon);
-        if (heldBy == null || !ReferenceEquals(ownerRoot(heldBy), equipment)) return false;
+        if (heldBy == null || !ReferenceEquals(ownerRoot(heldBy), equipment)) return 0;
         var info = weapons.GetValue(weapon, newWeapon);
         if (info.Version != Registry.Version)
         {
@@ -212,7 +213,7 @@ internal static class AmmoPatches
             info.Level = id == null ? -1 : Registry.MythicLevel(id);
             if (settled) info.Version = Registry.Version;
         }
-        return info.Level >= MythicRules.MaxLevel;
+        return Math.Max(0, info.Level);
     }
 
     [ThreadStatic] private static object shotAmmo, shotWeapon, shotTemplate;
@@ -229,7 +230,7 @@ internal static class AmmoPatches
             var player = controllerPlayer(controller);
             if (player == null || !MythicPatches.Main(out var profile, out _) || (string)playerProfile(player) != profile) return;
             var weapon = firingWeapon ?? controllerWeapon(controller);
-            if (!Qualified(weapon)) return;
+            if (Stage(weapon) <= 0) return;
             shotAmmo = ammo; shotWeapon = weapon; shotTemplate = template(ammo);
         }
         catch (Exception ex) { Fail(ex); }
@@ -247,24 +248,27 @@ internal static class AmmoPatches
         if (reported) return;
         reported = true;
         // The logger lives in the plugin (BepInEx); without it (test host) the effect still stops quietly.
-        try { Report("신화 V 탄 불이익 효과 중단(나머지 기능은 정상) / mythic V ammo disabled: " + ex.GetBaseException().Message); }
+        try { Report("신화 탄 불이익 감소 중단(나머지 기능은 정상) / mythic ammo penalties disabled: " + ex.GetBaseException().Message); }
         catch (Exception) { }
     }
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static void Report(string text) => Plugin.LogError(text);
-    private static bool Applies(object ammo) => Active() && ammo != null
-        && Qualified(ReferenceEquals(ammo, shotAmmo) ? shotWeapon : Weapon(ammo));
-    private static int NeutralInt(int value, int kind) => kind == 0 && value < 0 || kind == 1 && value > 0 ? 0 : value;
-    private static float NeutralFloat(float value, int kind) => kind == 2 || kind == 3 || kind == 7
-        ? value > 1 ? 1 : value : value > 0 ? 0 : value;
+    // Share of each bad value taken away: 20 % a mythic level, all of it at V (user 2026-10-26).
+    private static float Share(object ammo) => !Active() || ammo == null ? 0
+        : (float)(MythicEffects.AmmoPenaltyCut(Stage(ReferenceEquals(ammo, shotAmmo) ? shotWeapon : Weapon(ammo))) / 100);
+    private static int NeutralInt(int value, int kind, float share) => kind == 0 && value < 0 || kind == 1 && value > 0
+        ? (int)Math.Round(value * (1 - share), MidpointRounding.AwayFromZero) : value;
+    // Multipliers (burn, heat, AmmoFactor) are bad above 1; chances are bad above 0.
+    private static float NeutralFloat(float value, int kind, float share) => kind == 2 || kind == 3 || kind == 7
+        ? value > 1 ? 1 + (value - 1) * (1 - share) : value : value > 0 ? value * (1 - share) : value;
     private static int ReadInt(object ammo, int value, int kind)
     {
-        try { return Applies(ammo) ? NeutralInt(value, kind) : value; }
+        try { var share = Share(ammo); return share > 0 ? NeutralInt(value, kind, share) : value; }
         catch (Exception ex) { Fail(ex); return value; }
     }
     private static float ReadFloat(object ammo, float value, int kind)
     {
-        try { return Applies(ammo) ? NeutralFloat(value, kind) : value; }
+        try { var share = Share(ammo); return share > 0 ? NeutralFloat(value, kind, share) : value; }
         catch (Exception ex) { Fail(ex); return value; }
     }
     private static float InstanceFactor(float value, object ammo) => ReadFloat(ammo, value, 7);
@@ -272,7 +276,12 @@ internal static class AmmoPatches
     private static float InstanceFloat(float value, object ammo, int kind) => ReadFloat(ammo, value, kind);
     private static float WeaponFactor(float value, object weapon)
     {
-        try { return Active() && HasLoadedAmmo(weapon) && Qualified(weaponType.IsInstanceOfType(weapon) ? weapon : Weapon(weapon)) ? NeutralFloat(value, 7) : value; }
+        try
+        {
+            if (!Active() || !HasLoadedAmmo(weapon)) return value;
+            var share = (float)(MythicEffects.AmmoPenaltyCut(Stage(weaponType.IsInstanceOfType(weapon) ? weapon : Weapon(weapon))) / 100);
+            return share > 0 ? NeutralFloat(value, 7, share) : value;
+        }
         catch (Exception ex) { Fail(ex); return value; }
     }
     private static bool HasLoadedAmmo(object weapon)

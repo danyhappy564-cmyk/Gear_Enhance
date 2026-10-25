@@ -40,7 +40,7 @@ internal static class MythicPatches
         var gameWorld = GameBridge.RuntimeType("EFT.GameWorld");
         var singleton = gameWorld == null ? null : GameBridge.RuntimeType("Comfort.Common.Singleton`1")?.MakeGenericType(gameWorld);
         worldInstance = singleton == null ? null : AccessTools.Property(singleton, "Instance");
-        Try("신화 V 탄 불이익 / mythic V ammo", () => AmmoPatches.Install(harmony));
+        Try("신화 탄 불이익 감소 / mythic ammo penalties", () => AmmoPatches.Install(harmony));
         Try("신화 탄 데미지·관통 / mythic bullets", () =>
         {
             var shot = Required("EFT.Ballistics.Shot");

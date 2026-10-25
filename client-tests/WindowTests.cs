@@ -149,7 +149,7 @@ public sealed class WindowTests : IDisposable
             StageText.Tag(5, 5, 5));
         Assert.Equal("<color=#9AA1A8>[</color><color=#40D1D9>초월 IV</color><color=#9AA1A8>]</color>", StageText.Tag(-1, 4, 0));
         Assert.Equal("", StageText.Tag(-1, 0, 0));
-        Assert.Equal("IV / V", StageText.Of(4, 5));
+        Assert.Equal("4 / 5", StageText.Of(4, 5));
         Assert.Equal("0", StageText.Roman(0));
         // A failed ??? destroys the gear: both records go.
         StatPatches.Registry.ApplyReceipt(new() { Action = EnhanceAction.Mystery, ItemId = "vest", FailureMode = FailureMode.Destroy, MythicLevel = -1 }, "pmc");

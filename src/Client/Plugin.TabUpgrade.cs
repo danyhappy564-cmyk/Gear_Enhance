@@ -176,6 +176,11 @@ public sealed partial class Plugin
                     rows.Add((name, $"+{MythicEffects.WeaponPercent(level, tuning):0.#}%",
                         level >= MythicRules.MaxLevel ? Loc.L("최대", "Max") : $"+{MythicEffects.WeaponPercent(next, tuning):0.#}%",
                         MythicEffects.WeaponPercent(level, tuning), MythicEffects.WeaponPercent(next, tuning), MythicEffects.WeaponPercent(MythicRules.MaxLevel, tuning)));
+            // User 2026-10-26: what the mythic gun does to its rounds' bad values, level by level.
+            if (weapon)
+                rows.Add((Loc.L("탄 불이익 감소", "Ammo penalties cut"), $"{MythicEffects.AmmoPenaltyCut(level):0.#}%",
+                    level >= MythicRules.MaxLevel ? Loc.L("최대", "Max") : $"{MythicEffects.AmmoPenaltyCut(next):0.#}%",
+                    MythicEffects.AmmoPenaltyCut(level), MythicEffects.AmmoPenaltyCut(next), 100));
             else
                 rows.Add((Loc.L("피격 피해 감소", "Damage taken reduction"), $"{MythicEffects.ArmorPercent(level, tuning):0.#}%",
                     level >= MythicRules.MaxLevel ? Loc.L("최대", "Max") : $"{MythicEffects.ArmorPercent(next, tuning):0.#}%", MythicEffects.ArmorPercent(level, tuning), MythicEffects.ArmorPercent(next, tuning),

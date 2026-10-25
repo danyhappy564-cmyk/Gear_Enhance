@@ -563,8 +563,8 @@ public sealed partial class Plugin
             {
                 var tuning = StatPatches.Registry.MythicTuning;
                 var head = Loc.L("신화 ", "Mythic ") + StageText.Of(MythicLevel, MythicRules.MaxLevel);
-                if (weapon) return head + Loc.L($" · 탄 데미지·관통력 단계당 +{tuning.WeaponPercentPerLevel:0.#}% · 비용 단계마다 ×{tuning.CostGrowth:0.##}",
-                    $" · damage & penetration +{tuning.WeaponPercentPerLevel:0.#}% per level · cost ×{tuning.CostGrowth:0.##} per level");
+                if (weapon) return head + Loc.L($" · 탄 데미지·관통력 단계당 +{tuning.WeaponPercentPerLevel:0.#}% · 탄 불이익 단계당 -{MythicEffects.AmmoPenaltyCut(1):0.#}%",
+                    $" · damage & penetration +{tuning.WeaponPercentPerLevel:0.#}% per level · ammo penalties -{MythicEffects.AmmoPenaltyCut(1):0.#}% per level");
                 var zones = new List<string>();
                 foreach (var zone in StatPatches.Registry.MythicZones(id)) zones.Add(MythicText.ZoneName(zone));
                 return head + Loc.L($" · 받는 피해 단계당 -{tuning.ArmorPercentPerLevel:0.#}%(머리 절반)", $" · damage taken -{tuning.ArmorPercentPerLevel:0.#}% per level (half on the head)")

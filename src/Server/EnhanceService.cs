@@ -559,9 +559,12 @@ public sealed partial class EnhanceService(SptEnhanceBackend backend, JsonUtil s
             }
             else if (failureMode == FailureMode.ZeroDurability)
             {
-                foreach (var part in tree.Where(i => i.Upd?.Repairable != null))
+                foreach (var part in tree)
                 {
-                    part.Upd!.Repairable!.Durability = 0;
+                    // Gear new from a trader or a mod has no saved durability yet: start it from the template.
+                    var repairable = Repairable(part);
+                    if (repairable == null) continue;
+                    repairable.Durability = 0;
                     changedItems.Add(part);
                 }
             }
@@ -850,8 +853,10 @@ public sealed partial class EnhanceService(SptEnhanceBackend backend, JsonUtil s
         var tree = Tree(profile, itemId);
         if (tree.Any(i => i.Id != target.Id && i.SlotId == "main"))
             throw Loc.Invalid("장비의 내부 보관칸을 비운 뒤 강화해 주세요.", "Empty the gear's storage before enhancing.");
+        // A trader or mod item may carry no Upd.Repairable until it is first damaged (user 2026-10-26:
+        // modded helmets and masks were refused); its template durability counts then.
         if (!backend.Eligible(target.Template)
-            || !tree.Any(i => i.Upd?.Repairable is { MaxDurability: > 0 }))
+            || !tree.Any(i => i.Upd?.Repairable is { MaxDurability: > 0 } || i.Upd?.Repairable == null && backend.TemplateMaxDurability(i.Template) > 0))
             throw Loc.Invalid("내구도가 있는 무기 또는 방어구만 강화할 수 있습니다.", "Only weapons or armor with durability can be enhanced.");
         if (backend.IsArmorPart(target.Template))
             throw Loc.Invalid("방탄판·내피·헬멧 부착 방호구는 따로 강화할 수 없습니다. 방어구에 끼운 채 방어구를 강화하면 함께 적용됩니다.",
@@ -859,6 +864,16 @@ public sealed partial class EnhanceService(SptEnhanceBackend backend, JsonUtil s
         if (tree.Any(i => i.Upd?.PinLockState?.ToString() == "Locked"))
             throw Loc.Invalid("잠긴 장비나 부착물의 잠금을 먼저 해제해 주세요.", "Unlock the locked gear or attachments first.");
         return target;
+    }
+
+    // The item's saved durability, made full from its template when it has none yet; null without durability.
+    private UpdRepairable? Repairable(Item item)
+    {
+        if (item.Upd?.Repairable != null) return item.Upd.Repairable;
+        var full = backend.TemplateMaxDurability(item.Template);
+        if (full <= 0) return null;
+        item.Upd ??= new Upd();
+        return item.Upd.Repairable = new UpdRepairable { Durability = full, MaxDurability = full };
     }
 
     private static List<Item> InventoryItems(PmcData profile) => profile.Inventory?.Items

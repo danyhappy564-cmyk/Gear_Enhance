@@ -111,6 +111,9 @@ public static class MythicEffects
 {
     // Damage and penetration bonus of a mythic weapon, percent (2 × 5 = 10 by default). No star multiplier.
     public static double WeaponPercent(int level, MythicTuning tuning) => MythicRules.Clamp(level) * tuning.WeaponPercentPerLevel;
+    // Share of a round's bad values (accuracy −, recoil +, burn +, heat +, misfire and malfunction
+    // chances) a mythic weapon takes away, percent: 20 a level, all of it at V (user 2026-10-26).
+    public static double AmmoPenaltyCut(int level) => MythicRules.Clamp(level) * 100.0 / MythicRules.MaxLevel;
     // Damage taken reduction of mythic armor, percent (10 × 5 = 50 by default; half on the head).
     public static double ArmorPercent(int level, MythicTuning tuning, bool head = false) =>
         MythicRules.Clamp(level) * tuning.ArmorPercentPerLevel * (head ? MythicRules.HeadShare : 1);

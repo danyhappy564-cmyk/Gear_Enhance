@@ -2,16 +2,16 @@ using System.Collections.Generic;
 
 namespace GearEnhance;
 
-// User 2026-10-26: mythic and transcendence stages as Roman numerals ("신화 V · 초월 X").
-// Enhancement levels (+10) stay Arabic. There is no Roman zero: a fresh mythic shows 0.
+// User 2026-10-26: the stash and equipment cell tag shows the stages as Roman numerals ("신화 V · 초월 X");
+// the enhancement window keeps numbers ("4 / 5": "V / V" read badly there). No Roman zero: a fresh mythic shows 0.
 internal static class StageText
 {
     private static readonly string[] Numerals = { "0", "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X" };
 
     internal static string Roman(int value) => value >= 0 && value < Numerals.Length ? Numerals[value] : value.ToString();
 
-    // "IV / V".
-    internal static string Of(int level, int max) => Roman(level) + " / " + Roman(max);
+    // The window's "4 / 5".
+    internal static string Of(int level, int max) => level + " / " + max;
 
     // Stash and equipment cells: "[신화 V · 초월 X]" (transcendence = both tracks added), or only
     // the part the gear has; empty for plain gear.

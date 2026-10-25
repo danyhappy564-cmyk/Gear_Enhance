@@ -57,20 +57,20 @@ public sealed class TranscendUiTests : IDisposable
     {
         var success = new EnhanceReceipt { Success = true, Transcend = TranscendTrack.Second, Level = 3 };
         Assert.Equal("초월 성공!", ResultText.Title(success, false));
-        Assert.Equal("2성 초월 III단계 달성", ResultText.Detail(success));
+        Assert.Equal("2성 초월 3단계 달성", ResultText.Detail(success));
         var kept = new EnhanceReceipt { Transcend = TranscendTrack.Third, Level = 2, Pity = 6, FailureMode = FailureMode.KeepItem };
         Assert.Equal("초월 실패", ResultText.Title(kept, false));
-        Assert.Equal("3성 초월 II단계 유지 · 재료 소모 · 천장 +6%p", ResultText.Detail(kept));
+        Assert.Equal("3성 초월 2단계 유지 · 재료 소모 · 천장 +6%p", ResultText.Detail(kept));
         var dropped = new EnhanceReceipt { Transcend = TranscendTrack.Third, Level = 2, Pity = 9, FailureMode = FailureMode.Downgrade };
         Assert.Equal("초월 단계 하락", ResultText.Title(dropped, false));
-        Assert.Contains("II단계로 하락 · 장비 파괴 없음", ResultText.Detail(dropped));
+        Assert.Contains("2단계로 하락 · 장비 파괴 없음", ResultText.Detail(dropped));
         var saved = new EnhanceReceipt { Transcend = TranscendTrack.Third, Level = 3, Pity = 9, FailureMode = FailureMode.Downgrade, DowngradePrevented = true };
         Assert.Equal("초월 실패 · 하락 방지", ResultText.Title(saved, false));
-        Assert.StartsWith("단계 하락 방지 발동 · III단계 유지", ResultText.Detail(saved));
+        Assert.StartsWith("단계 하락 방지 발동 · 3단계 유지", ResultText.Detail(saved));
         Assert.Equal(FeedbackCue.Downgrade, GameFeedback.Result(dropped, false));
         Loc.English = true;
         Assert.Equal("Transcended!", ResultText.Title(success, false));
-        Assert.Equal("3-star transcendence dropped to level II · nothing destroyed · pity +9%p", ResultText.Detail(dropped));
+        Assert.Equal("3-star transcendence dropped to level 2 · nothing destroyed · pity +9%p", ResultText.Detail(dropped));
     }
 
     [Theory]
