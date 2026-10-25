@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="ko"><head>
+<meta charset="utf-8">
+<title>창고 강화 표시</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body style="margin:0;background:#07090b">
+<nav aria-label="목업 페이지" style="display:flex;gap:8px;padding:12px 24px;background:#07090b;border-bottom:1px solid #22282e"><a href="index.html" style="padding:8px 14px;border:1px solid #333a42;color:#9aa1a8;background:#15191d;text-decoration:none;font:700 13px 'Noto Sans KR','Malgun Gothic',sans-serif">강화 창</a><a href="popups.html" style="padding:8px 14px;border:1px solid #333a42;color:#9aa1a8;background:#15191d;text-decoration:none;font:700 13px 'Noto Sans KR','Malgun Gothic',sans-serif">결과 팝업 모음</a><a href="stash.html" style="padding:8px 14px;border:1px solid #d9b36c;color:#f3e3bf;background:#2a2416;text-decoration:none;font:700 13px 'Noto Sans KR','Malgun Gothic',sans-serif">창고 표시</a></nav>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&amp;family=Rajdhani:wght@600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#07090b}
+a{color:#d9b36c}a:hover{color:#f0cf8c}
+.num{font-family:'Rajdhani','Noto Sans KR',sans-serif;font-variant-numeric:tabular-nums}
+.cell{position:relative;box-sizing:border-box;background-image:linear-gradient(rgba(255,255,255,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.05) 1px,transparent 1px);background-size:64px 64px}
+.mythcell{animation:mythBorder 2.2s ease-in-out infinite}
+@keyframes mythBorder{0%,100%{border-color:#ff6ad5;box-shadow:0 0 0 1px rgba(255,106,213,.6),0 0 12px rgba(255,106,213,.45),inset 0 0 14px rgba(255,106,213,.18)}50%{border-color:#ffd878;box-shadow:0 0 0 1px rgba(255,216,120,.8),0 0 22px rgba(255,216,120,.55),inset 0 0 18px rgba(255,216,120,.22)}}
+.mythcell::after{content:'';position:absolute;inset:0;pointer-events:none;background:linear-gradient(115deg,transparent 42%,rgba(255,255,255,.2) 50%,transparent 58%);background-size:260% 100%;animation:sweep 3.2s linear infinite}
+@keyframes sweep{0%{background-position:160% 0}100%{background-position:-60% 0}}
+.legend-myth{animation:mythBorder 2.2s ease-in-out infinite}
+@media (prefers-reduced-motion: reduce){.mythcell,.mythcell::after,.legend-myth{animation:none}}
+</style>
+</helmet>
+<div style="width: 1448px; height: 1680px; box-sizing: border-box; padding: 48px; background: #07090b; font-family: 'Noto Sans KR', 'Malgun Gothic', sans-serif; color: #e6e2d8; display: flex; flex-direction: column; gap: 44px">
+  <div>
+    <h1 style="margin: 0; font-size: 34px; font-weight: 700; color: #f3e3bf">창고 표시 · 강화 단계별</h1>
+    <p style="margin: 8px 0 0; font-size: 16px; color: #9aa1a8">한 칸 64px 기준. 이름 옆 별 표시, 칸 배경색, 왼쪽 보험 배지(P·고·일·X)로 단계와 보험을 구분합니다. 숫자는 예시입니다.</p>
+  </div>
+
+  <sc-for list="{{sections}}" as="sec" hint-placeholder-count="2">
+    <section style="display: flex; flex-direction: column; gap: 14px">
+      <h2 style="margin: 0; font-size: 20px; font-weight: 700; color: #d6d0c3">{{sec.title}}</h2>
+      <div style="display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start">
+        <sc-for list="{{sec.items}}" as="it" hint-placeholder-count="6">
+          <div style="display: flex; flex-direction: column; gap: 8px; width: {{it.w}}px">
+            <div class="{{it.cellCls}}" style="width: {{it.w}}px; height: {{it.h}}px; border: 1px solid {{it.border}}; background-color: {{it.bg}}">
+              <sc-if value="{{it.gun}}" hint-placeholder-val="{{true}}">
+                <svg width="280" height="104" sc-camel-view-box="0 0 300 110" aria-hidden="true" style="position: absolute; left: 20px; top: 14px"><rect x="8" y="42" width="62" height="20" fill="#5a626b"></rect><rect x="8" y="38" width="14" height="30" fill="#4a5158"></rect><rect x="70" y="34" width="118" height="28" fill="#6a737c"></rect><rect x="106" y="22" width="44" height="12" fill="#5a626b"></rect><rect x="188" y="38" width="72" height="20" fill="#5f676f"></rect><rect x="260" y="45" width="36" height="6" fill="#4a5158"></rect><path d="M118 62h24l6 40h-22z" fill="#4a5158"></path><path d="M88 62h16l-4 30h-14z" fill="#4a5158"></path></svg>
+              </sc-if>
+              <sc-if value="{{it.vest}}" hint-placeholder-val="{{false}}">
+                <svg width="148" height="148" sc-camel-view-box="0 0 120 120" aria-hidden="true" style="position: absolute; left: 22px; top: 28px"><path d="M30 8h18v16h24V8h18v22l12 12v70H18V42l12-12z" fill="#5f676f"></path><rect x="36" y="42" width="48" height="40" fill="#6a737c"></rect><rect x="24" y="90" width="72" height="16" fill="#4a5158"></rect></svg>
+              </sc-if>
+              <sc-if value="{{it.helmet}}" hint-placeholder-val="{{false}}">
+                <svg width="100" height="92" sc-camel-view-box="0 0 120 110" aria-hidden="true" style="position: absolute; left: 14px; top: 28px"><path d="M14 72Q14 14 60 12Q106 14 106 72V86H14Z" fill="#6a737c"></path><rect x="10" y="82" width="100" height="10" fill="#4a5158"></rect><rect x="30" y="52" width="60" height="22" fill="#4a5158"></rect></svg>
+              </sc-if>
+              <sc-if value="{{it.plate}}" hint-placeholder-val="{{false}}">
+                <svg width="92" height="140" sc-camel-view-box="0 0 96 150" aria-hidden="true" style="position: absolute; left: 18px; top: 32px"><path d="M8 22Q48 0 88 22V142H8Z" fill="#6a737c"></path><path d="M20 34Q48 18 76 34V130H20Z" fill="#5a626b"></path></svg>
+              </sc-if>
+              <div style="position: absolute; top: 3px; right: 6px; display: flex; flex-direction: column; align-items: flex-end; gap: 1px; font-size: 13px; font-weight: 700; white-space: nowrap">
+                <div style="display: flex; align-items: baseline; gap: 5px"><span style="color: #e6e2d8">{{it.short}}</span><span style="color: {{it.starColor}}; letter-spacing: 1px">{{it.stars}}</span></div>
+                <sc-if value="{{it.hasExtra}}" hint-placeholder-val="{{false}}"><div style="font-size: 12px; color: {{it.extraColor}}">{{it.extra}}</div></sc-if>
+              </div>
+              <sc-if value="{{it.hasBadge}}" hint-placeholder-val="{{true}}">
+                <div style="position: absolute; left: 4px; top: 32px; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: #111417; background: {{it.badgeBg}}">{{it.badge}}</div>
+              </sc-if>
+              <sc-if value="{{it.hasTag}}" hint-placeholder-val="{{false}}">
+                <div style="position: absolute; left: 4px; bottom: 4px; padding: 1px 6px; font-size: 11px; font-weight: 700; color: #111417; background: {{it.tagBg}}">{{it.tag}}</div>
+              </sc-if>
+              <div class="num" style="position: absolute; right: 6px; bottom: 2px; font-size: 17px; font-weight: 700; color: #e6e2d8">{{it.count}}</div>
+            </div>
+            <div style="font-size: 13px; line-height: 1.5; color: #b9b3a6"><span style="font-weight: 700; color: #e6e2d8">{{it.caption}}</span><br>{{it.note}}</div>
+          </div>
+        </sc-for>
+      </div>
+    </section>
+  </sc-for>
+
+  <section style="display: flex; gap: 48px; padding: 18px 20px; border: 1px solid #2a3037; background: #111417; font-size: 13px; color: #b9b3a6">
+    <div style="display: flex; flex-direction: column; gap: 8px">
+      <div style="font-weight: 700; color: #d6d0c3">칸 배경</div>
+      <div style="display: flex; gap: 16px; flex-wrap: wrap">
+        <sc-for list="{{bgLegend}}" as="b" hint-placeholder-count="5">
+          <span style="display: flex; align-items: center; gap: 6px"><span class="{{b.cls}}" style="width: 16px; height: 16px; border: 1px solid {{b.border}}; background: {{b.bg}}"></span>{{b.name}}</span>
+        </sc-for>
+      </div>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 8px">
+      <div style="font-weight: 700; color: #d6d0c3">강화 보험 배지</div>
+      <div style="display: flex; gap: 16px; flex-wrap: wrap">
+        <sc-for list="{{badgeLegend}}" as="b" hint-placeholder-count="4">
+          <span style="display: flex; align-items: center; gap: 6px"><span style="width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: #111417; background: {{b.bg}}">{{b.mark}}</span>{{b.name}}</span>
+        </sc-for>
+      </div>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 8px; max-width: 460px">
+      <div style="font-weight: 700; color: #d6d0c3">별 표시</div>
+      <div>1성은 강화 중이라 합계를 붙입니다(★ +5). 진화한 뒤에는 +30이 당연하니 별만 표시합니다(★★, ★★★). 초월은 별 아래 줄에 청록색으로 '초월 6단계'처럼 붙입니다. 신화가 되면 별 대신 분홍 ✦ 신화 표시가 붙고, 아래 줄에 신화 단계가 보입니다.</div>
+    </div>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script="" data-props="{&quot;$preview&quot;:{&quot;width&quot;:1448,&quot;height&quot;:1680}}">
+class Component extends DCLogic {
+  renderVals() {
+    var STAGE = {
+      none: { bg: '#15191d', border: '#2a3037', starColor: '#d9b36c' },
+      one: { bg: 'rgba(217,179,108,0.13)', border: '#8a7444', starColor: '#d9b36c' },
+      two: { bg: 'rgba(180,156,255,0.15)', border: '#6f5fa8', starColor: '#b49cff' },
+      three: { bg: 'rgba(255,107,107,0.13)', border: '#9a4a46', starColor: '#ff7b74' },
+      trans: { bg: 'rgba(79,209,197,0.15)', border: '#2f7f78', starColor: '#ff7b74' },
+      myth: { bg: 'rgba(255,106,213,0.13)', border: '#ff6ad5', starColor: '#ff6ad5', extraColor: '#ff9be4', cellCls: 'cell mythcell' }
+    };
+    var BADGE = { P: '#ffc46b', '고': '#7fb2ff', '일': '#8fd694', X: '#9aa1a8' };
+    var item = function (base, stage, extra) {
+      var s = STAGE[stage];
+      var o = Object.assign({ bg: s.bg, border: s.border, starColor: s.starColor, extraColor: s.extraColor || '#4fd1c5', cellCls: s.cellCls || 'cell', stars: '', extra: '', badge: '', hasTag: false, tag: '', tagBg: '#ffb26b' }, base, extra);
+      o.hasBadge = !!o.badge;
+      o.hasExtra = !!o.extra;
+      o.badgeBg = BADGE[o.badge] || '#9aa1a8';
+      return o;
+    };
+    var gun = { w: 320, h: 128, gun: true, vest: false, plate: false, helmet: false, short: 'K2', count: '30/30' };
+    var vest = { w: 192, h: 192, gun: false, vest: true, plate: false, helmet: false, short: 'Gen4', count: '64/64' };
+    var plate = { w: 128, h: 192, gun: false, vest: false, plate: true, helmet: false, short: 'SAPI', count: '60/60' };
+    var helmet = { w: 128, h: 128, gun: false, vest: false, plate: false, helmet: true, short: 'Altyn', count: '40/40' };
+
+    var weapons = [
+      item(gun, 'none', { caption: '+0', note: '강화 안 함 · 표식 없음' }),
+      item(gun, 'one', { stars: '★ +5', badge: 'X', caption: '★ +5 · 1성 강화 중', note: '금색 칸 · 강화 보험 없음' }),
+      item(gun, 'one', { stars: '★ +30', badge: '일', caption: '★ +30 · 1성 완료', note: '진화 전 · 일반 보험' }),
+      item(gun, 'two', { stars: '★★', badge: '고', caption: '★★ 진화', note: '보라 칸 · 고급 보험' }),
+      item(gun, 'three', { stars: '★★★', badge: 'P', caption: '★★★ 진화', note: '빨간 칸 · 프리미엄 보험' }),
+      item(gun, 'trans', { stars: '★★★', extra: '초월 6단계', badge: 'P', caption: '★★★ · 초월 6단계', note: '청록 칸 · 2성 3 + 3성 3' }),
+      item(gun, 'myth', { stars: '✦ 신화', extra: '3단계 · 초월 6', badge: 'P', caption: '✦ 신화 3단계 (초월도 같이 있을 때)', note: '분홍 칸 · 테두리가 분홍↔금빛으로 반짝임 · 이 총으로 쏠 때 데미지·관통 +6%' })
+    ];
+    var armors = [
+      item(vest, 'none', { caption: '+0', note: '표식 없음' }),
+      item(vest, 'one', { stars: '★ +9', badge: 'X', caption: '★ +9 · 강화 중', note: '보험 없음' }),
+      item(vest, 'one', { stars: '★ +20', badge: '일', caption: '★ +20 · 1성 완료', note: '방어구는 2항목 · 최대 +20' }),
+      item(vest, 'two', { stars: '★★', badge: '고', caption: '★★ 진화', note: '고급 보험' }),
+      item(vest, 'three', { stars: '★★★', badge: 'P', caption: '★★★ 진화', note: '프리미엄 보험' }),
+      item(vest, 'trans', { stars: '★★★', extra: '초월 6단계', badge: 'P', count: '75/75', caption: '★★★ · 초월 6단계', note: '최대 내구도 64 → 75 · 방어 등급 +1' }),
+      item(vest, 'myth', { stars: '✦ 신화', extra: '3단계', badge: 'P', count: '75/75', caption: '✦ 신화 3단계 (방어구)', note: '무작위 2곳 추가 보호 · 받는 피해 -6%' }),
+      item(helmet, 'three', { stars: '★★★', badge: '고', caption: '★★★ 헬멧', note: '2×2칸 · ??? 도전 가능' }),
+      item(helmet, 'myth', { stars: '✦ 신화', extra: '1단계', badge: '고', caption: '✦ 신화 1단계 (헬멧)', note: '머리 부위 2곳 추가 (예: 귀·턱)' })
+    ];
+    var plates = [
+      item(plate, 'two', { stars: '★★', caption: '방어구에 끼운 방탄판', note: '검사 창 슬롯 · 방어구와 같은 표식' }),
+      item(plate, 'none', { hasTag: true, tag: '차액', caption: '더 비싼 판을 끼움', note: '차액을 내기 전엔 강화 효과 없음' }),
+      item(plate, 'none', { caption: '빼서 창고에 둠', note: '표식 없음 · 강화 효과 없음' })
+    ];
+    return {
+      sections: [
+        { title: '무기 (5×2칸)', items: weapons },
+        { title: '방어구 (3×3칸) · 헬멧 (2×2칸)', items: armors },
+        { title: '방탄판 (2×3칸)', items: plates }
+      ],
+      bgLegend: [
+        { name: '강화 없음', bg: STAGE.none.bg, border: STAGE.none.border },
+        { name: '1성 (금색)', bg: STAGE.one.bg, border: STAGE.one.border },
+        { name: '★★ (보라)', bg: STAGE.two.bg, border: STAGE.two.border },
+        { name: '★★★ (빨강)', bg: STAGE.three.bg, border: STAGE.three.border },
+        { name: '초월 (청록)', bg: STAGE.trans.bg, border: STAGE.trans.border, cls: '' },
+        { name: '신화 (분홍 · 반짝임, 무기만)', bg: STAGE.myth.bg, border: STAGE.myth.border, cls: 'legend-myth' }
+      ],
+      badgeLegend: [
+        { mark: 'P', name: '프리미엄 99% · 즉시', bg: BADGE.P },
+        { mark: '고', name: '고급 55%', bg: BADGE['고'] },
+        { mark: '일', name: '일반 20%', bg: BADGE['일'] },
+        { mark: 'X', name: '보험 없음', bg: BADGE.X }
+      ]
+    };
+  }
+}
+</script>
+
+
+</body></html>

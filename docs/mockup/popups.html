@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="ko"><head>
+<meta charset="utf-8">
+<title>강화 결과 팝업 모음</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body style="margin:0;background:#07090b">
+<nav aria-label="목업 페이지" style="display:flex;gap:8px;padding:12px 24px;background:#07090b;border-bottom:1px solid #22282e"><a href="index.html" style="padding:8px 14px;border:1px solid #333a42;color:#9aa1a8;background:#15191d;text-decoration:none;font:700 13px 'Noto Sans KR','Malgun Gothic',sans-serif">강화 창</a><a href="popups.html" style="padding:8px 14px;border:1px solid #d9b36c;color:#f3e3bf;background:#2a2416;text-decoration:none;font:700 13px 'Noto Sans KR','Malgun Gothic',sans-serif">결과 팝업 모음</a><a href="stash.html" style="padding:8px 14px;border:1px solid #333a42;color:#9aa1a8;background:#15191d;text-decoration:none;font:700 13px 'Noto Sans KR','Malgun Gothic',sans-serif">창고 표시</a></nav>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&amp;family=Rajdhani:wght@600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#07090b}
+a{color:#d9b36c}a:hover{color:#f0cf8c}
+button{font-family:inherit}
+.num{font-family:'Rajdhani','Noto Sans KR',sans-serif;font-variant-numeric:tabular-nums}
+.btn{all:unset;box-sizing:border-box;display:flex;align-items:center;justify-content:center;min-height:46px;font-size:15px;font-weight:700;cursor:pointer;text-align:center}
+.btn:focus-visible{outline:2px solid #f3e3bf;outline-offset:2px}
+.btn.act{background:#d9b36c;color:#1a1408}
+.btn.act:hover{background:#e6c47f}
+.btn.sec{background:#1b2025;border:1px solid #333a42;color:#e6e2d8}
+.btn.danger{background:#a8325e;color:#fff}
+.pop{animation:popIn .3s cubic-bezier(.2,.9,.3,1.2) both}
+.pop.shake{animation:popIn .3s cubic-bezier(.2,.9,.3,1.2) both,shake .5s .04s both}
+.pop.confirm{animation:popIn .3s cubic-bezier(.2,.9,.3,1.2) both,confirmHit .45s 1.22s both}
+@keyframes confirmHit{0%{transform:none}30%{transform:scale(1.035)}100%{transform:none}}
+.pop.confirm .ptitle{animation:qHit .7s 1.22s ease-out both}
+@keyframes qHit{0%{text-shadow:0 0 0 transparent}25%{text-shadow:0 0 28px #ff6ad5}100%{text-shadow:0 0 0 transparent}}
+@keyframes popIn{0%{transform:scale(.92)}100%{transform:none}}
+@keyframes shake{0%,100%{transform:none}20%{transform:translateX(-10px)}40%{transform:translateX(8px)}60%{transform:translateX(-6px)}80%{transform:translateX(3px)}}
+.ptitle.glow{animation:titleGlow 1.2s .05s ease-out both}
+.ptitle.glow.late{animation-delay:1.45s}
+@keyframes titleGlow{0%{text-shadow:0 0 0 transparent}12%{text-shadow:0 0 22px currentColor}100%{text-shadow:0 0 0 transparent}}
+.peff{animation:effIn .5s .35s ease-out both}
+@keyframes effIn{0%{transform:translateY(-8px)}100%{transform:none}}
+.gauge{transform-origin:left center;animation:gauge 4.412s linear both}
+.gauge.loop{animation-iteration-count:infinite}
+@keyframes gauge{0%{transform:scaleX(0)}100%{transform:scaleX(1)}}
+.piece{position:absolute;width:90px;height:37px;overflow:hidden;animation-duration:.95s;animation-delay:.06s;animation-timing-function:cubic-bezier(.2,.7,.3,1);animation-fill-mode:both}
+.p0{animation-name:s0}.p1{animation-name:s1}.p2{animation-name:s2}.p3{animation-name:s3}.p4{animation-name:s4}.p5{animation-name:s5}.p6{animation-name:s6}.p7{animation-name:s7}.p8{animation-name:s8}
+@keyframes s0{0%{transform:none;opacity:1}100%{transform:translate(-70px,-50px) rotate(-25deg);opacity:.25}}
+@keyframes s1{0%{transform:none;opacity:1}100%{transform:translate(0,-70px) rotate(12deg);opacity:.25}}
+@keyframes s2{0%{transform:none;opacity:1}100%{transform:translate(75px,-48px) rotate(28deg);opacity:.25}}
+@keyframes s3{0%{transform:none;opacity:1}100%{transform:translate(-95px,6px) rotate(-18deg);opacity:.25}}
+@keyframes s4{0%{transform:none;opacity:1}100%{transform:translate(6px,26px) rotate(8deg);opacity:.25}}
+@keyframes s5{0%{transform:none;opacity:1}100%{transform:translate(98px,-4px) rotate(20deg);opacity:.25}}
+@keyframes s6{0%{transform:none;opacity:1}100%{transform:translate(-72px,62px) rotate(30deg);opacity:.25}}
+@keyframes s7{0%{transform:none;opacity:1}100%{transform:translate(-4px,78px) rotate(-14deg);opacity:.25}}
+@keyframes s8{0%{transform:none;opacity:1}100%{transform:translate(80px,58px) rotate(-26deg);opacity:.25}}
+.fx{position:absolute;inset:-24px;pointer-events:none;overflow:hidden}
+.fxflash{position:absolute;inset:0;background:#fff;animation:fxFlashLoop 2.4s ease-out infinite}
+@keyframes fxFlashLoop{0%{opacity:.5}25%,100%{opacity:0}}
+.fxrays{position:absolute;left:50%;top:50%;width:1500px;height:1500px;margin:-750px 0 0 -750px;border-radius:50%;background:repeating-conic-gradient(rgba(255,106,213,.26) 0deg 5deg,transparent 5deg 18deg,rgba(255,216,120,.2) 18deg 22deg,transparent 22deg 36deg);-webkit-mask:radial-gradient(circle,#000 0,#000 22%,transparent 62%);mask:radial-gradient(circle,#000 0,#000 22%,transparent 62%);animation:fxSpin 16s linear infinite}
+@keyframes fxSpin{to{transform:rotate(360deg)}}
+.fxring{position:absolute;left:50%;top:50%;width:200px;height:200px;margin:-100px 0 0 -100px;border-radius:50%;border:3px solid #ff6ad5;box-shadow:0 0 24px #ff6ad5;animation:fxRing 2.4s cubic-bezier(.2,.7,.3,1) infinite}
+.fxring.r2{border-color:#ffd878;box-shadow:0 0 24px #ffd878;animation-delay:.23s}
+.fxring.r3{border-color:#fff;box-shadow:0 0 24px #fff;animation-delay:.4s}
+.fx.lite .fxring.r2{animation-delay:.09s}
+@keyframes fxRing{0%{transform:scale(.2);opacity:1}60%,100%{transform:scale(5.5);opacity:0}}
+.fxspark{position:absolute;left:50%;top:50%;width:0;height:0}
+.fxspark i{position:absolute;left:0;top:-3px;width:30px;height:6px;border-radius:3px;background:currentColor;box-shadow:0 0 12px currentColor;animation:fxShoot 2.4s cubic-bezier(.15,.7,.3,1) infinite}
+@keyframes fxShoot{0%{transform:translateX(20px) scaleX(.3);opacity:0}6%{opacity:1}50%,100%{transform:translateX(460px) scaleX(1);opacity:0}}
+.pop.mythic{animation:mythIn .75s cubic-bezier(.2,.9,.25,1.25) both,mythGlow 2.4s .75s ease-in-out infinite}
+@keyframes mythIn{0%{transform:scale(.45) rotate(-5deg)}60%{transform:scale(1.07)}100%{transform:none}}
+@keyframes mythGlow{0%,100%{box-shadow:0 0 0 1px #ff6ad5,0 0 34px rgba(255,106,213,.4)}50%{box-shadow:0 0 0 2px #ffd878,0 0 80px rgba(255,106,213,.8)}}
+.ptitle.mythic{background:linear-gradient(90deg,#ff6ad5,#ffd878,#ffffff,#9fd0ff,#ff6ad5);background-size:300% 100%;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;font-size:44px !important;letter-spacing:2px;animation:shimmer 2.4s linear infinite}
+@keyframes shimmer{to{background-position:300% 0}}
+.fx.lite .fxrays,.fx.lite .fxflash,.fx.lite .fxring.r3{display:none}
+.fx.lite .fxring{animation-name:fxRingS}
+@keyframes fxRingS{0%{transform:scale(.2);opacity:.9}45%,100%{transform:scale(3);opacity:0}}
+.fx.lite .fxspark i{animation-name:fxShootS;width:20px;height:4px}
+@keyframes fxShootS{0%{transform:translateX(16px) scaleX(.3);opacity:0}6%{opacity:1}40%,100%{transform:translateX(260px) scaleX(1);opacity:0}}
+.pop.mythlite{animation:popIn .3s cubic-bezier(.2,.9,.3,1.2) both,mythGlow 2.4s .3s ease-in-out infinite}
+.ptitle.mythlite{background:linear-gradient(90deg,#ff6ad5,#ffd878,#ffffff,#9fd0ff,#ff6ad5);background-size:300% 100%;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;font-size:36px !important;animation:shimmer 2.4s linear infinite}
+.fxstar.lite{font-size:30px}
+.fxstar{font-size:46px;line-height:1;color:#ffd878;text-shadow:0 0 18px #ff6ad5,0 0 36px #ffd878;animation:starIn .9s .06s cubic-bezier(.2,.9,.3,1.3) both}
+@keyframes starIn{0%{transform:scale(0) rotate(-200deg);opacity:0}70%{transform:scale(1.35) rotate(15deg);opacity:1}100%{transform:none;opacity:1}}
+@media (prefers-reduced-motion: reduce){.pop,.pop.shake,.ptitle.glow,.peff,.gauge,.piece,.fxflash,.fxrays,.fxring,.fxspark i,.pop.mythic,.ptitle.mythic,.fxstar{animation:none}.fxflash,.fxring,.fxspark{display:none}}
+</style>
+</helmet>
+<div style="width: 2036px; height: 3300px; box-sizing: border-box; padding: 48px; background: #07090b; font-family: 'Noto Sans KR', 'Malgun Gothic', sans-serif; color: #e6e2d8">
+  <h1 style="margin: 0; font-size: 34px; font-weight: 700; color: #f3e3bf">결과 팝업 모음</h1>
+  <p style="margin: 8px 0 36px; font-size: 16px; color: #9aa1a8">강화 창 위에 겹쳐 뜨는 결과 창입니다. 숫자는 예시이고, 확인을 눌러야 다음 조작을 할 수 있습니다.</p>
+  <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); column-gap: 40px; row-gap: 40px; align-items: start">
+    <sc-for list="{{cards}}" as="p" hint-placeholder-count="12">
+      <div style="display: flex; flex-direction: column; gap: 10px">
+        <div style="font-size: 14px; color: #b9b3a6"><span class="num" style="font-size: 16px; color: #d9b36c; margin-right: 8px">{{p.no}}</span>{{p.caption}}</div>
+        <div style="position: relative">
+        <sc-if value="{{p.fx}}" hint-placeholder-val="{{false}}">
+          <div class="{{p.fxCls}}" aria-hidden="true">
+            <div class="fxrays"></div>
+            <div class="fxring"></div><div class="fxring r2"></div><div class="fxring r3"></div>
+            <sc-for list="{{p.sparks}}" as="k" hint-placeholder-count="0"><div class="fxspark" style="transform: rotate({{k.a}}deg); color: {{k.c}}"><i style="animation-delay: {{k.d}}ms"></i></div></sc-for>
+            <div class="fxflash"></div>
+          </div>
+        </sc-if>
+        <div class="{{p.cardCls}}" style="position: relative; z-index: 1; width: 620px; box-sizing: border-box; background: #15191d; border: 1px solid #353c44; box-shadow: 0 0 0 1px {{p.tintSoft}}, 0 24px 60px rgba(0, 0, 0, 0.6)">
+          <div style="height: 5px; background: {{p.tint}}"></div>
+          <div style="padding: 22px 32px 26px; display: flex; flex-direction: column; align-items: center; gap: 12px; text-align: center">
+            <div style="font-size: 12px; letter-spacing: 2px; color: #9aa1a8">{{p.kicker}}</div>
+            <sc-if value="{{p.fx}}" hint-placeholder-val="{{false}}"><div class="{{p.starCls}}" aria-hidden="true">✦</div></sc-if>
+            <div class="{{p.titleCls}}" style="font-size: 34px; font-weight: 700; line-height: 1.15; color: {{p.tint}}">{{p.title}}</div>
+            <div style="font-size: 17px; color: #e6e2d8">{{p.line}}</div>
+            <sc-if value="{{p.shatter}}" hint-placeholder-val="{{false}}">
+              <div style="position: relative; width: 270px; height: 110px; margin: 6px 0">
+                <sc-for list="{{p.pieces}}" as="s" hint-placeholder-count="9">
+                  <div class="{{s.cls}}" style="left: {{s.x}}px; top: {{s.y}}px">
+                    <svg width="270" height="110" sc-camel-view-box="0 0 300 110" aria-hidden="true" style="position: absolute; left: {{s.ox}}px; top: {{s.oy}}px"><rect x="8" y="42" width="62" height="20" fill="#4a5158"></rect><rect x="8" y="38" width="14" height="30" fill="#3d434a"></rect><rect x="70" y="34" width="118" height="28" fill="#59616a"></rect><rect x="106" y="22" width="44" height="12" fill="#4a5158"></rect><rect x="188" y="38" width="72" height="20" fill="#4f565e"></rect><rect x="260" y="45" width="36" height="6" fill="#3d434a"></rect><path d="M118 62h24l6 40h-22z" fill="#3d434a"></path><path d="M88 62h16l-4 30h-14z" fill="#3d434a"></path></svg>
+                  </div>
+                </sc-for>
+              </div>
+            </sc-if>
+            <sc-if value="{{p.hasEff}}" hint-placeholder-val="{{true}}">
+              <div style="display: flex; align-items: baseline; gap: 12px; width: 100%; box-sizing: border-box; padding: 12px 16px; background: #0e1114; border: 1px solid #2a3037">
+                <span style="font-size: 14px; color: #b9b3a6">{{p.eff.label}}</span>
+                <span class="num" style="margin-left: auto; font-size: 22px; font-weight: 700; color: #c4c0b6">{{p.eff.cur}}</span>
+                <span style="color: #7d8794">→</span>
+                <span class="num peff" style="font-size: 22px; font-weight: 700; color: {{p.effColor}}">{{p.eff.next}}</span>
+              </div>
+            </sc-if>
+            <sc-if value="{{p.charging}}" hint-placeholder-val="{{false}}">
+              <div style="width: 100%; padding: 8px 0 4px">
+                <div style="position: relative; height: 12px; background: #22282e"><div class="{{p.gaugeCls}}" style="position: absolute; left: 0; top: 0; right: 0; bottom: 0; background: {{p.tint}}"></div></div>
+              </div>
+            </sc-if>
+            <sc-if value="{{p.hasFoot}}" hint-placeholder-val="{{true}}">
+              <div style="width: 100%; border-top: 1px solid #2a3037; padding-top: 12px; display: flex; flex-direction: column; gap: 4px">
+                <sc-if value="{{p.hasCost}}" hint-placeholder-val="{{true}}"><div style="font-size: 13px; color: #9aa1a8">소모 <span class="num" style="font-size: 16px; color: #e6e2d8; margin-left: 6px">{{p.cost}}</span></div></sc-if>
+                <sc-if value="{{p.hasNote}}" hint-placeholder-val="{{false}}"><div style="font-size: 13px; color: {{p.noteColor}}">{{p.note}}</div></sc-if>
+              </div>
+            </sc-if>
+            <sc-if value="{{p.hasButton}}" hint-placeholder-val="{{true}}"><button type="button" class="btn act" style="width: 330px; margin-top: 4px">확인</button></sc-if>
+            <sc-if value="{{p.hasConfirm}}" hint-placeholder-val="{{false}}"><div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; width: 100%; margin-top: 4px"><button type="button" class="btn sec">취소</button><button type="button" class="btn danger">진행</button></div></sc-if>
+          </div>
+        </div>
+        </div>
+      </div>
+    </sc-for>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script="" data-props="{&quot;$preview&quot;:{&quot;width&quot;:2036,&quot;height&quot;:3300}}">
+class Component extends DCLogic {
+  renderVals() {
+    var GOLD = '#d9b36c', PURPLE = '#b49cff', RED = '#ff8a7e', TEAL = '#4fd1c5', MUTED = '#9aa1a8', OK = '#8fd694', BLUE = '#5fa8ff';
+    var DEF = {
+      charging: { kicker: '일반 강화', title: '강화 진행 중…', line: 'Daewoo K2 · 반동 제어 +4 → +5 · 62%', tint: GOLD },
+      success: { kicker: '일반 강화', title: '강화 성공', line: '반동 제어  +4 → +5', tint: GOLD, eff: { label: '반동 감소', cur: '3.16%', next: '3.95%' }, cost: '424,415 ₽ · 독택 20 · 비트코인 1' },
+      fail: { kicker: '일반 강화', title: '강화 실패', line: '반동 제어  +4 유지', tint: '#e07a6e', cost: '24,415 ₽', note: '비용만 소모되었습니다' },
+      drop: { kicker: '일반 강화 · 고위험', title: '단계 하락', line: '정밀성  +7 → +6', tint: '#ffb26b', eff: { label: '탄 퍼짐 감소', cur: '4.63%', next: '3.47%' }, down: true, cost: '47,684 ₽' },
+      destroy: { kicker: '일반 강화 · 고위험', title: '장비 파괴', line: 'Daewoo K2와 부착물·탄창이 사라졌습니다', tint: '#ff6b5e', shatter: true, cost: '47,684 ₽', note: '강화 기록과 강화 보험도 함께 사라집니다' },
+      protect: { kicker: '일반 강화 · 고위험', title: '강화 실패 · 보호 발동', line: '정밀성  +7 유지', tint: OK, cost: '1,573,572 ₽', note: '파괴 방지가 장비를 지켰습니다', noteOk: true },
+      evo2: { kicker: '★★ 진화', title: '★★ 진화 성공', line: '모든 항목 효과 ×2', tint: PURPLE, eff: { label: '반동 감소', cur: '15%', next: '30%' }, cost: '2,000,000 ₽' },
+      evo3: { kicker: '★★★ 진화', title: '★★★ 진화 성공', line: '모든 항목 효과 ×3', tint: '#ff6b6b', eff: { label: '반동 감소', cur: '30%', next: '45%' }, cost: '4,000,000 ₽' },
+      evoFail: { kicker: '★★ 진화', title: '진화 실패 · 장비 파괴', line: 'Daewoo K2와 부착물·탄창이 사라졌습니다', tint: '#ff6b5e', shatter: true, cost: '2,000,000 ₽', note: '진화 실패는 보호할 수 없습니다' },
+      trans: { kicker: '초월', title: '초월 성공', line: '3성 초월  0 → 1', tint: TEAL, eff: { label: '발사속도', cur: '750', next: '795 rpm' }, cost: '3,000,000 ₽ · 군용 회로 기판 1' },
+      transFail: { kicker: '초월', title: '초월 실패', line: '2성 초월  2 유지', tint: '#7fb7b2', cost: '1,000,000 ₽ · 무기 부품 2 · 화약 1', note: '다음 성공률 +5%p (누적 +15%p)' },
+      confirm: { kicker: '???', title: '???', line: '50/50 확률로 무기가 성공하거나 부서집니다.', tint: '#ff6ad5', cost: '8,000,000 ₽ · LEDX 1', note: '진행하시겠습니까?', noteBright: true },
+      myth: { kicker: '???', title: '신화 달성', line: '신화 단계가 열렸습니다', tint: '#ff6ad5', eff: { label: '탄 데미지 · 관통력', cur: '???', next: '단계당 +2%' }, cost: '8,000,000 ₽ · LEDX 1' },
+      mythFail: { kicker: '???', title: '??? 실패 · 장비 파괴', line: 'Daewoo K2와 부착물·탄창이 사라졌습니다', tint: '#ff6b5e', shatter: true, cost: '8,000,000 ₽ · LEDX 1', note: '50% 판정에서 부서졌습니다' },
+      mythArmor: { kicker: '???', title: '신화 달성', line: '추가 보호 부위: 허벅지 (오른쪽) · 아래팔 (왼쪽)', tint: '#ff6ad5', eff: { label: '보호 부위', cur: '7곳', next: '9곳' }, cost: '8,000,000 ₽ · LEDX 1' },
+      ticketSave: { kicker: '★★ 진화', title: '진화 실패 · 파괴 방지권 사용', line: 'Daewoo K2 유지 · 단계 그대로', tint: OK, cost: '2,000,000 ₽', note: '파괴 방지권 1장을 썼습니다 · 남은 2장', noteOk: true },
+      reroll: { kicker: '신화 · 추가 보호 부위', title: '부위 다시 뽑기 완료', line: '허벅지 (오른쪽)  →  엉덩이', tint: '#ff6ad5', eff: { label: '추가 보호 부위', cur: '허벅지 (오른쪽)', next: '엉덩이' }, cost: '2,000,000 ₽ · 그래픽 카드 1' },
+      mythUp: { kicker: '신화', title: '신화 강화 성공', line: '신화  2 → 3', tint: '#ff6ad5', eff: { label: '탄 데미지 · 관통력', cur: '+4%', next: '+6%' }, cost: '6,050,000 ₽ · LEDX 1' },
+      insured: { kicker: '강화 보험', title: '강화 보험 반환', line: 'Daewoo K2 ★ 가 강화된 채 돌아옵니다 · 12시간 뒤 우편 도착', tint: '#7fb2ff', note: '고급 보험 55% 성공 (일반 1일 · 고급 12시간 · 프리미엄 즉시) · 보험은 소모되었습니다', noteOk: true }
+    };
+    var popup = function (kind, loop) {
+      var d = Object.assign({}, DEF[kind]);
+      var pieces = [];
+      if (d.shatter) for (var i = 0; i < 9; i++) { var px = (i % 3) * 90, py = Math.floor(i / 3) * 37; pieces.push({ cls: 'piece p' + i, x: px, y: py, ox: -px, oy: -py }); }
+      var good = ['success', 'evo2', 'evo3', 'trans', 'insured', 'myth', 'mythArmor', 'mythUp'].indexOf(kind) >= 0;
+      var big = kind === 'myth' || kind === 'mythArmor';
+      var lite = kind === 'mythUp' || kind === 'reroll';
+      var fx = big || lite, sparks = [];
+      var SPARK = ['#ff6ad5', '#ffd878', '#ffffff', '#9fd0ff'];
+      if (big) for (var w = 0; w < 2; w++) for (var j = 0; j < 20; j++) sparks.push({ a: j * 18 + w * 9, d: w * 1250 + (j % 5) * 40, c: SPARK[(j + w) % 4] });
+      if (lite) for (var q = 0; q < 14; q++) sparks.push({ a: q * (360 / 14), d: 20 + (q % 3) * 70, c: SPARK[q % 4] });
+      return Object.assign(d, { shatter: !!d.shatter, pieces: pieces, hasEff: !!d.eff, eff: d.eff || { label: '', cur: '', next: '' },
+        effColor: d.down ? RED : BLUE, charging: kind === 'charging', gaugeCls: loop ? 'gauge loop' : 'gauge',
+        hasFoot: kind !== 'charging', hasCost: !!d.cost, hasNote: !!d.note, noteColor: d.noteOk ? OK : d.noteBright ? '#e6e2d8' : MUTED,
+        hasButton: kind !== 'charging' && kind !== 'confirm', hasConfirm: kind === 'confirm', cardCls: lite ? 'pop mythlite' : fx ? 'pop mythic' : d.shatter ? 'pop shake' : kind === 'confirm' ? 'pop confirm' : 'pop',
+        fx: fx, sparks: sparks, fxCls: lite ? 'fx lite' : 'fx', starCls: lite ? 'fxstar lite' : 'fxstar',
+        titleCls: lite ? 'ptitle mythlite' : fx ? 'ptitle mythic' : kind === 'evo2' || kind === 'evo3' ? 'ptitle glow late' : good ? 'ptitle glow' : 'ptitle', tintSoft: d.tint + '55' });
+    };
+    var list = [
+      ['charging', '강화 시도 직후 · 충전 3.65초 (진화·???는 4.41초, 즉시 강화는 건너뜀)'],
+      ['success', '일반 강화 성공'],
+      ['fail', '일반 실패 · +5까지는 비용만'],
+      ['drop', '고위험 실패 · 단계 하락'],
+      ['destroy', '고위험 실패 · 장비 파괴 (조각 9개 흩어짐)'],
+      ['protect', '고위험 실패 · 보호 발동'],
+      ['evo2', '★★ 진화 성공'],
+      ['evo3', '★★★ 진화 성공'],
+      ['evoFail', '진화 실패 · 장비 파괴'],
+      ['ticketSave', '진화 실패 · 파괴 방지권으로 장비 유지'],
+      ['trans', '초월 성공'],
+      ['transFail', '초월 실패 · 천장 누적'],
+      ['insured', '레이드 후 강화 보험 반환 (제안)'],
+      ['confirm', '??? 도전 확인 (★★★ 무기만)'],
+      ['myth', '??? 성공 · 신화 단계 열림 (무기)'],
+      ['mythArmor', '??? 성공 · 신화 (방어구·헬멧: 무작위 부위 2곳 추가)'],
+      ['mythFail', '??? 실패 · 장비 파괴'],
+      ['mythUp', '신화 강화 성공 (작은 연출)'],
+      ['reroll', '방어구 신화 · 추가 부위 다시 뽑기 (200만 + 그래픽 카드, 매번 ×1.5)']
+    ];
+    var cards = list.map(function (x, i) {
+      return Object.assign(popup(x[0], x[0] === 'charging'), { no: (i < 9 ? '0' : '') + (i + 1), caption: x[1] });
+    });
+    return { cards: cards };
+  }
+}
+</script>
+
+
+</body></html>
