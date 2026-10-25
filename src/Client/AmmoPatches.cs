@@ -256,10 +256,10 @@ internal static class AmmoPatches
     // Share of each bad value taken away: 20 % a mythic level, all of it at V (user 2026-10-26).
     private static float Share(object ammo) => !Active() || ammo == null ? 0
         : (float)(MythicEffects.AmmoPenaltyCut(Stage(ReferenceEquals(ammo, shotAmmo) ? shotWeapon : Weapon(ammo))) / 100);
-    private static int NeutralInt(int value, int kind, float share) => kind == 0 && value < 0 || kind == 1 && value > 0
+    internal static int NeutralInt(int value, int kind, float share) => kind == 0 && value < 0 || kind == 1 && value > 0
         ? (int)Math.Round(value * (1 - share), MidpointRounding.AwayFromZero) : value;
     // Multipliers (burn, heat, AmmoFactor) are bad above 1; chances are bad above 0.
-    private static float NeutralFloat(float value, int kind, float share) => kind == 2 || kind == 3 || kind == 7
+    internal static float NeutralFloat(float value, int kind, float share) => kind == 2 || kind == 3 || kind == 7
         ? value > 1 ? 1 + (value - 1) * (1 - share) : value : value > 0 ? value * (1 - share) : value;
     private static int ReadInt(object ammo, int value, int kind)
     {

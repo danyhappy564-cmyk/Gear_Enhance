@@ -14,19 +14,24 @@ public sealed partial class Plugin
 
     private void DrawStatusPanel()
     {
-        var rows = StatRows();
+        var ammo = weapon && ammoTab;
+        var rows = ammo ? null : StatRows();
         var (offset, alpha) = UiMotion.Panel(Motion, Reduced);
         var x = StatusX + offset;
         var old = GUI.color;
         GUI.color = new Color(old.r, old.g, old.b, old.a * alpha);
-        var height = 56 + 14 + 24 + rows.Count * 31 + 18 + 24 + rows.Count * 31 + 16;
+        if (ammo) ReadAmmo();
+        var height = ammo ? AmmoPanelHeight() : 56 + 14 + 24 + rows.Count * 31 + 18 + 24 + rows.Count * 31 + 16;
         Box(new Rect(x, 0, StatusWidth, height), Panel, Edge);
         Fill(new Rect(x + 1, 1, StatusWidth - 2, 55), HeaderFill);
         Fill(new Rect(x + 1, 56, StatusWidth - 2, 1), Line);
-        Label(x + 16, 0, 160, 56, Loc.L("장비 상태", "Gear stats"), new GUIStyle(bodyBold) { fontSize = 15 }, LightGold);
         GUI.enabled = popup == PopupKind.None;
-        IconButton(new Rect(x + StatusWidth - 48, 12, 36, 32), refreshIcon, 14, ReplayMotion);
+        // Weapons: "장비 상태 | 탄 비교" tabs (user 2026-10-26); armor keeps the title.
+        if (weapon) DrawStatusTabs(x);
+        else Label(x + 16, 0, 160, 56, Loc.L("장비 상태", "Gear stats"), new GUIStyle(bodyBold) { fontSize = 15 }, LightGold);
+        IconButton(new Rect(x + StatusWidth - 48, 12, 36, 32), refreshIcon, 14, () => { ammoReadAt = -100; ammoKey = null; ReplayMotion(); });
         GUI.enabled = true;
+        if (ammo) { DrawAmmoRows(x); GUI.color = old; return; }
         var y = 70f;
         Label(x + 16, y, 60, 20, Loc.L("원본", "Base"), bodyBold, Muted);
         Label(x + 70, y, StatusWidth - 86, 20, itemName ?? "", new GUIStyle(bodyBold) { fontSize = 15 }, Text);
