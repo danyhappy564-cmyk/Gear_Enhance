@@ -58,6 +58,17 @@ internal static class ItemMarkers
         }
         try
         {
+            if (lineFailed) StashLine.Hide(__instance);
+            else Line(__instance);
+        }
+        catch (Exception ex)
+        {
+            if (!lineFailed) Plugin.LogError("창고 신화·초월 단계 표시 오류(그 표시만 숨김): " + ex);
+            lineFailed = true;
+            try { StashLine.Hide(__instance); } catch (Exception) { }
+        }
+        try
+        {
             if (frameFailed) MythicFrame.Hide(__instance);
             else Frame(__instance);
         }
@@ -68,7 +79,18 @@ internal static class ItemMarkers
             try { MythicFrame.Hide(__instance); } catch (Exception) { }
         }
     }
-    private static bool badgeFailed, frameFailed;
+    private static bool badgeFailed, frameFailed, lineFailed;
+    // User 2026-10-26: "[신화 V · 초월 X]" under the name of the gear itself, clear of the ammo line.
+    private static void Line(object view)
+    {
+        var item = GameBridge.Get(view, "Item");
+        var id = GameBridge.Get(item, "Id")?.ToString();
+        var text = id == null || GameBridge.Get(view, "Examined") is not true || GameBridge.IsArmorPart(item) ? ""
+            : StageText.Tag(StatPatches.Registry.MythicLevel(id), StatPatches.Registry.TranscendLevel(id, TranscendTrack.Second),
+                StatPatches.Registry.TranscendLevel(id, TranscendTrack.Third));
+        if (text.Length == 0) StashLine.Hide(view);
+        else StashLine.Show(view, text);
+    }
     // The mythic gear itself; plates inside it share its name line but not the frame.
     private static void Frame(object view)
     {
@@ -118,8 +140,7 @@ internal static class ItemMarkers
             var owner = id == null ? null : StatPatches.BadgeOwner(item, id);
             var badge = owner == null ? "" : StatPatches.Registry.Badge(owner);
             if (badge.Length == 0) return;
-            // User 2026-10-26: no stage line under the name (it overlapped the ammo count in equipment
-            // slots); mythic gear gets a larger caption instead.
+            // User 2026-10-26: mythic gear gets a larger caption; the stage tag is its own text (StashLine).
             if (StatPatches.Registry.MythicLevel(owner) >= 0) __result = "<size=120%>" + __result + " <color=#FF6AD5><b>" + badge + "</b></color></size>";
             else __result += " <color=" + StarEvolution.ColorHex(StatPatches.Registry.StarLevel(owner)) + ">" + badge + "</color>";
         }

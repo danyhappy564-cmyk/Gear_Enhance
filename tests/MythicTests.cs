@@ -235,7 +235,10 @@ public sealed class MythicTests
     {
         Assert.Equal([5000000, 5500000, 6050000, 6655000, 7320500], Enumerable.Range(0, 5).Select(l => MythicRules.Cost(l, new MythicTuning())));
         Assert.Equal(10, MythicEffects.WeaponPercent(5, new MythicTuning()));
-        Assert.Equal(10, MythicEffects.ArmorPercent(9, new MythicTuning()));
+        // Armor (user 2026-10-26): 10 % a level, 50 % at V, half on the head.
+        Assert.Equal(50, MythicEffects.ArmorPercent(9, new MythicTuning()));
+        Assert.Equal(25, MythicEffects.ArmorPercent(5, new MythicTuning(), head: true));
+        Assert.Equal(10, MythicEffects.ArmorPercent(2, new MythicTuning(), head: true));
     }
 
     [Fact]

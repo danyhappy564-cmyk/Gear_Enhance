@@ -119,6 +119,33 @@
 - **무기 효과: 탄 데미지 +2%, 관통력 +2% / 단계, 최대 +10%.** 스타 배율(×2·×3)을 받지 않음.
 - **이 총으로 쏠 때만** 적용. 탄 자체를 바꾸지 않음 — 같은 탄을 다른 총으로 쏘면 효과 없음(방탄판을 빼면 효과가 사라지는 것과 같은 생각).
 - 구현 조사 필요(미검증): 발사 순간 그 총의 ID로 탄의 데미지·관통력에 배율을 곱할 지점(예: 총알 생성 시 `Shot`/탄 정보 복사본). 다른 탄약·밸런스 모드가 바꾼 값 위에 곱하는 방식을 기본으로 함. 봇이 쓰는 총은 플레이어가 강화한 총이 아니므로 대상 아님.
+### 5.2.1 신화 V 무기: 탄의 불이익 중립화 (2026-10-26)
+
+- 플레이어 자신의 **신화 레벨 ≥ `MythicRules.MaxLevel`(5)** 무기에서 장전·발사하는 탄만 대상입니다. 좋은 값은 유지합니다. 봇이 주운 같은 무기, 다른 무기의 같은 탄, 빠진 탄창·창고 탄은 원래 값입니다. 은신처 사격장 복사본은 `CloneLinks.EffectId`로 원본 기록을 읽습니다.
+- `AmmoPatches`(탄 읽기 보정)는 `MythicPatches.Install`의 독립 Try에 연결합니다. 설치 실패 시 이 기능만 꺼지고 기존 신화 효과는 계속됩니다. 실행 중 오류도 이 기능을 끄며 `LogError`를 한 번만 남깁니다. 성공 시 자세한 로그에 getter·필드 치환 수와 호출자 목록 한 줄을 남깁니다. `Plugin.cs` 수정은 없습니다.
+
+| 탄 값 | 나쁜 값 → 중립 | 좋은 값 | DLL getter 호출 수 | DLL 직접 필드 읽기 수 |
+|---|---|---|---|---|
+| `ammoAccr` | 음수 → 0 | 양수 유지 | 0 | 5 |
+| `ammoRec` | 양수 → 0 | 음수 유지 | 3 | 2 |
+| `DurabilityBurnModificator` | 1 초과 → 1 | 1 미만 유지 | 2 | 3 |
+| `HeatFactor` | 1 초과 → 1 | 1 미만 유지 | 2 | 2 |
+| `MisfireChance` | 양수 → 0 | 0 이하 유지 | 0 | 1 |
+| `MalfMisfireChance` | 양수 → 0 | 0 이하 유지 | 2 | 2 |
+| `MalfFeedChance` | 양수 → 0 | 0 이하 유지 | 2 | 2 |
+| `Ammo.AmmoFactor` / `AmmoTemplate.AmmoFactor` | 산포 배율 1 초과 → 1 | 1 미만 유지 | 2 / 3 | 위 `ammoAccr`에 포함 |
+
+- **DLL 근거:** 읽기 전용 `E:\SPT 4.1\EscapeFromTarkov_Data\Managed\Assembly-CSharp.dll`, SHA-256 `EE25CEE1259777B38ED8B3E7841FDC2DB3C98540B1469FA539B1FF183476E436`. ilspycmd·Mono.Cecil로 정적 확인한 범위는 **getter 16곳 + 필드 17곳 = 33곳, 서로 다른 메서드 22개**입니다. 게임에서 Harmony가 실제 설치된 수는 미검증이며 실행 로그로 확인해야 합니다.
+- 호출자: `FirearmController.Shot`·`LauncherShot`·`GetTotalMalfunctionChance`·`GetSpecificMalfunctionVariants`, `Weapon.GetTotalCenterOfImpact`, `Launcher.GetCenterOfImpact`, 관전 플레이어의 `BundleAnimationBones.Shoot`·`ObservedPlayerHandsController.FireShotBallistic`, `Ammo` getter 8개, `AmmoTemplate.get_AmmoFactor`·`OnInit`·`CG_GetCachedReadonlyQualities10/12`, `WeaponDurabilityDebug.OnGUI`·`WeaponOverheatDebug.OnGUI`입니다.
+- 작은 getter의 Mono 인라인을 피하려고 `TranscendPatches.Callers`와 같은 토큰 탐색 후 호출자 IL을 치환합니다. 직접 `ldfld AmmoTemplate::...` 읽기도 처리합니다. `Ammo` 내부에서는 탄 인스턴스를 보존하고, 소유자를 알 수 없는 템플릿 전용 읽기는 검증된 발사·고장 판정 범위 안에서 해당 탄의 같은 템플릿일 때만 보정합니다. **공유 템플릿·표시용 속성·탄 자체는 수정하지 않습니다.**
+- 정확도는 실제 `Shot`·`LauncherShot`이 `AmmoFactor`를 읽으므로 추가했습니다. 음수 명중률의 `1 + abs(ammoAccr)/100`은 1로 만들고, 양수 명중률의 `100/(100+ammoAccr)`은 유지합니다. 무기 정확도 계산도 포함하되, 탄이 없는 총이 쓰는 기본 탄 템플릿은 그대로 둡니다.
+- 발사·고장 판정에는 스레드별 무기·탄 범위를 두며 최종 처리에서 예외·중첩 호출 뒤에도 이전 상태를 복원합니다. `GetTotalMalfunctionChance`의 인자 이름은 `ammoToFire`이므로 별도 진입 함수를 씁니다. 이미 약실에서 분리된 탄도 이 경로로 판정합니다.
+- 장전 탄은 인스턴스별 `ConditionalWeakTable` 캐시에 최대 8단계의 Slot·StackSlot 연결을 보관합니다. 같은 탄·탄창의 주소가 바뀌거나 `Registry.Version`이 바뀌면 다시 찾으며, 무기 소유 루트는 매번 현재 메인 플레이어 장비와 비교합니다. 주소·부모·소유자 읽기는 설치 때 만든 참조형 delegate로 실행합니다. 발사·고장 범위에서는 탄 캐시를 새로 만들지 않습니다. 일반 장전 탄의 첫 조회에는 캐시 객체를 만들며, 이후 읽기는 새 할당이 없습니다.
+- 다른 파일을 바꾸지 않기 위해 신화 V 무기 유무는 `EffectRegistry`의 비공개 `mythic` 스냅샷을 버전 변경 때만 읽습니다. 무기 강화 항목을 가진 V 기록이 없으면 즉시 원래 값을 반환합니다. 이 필드나 게임 API가 바뀌면 설치·실행 오류로 이 기능을 끕니다.
+- **추가 값 조사:** `AmmoTemplate.GetCachedReadonlyQualities`에서 색상 변화(`LabelVariations.Colored`)를 지정한 탄 항목은 명중률·반동입니다. 속도(`InitialSpeed`)와 출혈 항목에는 이 지정이 없고, `ammoShiftChance`는 getter 외 사용처·정보창 항목이 없어 추가하지 않았습니다. 별도 탄약·표시 모드가 추가하는 항목은 미검증입니다.
+- **탄 정보창:** 기본 게임은 `Ammo` 생성 때 공유 `AmmoTemplate.GetCachedReadonlyQualities` 목록을 사용합니다. 그래서 정보창은 원래 수치를 유지할 수 있습니다. 개별 탄에서 보정된 gameplay 값과 다르게 보일 수 있으나, 창고 탄 표시를 오염시키지 않습니다.
+- 검사 파일: `client-tests/AmmoHooksTests.cs`, `AmmoReadFixture.cs`. 순수 보정·장전 위치·탄창 이동·봇·단계 변경·원본 ID 연결·분리된 발사 탄·범위 복원·IL 실행·원본 템플릿 유지·반복 읽기 할당을 게임 타입 없이 검사합니다. 기존 `client-tests/obj/check-local.ps1`로 클라이언트·검사 코드를 직접 컴파일하고 기존 검사 포함 161건 통과(추가 40건)를 확인했습니다. 캐시 준비 후 1,000회 읽기 및 서로 다른 분리 탄 1,000개의 발사 범위 판정은 추가 할당 0바이트였습니다. NuGet 설정 접근 거부로 표준 `dotnet test`·솔루션 빌드는 미완료입니다. CS1701 참조 버전 경고가 있으며, 게임/Mono에서의 Harmony 설치·인게임 동작은 미검증입니다.
+
 ### 5.3 방어구·헬멧 신화
 
 - **??? 성공 순간** 그 장비가 아직 막지 못하는 부위 중 **무작위 2곳**을 추가로 막게 됨(추첨 결과는 장비 ID에 저장, 다시 뽑지 않음). 추가 부위의 방어 등급·재질은 그 장비 본체와 같게.

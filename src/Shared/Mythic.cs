@@ -21,9 +21,10 @@ public sealed class MythicTuning
     public int Ledx { get; set; } = 1;
     public bool RequireMaterials { get; set; } = true;
     public double DowngradeProtectionPercent { get; set; } = 100;
-    // Weapon: bullet damage and penetration per level. Armor: damage taken reduction per level.
+    // Weapon: bullet damage and penetration per level. Armor: damage taken reduction per level
+    // (user 2026-10-26: 10 % a level, 50 % at V; hits to the head get half, MythicRules.HeadShare).
     public double WeaponPercentPerLevel { get; set; } = 2;
-    public double ArmorPercentPerLevel { get; set; } = 2;
+    public double ArmorPercentPerLevel { get; set; } = 10;
     public int ExtraZones { get; set; } = 2;
     public int RerollCost { get; set; } = 2000000;
     public double RerollGrowth { get; set; } = 1.5;
@@ -61,6 +62,8 @@ public static class MythicRules
     // Hits the armor reduction applies to (game EDamageType flags): Explosion, GrenadeFragment, Bullet,
     // Melee, Landmine, Sniper, Blunt, Btr, Artillery, ThermobaricExplosion. Falls, bleeding, poison stay.
     public const int HitDamageTypes = 4 | 32 | 512 | 1024 | 2048 | 4096 | 8192 | 4194304 | 8388608 | 33554432;
+    // Share of the armor reduction on hits to the head, so a head shot stays dangerous (max 25 %).
+    public const double HeadShare = 0.5;
 
     public static int Clamp(int level) => Math.Max(0, Math.Min(MaxLevel, level));
 
@@ -108,6 +111,7 @@ public static class MythicEffects
 {
     // Damage and penetration bonus of a mythic weapon, percent (2 × 5 = 10 by default). No star multiplier.
     public static double WeaponPercent(int level, MythicTuning tuning) => MythicRules.Clamp(level) * tuning.WeaponPercentPerLevel;
-    // Damage taken reduction of mythic armor, percent.
-    public static double ArmorPercent(int level, MythicTuning tuning) => MythicRules.Clamp(level) * tuning.ArmorPercentPerLevel;
+    // Damage taken reduction of mythic armor, percent (10 × 5 = 50 by default; half on the head).
+    public static double ArmorPercent(int level, MythicTuning tuning, bool head = false) =>
+        MythicRules.Clamp(level) * tuning.ArmorPercentPerLevel * (head ? MythicRules.HeadShare : 1);
 }

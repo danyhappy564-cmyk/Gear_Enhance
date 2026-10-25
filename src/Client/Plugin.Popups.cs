@@ -170,7 +170,7 @@ public sealed partial class Plugin
                 if (receipt.Success)
                 {
                     result.Title = Loc.L("신화 강화 성공", "Mythic level up"); result.Tint = Myth; result.MythicLite = true;
-                    result.Line = Loc.L($"신화  {from} → {receipt.Level}", $"Mythic  {from} → {receipt.Level}");
+                    result.Line = Loc.L("신화  ", "Mythic  ") + $"{StageText.Roman(from)} → {StageText.Roman(receipt.Level)}";
                     (result.EffectLabel, result.EffectNow, result.EffectNext) = MythicEffect(from, receipt.Level);
                     // Damage and penetration rise by the same percent; both get their own row.
                     if (weapon) (result.EffectLabel2, result.EffectNow2, result.EffectNext2) = (Loc.L("관통력", "Penetration"), result.EffectNow, result.EffectNext);
@@ -191,7 +191,7 @@ public sealed partial class Plugin
                 if (receipt.Success)
                 {
                     result.Title = Loc.L("초월 성공", "Transcended"); result.Tint = Cyan; result.Glow = true;
-                    result.Line = ResultText.Track(receipt.Transcend) + $"  {from} → {receipt.Level}";
+                    result.Line = ResultText.Track(receipt.Transcend) + $"  {StageText.Roman(from)} → {StageText.Roman(receipt.Level)}";
                     var kind = TranscendEffects.Kind(weapon, receipt.Transcend, transcendAutomatic);
                     var now = TranscendEffects.Display(kind, from, Tuned);
                     var after = TranscendEffects.Display(kind, receipt.Level, Tuned);
@@ -290,7 +290,7 @@ public sealed partial class Plugin
         else if (receipt.FailureMode == FailureMode.Downgrade)
         {
             result.Title = Loc.L("단계 하락", "Level dropped"); result.Tint = Caution;
-            result.Line = track + $"  {from} → {receipt.Level}";
+            result.Line = track + $"  {StageText.Roman(from)} → {StageText.Roman(receipt.Level)}";
         }
         else
         {
@@ -452,8 +452,8 @@ public sealed partial class Plugin
                 var view = subject;
                 if (view == null) return null;
                 var fraction = attemptTimeline.Fraction(AttemptClock);
-                var what = view.Action == EnhanceAction.Transcend ? ResultText.Track(view.Transcend) + $" {view.CurrentLevel} → {view.NextLevel}"
-                    : view.Action == EnhanceAction.Mythic ? Loc.L($"신화 {view.CurrentLevel} → {view.NextLevel}", $"Mythic {view.CurrentLevel} → {view.NextLevel}")
+                var what = view.Action == EnhanceAction.Transcend ? ResultText.Track(view.Transcend) + $" {StageText.Roman(view.CurrentLevel)} → {StageText.Roman(view.NextLevel)}"
+                    : view.Action == EnhanceAction.Mythic ? Loc.L("신화 ", "Mythic ") + $"{StageText.Roman(view.CurrentLevel)} → {StageText.Roman(view.NextLevel)}"
                     : view.Action == EnhanceAction.Mystery ? "???"
                     : view.IsEvolution ? $"{StarEvolution.Stars(view.CurrentStars)} → {StarEvolution.Stars(view.NextStars)}"
                     : EnhanceEffects.Name(view.Path) + $" +{view.CurrentLevel} → +{view.NextLevel}";

@@ -124,13 +124,14 @@ public sealed class MythicHooksTests : IDisposable
         Mythic("helmet", 4);
         equipment.Worn["Headwear"] = new TestItem("helmet");
         var health = new FakeHealth { Player = new FakePlayer { IsYourPlayer = true, Inventory = new FakeInventory { Equipment = equipment } } };
-        float Hit(int type, float damage = 100, FakeHealth? target = null)
+        float Hit(int type, float damage = 100, FakeHealth? target = null, object? part = null)
         {
-            var args = Call("Taken", target ?? health, new object[] { 0, damage, new FakeDamage { DamageType = type } }, damage);
+            var args = Call("Taken", target ?? health, new object[] { part ?? FakePart.Chest, damage, new FakeDamage { DamageType = type } }, damage);
             return (float)args[2]!;
         }
-        Assert.Equal(92f, Hit(512), 3);   // bullet: -8% at level 4
-        Assert.Equal(92f, Hit(4), 3);     // explosion
+        Assert.Equal(60f, Hit(512), 3);   // bullet: -40% at level 4 (10% a level)
+        Assert.Equal(60f, Hit(4), 3);     // explosion
+        Assert.Equal(80f, Hit(512, 100, null, FakePart.Head), 3);   // head: half, -20%
         Assert.Equal(100f, Hit(2));       // fall
         Assert.Equal(100f, Hit(16384));   // light bleeding
         var bot = new FakeHealth { Player = new FakePlayer { IsYourPlayer = false, Inventory = new FakeInventory { Equipment = equipment } } };
@@ -138,4 +139,7 @@ public sealed class MythicHooksTests : IDisposable
         equipment.Worn.Clear();
         Assert.Equal(100f, Hit(512));
     }
+
+    // Stands in for EFT.EBodyPart (the hook reads its name).
+    private enum FakePart { Head, Chest }
 }

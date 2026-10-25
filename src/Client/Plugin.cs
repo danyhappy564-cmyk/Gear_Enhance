@@ -158,6 +158,12 @@ public sealed partial class Plugin : BaseUnityPlugin
             if (thirdTicketPrice.Entry.Value == 8000000) thirdTicketPrice.Entry.Value = 2700000;
             balanceVersion.Value = 4;
         }
+        // 1.4.0: mythic armor damage taken 2 % → 10 % a level (user 2026-10-26); a value changed by hand stays.
+        if (balanceVersion.Value < 5)
+        {
+            if (mythicArmor.Entry.Value == 2f) mythicArmor.Entry.Value = 10f;
+            balanceVersion.Value = 5;
+        }
         PrepareFeedback();
         LogDetailed($"강화 효과음 설정: 사용={soundsEnabled.Value}, 전용={providedSounds.Value}, 음량={soundVolume.Value:0.##}%, 준비={feedbackAudio != null}, 충전={attemptDuration:0.000}초");
         StatPatches.Registry.Configure(Tuning());

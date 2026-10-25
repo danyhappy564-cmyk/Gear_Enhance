@@ -17,13 +17,14 @@ internal static class UiFonts
     {
         try
         {
-            Sans = Open(folder, "GESans-Regular.ttf", '가');
-            SansBold = Open(folder, "GESans-Bold.ttf", '가');
-            Num = Open(folder, "GENum-SemiBold.ttf", '5');
-            NumBold = Open(folder, "GENum-Bold.ttf", '5');
+            var why = new System.Collections.Generic.List<string>();
+            Sans = Open(folder, "GESans-Regular.ttf", '가', why);
+            SansBold = Open(folder, "GESans-Bold.ttf", '가', why);
+            Num = Open(folder, "GENum-SemiBold.ttf", '5', why);
+            NumBold = Open(folder, "GENum-Bold.ttf", '5', why);
             if (Loaded) return null;
             Sans = SansBold = Num = NumBold = null;
-            return "글꼴 파일이 없어 Windows 글꼴로 표시합니다 / mockup fonts missing, using the Windows font: " + folder;
+            return "글꼴을 쓰지 못해 Windows 글꼴로 표시합니다 / mockup fonts not usable, using the Windows font: " + folder + " (" + string.Join(", ", why) + ")";
         }
         catch (Exception ex)
         {
@@ -32,12 +33,17 @@ internal static class UiFonts
         }
     }
 
-    private static Font Open(string folder, string file, char probe)
+    private static Font Open(string folder, string file, char probe, System.Collections.Generic.List<string> why)
     {
         var path = Path.Combine(folder, file);
-        if (!File.Exists(path)) return null;
-        // Font(path) loads a TrueType file as a dynamic font (Unity 2018.3+).
+        if (!File.Exists(path)) { why.Add(file + ": 없음/missing"); return null; }
+        // Font(path) loads a TrueType file as a dynamic font (Unity 2018.3+). A fresh dynamic font
+        // knows a glyph only once it is requested (HasCharacter alone said no in game, 2026-10-26).
         var font = new Font(path) { hideFlags = HideFlags.HideAndDontSave };
-        return font.dynamic && font.HasCharacter(probe) ? font : null;
+        if (!font.dynamic) { why.Add(file + ": dynamic=false"); return null; }
+        font.RequestCharactersInTexture(probe.ToString(), 16);
+        if (font.GetCharacterInfo(probe, out _, 16) || font.HasCharacter(probe)) return font;
+        why.Add(file + ": '" + probe + "' 없음/no glyph");
+        return null;
     }
 }

@@ -61,7 +61,7 @@ public sealed partial class Plugin
                 var open = StarCount >= TranscendRules.StarsNeeded(track);
                 var level = StatPatches.Registry.TranscendLevel(id, track);
                 var picked = track;
-                cards.Add((TrackName(track), !open ? Loc.L("잠김", "Locked") : $"{level} / {TranscendRules.MaxLevel}",
+                cards.Add((TrackName(track), !open ? Loc.L("잠김", "Locked") : StageText.Of(level, TranscendRules.MaxLevel),
                     !open ? Loc.L("★★★ 진화 후 열림", "Opens after ★★★") : KindHint(KindOf(track)) + (level >= TranscendRules.MaxLevel ? Loc.L(" · 최대", " · max") : ""),
                     open && track == transcendTrack, false,
                     open ? () => SelectTrack(picked) : (Action)null, Cyan));
@@ -70,7 +70,7 @@ public sealed partial class Plugin
         {
             var level = Math.Max(0, MythicLevel);
             var tuning = MythicTuned;
-            cards.Add((Loc.L("신화", "Mythic"), $"{level} / {MythicRules.MaxLevel}", weapon
+            cards.Add((Loc.L("신화", "Mythic"), StageText.Of(level, MythicRules.MaxLevel), weapon
                 ? Loc.L("탄 데미지 · 관통력", "Bullet damage · penetration") : Loc.L("피격 피해 감소", "Damage taken"), false, false, null, Myth));
             var zones = StatPatches.Registry.MythicZones(id);
             for (var slot = 0; slot < zones.Length && !weapon; slot++)
@@ -163,7 +163,7 @@ public sealed partial class Plugin
                     rows.Add((KindName(kind), Percent(now.Main), Percent(after.Main), now.Main, after.Main, cap.Main));
                     break;
             }
-            chip = level >= TranscendRules.MaxLevel ? $"{level}/{TranscendRules.MaxLevel}" : $"{level}/{TranscendRules.MaxLevel} → {next}/{TranscendRules.MaxLevel}";
+            chip = level >= TranscendRules.MaxLevel ? StageText.Of(level, TranscendRules.MaxLevel) : StageText.Of(level, TranscendRules.MaxLevel) + " → " + StageText.Of(next, TranscendRules.MaxLevel);
         }
         else
         {
@@ -180,7 +180,7 @@ public sealed partial class Plugin
                 rows.Add((Loc.L("피격 피해 감소", "Damage taken reduction"), $"{MythicEffects.ArmorPercent(level, tuning):0.#}%",
                     level >= MythicRules.MaxLevel ? Loc.L("최대", "Max") : $"{MythicEffects.ArmorPercent(next, tuning):0.#}%", MythicEffects.ArmorPercent(level, tuning), MythicEffects.ArmorPercent(next, tuning),
                     MythicEffects.ArmorPercent(MythicRules.MaxLevel, tuning)));
-            chip = level >= MythicRules.MaxLevel ? $"{level}/{MythicRules.MaxLevel}" : $"{level}/{MythicRules.MaxLevel} → {next}/{MythicRules.MaxLevel}";
+            chip = level >= MythicRules.MaxLevel ? StageText.Of(level, MythicRules.MaxLevel) : StageText.Of(level, MythicRules.MaxLevel) + " → " + StageText.Of(next, MythicRules.MaxLevel);
         }
         var height = 34 + rows.Count * 36;
         var section = new Rect(0, y, midWidth, height);

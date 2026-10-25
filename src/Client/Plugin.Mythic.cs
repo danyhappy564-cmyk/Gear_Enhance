@@ -74,8 +74,8 @@ public sealed partial class Plugin
             "→4·→5 시도에만 씁니다. 실패하면 1단계 하락하며, 방지하면 이 비율만큼 더 냅니다.", new AcceptableValueRange<float>(0, 1000)));
         mythicWeapon = BindDeveloper(MythicSection, "신화 무기 탄 데미지·관통 / 단계 (%)", 2f, new ConfigDescription(
             "그 총으로 쏜 탄에만 붙습니다. 스타 배율을 받지 않습니다.", new AcceptableValueRange<float>(0, 10)));
-        mythicArmor = BindDeveloper(MythicSection, "신화 방어구 받는 피해 감소 / 단계 (%)", 2f, new ConfigDescription(
-            "신화 방어구·헬멧을 입은 플레이어가 받는 피해를 줄입니다.", new AcceptableValueRange<float>(0, 10)));
+        mythicArmor = BindDeveloper(MythicSection, "신화 방어구 받는 피해 감소 / 단계 (%)", 10f, new ConfigDescription(
+            "신화 방어구·헬멧을 입은 플레이어가 받는 피해를 줄입니다. 머리에 맞으면 절반만 줄입니다.", new AcceptableValueRange<float>(0, 10)));
         mythicZones = BindDeveloper(MythicSection, "신화 방어구 추가 부위 (곳)", 2, new ConfigDescription(
             "??? 성공 때 아직 못 막는 부위 중 무작위로 더 막는 곳의 수입니다.", new AcceptableValueRange<int>(0, 5)));
         rerollCost = BindDeveloper(MythicSection, "다시 뽑기 기본 비용 (루블)", 2000000, new ConfigDescription(

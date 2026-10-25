@@ -109,7 +109,7 @@ public sealed class WindowTests : IDisposable
         Assert.Equal("100%", rows[5].Now); Assert.Null(rows[5].Next);
         var up = mystery; up.Mythic = 1;
         rows = StatSheet.Armor(raw, mystery, up, new TranscendTuning(), new MythicTuning());
-        Assert.Equal("98%", rows[5].Next);
+        Assert.Equal("90%", rows[5].Next);
         // 3-star level 3 adds one class to the body and the plate.
         var third = now; third.Third = 3;
         rows = StatSheet.Armor(raw, now, third, new TranscendTuning(), new MythicTuning());
@@ -144,6 +144,13 @@ public sealed class WindowTests : IDisposable
         var args = new object[] { new HooksTests.MarkerView(new TestItem("vest")), "Gen4" };
         typeof(ItemMarkers).GetMethod("Name", BindingFlags.Static | BindingFlags.NonPublic)!.Invoke(null, args);
         Assert.Equal("<size=120%>Gen4 <color=#FF6AD5><b>✦ 신화</b></color></size>", args[1]);
+        // Cell tag (user 2026-10-26): "[신화 V · 초월 X]", transcendence = both tracks, Roman numerals.
+        Assert.Equal("<color=#9AA1A8>[</color><color=#FF6AD5>신화 V</color><color=#9AA1A8> · </color><color=#40D1D9>초월 X</color><color=#9AA1A8>]</color>",
+            StageText.Tag(5, 5, 5));
+        Assert.Equal("<color=#9AA1A8>[</color><color=#40D1D9>초월 IV</color><color=#9AA1A8>]</color>", StageText.Tag(-1, 4, 0));
+        Assert.Equal("", StageText.Tag(-1, 0, 0));
+        Assert.Equal("IV / V", StageText.Of(4, 5));
+        Assert.Equal("0", StageText.Roman(0));
         // A failed ??? destroys the gear: both records go.
         StatPatches.Registry.ApplyReceipt(new() { Action = EnhanceAction.Mystery, ItemId = "vest", FailureMode = FailureMode.Destroy, MythicLevel = -1 }, "pmc");
         Assert.Equal(-1, StatPatches.Registry.MythicLevel("vest"));

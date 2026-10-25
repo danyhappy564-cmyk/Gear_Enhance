@@ -317,7 +317,7 @@ internal static class ConfigText
         ["신화 무기 탄 데미지·관통 / 단계 (%)"] = "Mythic weapon damage · penetration per level (%)",
         ["그 총으로 쏜 탄에만 붙습니다. 스타 배율을 받지 않습니다."] = "Only bullets fired from that gun. No star multiplier.",
         ["신화 방어구 받는 피해 감소 / 단계 (%)"] = "Mythic armor damage taken reduction per level (%)",
-        ["신화 방어구·헬멧을 입은 플레이어가 받는 피해를 줄입니다."] = "Reduces the damage the player wearing mythic armor or a mythic helmet takes.",
+        ["신화 방어구·헬멧을 입은 플레이어가 받는 피해를 줄입니다. 머리에 맞으면 절반만 줄입니다."] = "Reduces the damage the player wearing mythic armor or a mythic helmet takes. Hits to the head are reduced by half as much.",
         ["신화 방어구 추가 부위 (곳)"] = "Mythic armor extra zones",
         ["??? 성공 때 아직 못 막는 부위 중 무작위로 더 막는 곳의 수입니다."] = "Zones the gear does not protect yet that a ??? success adds at random.",
         ["다시 뽑기 기본 비용 (루블)"] = "Reroll base cost (roubles)",

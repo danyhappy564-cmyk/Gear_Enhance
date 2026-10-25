@@ -512,7 +512,7 @@ public sealed partial class Plugin
         string mark, extra = "";
         Color markColor, extraColor = Cyan;
         if (itemId == null) { mark = Loc.L("파괴됨", "Destroyed"); markColor = Danger; }
-        else if (mythic >= 0) { mark = Loc.L("✦ 신화", "✦ Mythic"); markColor = Myth; extra = $"{mythic} / {MythicRules.MaxLevel}"; extraColor = Myth; }
+        else if (mythic >= 0) { mark = Loc.L("✦ 신화", "✦ Mythic"); markColor = Myth; extra = StageText.Of(mythic, MythicRules.MaxLevel); extraColor = Myth; }
         else
         {
             var total = StatPatches.Registry.TotalLevel(id);
@@ -530,7 +530,7 @@ public sealed partial class Plugin
 
     // "a/5 · b/5" of the 2-star and 3-star transcendence tracks.
     private static string TranscendPair(string id) =>
-        $"{StatPatches.Registry.TranscendLevel(id, TranscendTrack.Second)}/{TranscendRules.MaxLevel} · {StatPatches.Registry.TranscendLevel(id, TranscendTrack.Third)}/{TranscendRules.MaxLevel}";
+        StageText.Of(StatPatches.Registry.TranscendLevel(id, TranscendTrack.Second), TranscendRules.MaxLevel) + " · " + StageText.Of(StatPatches.Registry.TranscendLevel(id, TranscendTrack.Third), TranscendRules.MaxLevel);
 
     // Beside the name (mockup): the caliber of a weapon, "방어구 · 방탄판 N장" for armor.
     private string KindLine()
@@ -555,19 +555,20 @@ public sealed partial class Plugin
                 return stars >= EvolutionStars ? levels + Loc.L($" · {StarEvolution.Stars(EvolutionStars)} 완료", $" · {StarEvolution.Stars(EvolutionStars)} done")
                     : StatPatches.Registry.IsComplete(id) && stars == EvolutionStars - 1 ? levels + Loc.L($" · {StarEvolution.Stars(EvolutionStars)} 도전 가능", $" · {StarEvolution.Stars(EvolutionStars)} ready") : levels;
             case UiTab.Transcend:
-                return Loc.L($"2성 초월 {StatPatches.Registry.TranscendLevel(id, TranscendTrack.Second)}/{TranscendRules.MaxLevel} · 3성 초월 {StatPatches.Registry.TranscendLevel(id, TranscendTrack.Third)}/{TranscendRules.MaxLevel}",
-                    $"2★ track {StatPatches.Registry.TranscendLevel(id, TranscendTrack.Second)}/{TranscendRules.MaxLevel} · 3★ track {StatPatches.Registry.TranscendLevel(id, TranscendTrack.Third)}/{TranscendRules.MaxLevel}");
+                return Loc.L($"2성 초월 {StageText.Of(StatPatches.Registry.TranscendLevel(id, TranscendTrack.Second), TranscendRules.MaxLevel)} · 3성 초월 {StageText.Of(StatPatches.Registry.TranscendLevel(id, TranscendTrack.Third), TranscendRules.MaxLevel)}",
+                    $"2★ track {StageText.Of(StatPatches.Registry.TranscendLevel(id, TranscendTrack.Second), TranscendRules.MaxLevel)} · 3★ track {StageText.Of(StatPatches.Registry.TranscendLevel(id, TranscendTrack.Third), TranscendRules.MaxLevel)}");
             case UiTab.Mythic when MythicLevel < 0:
                 return stars >= 3 ? Loc.L("★★★ 달성 · ??? 도전 가능", "★★★ reached · ??? open") : levels;
             case UiTab.Mythic:
             {
                 var tuning = StatPatches.Registry.MythicTuning;
-                var head = Loc.L($"신화 {MythicLevel}/{MythicRules.MaxLevel}", $"Mythic {MythicLevel}/{MythicRules.MaxLevel}");
+                var head = Loc.L("신화 ", "Mythic ") + StageText.Of(MythicLevel, MythicRules.MaxLevel);
                 if (weapon) return head + Loc.L($" · 탄 데미지·관통력 단계당 +{tuning.WeaponPercentPerLevel:0.#}% · 비용 단계마다 ×{tuning.CostGrowth:0.##}",
                     $" · damage & penetration +{tuning.WeaponPercentPerLevel:0.#}% per level · cost ×{tuning.CostGrowth:0.##} per level");
                 var zones = new List<string>();
                 foreach (var zone in StatPatches.Registry.MythicZones(id)) zones.Add(MythicText.ZoneName(zone));
-                return head + (zones.Count > 0 ? Loc.L(" · 추가 보호 부위 ", " · extra zones ") + string.Join(" · ", zones) : "");
+                return head + Loc.L($" · 받는 피해 단계당 -{tuning.ArmorPercentPerLevel:0.#}%(머리 절반)", $" · damage taken -{tuning.ArmorPercentPerLevel:0.#}% per level (half on the head)")
+                    + (zones.Count > 0 ? Loc.L(" · 추가 보호 부위 ", " · extra zones ") + string.Join(" · ", zones) : "");
             }
             default: return levels;
         }

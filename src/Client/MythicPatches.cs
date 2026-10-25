@@ -18,6 +18,8 @@ internal static class MythicPatches
     private static EffectRegistry Registry => StatPatches.Registry;
     private static FieldInfo shotDamage, shotPenetration;
     private static PropertyInfo ownerRoot, worldInstance, plateMask;
+    private static Func<object> readWorld;
+    private static PropertyInfo readWorldProperty;
     private static Type armorType;
     private static MethodInfo getSlot;
     private static object[] wornSlots;
@@ -38,6 +40,7 @@ internal static class MythicPatches
         var gameWorld = GameBridge.RuntimeType("EFT.GameWorld");
         var singleton = gameWorld == null ? null : GameBridge.RuntimeType("Comfort.Common.Singleton`1")?.MakeGenericType(gameWorld);
         worldInstance = singleton == null ? null : AccessTools.Property(singleton, "Instance");
+        Try("신화 V 탄 불이익 / mythic V ammo", () => AmmoPatches.Install(harmony));
         Try("신화 탄 데미지·관통 / mythic bullets", () =>
         {
             var shot = Required("EFT.Ballistics.Shot");
@@ -74,9 +77,16 @@ internal static class MythicPatches
     }
 
     // The raid's main player, cached per GameWorld (the hideout and each raid make a new one).
-    private static bool Main(out string profile, out object equipment)
+    internal static bool Main(out string profile, out object equipment)
     {
-        var current = worldInstance?.GetValue(null);
+        // Ammo readers share this check on hot paths; bind the world getter once instead
+        // of reflection Invoke on every read. Tests can still supply an absent world.
+        if (!ReferenceEquals(readWorldProperty, worldInstance))
+        {
+            readWorld = worldInstance == null ? null : (Func<object>)Delegate.CreateDelegate(typeof(Func<object>), worldInstance.GetGetMethod(true));
+            readWorldProperty = worldInstance;
+        }
+        var current = readWorld?.Invoke();
         if (!ReferenceEquals(current, world) || mainProfile == null)
         {
             world = current;
@@ -194,7 +204,9 @@ internal static class MythicPatches
                 if (worn != null) level = Math.Max(level, Registry.MythicLevel(CloneLinks.EffectId(worn) ?? ""));
             }
             if (level <= 0) return;
-            damage *= (float)Math.Max(0, 1 - MythicEffects.ArmorPercent(level, Registry.MythicTuning) / 100);
+            // ApplyDamage(EBodyPart bodyPart, …): head hits get half the reduction.
+            var head = __args[0]?.ToString() == "Head";
+            damage *= (float)Math.Max(0, 1 - MythicEffects.ArmorPercent(level, Registry.MythicTuning, head) / 100);
         }
         catch (Exception ex) { Report(ex); }
     }
