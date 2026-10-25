@@ -20,7 +20,7 @@ public sealed partial class Plugin : BaseUnityPlugin
     private ConfigEntry<string> developerPassword;
     // Developer balance settings: saved values apply only while the password unlocks them.
     private bool developerUnlocked;
-    private DevSetting<bool> always, highRiskEnabled;
+    private DevSetting<bool> always, highRiskEnabled, freeRoubles, freeMaterials;
     private DevSetting<float> chance, chanceLoss, destructionChance, completionBonus, percent, growth;
     private DevSetting<float> destructionProtectionPrice, downgradeProtectionPrice;
     private DevSetting<float> evolutionChance, evolutionPrice, thirdStarChance, thirdStarBonus;
@@ -84,11 +84,17 @@ public sealed partial class Plugin : BaseUnityPlugin
         developerUnlocked = DeveloperLock.Matches(developerPassword.Value);
         ((ConfigurationManagerAttributes)developerPassword.Description.Tags[0]).CustomDrawer = DrawPassword;
         developerOptions.SetVisible(developerUnlocked);
+        // User: the three switches people reach for first, in their own group above the balance.
+        freeRoubles = BindDeveloper(DeveloperOptions.QuickSection, "모든 강화 루블 필요 없음", false,
+            "강화·진화·초월·신화·방지권·보험·방탄판 차액에 루블을 받지 않습니다. 개발자 옵션을 잠그면 꺼집니다.");
+        freeMaterials = BindDeveloper(DeveloperOptions.QuickSection, "모든 강화 재료 필요 없음", false,
+            "초월 재료·LEDX·그래픽 카드와 성공률 재료(독택·그래픽 카드·비트코인)를 가져가지 않습니다. 성공률 재료는 없어도 고를 수 있습니다.");
+        always = BindDeveloper(DeveloperOptions.QuickSection, "확률 100% (항상 성공)", false,
+            "강화·진화·초월·신화·??? 가 항상 성공합니다. 비용은 그대로 듭니다(위 두 설정과 따로).");
         menuEnabled = BindGeneral("1. 기본", "강화 메뉴 사용", true, "창고의 무기·방어구 우클릭에 장비 강화를 표시합니다. 방탄판·내피는 방어구와 함께 강화되므로 표시하지 않습니다.");
         BindInserts();
         chance = BindDeveloper("2. 확률", "성공률 (%)", 75f, new ConfigDescription("+0에서 +1로 강화할 때 성공률. 이후 현재 단계 × 단계별 감소량만큼 줄어듭니다.", new AcceptableValueRange<float>(0, 100)));
         chanceLoss = BindDeveloper("2. 확률", "단계별 성공률 감소 (%p)", 5f, new ConfigDescription("기본: +1 시도 75%, +10 시도 30%. 0이면 같은 확률을 유지합니다.", new AcceptableValueRange<float>(0, 100)));
-        always = BindDeveloper("2. 확률", "항상 성공 (100%)", false, "켜면 성공률 설정 대신 100%를 적용합니다. 비용은 소모됩니다.");
         maxLevel = BindDeveloper("2. 확률", "최대 강화 단계", 10, new ConfigDescription("각 항목 최대 단계. 효과 곡선·1차 스타 진화 조건도 함께 바뀝니다. 고위험 시작은 선택 항목 +6 시도(+5→+6)로 고정됩니다.", new AcceptableValueRange<int>(1, 100)));
         price = BindDeveloper("3. 비용", "기준 가격", PriceBasis.Handbook, "Handbook = 북밸류, Flea = SPT 플리 기준가. 무기는 본체만, 방어구는 슬롯에 끼운 방탄판·삽입물·바이저 가격을 더합니다.");
         percent = BindDeveloper("3. 비용", "기준 가격 대비 비용 (%)", 10f, new ConfigDescription("0이면 최소 비용만 적용됩니다.", new AcceptableValueRange<float>(0, 1000)));
@@ -303,7 +309,7 @@ public sealed partial class Plugin : BaseUnityPlugin
         InstantFee = instantFee.Value, SecondTicketMax = secondTickets.Value, SecondTicketPrice = secondTicketPrice.Value,
         ThirdTicketMax = thirdTickets.Value, ThirdTicketPrice = thirdTicketPrice.Value,
         MysteryTicketMax = mysteryTickets.Value, MysteryTicketPrice = mysteryTicketPrice.Value,
-        Developer = developerUnlocked, LaunchId = LaunchId,
+        Developer = developerUnlocked, LaunchId = LaunchId, FreeRoubles = freeRoubles.Value, FreeMaterials = freeMaterials.Value,
         Transcend = TranscendTuning(), Boost = BoostTuning(), Mythic = MythicTuning()
     };
     private void ConfigureTranscend()

@@ -25,7 +25,7 @@ public sealed partial class Plugin
     private int StarCount => StatPatches.Registry.StarLevel(itemId ?? "");
     private bool Reduced => reducedMotion?.Value == true;
     private double Motion => Clock - motionStart;
-    private void ReplayMotion() => motionStart = Clock;
+    private void ReplayMotion() { motionStart = Clock; tweens.Clear(); }
 
     private struct TabEntry
     {
@@ -45,8 +45,8 @@ public sealed partial class Plugin
             Sub = stars >= 3 ? Loc.L("진화 완료", "Evolved") : Loc.L("진화 · 효과 ×3", "Evolve · ×3") };
         yield return new TabEntry { Tab = UiTab.Transcend, Mark = "◆", Color = Cyan, Open = stars >= 2, Label = Loc.L("초월", "Transcend"),
             Sub = stars < 2 ? Loc.L("★★ 이후 열림", "Opens after ★★")
-                : Loc.L($"2성 {StatPatches.Registry.TranscendLevel(id, TranscendTrack.Second)} · 3성 {StatPatches.Registry.TranscendLevel(id, TranscendTrack.Third)}",
-                    $"2★ {StatPatches.Registry.TranscendLevel(id, TranscendTrack.Second)} · 3★ {StatPatches.Registry.TranscendLevel(id, TranscendTrack.Third)}") };
+                : Loc.L($"2성 {StatPatches.Registry.TranscendLevel(id, TranscendTrack.Second)}/5 · 3성 {StatPatches.Registry.TranscendLevel(id, TranscendTrack.Third)}/5",
+                    $"2★ {StatPatches.Registry.TranscendLevel(id, TranscendTrack.Second)}/5 · 3★ {StatPatches.Registry.TranscendLevel(id, TranscendTrack.Third)}/5") };
         yield return new TabEntry { Tab = UiTab.Mythic, Mark = mythic >= 0 ? "✦" : "◈", Color = Myth, Open = stars >= 3,
             Label = mythic >= 0 ? Loc.L("신화", "Mythic") : "???",
             Sub = stars < 3 ? Loc.L("★★★ 이후 열림", "Opens after ★★★") : mythic < 0 ? "50 / 50"

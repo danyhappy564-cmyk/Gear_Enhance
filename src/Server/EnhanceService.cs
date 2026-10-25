@@ -473,7 +473,7 @@ public sealed partial class EnhanceService(SptEnhanceBackend backend, JsonUtil s
             var purse = Money(profile).ToList();
             if (purse.Sum(i => Count(i)) < quote.Cost)
                 throw Loc.Invalid("창고의 루블이 부족합니다.", "Not enough roubles in the stash.");
-            var stock = MaterialStock(profile, quote);
+            var stock = quote.FreeMaterials ? new List<(int Count, List<Item> Stock)>() : MaterialStock(profile, quote);
 
             // All checks and draws precede payment. Native item-event output keeps the
             // client's stacks, deleted items and durability in sync with SPT.

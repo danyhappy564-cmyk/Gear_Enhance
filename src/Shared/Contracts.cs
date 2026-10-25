@@ -70,6 +70,9 @@ public sealed class EnhanceSettings
     // new for every game launch. Not balance: the server copies the records while it is on.
     public bool Developer { get; set; }
     public string LaunchId { get; set; } = "";
+    // 1.4.0 F12 quick switches (developer only, user request): no roubles / no materials for anything.
+    public bool FreeRoubles { get; set; }
+    public bool FreeMaterials { get; set; }
     public EffectTuning Effects { get; set; } = new EffectTuning();
     public TranscendTuning Transcend { get; set; } = new TranscendTuning();
     public BoostTuning Boost { get; set; } = new BoostTuning();
@@ -245,6 +248,8 @@ public sealed class EnhanceQuote
     public string[] ZoneOptions { get; set; } = Array.Empty<string>();
     public int Rerolls { get; set; }
     public int Slot { get; set; }
+    // F12 quick switch: required and chance materials are not taken (the server skips them).
+    public bool FreeMaterials { get; set; }
 }
 
 public sealed class EnhanceReceipt

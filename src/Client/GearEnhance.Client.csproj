@@ -11,6 +11,8 @@
   </PropertyGroup>
   <ItemGroup>
     <EmbeddedResource Include="Audio/*.wav" LogicalName="GearEnhance.Audio.%(Filename)%(Extension)" />
+    <!-- Mockup fonts (UiFonts.cs): loaded from BepInEx/plugins/GearEnhance/fonts beside the DLL. -->
+    <None Include="Fonts/*.ttf;Fonts/OFL-*.txt" Link="fonts/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
     <Compile Include="../Shared/*.cs" Link="Shared/%(Filename)%(Extension)" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" ExcludeAssets="runtime" />
     <Reference Include="BepInEx"><HintPath>$(SptRoot)/BepInEx/core/BepInEx.dll</HintPath><Private>false</Private></Reference>

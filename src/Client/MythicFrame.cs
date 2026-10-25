@@ -5,9 +5,10 @@ using UnityEngine;
 
 namespace GearEnhance;
 
-// 1.4.0 stash shimmer (design 8, 12.5): a 2 px pink frame on mythic gear cells, built once per
-// item view from the game's uGUI Image like the insurance badge. Only frames on screen are
-// recolored each frame (pink ↔ gold, 2.2 s); with the F12 shimmer off they stay pink.
+// 1.4.0 stash shimmer (design 8, 12.5; mockup @keyframes mythBorder): a 2 px frame on mythic gear
+// cells with a soft glow outside (3 bands) and inside (3 bands), built once per item view from the
+// game's uGUI Image like the insurance badge. Frames on screen are recolored each frame: pink ↔ gold
+// over 2.2 s, the glow brighter at gold. With the F12 shimmer off they stay pink and still.
 internal static class MythicFrame
 {
     private const string FrameName = "GearEnhanceMythic";
@@ -15,6 +16,8 @@ internal static class MythicFrame
     private static Type image;
     private static PropertyInfo color;
     private static readonly List<(Component View, Component[] Lines)> shown = new List<(Component, Component[])>();
+    // Per line of a frame (same order as Create): base opacity. 4 lines per band.
+    private static readonly float[] Weights = Bands();
     internal static int Count => shown.Count;
 
     internal static void Hide(object view)
@@ -36,26 +39,44 @@ internal static class MythicFrame
         // Bounded: a stash never shows thousands of mythic cells; drop the oldest past 256.
         if (shown.Count >= 256) shown.RemoveAt(0);
         shown.Add((component, lines));
-        Paint(lines, Pink);
+        Paint(lines, Pink, 0);
     }
 
     internal static void Tick(double time, bool shimmer)
     {
         if (shown.Count == 0) return;
-        var tint = shimmer ? Color.Lerp(Pink, Gold, (float)(0.5 + 0.5 * Math.Sin(time * Math.PI * 2 / 2.2))) : Pink;
+        var pulse = shimmer ? (float)(0.5 + 0.5 * Math.Sin(time * Math.PI * 2 / 2.2)) : 0;
+        var tint = Color.Lerp(Pink, Gold, pulse);
         for (var index = shown.Count - 1; index >= 0; index--)
         {
             var (view, lines) = shown[index];
             if (view == null || !view.gameObject.activeInHierarchy) { if (view == null) shown.RemoveAt(index); continue; }
-            Paint(lines, tint);
+            Paint(lines, tint, pulse);
         }
     }
 
     internal static void Clear() => shown.Clear();
 
-    private static void Paint(Component[] lines, Color tint)
+    // Border lines stay solid; glow bands fade outward and grow with the pulse (12 px → 22 px glow).
+    private static void Paint(Component[] lines, Color tint, float pulse)
     {
-        foreach (var line in lines) if (line != null) color.SetValue(line, tint);
+        for (var index = 0; index < lines.Length; index++)
+        {
+            if (lines[index] == null) continue;
+            var weight = index < Weights.Length ? Weights[index] : 1;
+            var alpha = weight >= 1 ? 1 : Mathf.Clamp01(weight * (0.75f + 0.6f * pulse));
+            color.SetValue(lines[index], new Color(tint.r, tint.g, tint.b, alpha));
+        }
+    }
+
+    // Band 0 = the 2 px border; bands 1-3 outside at 2, 4, 6 px; bands 4-6 inside at 2, 4, 6 px.
+    private static readonly (float Offset, float Weight)[] Layout =
+        { (0, 1), (2, 0.55f), (4, 0.3f), (6, 0.12f), (-2, 0.28f), (-4, 0.15f), (-6, 0.07f) };
+    private static float[] Bands()
+    {
+        var weights = new List<float>();
+        foreach (var (_, weight) in Layout) for (var side = 0; side < 4; side++) weights.Add(weight);
+        return weights.ToArray();
     }
 
     // Top, bottom, left and right lines inside the cell; they never take its clicks or drags.
@@ -69,17 +90,28 @@ internal static class MythicFrame
         var frame = Rect(FrameName, cell);
         frame.anchorMin = Vector2.zero; frame.anchorMax = Vector2.one;
         frame.offsetMin = frame.offsetMax = Vector2.zero;
-        foreach (var (min, max, size) in new[]
+        // Each band is a 2 px ring. Border: 0..2 px inside the edge. Outside band o: (o-2)..o px out.
+        // Inside band o: o..o+2 px in. Top/bottom lines own the corners; left/right fit between them.
+        foreach (var (offset, _) in Layout)
         {
-            (new Vector2(0, 1), new Vector2(1, 1), new Vector2(0, 2)), (new Vector2(0, 0), new Vector2(1, 0), new Vector2(0, 2)),
-            (new Vector2(0, 0), new Vector2(0, 1), new Vector2(2, 0)), (new Vector2(1, 0), new Vector2(1, 1), new Vector2(2, 0))
-        })
-        {
-            var line = Rect("Line", frame);
-            line.anchorMin = min; line.anchorMax = max; line.pivot = new Vector2(min.x, min.y);
-            line.sizeDelta = size; line.anchoredPosition = Vector2.zero;
-            var graphic = line.gameObject.AddComponent(image);
-            GameBridge.Set(graphic, "raycastTarget", false);
+            var o = Mathf.Abs(offset);
+            float shift, across, along;
+            if (offset > 0) { shift = o - 1; across = 2 * o; along = 2 * (o - 2); }
+            else if (offset < 0) { shift = -(o + 1); across = -2 * o; along = -2 * (o + 2); }
+            else { shift = -1; across = 0; along = -4; }
+            foreach (var (min, max, horizontal, sign) in new[]
+            {
+                (new Vector2(0, 1), new Vector2(1, 1), true, 1f), (new Vector2(0, 0), new Vector2(1, 0), true, -1f),
+                (new Vector2(0, 0), new Vector2(0, 1), false, -1f), (new Vector2(1, 0), new Vector2(1, 1), false, 1f)
+            })
+            {
+                var line = Rect("Line", frame);
+                line.anchorMin = min; line.anchorMax = max; line.pivot = new Vector2(0.5f, 0.5f);
+                line.sizeDelta = horizontal ? new Vector2(across, 2) : new Vector2(2, along);
+                line.anchoredPosition = horizontal ? new Vector2(0, sign * shift) : new Vector2(sign * shift, 0);
+                var graphic = line.gameObject.AddComponent(image);
+                GameBridge.Set(graphic, "raycastTarget", false);
+            }
         }
         return frame;
     }

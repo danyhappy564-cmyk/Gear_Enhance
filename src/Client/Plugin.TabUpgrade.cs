@@ -43,8 +43,9 @@ public sealed partial class Plugin
             {
                 var level = StatPatches.Registry.Find(id, path)?.Level ?? 0;
                 var picked = path;
-                cards.Add((EnhanceEffects.Name(path), level >= maxLevel.Value ? Loc.L($"+{level} 최대", $"+{level} max") : $"+{level}",
-                    TrackHint(path), path == selectedPath, false, () => SelectPath(picked), Gold));
+                // Mockup: the level alone, "· 최대" goes to the line under it.
+                cards.Add((EnhanceEffects.Name(path), $"+{level}", TrackHint(path) + (level >= maxLevel.Value ? Loc.L(" · 최대", " · max") : ""),
+                    path == selectedPath, false, () => SelectPath(picked), Gold));
             }
         else if (Evolving)
             foreach (var path in weapon ? WeaponTracks : ArmorTracks)
@@ -60,17 +61,17 @@ public sealed partial class Plugin
                 var open = StarCount >= TranscendRules.StarsNeeded(track);
                 var level = StatPatches.Registry.TranscendLevel(id, track);
                 var picked = track;
-                cards.Add((TrackName(track), !open ? Loc.L("잠김", "Locked") : level >= TranscendRules.MaxLevel ? Loc.L($"{level} 최대", $"{level} max") : $"{level}",
-                    open ? KindHint(KindOf(track)) : Loc.L("★★★ 진화 후 열림", "Opens after ★★★"), open && track == transcendTrack, false,
+                cards.Add((TrackName(track), !open ? Loc.L("잠김", "Locked") : $"{level} / {TranscendRules.MaxLevel}",
+                    !open ? Loc.L("★★★ 진화 후 열림", "Opens after ★★★") : KindHint(KindOf(track)) + (level >= TranscendRules.MaxLevel ? Loc.L(" · 최대", " · max") : ""),
+                    open && track == transcendTrack, false,
                     open ? () => SelectTrack(picked) : (Action)null, Cyan));
             }
         else
         {
             var level = Math.Max(0, MythicLevel);
             var tuning = MythicTuned;
-            cards.Add((Loc.L("신화 단계", "Mythic level"), $"{level} / {MythicRules.MaxLevel}", weapon
-                ? Loc.L($"탄 데미지·관통 +{MythicEffects.WeaponPercent(level, tuning):0.#}%", $"Damage · pen +{MythicEffects.WeaponPercent(level, tuning):0.#}%")
-                : Loc.L($"받는 피해 -{MythicEffects.ArmorPercent(level, tuning):0.#}%", $"Damage taken -{MythicEffects.ArmorPercent(level, tuning):0.#}%"), false, false, null, Myth));
+            cards.Add((Loc.L("신화", "Mythic"), $"{level} / {MythicRules.MaxLevel}", weapon
+                ? Loc.L("탄 데미지 · 관통력", "Bullet damage · penetration") : Loc.L("피격 피해 감소", "Damage taken"), false, false, null, Myth));
             var zones = StatPatches.Registry.MythicZones(id);
             for (var slot = 0; slot < zones.Length && !weapon; slot++)
             {
@@ -118,7 +119,8 @@ public sealed partial class Plugin
             var maxed = (StatPatches.Registry.Find(id, selectedPath)?.Level ?? 0) >= maxLevel.Value;
             rows.Add((EnhanceEffects.StatName(selectedPath), EnhanceEffects.Format(selectedPath, current),
                 maxed ? Loc.L("최대", "Max") : EnhanceEffects.Format(selectedPath, next), current, maxed ? current : next, cap));
-            chip = Loc.L("증가량 ×", "Gain ×") + $"{preview?.NextGainMultiplier ?? 1:0.##}";
+            // Mockup chip: the star multiplier the effects carry (×1, ×2, ×3).
+            chip = $"×{StarMultiplier(StarCount):0.##}";
         }
         else if (Evolving)
         {
@@ -161,22 +163,24 @@ public sealed partial class Plugin
                     rows.Add((KindName(kind), Percent(now.Main), Percent(after.Main), now.Main, after.Main, cap.Main));
                     break;
             }
-            chip = level >= TranscendRules.MaxLevel ? Loc.L($"{level}단계 최대", $"Level {level} max") : Loc.L($"{level} → {next}단계", $"Level {level} → {next}");
+            chip = level >= TranscendRules.MaxLevel ? $"{level}/{TranscendRules.MaxLevel}" : $"{level}/{TranscendRules.MaxLevel} → {next}/{TranscendRules.MaxLevel}";
         }
         else
         {
             var level = Math.Max(0, MythicLevel);
             var next = Math.Min(MythicRules.MaxLevel, level + 1);
             var tuning = MythicTuned;
+            // Mockup: damage and penetration on their own rows (both rise by the same percent).
             if (weapon)
-                rows.Add((Loc.L("탄 데미지 · 관통력", "Damage · penetration"), $"+{MythicEffects.WeaponPercent(level, tuning):0.#}%",
-                    $"+{MythicEffects.WeaponPercent(next, tuning):0.#}%", MythicEffects.WeaponPercent(level, tuning), MythicEffects.WeaponPercent(next, tuning),
-                    MythicEffects.WeaponPercent(MythicRules.MaxLevel, tuning)));
+                foreach (var name in new[] { Loc.L("탄 데미지", "Bullet damage"), Loc.L("관통력", "Penetration") })
+                    rows.Add((name, $"+{MythicEffects.WeaponPercent(level, tuning):0.#}%",
+                        level >= MythicRules.MaxLevel ? Loc.L("최대", "Max") : $"+{MythicEffects.WeaponPercent(next, tuning):0.#}%",
+                        MythicEffects.WeaponPercent(level, tuning), MythicEffects.WeaponPercent(next, tuning), MythicEffects.WeaponPercent(MythicRules.MaxLevel, tuning)));
             else
-                rows.Add((Loc.L("받는 피해 감소", "Damage taken reduction"), $"{MythicEffects.ArmorPercent(level, tuning):0.#}%",
-                    $"{MythicEffects.ArmorPercent(next, tuning):0.#}%", MythicEffects.ArmorPercent(level, tuning), MythicEffects.ArmorPercent(next, tuning),
+                rows.Add((Loc.L("피격 피해 감소", "Damage taken reduction"), $"{MythicEffects.ArmorPercent(level, tuning):0.#}%",
+                    level >= MythicRules.MaxLevel ? Loc.L("최대", "Max") : $"{MythicEffects.ArmorPercent(next, tuning):0.#}%", MythicEffects.ArmorPercent(level, tuning), MythicEffects.ArmorPercent(next, tuning),
                     MythicEffects.ArmorPercent(MythicRules.MaxLevel, tuning)));
-            chip = level >= MythicRules.MaxLevel ? Loc.L($"{level}단계 최대", $"Level {level} max") : Loc.L($"{level} → {next}단계", $"Level {level} → {next}");
+            chip = level >= MythicRules.MaxLevel ? $"{level}/{MythicRules.MaxLevel}" : $"{level}/{MythicRules.MaxLevel} → {next}/{MythicRules.MaxLevel}";
         }
         var height = 34 + rows.Count * 36;
         var section = new Rect(0, y, midWidth, height);
@@ -195,7 +199,7 @@ public sealed partial class Plugin
             Label(midWidth - 230, top, 110, 22, row.Now, number);
             Label(midWidth - 116, top, 16, 22, "→", smallCenter);
             Label(midWidth - 100, top, 84, 22, row.Next, number, Blue);
-            Bar(new Rect(16, top + 24, midWidth - 32, 8), row.NowBar, row.NextBar, row.Cap, BarNow, Blue, fill);
+            Bar(new Rect(16, top + 24, midWidth - 32, 8), row.NowBar, row.NextBar, row.Cap, BarNow, Blue, fill, "effect." + index);
         }
         return y + height;
     }
@@ -227,22 +231,24 @@ public sealed partial class Plugin
         var section = new Rect(0, y, midWidth, height);
         Box(section, Section, Line);
         var parts = ChanceParts();
-        Label(14, y + 10, 120, 18, Loc.L("성공률", "Success chance"), bodyBold);
-        Label(14, y + 28, 150, 40, preview == null ? "—" : $"{parts.Total:0.##}%", numberBig);
+        // Mockup: "성공률" over a big Rajdhani number; "기본 55%  + 재료 7%" and the failure line beside it.
+        var maxed = preview == null && TabMaxed;
+        Label(14, y + 8, 120, 18, Loc.L("성공률", "Success chance"), bodyBold);
+        Label(14, y + 26, 150, 40, preview != null ? $"{parts.Total:0.##}%" : maxed ? Loc.L("최대", "Max") : "—", numberBig);
         var x = 170f;
-        var line = Loc.L("기본 ", "Base ") + Paint($"{parts.Base:0.##}%", Text);
-        if (parts.Pity > 0) line += Loc.L("   + 천장 ", "   + pity ") + Paint($"{parts.Pity:0.##}%p", Cyan);
-        line += Loc.L("   + 재료 ", "   + materials ") + Paint($"{parts.Boost:0.##}%p", Blue);
-        Label(x, y + 30, midWidth - x - 14, 20, line, sub);
-        var fail = FailureSummary(out var failColor);
-        Label(x, y + 30, midWidth - x - 14, 20, fail, smallRight, failColor);
-        var fill = UiMotion.Fill(Motion, 0.24, Reduced);
-        var bar = new Rect(x, y + 56, midWidth - x - 14, 8);
+        var px = Pair(x, y + 28, Loc.L("기본 ", "Base "), preview == null ? "—" : $"{parts.Base:0.##}%", Text);
+        if (parts.Pity > 0) px = Pair(px + 10, y + 28, Loc.L("+ 천장 ", "+ pity "), $"{parts.Pity:0.##}%", Cyan);
+        Pair(px + 10, y + 28, Loc.L("+ 재료 ", "+ materials "), preview == null ? "—" : $"{parts.Boost:0.##}%", Blue);
+        var fail = maxed ? Loc.L("최대 단계", "Max level") : FailureSummary(out _);
+        var failColor = maxed ? Muted : FailureColor();
+        Label(x, y + 28, midWidth - x - 14, 22, fail, smallRight, failColor);
+        var bar = new Rect(x, y + 54, midWidth - x - 14, 8);
         Fill(bar, BarBack);
         var drawn = 0f;
-        foreach (var (amount, color, delay) in new[] { (parts.Base, BarBase, 0.24), (parts.Pity, Cyan, 0.24), (parts.Boost, Blue, 0.62) })
+        foreach (var (amount, color, delay, key) in new[] { (maxed ? 100 : parts.Base, BarBase, 0.24, "chance.base"), (parts.Pity, Cyan, 0.24, "chance.pity"), (parts.Boost, Blue, 0.62, "chance.boost") })
         {
-            var width = bar.width * (float)Math.Max(0, Math.Min(1, amount / 100)) * UiMotion.Fill(Motion, delay, Reduced);
+            // Picks and quotes slide the bars to their new widths (mockup transition .35 s), never refill them.
+            var width = bar.width * Tween(key, (float)Math.Max(0, Math.Min(1, amount / 100))) * UiMotion.Fill(Motion, delay, Reduced);
             width = Math.Min(width, bar.width - drawn);
             Fill(new Rect(bar.x + drawn, bar.y, width, bar.height), color);
             drawn += width;
@@ -254,7 +260,12 @@ public sealed partial class Plugin
         var tuning = BoostTuning();
         Label(14, top, 120, 20, Loc.L("성공률 올리기", "Boost chance"), bodyBold);
         Label(110, top, 200, 20, Loc.L($"재료 {tuning.MaxKinds}종까지", $"Up to {tuning.MaxKinds} kinds"), small);
-        Label(midWidth - 214, top, 200, 20, Loc.L("선택 ", "Picked ") + $"{picked} / {tuning.MaxKinds}", smallRight, picked >= tuning.MaxKinds ? Gold : Muted);
+        // Why the rows cannot be picked, in place of the count (a maxed track has no quote, 100% needs nothing).
+        var why = preview == null ? maxed ? Loc.L("최대 단계라 재료가 필요 없습니다", "Maxed: no materials needed") : ""
+            : preview.BoostAvailable ? "" : preview.BaseSuccessPercent >= 100 ? Loc.L("성공률 100%라 재료가 필요 없습니다", "Already 100%: no materials needed")
+            : Loc.L("이 시도에는 재료를 쓸 수 없습니다", "No materials for this attempt");
+        if (why.Length > 0) Label(midWidth - 314, top, 300, 20, why, smallRight, Muted);
+        else Label(midWidth - 214, top, 200, 20, Loc.L("선택 ", "Picked ") + $"{picked} / {tuning.MaxKinds}", numberSmallRight, picked >= tuning.MaxKinds ? Blue : Muted);
         var usable = preview?.BoostAvailable == true && !busy && popup == PopupKind.None && !uncertain;
         for (var index = 0; index < SuccessBoost.Kinds.Length; index++)
             DrawMaterialRow(new Rect(12, top + 24 + index * 44, midWidth - 24, 38), SuccessBoost.Kinds[index], usable, picked >= tuning.MaxKinds, tuning);
@@ -272,31 +283,78 @@ public sealed partial class Plugin
         var count = boostCount[index];
         var owned = preview?.BoostOwned != null && preview.BoostOwned.Length > index ? preview.BoostOwned[index] : 0;
         Box(rect, on ? Hex(0x121a24) : Inner, on ? Hex(0x3b5f8a) : Line);
+        // Only a row that cannot be picked fades (mockup .mrow.locked); a quote reload never dims it.
+        var faded = locked || preview?.BoostAvailable != true;
         var old = GUI.color;
-        if (locked || !usable) GUI.color = new Color(old.r, old.g, old.b, old.a * 0.55f);
+        if (faded) GUI.color = new Color(old.r, old.g, old.b, old.a * 0.55f);
+        var name = new Rect(rect.x + 12, rect.y, 196, rect.height);
         GUI.enabled = usable && !locked;
-        var toggled = UiToggle(new Rect(rect.x + 10, rect.y + 10, 18, 18), on, "");
+        var toggled = UiToggle(new Rect(name.x, rect.y + 10, 18, 18), on, "", name);
         if (toggled != on) main.Enqueue(() => ToggleBoost(kind));
-        Label(rect.x + 34, rect.y + 2, 170, 18, BoostName(kind), bodyBold, Text);
-        Label(rect.x + 34, rect.y + 19, 170, 16, Loc.L($"개당 +{SuccessBoost.PointsEach(kind, tuning):0.##}%", $"+{SuccessBoost.PointsEach(kind, tuning):0.##}% each"), tiny);
+        Label(name.x + 26, rect.y + 2, 170, 20, BoostName(kind), materialName, Text);
+        Label(name.x + 26, rect.y + 21, 170, 15, Loc.L($"개당 +{SuccessBoost.PointsEach(kind, tuning):0.##}% · {SuccessBoost.RoublesEach(kind, tuning):N0} ₽",
+            $"each +{SuccessBoost.PointsEach(kind, tuning):0.##}% · {SuccessBoost.RoublesEach(kind, tuning):N0} ₽"), tiny);
+        // Stepper: one box with − count + (mockup .step).
+        var step = new Rect(name.xMax + 10, rect.y + 2, 116, rect.height - 4);
+        Box(step, Hex(0x0d1013), Line);
         var limit = BoostLimit(kind);
         GUI.enabled = usable && on && count > 1;
-        MiniButton(new Rect(rect.x + 210, rect.y + 3, 32, 32), "−", () => SetBoostCount(kind, count - 1));
-        Label(rect.x + 242, rect.y + 3, 40, 32, on ? count.ToString() : "0", new GUIStyle(cardLevel) { fontSize = 18 }, Text);
+        StepButton(new Rect(step.x + 1, step.y + 1, 36, step.height - 2), "−", () => SetBoostCount(kind, count - 1));
+        Label(step.x + 36, step.y, 44, step.height, on ? count.ToString() : "—", stepCount, on ? Text : Muted);
         GUI.enabled = usable && on && count < limit;
-        MiniButton(new Rect(rect.x + 282, rect.y + 3, 32, 32), "+", () => SetBoostCount(kind, count + 1));
-        MiniButton(new Rect(rect.x + 322, rect.y + 3, 52, 32), Loc.L("최대", "Max"), () => SetBoostCount(kind, limit));
+        StepButton(new Rect(step.xMax - 37, step.y + 1, 36, step.height - 2), "+", () => SetBoostCount(kind, count + 1));
+        MiniButton(new Rect(step.xMax + 10, rect.y + 3, 52, rect.height - 6), Loc.L("최대", "Max"), () => SetBoostCount(kind, limit));
         GUI.enabled = true;
         var points = on ? SuccessBoost.Points(kind, count, tuning) : 0;
-        Label(rect.x + 386, rect.y + 2, 120, 22, $"+{points:0.##}%", new GUIStyle(number) { alignment = TextAnchor.MiddleLeft }, on ? Blue : Muted);
-        Label(rect.x + 386, rect.y + 21, 120, 14, Loc.L($"최대 {SuccessBoost.Cap(kind, tuning):0.##}%", $"max {SuccessBoost.Cap(kind, tuning):0.##}%"), tiny);
-        Label(rect.xMax - 200, rect.y + 2, 120, 34, on ? $"{(long)count * SuccessBoost.RoublesEach(kind, tuning):N0} ₽" : "—", numberRight, on ? Text : Muted);
-        Label(rect.xMax - 74, rect.y + 2, 66, 34, Loc.L($"보유 {owned:N0}", $"Own {owned:N0}"), tinyRight, on && owned < count ? Loss : Muted);
+        var bonusX = step.xMax + 72;
+        var bonusText = $"+{points:0.##}%";
+        Label(bonusX, rect.y, 70, rect.height, bonusText, bonusNumber, on ? Blue : Hex(0x6f777f));
+        var bonusWidth = bonusNumber.CalcSize(new GUIContent(bonusText)).x;
+        Label(bonusX + bonusWidth + 4, rect.y + 6, 60, 13, Loc.L("최대", "max"), tiny);
+        Label(bonusX + bonusWidth + 4, rect.y + 19, 60, 13, $"{SuccessBoost.Cap(kind, tuning):0.##}%", tiny);
+        Label(rect.xMax - 12 - 64 - 10 - 104, rect.y, 104, rect.height, on ? $"{(long)count * SuccessBoost.RoublesEach(kind, tuning):N0} ₽" : "—", materialCost, on ? Text : Muted);
+        Label(rect.xMax - 12 - 64, rect.y, 64, rect.height, Loc.L($"보유 {owned:N0}", $"own {owned:N0}"), tinyRight, on && owned < count ? Loss : Muted);
         GUI.color = old;
+    }
+
+    // − / + inside the stepper: no frame of their own, a hover tint only.
+    private void StepButton(Rect rect, string text, Action action)
+    {
+        if (GUI.enabled && rect.Contains(Event.current.mousePosition)) Fill(rect, Hex(0x1f252b));
+        if (UiButton(rect, "", card)) main.Enqueue(action);
+        Label(rect.x, rect.y, rect.width, rect.height, text, stepSign, GUI.enabled ? Text : Hex(0x4b5259));
     }
 
     private static string BoostName(BoostMaterial kind) => kind == BoostMaterial.Dogtag ? Loc.L("독택", "Dogtag")
         : kind == BoostMaterial.GraphicsCard ? Loc.L("그래픽 카드", "Graphics card") : Loc.L("비트코인", "Bitcoin");
+
+    private Color FailureColor() { FailureSummary(out var color); return color; }
+
+    // The selected track (or stage) is at its maximum: there is nothing to quote.
+    private bool TabMaxed
+    {
+        get
+        {
+            var id = itemId ?? "";
+            return tab switch
+            {
+                UiTab.Enhance => (StatPatches.Registry.Find(id, selectedPath)?.Level ?? 0) >= maxLevel.Value,
+                UiTab.Transcend => StatPatches.Registry.TranscendLevel(id, transcendTrack) >= TranscendRules.MaxLevel,
+                UiTab.Mythic => MythicLevel >= MythicRules.MaxLevel,
+                _ => false
+            };
+        }
+    }
+
+    // "label value" with the value in the number font (mockup: <span>기본 <span class=num>55%</span></span>).
+    private float Pair(float x, float y, string label, string value, Color valueColor)
+    {
+        var labelWidth = sub.CalcSize(new GUIContent(label)).x;
+        Label(x, y, labelWidth + 2, 22, label, sub);
+        var valueWidth = numberInline.CalcSize(new GUIContent(value)).x;
+        Label(x + labelWidth, y - 1, valueWidth + 2, 22, value, numberInline, valueColor);
+        return x + labelWidth + valueWidth;
+    }
 
     private string FailureSummary(out Color color)
     {
@@ -330,14 +388,19 @@ public sealed partial class Plugin
 
     private float DrawCost(float y)
     {
-        var section = new Rect(0, y, midWidth, 56);
+        // Mockup cost section: "강화비 ₽ · 보호비 ₽ · 재료 루블 ₽ … 합계" over the required materials and the purse.
+        var section = new Rect(0, y, midWidth, 66);
         Box(section, Section, Line);
         var view = preview;
-        var word = Evolving ? Loc.L("진화비", "Evolution") : tab == UiTab.Transcend ? Loc.L("초월비", "Transcend")
-            : tab == UiTab.Mythic ? Loc.L("신화비", "Mythic") : Loc.L("강화비", "Cost");
-        var line = word + " " + Paint(view == null ? "—" : $"{view.BaseCost:N0}", Text);
-        if (view != null && view.ProtectionCost > 0) line += "    " + Paint(Loc.L("보호비 ", "Guards ") + $"+{view.ProtectionCost:N0}", Caution);
-        if (view != null && view.InsertSurcharge > 0) line += "    " + Paint(Loc.L("방탄판 차액 ", "Plate fee ") + $"+{view.InsertSurcharge:N0}", Caution);
+        string Money(long value) => view == null ? "—" : $"{value:N0} ₽";
+        var line = Loc.L("강화비 ", "Cost ") + Paint(Money(view?.BaseCost ?? 0), Text);
+        var fee = view == null ? 0 : view.ProtectionCost + view.InsertSurcharge;
+        if (fee > 0)
+        {
+            var label = view.InsertSurcharge > 0 && view.ProtectionCost > 0 ? Loc.L("보호비·방탄판 차액 ", "Guards & plate diff. ")
+                : view.InsertSurcharge > 0 ? Loc.L("방탄판 차액 ", "Plate difference ") : Loc.L("보호비 ", "Guards ");
+            line += "      " + Paint(label + Money(fee), view.InsertSurcharge > 0 ? Caution : Muted);
+        }
         var boost = view == null ? 0 : view.BoostCost;
         if (boostDirtyAt >= 0 && view != null)
         {
@@ -345,23 +408,22 @@ public sealed partial class Plugin
             foreach (var kind in SuccessBoost.Kinds)
                 if (boostOn[(int)kind]) boost += boostCount[(int)kind] * SuccessBoost.RoublesEach(kind, BoostTuning());
         }
-        line += "    " + Loc.L("재료 루블 ", "Materials ") + Paint($"{boost:N0}", Text);
-        Label(16, y + 6, midWidth - 200, 22, line, small);
-        Label(midWidth - 260, y + 6, 60, 22, Loc.L("합계", "Total"), smallRight);
+        line += "      " + Loc.L("재료 루블 ", "Materials ") + Paint(Money(boost), Text);
+        Label(16, y + 10, midWidth - 290, 26, line, costLine);
         var total = view == null ? 0 : boostDirtyAt >= 0 ? view.Cost - view.BoostCost + boost : view.Cost;
-        Label(midWidth - 196, y + 2, 180, 30, view == null ? "—" : $"{total:N0} ₽", costTotal);
-        // Second line: required materials and the chance materials of this attempt, then the purse.
+        var totalText = view == null ? "—" : $"{total:N0} ₽";
+        var totalWidth = costTotal.CalcSize(new GUIContent(totalText)).x;
+        Label(midWidth - 16 - totalWidth - 64, y + 10, 56, 26, Loc.L("합계", "Total"), smallRight);
+        Label(midWidth - 200, y + 4, 184, 34, totalText, costTotal);
+        // Second line: the attempt's required materials (LEDX, parts…), then the purse.
         var items = new List<string>();
         foreach (var material in view?.Materials ?? Array.Empty<TranscendMaterial>())
             if (material != null)
-                items.Add(Paint(TranscendText.MaterialName(material.Template) + $" {material.Count}", material.Owned >= material.Count ? Good : Loss)
-                    + Paint(Loc.L($" (보유 {material.Owned:N0})", $" (own {material.Owned:N0})"), Muted));
-        foreach (var kind in SuccessBoost.Kinds)
-            if (boostOn[(int)kind] && view?.BoostAvailable == true) items.Add(Paint(BoostName(kind) + $" {boostCount[(int)kind]}", Blue));
-        Label(16, y + 30, midWidth - 220, 20, string.Join("  ·  ", items), small);
+                items.Add(Paint(TranscendText.MaterialName(material.Template) + $" {material.Owned:N0} / {material.Count}", material.Owned >= material.Count ? Good : Loss));
+        Label(16, y + 38, midWidth - 260, 20, string.Join("      ", items), costLine);
         var short_ = view != null && view.AvailableRoubles < total;
-        Label(midWidth - 220, y + 30, 204, 20, Loc.L("보유 ", "Owned ") + Paint(view == null ? "—" : $"{view.AvailableRoubles:N0} ₽", short_ ? Loss : Text), richSmallRight);
-        return y + 56;
+        Label(midWidth - 260, y + 38, 244, 20, Loc.L("보유 ", "Owned ") + Paint(view == null ? "—" : $"{view.AvailableRoubles:N0} ₽", short_ ? Loss : Muted), costLineRight);
+        return y + 66;
     }
 
     // ---- tickets, options and note ------------------------------------------------------
@@ -429,11 +491,11 @@ public sealed partial class Plugin
     {
         Box(rect, enabled ? Section : Inner, Line);
         GUI.enabled = enabled;
-        var toggled = UiToggle(new Rect(rect.x + 12, rect.y + 13, 18, 18), on, "");
+        var toggled = UiToggle(new Rect(rect.x + 12, rect.y + 13, 18, 18), on, "", rect);
         if (toggled != on) main.Enqueue(() => change(toggled));
         GUI.enabled = true;
-        Label(rect.x + 36, rect.y, rect.width - 140, rect.height, label, body, enabled ? Text : Hex(0x6f777f));
-        Label(rect.xMax - 120, rect.y, 108, rect.height, price, smallRight, enabled ? Hex(0xc9b07a) : Hex(0x6f777f));
+        Label(rect.x + 36, rect.y, rect.width - 140, rect.height, label, optionLabel, enabled ? Text : Hex(0x6f777f));
+        Label(rect.xMax - 120, rect.y, 108, rect.height, price, numberSmallRight, enabled ? Hex(0xc9b07a) : Hex(0x6f777f));
     }
 
     // Armor plates (1.3.0 slot rule) beside the guards: state and the paid registration.
@@ -461,9 +523,10 @@ public sealed partial class Plugin
             var missing = TranscendText.Missing(view);
             text = missing.Length > 0 ? Paint(Loc.L("재료가 부족합니다: ", "Missing materials: ") + missing, Loss)
                 : view.BindLegacy ? Loc.L("기존 단계 유지 · 첫 효과 선택은 무료 · 100% 적용", "Keeps old level · first effect choice is free · 100%")
-                : Loc.L($"견적 유효 시간 {Math.Max(0, view.ExpiresUnixSeconds - DateTimeOffset.UtcNow.ToUnixTimeSeconds())}초", $"Quote valid for {Math.Max(0, view.ExpiresUnixSeconds - DateTimeOffset.UtcNow.ToUnixTimeSeconds())}s");
+                : "";
         }
-        var height = Math.Max(20, wrap.CalcHeight(new GUIContent(text ?? ""), midWidth));
+        if (string.IsNullOrEmpty(text)) return y - 10;
+        var height = Math.Max(20, wrap.CalcHeight(new GUIContent(text), midWidth));
         Label(2, y, midWidth - 4, height, text ?? "", new GUIStyle(wrap) { fontSize = 12 });
         return y + height;
     }

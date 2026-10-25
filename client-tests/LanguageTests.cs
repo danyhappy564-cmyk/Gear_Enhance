@@ -58,13 +58,13 @@ public sealed class LanguageTests : IDisposable
         Assert.Equal("1. General", general.Category);
         Assert.Equal("Enable the Enhance gear menu", general.DispName);
         Assert.StartsWith("Adds \"Enhance gear\"", general.Description);
-        Assert.Equal("99. Developer options", developer.Category);
-        Assert.Equal("2. Chance · Success chance (%)", developer.DispName);
+        Assert.Equal("Developer 02 · Chance", developer.Category);
+        Assert.Equal("Success chance (%)", developer.DispName);
         options.SetVisible(true);
         Assert.True(developer.Browsable); Assert.Null(general.Browsable);
         options.SetLanguage(false);
-        Assert.Equal("99. 개발자 옵션", developer.Category);
-        Assert.Equal("2. 확률 · 성공률 (%)", developer.DispName);
+        Assert.Equal("개발자 02 · 확률", developer.Category);
+        Assert.Equal("성공률 (%)", developer.DispName);
         Assert.True(developer.Browsable);
     }
 

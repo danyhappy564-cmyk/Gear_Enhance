@@ -459,7 +459,7 @@ public sealed partial class Plugin
                 {
                     var skip = new Rect(x + 32, top, 556, 40);
                     Box(skip, Section, Line);
-                    popupSkip = GUI.Toggle(new Rect(skip.x + 12, skip.y + 11, 18, 18), popupSkip, "");
+                    popupSkip = UiToggle(new Rect(skip.x + 12, skip.y + 11, 18, 18), popupSkip, "", skip);
                     Label(skip.x + 38, skip.y, skip.width - 44, skip.height, Loc.L("이 창을 닫을 때까지 다시 묻지 않기", "Don't ask again until this window closes"), body);
                     top += 50;
                 }

@@ -114,7 +114,9 @@ public sealed class WindowTests : IDisposable
         Assert.Equal("✦ 신화", StatPatches.Registry.Badge("vest"));
         var args = new object[] { new HooksTests.MarkerView(new TestItem("vest")), "Gen4" };
         typeof(ItemMarkers).GetMethod("Name", BindingFlags.Static | BindingFlags.NonPublic)!.Invoke(null, args);
-        Assert.Equal("Gen4 <color=#FF6AD5>✦ 신화</color>\n<color=#FF6AD5>3단계</color> · <color=#40D1D9>초월 6</color>", args[1]);
+        Assert.Equal("Gen4 <color=#FF6AD5>✦ 신화</color>", args[1]);
+        Assert.Equal("<color=#FF6AD5>신화 3/5</color> · <color=#40D1D9>초월 4/5·2/5</color>", StashLine.Text(3, 4, 2));
+        Assert.Equal("", StashLine.Text(-1, 0, 0));
         // A failed ??? destroys the gear: both records go.
         StatPatches.Registry.ApplyReceipt(new() { Action = EnhanceAction.Mystery, ItemId = "vest", FailureMode = FailureMode.Destroy, MythicLevel = -1 }, "pmc");
         Assert.Equal(-1, StatPatches.Registry.MythicLevel("vest"));
@@ -130,7 +132,9 @@ public sealed class WindowTests : IDisposable
             Returns = new[] { new ReturnLink { ItemId = "lost", Tier = InsuranceTier.Basic } } }, "pmc");
         var args = new object[] { new HooksTests.MarkerView(new TestItem("gun")), "K2" };
         typeof(ItemMarkers).GetMethod("Name", BindingFlags.Static | BindingFlags.NonPublic)!.Invoke(null, args);
-        Assert.Equal("K2 <color=#B989F5>★★</color>\n<color=#40D1D9>초월 5단계</color>", args[1]);
+        // The stage line is its own text under the name now (StashLine), as N/5 per track.
+        Assert.Equal("K2 <color=#B989F5>★★</color>", args[1]);
+        Assert.Equal("<color=#40D1D9>초월 5/5·0/5</color>", StashLine.Text(-1, 5, 0));
         Assert.Single(StatPatches.Registry.Returns);
         Loc.English = true;
         Assert.Equal("✦ Mythic", Loc.L("✦ 신화", "✦ Mythic"));
@@ -139,5 +143,16 @@ public sealed class WindowTests : IDisposable
         Loc.English = false;
         // Every zone the server can draw has a name of its own.
         foreach (var zone in MythicRules.BodyZones.Concat(MythicRules.HeadZones)) Assert.NotEqual(zone, MythicText.ZoneName(zone));
+    }
+
+    [Fact]
+    public void Caliber_names_read_like_the_mockup()
+    {
+        Assert.Equal("5.56x45 NATO", CaliberText.Name("Caliber556x45NATO"));
+        Assert.Equal("7.62x39", CaliberText.Name("Caliber762x39"));
+        Assert.Equal("9x19 PARA", CaliberText.Name("Caliber9x19PARA"));
+        Assert.Equal("12.7x55", CaliberText.Name("Caliber127x55"));
+        Assert.Equal("12g", CaliberText.Name("Caliber12g"));
+        Assert.Null(CaliberText.Name(""));
     }
 }

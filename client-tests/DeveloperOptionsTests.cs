@@ -12,7 +12,13 @@ public sealed class DeveloperOptionsTests
         var chance = policy.Describe("2. 확률", "항상 성공 (100%)");
         var cost = policy.Describe("3. 비용", "기준 가격 대비 비용 (%)");
         Assert.False(chance.Browsable); Assert.False(cost.Browsable);
-        Assert.Equal("99. 개발자 옵션", chance.Category);
+        // One F12 group per developer section (user: "구분 좀 넣어주셈"), the cfg section unchanged.
+        Assert.Equal("개발자 02 · 확률", chance.Category);
+        Assert.Equal("개발자 03 · 비용", cost.Category);
+        Assert.Equal("개발자 01 · 빠른 설정", DeveloperOptions.Category(DeveloperOptions.QuickSection, false));
+        Assert.Equal("개발자 00 · 비밀번호", DeveloperOptions.Category(DeveloperOptions.DeveloperSection, false));
+        Assert.Equal("Developer 13 · Transcendence", DeveloperOptions.Category("13. 초월 강화", true));
+        Assert.True(chance.Order > cost.Order);
         policy.SetVisible(true);
         Assert.True(chance.Browsable); Assert.True(cost.Browsable);
         Assert.True(policy.Describe("10. 스타 강화 진화", "진화 성공률 (%)").Browsable);

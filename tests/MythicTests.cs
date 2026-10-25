@@ -517,4 +517,24 @@ public sealed class MythicTests
         rig.Backend.Saved = Json.Deserialize<SptProfile>(Json.Serialize(rig.Backend.Saved)!)!;
         Assert.Equal("", new EnhanceService(rig.Backend, Json).Snapshot(Session).Notice);
     }
+
+    [Fact]
+    public void Quick_switches_take_no_roubles_and_no_materials()
+    {
+        var rig = new Rig();
+        var roubles = rig.Roubles;
+        var ledx = rig.Stock(MythicRules.Ledx);
+        var bitcoins = rig.Stock(SuccessBoost.BitcoinTemplate);
+        rig.Settings = new EnhanceSettings { FreeRoubles = true, FreeMaterials = true, AlwaysSucceed = true };
+        var quote = rig.Quote(EnhanceAction.Mystery, Gun);
+        Assert.Equal((0, 0), (quote.Cost, quote.BaseCost));
+        Assert.Empty(quote.Materials); Assert.True(quote.FreeMaterials);
+        Assert.True(rig.Pay(quote).Success);
+        var mythic = rig.Quote(EnhanceAction.Mythic, Gun, new() { Boost = [new BoostChoice { Kind = BoostMaterial.Bitcoin, Count = 4 }] });
+        Assert.Equal(0, mythic.Cost);
+        Assert.True(mythic.CanPay);
+        rig.Pay(mythic);
+        Assert.Equal((roubles, ledx, bitcoins), (rig.Roubles, rig.Stock(MythicRules.Ledx), rig.Stock(SuccessBoost.BitcoinTemplate)));
+        Assert.Equal(0, rig.Quote(EnhanceAction.BuyTicket, Vest, new() { TicketStars = MythicRules.MysteryTicket }).Cost);
+    }
 }

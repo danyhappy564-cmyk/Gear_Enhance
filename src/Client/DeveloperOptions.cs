@@ -11,6 +11,8 @@ internal sealed class ConfigurationManagerAttributes
     public string DispName;
     public string Description;
     public System.Action<BepInEx.Configuration.ConfigEntryBase> CustomDrawer;
+    // Higher first within a category (ConfigurationManager); keeps the declaration order.
+    public int? Order;
 }
 
 public enum UiLanguage { Auto, Korean, English }
@@ -26,6 +28,8 @@ internal sealed class DeveloperOptions
     private readonly List<Entry> entries = new List<Entry>();
     private bool visible, english;
     internal const string DeveloperSection = "99. 개발자 옵션";
+    internal const string QuickSection = "0. 빠른 설정";
+    private int order;
 
     internal ConfigurationManagerAttributes Describe(string section, string key, string description = null, bool developer = true)
     {
@@ -35,6 +39,7 @@ internal sealed class DeveloperOptions
             Description = description, Developer = developer
         };
         if (developer) entry.Metadata.Browsable = visible;
+        entry.Metadata.Order = -(order++);
         entries.Add(entry); Apply(entry);
         return entry.Metadata;
     }
@@ -48,12 +53,27 @@ internal sealed class DeveloperOptions
         english = value;
         foreach (var entry in entries) Apply(entry);
     }
+    // "2. 확률" → "개발자 02 · 확률"; the password is 00 and the quick switches 01.
+    internal static string Category(string section, bool english)
+    {
+        var word = english ? "Developer" : "개발자";
+        if (section == DeveloperSection) return word + " 00 · " + (english ? "Password" : "비밀번호");
+        var text = ConfigText.Get(section, english);
+        var dot = text.IndexOf(". ", System.StringComparison.Ordinal);
+        if (dot <= 0 || !int.TryParse(text.Substring(0, dot), out var number)) return word + " · " + text;
+        if (section == QuickSection) number = 1;
+        return $"{word} {number:00} · {text.Substring(dot + 2)}";
+    }
+
     private void Apply(Entry entry)
     {
         var section = ConfigText.Get(entry.Section, english);
         var key = ConfigText.Get(entry.Key, english);
-        entry.Metadata.Category = entry.Developer ? ConfigText.Get(DeveloperSection, english) : section;
-        entry.Metadata.DispName = entry.Developer ? section + " · " + key : key;
+        // User: one F12 group per developer section ("개발자 02 · 확률"), the password first, then the
+        // quick switches; the cfg sections themselves stay as they were.
+        var developer = entry.Developer || entry.Section == DeveloperSection;
+        entry.Metadata.Category = developer ? Category(entry.Section, english) : section;
+        entry.Metadata.DispName = key;
         entry.Metadata.Description = entry.Description == null ? null : ConfigText.Get(entry.Description, english);
     }
 }
@@ -68,6 +88,13 @@ internal static class ConfigText
     private static readonly Dictionary<string, string> English = new Dictionary<string, string>
     {
         ["99. 개발자 옵션"] = "99. Developer options",
+        ["0. 빠른 설정"] = "0. Quick switches",
+        ["모든 강화 루블 필요 없음"] = "No roubles for anything",
+        ["강화·진화·초월·신화·방지권·보험·방탄판 차액에 루블을 받지 않습니다. 개발자 옵션을 잠그면 꺼집니다."] = "Enhancing, evolving, transcending, mythic, tickets, insurance and plate differences cost no roubles. Off while the developer options are locked.",
+        ["모든 강화 재료 필요 없음"] = "No materials for anything",
+        ["초월 재료·LEDX·그래픽 카드와 성공률 재료(독택·그래픽 카드·비트코인)를 가져가지 않습니다. 성공률 재료는 없어도 고를 수 있습니다."] = "Transcendence materials, LEDX, graphics cards and chance materials (dogtags, graphics cards, bitcoin) are not taken; chance materials can be picked without owning them.",
+        ["확률 100% (항상 성공)"] = "100% chance (always succeed)",
+        ["강화·진화·초월·신화·??? 가 항상 성공합니다. 비용은 그대로 듭니다(위 두 설정과 따로)."] = "Enhancing, evolving, transcending, mythic and ??? always succeed. Costs still apply (separate from the two above).",
         ["1. 기본"] = "1. General",
         ["2. 확률"] = "2. Chance",
         ["3. 비용"] = "3. Cost",

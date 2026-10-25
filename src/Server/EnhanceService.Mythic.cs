@@ -110,7 +110,28 @@ public sealed partial class EnhanceService
         quote.MythicLevel = mythic == null ? -1 : MythicRules.Clamp(mythic.Level);
         quote.Zones = mythic?.Zones.ToArray() ?? Array.Empty<string>();
         quote.Rerolls = mythic?.Rerolls ?? 0;
+        Free(quote, settings);
         return quote;
+    }
+
+    // F12 quick switches "모든 강화 루블 필요 없음 / 재료 필요 없음" (developer options only). Every
+    // quote passes through Header, so attempts, tickets, insurance and plates all follow them.
+    private static void Free(EnhanceQuote quote, EnhanceSettings settings)
+    {
+        if (settings.FreeRoubles)
+        {
+            quote.Cost = quote.BaseCost = quote.BoostCost = quote.InstantFee = quote.RegistrationFee = quote.TicketPrice = 0;
+            quote.DestructionProtectionFee = quote.DowngradeProtectionFee = 0;
+            for (var tier = 0; tier < quote.InsuranceFees.Length; tier++) quote.InsuranceFees[tier] = 0;
+        }
+        if (settings.FreeMaterials)
+        {
+            quote.FreeMaterials = true;
+            quote.Materials = Array.Empty<TranscendMaterial>();
+            foreach (var line in quote.Boost ?? Array.Empty<BoostLine>()) line.Owned = Math.Max(line.Owned, line.Count);
+            if (quote.BoostAvailable)
+                foreach (var kind in SuccessBoost.Kinds) quote.BoostOwned[(int)kind] = Math.Max(quote.BoostOwned[(int)kind], SuccessBoost.MaxCount(kind, settings.Boost));
+        }
     }
 
     private static TicketRecord TicketsOf(EnhanceState state, string id)

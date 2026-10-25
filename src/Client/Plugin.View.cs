@@ -20,12 +20,29 @@ public sealed partial class Plugin
         if (!GUI.Button(rect, content, style)) return false;
         PlayInteraction(UiInteraction.Button); return true;
     }
-    private bool UiToggle(Rect rect, bool current, string text)
+    // Mockup checkbox (accent-color gold): a 16 px box, gold with a dark tick when checked.
+    // `hit` widens the clickable area (the label next to the box clicks too, like <label for>).
+    private bool UiToggle(Rect rect, bool current, string text, Rect? hit = null)
     {
-        if (InputLocked) { Locked(() => GUI.Toggle(rect, current, text)); return current; }
-        var selected = GUI.Toggle(rect, current, text);
-        if (selected != current) PlayInteraction(UiInteraction.CheckBox);
-        return selected;
+        if (Event.current.type == EventType.Repaint)
+        {
+            var box = new Rect(rect.x + 1, rect.y + (rect.height - 16) / 2, 16, 16);
+            var enabled = GUI.enabled && !InputLocked;
+            var gold = enabled ? Gold : Hex(0x5f5236);
+            if (current)
+            {
+                Fill(box, gold);
+                var old = GUI.color; GUI.color = Hex(0x1a1408);
+                GUI.DrawTexture(box, checkTexture);
+                GUI.color = old;
+            }
+            else Box(box, enabled ? Hex(0x1b2025) : Hex(0x15191d), enabled ? Hex(0x767e86) : Hex(0x3a4148));
+        }
+        var area = hit ?? rect;
+        if (InputLocked || !GUI.enabled) return current;
+        if (!GUI.Button(area, GUIContent.none, card)) return current;
+        PlayInteraction(UiInteraction.CheckBox);
+        return !current;
     }
     // Drawn but inert under a popup.
     private static void Locked(Func<bool> draw)
@@ -60,13 +77,14 @@ public sealed partial class Plugin
     private double StarMultiplier(int stars) => 1 + (stars >= 3 ? thirdStarBonus.Value : completionBonus.Value) / 100;
 
     private readonly List<Texture2D> skinTextures = new List<Texture2D>();
-    private Texture2D previewGrid, ringTexture;
+    private Texture2D previewGrid, ringTexture, checkTexture;
     private readonly Dictionary<EnhancePath, Texture2D> glyphs = new Dictionary<EnhancePath, Texture2D>();
     private static readonly EnhancePath[] WeaponTracks = { EnhancePath.Recoil, EnhancePath.Ergonomics, EnhancePath.Precision };
     private static readonly EnhancePath[] ArmorTracks = { EnhancePath.ArmorDurability, EnhancePath.Mobility };
     private GUI.WindowFunction drawWindow;
     private GUIStyle title, version, itemTitle, kindStyle, stars, starsExtra, sub, body, bodyBold, bodyBoldCenter, small, smallRight, smallCenter, tiny, tinyRight;
     private GUIStyle number, numberBig, numberHuge, numberRight, numberCenter, costTotal, richSmall, richBody, richCenter, richSmallRight;
+    private GUIStyle numberInline, numberSmallRight, costLine, costLineRight, optionLabel, materialName, stepCount, stepSign, bonusNumber, materialCost;
     private GUIStyle tabMark, tabLabel, tabSub, cardName, cardLevel, cardSub, popKicker, popTitle, popLine, wrap, wrapCenter;
     private GUIStyle card, button, buttonDark, buttonSmall, frame;
     private float UiScale => Mathf.Max(0.1f, Mathf.Min(1.1f,
@@ -85,12 +103,17 @@ public sealed partial class Plugin
         windowSkin = Instantiate(GUI.skin);
         drawWindow = DrawWindow;
         windowSkin.hideFlags = HideFlags.HideAndDontSave;
-        // Segoe UI Symbol covers ✦ ◆ ◈ where the Korean fonts have no glyph (dynamic font fallback).
-        uiFont = Font.CreateDynamicFontFromOSFont(
+        // Mockup fonts (UiFonts): Noto Sans KR for text, Rajdhani for numbers. Without the files the
+        // Windows fonts stay; Segoe UI Symbol covers ✦ ◆ ◈ there (dynamic font fallback).
+        var fontNote = UiFonts.Load(System.IO.Path.Combine(System.IO.Path.GetDirectoryName(Info.Location) ?? "", "fonts"));
+        if (fontNote != null) Logger.LogWarning(fontNote);
+        else LogDetailed("강화 창 글꼴: GE Sans(Noto Sans KR) · GE Num(Rajdhani) 불러옴");
+        uiFont = UiFonts.Sans ?? Font.CreateDynamicFontFromOSFont(
             new[] { "Malgun Gothic", "맑은 고딕", "Noto Sans CJK KR", "Segoe UI Symbol", "Arial Unicode MS" }, 16);
         if (uiFont != null) { uiFont.hideFlags = HideFlags.HideAndDontSave; windowSkin.font = uiFont; }
-        title = TextStyle(24, LightGold, FontStyle.Bold);
-        version = TextStyle(14, Muted);
+        // Sizes and weights are the mockup CSS ones (px = window units).
+        title = TextStyle(26, LightGold, FontStyle.Bold, numeric: true);
+        version = TextStyle(14, Muted, numeric: true);
         itemTitle = TextStyle(24, Text, FontStyle.Bold);
         kindStyle = TextStyle(13, Muted);
         stars = TextStyle(28, Gold); stars.richText = true;
@@ -104,12 +127,22 @@ public sealed partial class Plugin
         smallCenter = new GUIStyle(small) { alignment = TextAnchor.MiddleCenter };
         tiny = TextStyle(11, Muted); tiny.richText = true;
         tinyRight = new GUIStyle(tiny) { alignment = TextAnchor.MiddleRight };
-        number = TextStyle(18, BarBase, FontStyle.Bold, TextAnchor.MiddleRight); number.richText = true;
-        numberRight = new GUIStyle(number);
-        numberBig = TextStyle(34, LightGold, FontStyle.Bold);
-        numberHuge = TextStyle(96, Myth, FontStyle.Bold, TextAnchor.MiddleCenter);
-        numberCenter = TextStyle(40, Blue, FontStyle.Bold, TextAnchor.MiddleCenter);
-        costTotal = TextStyle(26, LightGold, FontStyle.Bold, TextAnchor.MiddleRight);
+        number = TextStyle(18, BarBase, FontStyle.Bold, TextAnchor.MiddleRight, true); number.richText = true;
+        numberRight = TextStyle(15, Text, FontStyle.Bold, TextAnchor.MiddleRight, true);
+        numberBig = TextStyle(34, LightGold, FontStyle.Bold, numeric: true);
+        numberHuge = TextStyle(96, Myth, FontStyle.Bold, TextAnchor.MiddleCenter, true);
+        numberCenter = TextStyle(40, Blue, FontStyle.Bold, TextAnchor.MiddleCenter, true);
+        costTotal = TextStyle(26, LightGold, FontStyle.Bold, TextAnchor.MiddleRight, true);
+        numberInline = TextStyle(16, Text, numeric: true);
+        numberSmallRight = TextStyle(13, Hex(0xc9b07a), alignment: TextAnchor.MiddleRight, numeric: true);
+        costLine = TextStyle(12, Muted); costLine.richText = true;
+        costLineRight = new GUIStyle(costLine) { alignment = TextAnchor.MiddleRight };
+        optionLabel = TextStyle(13, Text);
+        materialName = TextStyle(14, Text, FontStyle.Bold);
+        stepCount = TextStyle(18, Text, FontStyle.Bold, TextAnchor.MiddleCenter, true);
+        stepSign = TextStyle(18, Text, alignment: TextAnchor.MiddleCenter);
+        bonusNumber = TextStyle(18, Blue, FontStyle.Bold, numeric: true);
+        materialCost = TextStyle(15, Text, alignment: TextAnchor.MiddleRight, numeric: true);
         richSmall = new GUIStyle(small);
         richSmallRight = new GUIStyle(smallRight);
         richBody = new GUIStyle(body);
@@ -118,7 +151,7 @@ public sealed partial class Plugin
         tabLabel = TextStyle(14, Hex(0xc9c4b8), FontStyle.Bold);
         tabSub = TextStyle(11, Muted);
         cardName = TextStyle(14, Text, FontStyle.Bold, TextAnchor.MiddleCenter);
-        cardLevel = TextStyle(20, Gold, FontStyle.Bold, TextAnchor.MiddleCenter);
+        cardLevel = TextStyle(20, Gold, FontStyle.Bold, TextAnchor.MiddleCenter, true);
         cardSub = TextStyle(11, Muted, alignment: TextAnchor.MiddleCenter);
         popKicker = TextStyle(12, Muted, alignment: TextAnchor.MiddleCenter);
         popTitle = TextStyle(34, Text, FontStyle.Bold, TextAnchor.MiddleCenter);
@@ -128,11 +161,13 @@ public sealed partial class Plugin
         card = new GUIStyle(windowSkin.button) { padding = new RectOffset(), margin = new RectOffset() };
         foreach (var state in new[] { card.normal, card.hover, card.active, card.focused,
             card.onNormal, card.onHover, card.onActive, card.onFocused }) state.background = null;
-        button = new GUIStyle(card) { fontSize = 15, fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter, richText = true, wordWrap = true };
+        button = new GUIStyle(card) { fontSize = 15, fontStyle = UiFonts.Loaded ? FontStyle.Normal : FontStyle.Bold, alignment = TextAnchor.MiddleCenter, richText = true, wordWrap = true };
+        if (UiFonts.Loaded) button.font = UiFonts.SansBold;
         button.normal.textColor = button.hover.textColor = button.active.textColor = Hex(0x1a1408);
         buttonDark = new GUIStyle(button);
         buttonDark.normal.textColor = buttonDark.hover.textColor = buttonDark.active.textColor = Text;
         buttonSmall = new GUIStyle(buttonDark) { fontSize = 12, fontStyle = FontStyle.Normal };
+        if (UiFonts.Loaded) buttonSmall.font = UiFonts.Sans;
         frame = new GUIStyle(windowSkin.window) { padding = new RectOffset(), border = new RectOffset() };
         foreach (var state in new[] { frame.normal, frame.hover, frame.active, frame.focused,
             frame.onNormal, frame.onHover, frame.onActive, frame.onFocused }) state.background = null;
@@ -155,6 +190,8 @@ public sealed partial class Plugin
         }
         ringTexture = new Texture2D(ring, ring, TextureFormat.RGBA32, false) { hideFlags = HideFlags.HideAndDontSave, wrapMode = TextureWrapMode.Clamp };
         ringTexture.SetPixels32(ringPixels); ringTexture.Apply(false, true); skinTextures.Add(ringTexture);
+        checkTexture = MakeCheck(); skinTextures.Add(checkTexture);
+        MakeIcons();
         foreach (EnhancePath path in Enum.GetValues(typeof(EnhancePath)))
         {
             var mask = UiGlyphs.Rasterize(path);
@@ -169,12 +206,89 @@ public sealed partial class Plugin
         }
     }
 
-    private GUIStyle TextStyle(int size, Color color, FontStyle weight = FontStyle.Normal,
-        TextAnchor alignment = TextAnchor.MiddleLeft)
+    // Mockup header/status icons (the SVG paths, 16 units) as 64 px stroke textures, made once.
+    private Texture2D soundOnIcon, soundOffIcon, refreshIcon, closeIcon;
+    private static Vector2[] Arc(Vector2 center, float radius, float from, float to, int steps = 16)
     {
+        var points = new Vector2[steps + 1];
+        for (var i = 0; i <= steps; i++)
+        {
+            var angle = (from + (to - from) * i / steps) * Mathf.Deg2Rad;
+            points[i] = center + new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * radius;
+        }
+        return points;
+    }
+    // Polylines in SVG coordinates (y down) of a `units` box, stroked `width` units wide.
+    private static Texture2D StrokeIcon(float units, float width, params Vector2[][] lines)
+    {
+        const int size = 64;
+        var scale = size / units;
+        var pixels = new Color32[size * size];
+        for (var pixel = 0; pixel < pixels.Length; pixel++)
+        {
+            // Texture rows go up; SVG y goes down.
+            var p = new Vector2(pixel % size + 0.5f, size - 1 - pixel / size + 0.5f) / scale;
+            var distance = float.MaxValue;
+            foreach (var line in lines)
+                for (var i = 0; i + 1 < line.Length; i++) distance = Mathf.Min(distance, Segment(p, line[i], line[i + 1]));
+            pixels[pixel] = new Color32(255, 255, 255, (byte)(Mathf.Clamp01((width / 2 - distance) * scale + 0.5f) * 255));
+        }
+        var texture = new Texture2D(size, size, TextureFormat.RGBA32, false) { hideFlags = HideFlags.HideAndDontSave, wrapMode = TextureWrapMode.Clamp };
+        texture.SetPixels32(pixels); texture.Apply(false, true);
+        return texture;
+    }
+    private void MakeIcons()
+    {
+        Vector2 V(float x, float y) => new Vector2(x, y);
+        var speaker = new[] { V(2, 6), V(5, 6), V(9, 3), V(9, 13), V(5, 10), V(2, 10), V(2, 6) };
+        soundOnIcon = StrokeIcon(16, 1.6f, speaker, Arc(V(8.55f, 8), 3.5f, -45.6f, 45.6f), Arc(V(8.83f, 8), 6, -48.6f, 48.6f));
+        soundOffIcon = StrokeIcon(16, 1.6f, speaker, new[] { V(11, 6), V(15, 10) }, new[] { V(15, 6), V(11, 10) });
+        refreshIcon = StrokeIcon(16, 1.8f, Arc(V(8, 8), 5.5f, 0, 315, 24), new[] { V(12.5f, 1.5f), V(12.5f, 4.7f), V(9.3f, 4.7f) });
+        closeIcon = StrokeIcon(14, 2, new[] { V(2, 2), V(12, 12) }, new[] { V(12, 2), V(2, 12) });
+        skinTextures.Add(soundOnIcon); skinTextures.Add(soundOffIcon); skinTextures.Add(refreshIcon); skinTextures.Add(closeIcon);
+    }
+    private void IconButton(Rect rect, Texture2D icon, float iconSize, Action action, UiInteraction cue = UiInteraction.Button)
+    {
+        MiniButton(rect, "", action, cue);
+        if (Event.current.type != EventType.Repaint) return;
+        var old = GUI.color; GUI.color = GUI.enabled ? Text : Hex(0x4b5259);
+        GUI.DrawTexture(new Rect(rect.center.x - iconSize / 2, rect.center.y - iconSize / 2, iconSize, iconSize), icon);
+        GUI.color = old;
+    }
+
+    // Tick of the checkbox, 32 px (drawn at 16): two strokes with soft edges, made once.
+    private static Texture2D MakeCheck()
+    {
+        const int size = 32;
+        var points = new[] { new Vector2(7, 16.5f), new Vector2(13.5f, 23), new Vector2(25.5f, 9) };
+        var pixels = new Color32[size * size];
+        for (var pixel = 0; pixel < pixels.Length; pixel++)
+        {
+            var p = new Vector2(pixel % size + 0.5f, size - 1 - pixel / size + 0.5f);
+            var distance = Mathf.Min(Segment(p, points[0], points[1]), Segment(p, points[1], points[2]));
+            pixels[pixel] = new Color32(255, 255, 255, (byte)(Mathf.Clamp01(2.8f - distance) * 255));
+        }
+        var texture = new Texture2D(size, size, TextureFormat.RGBA32, false) { hideFlags = HideFlags.HideAndDontSave, wrapMode = TextureWrapMode.Clamp };
+        texture.SetPixels32(pixels); texture.Apply(false, true);
+        return texture;
+    }
+    private static float Segment(Vector2 p, Vector2 a, Vector2 b)
+    {
+        var ab = b - a;
+        var t = Mathf.Clamp01(Vector2.Dot(p - a, ab) / ab.sqrMagnitude);
+        return Vector2.Distance(p, a + ab * t);
+    }
+
+    // `numeric`: the mockup's .num class (Rajdhani). With the font files, weight picks the file
+    // (no synthetic bold); without them the Windows font is bolded by Unity as before.
+    private GUIStyle TextStyle(int size, Color color, FontStyle weight = FontStyle.Normal,
+        TextAnchor alignment = TextAnchor.MiddleLeft, bool numeric = false)
+    {
+        var bold = weight == FontStyle.Bold;
         var style = new GUIStyle(windowSkin.label)
         {
-            fontSize = size, fontStyle = weight, alignment = alignment,
+            font = !UiFonts.Loaded ? null : numeric ? bold ? UiFonts.NumBold : UiFonts.Num : bold ? UiFonts.SansBold : UiFonts.Sans,
+            fontSize = size, fontStyle = UiFonts.Loaded ? FontStyle.Normal : weight, alignment = alignment,
             padding = new RectOffset(), margin = new RectOffset(),
             wordWrap = false, richText = false, clipping = TextClipping.Clip
         };
@@ -210,13 +324,32 @@ public sealed partial class Plugin
         style.normal.textColor = old;
     }
     // Two-layer bar (mockup .bar): the grey "now" part over the blue "after" part, both filling in.
-    private void Bar(Rect rect, double now, double next, double cap, Color nowColor, Color nextColor, float fill = 1)
+    // `key` names the bar so a changed value slides there (Tween) instead of jumping.
+    private void Bar(Rect rect, double now, double next, double cap, Color nowColor, Color nextColor, float fill = 1, string key = null)
     {
         Fill(rect, BarBack);
         if (cap <= 0) return;
-        float Width(double amount) => rect.width * (float)Math.Max(0, Math.Min(1, amount / cap)) * fill;
-        Fill(new Rect(rect.x, rect.y, Width(next), rect.height), nextColor);
-        Fill(new Rect(rect.x, rect.y, Width(now), rect.height), nowColor);
+        float Share(double amount) => (float)Math.Max(0, Math.Min(1, amount / cap));
+        var nextShare = key == null ? Share(next) : Tween(key + ".next", Share(next));
+        var nowShare = key == null ? Share(now) : Tween(key + ".now", Share(now));
+        Fill(new Rect(rect.x, rect.y, rect.width * nextShare * fill, rect.height), nextColor);
+        Fill(new Rect(rect.x, rect.y, rect.width * nowShare * fill, rect.height), nowColor);
+    }
+
+    // Values that ease to a new target over 0.35 s (mockup `.bar > div { transition: width .35s }`).
+    // ReplayMotion clears them, so a new tab or item fills from the left again instead.
+    private readonly Dictionary<string, (float From, float To, double Start)> tweens = new Dictionary<string, (float, float, double)>();
+    private float Tween(string key, float target)
+    {
+        if (Reduced) return target;
+        if (!tweens.TryGetValue(key, out var tween)) { tweens[key] = (target, target, Clock); return target; }
+        if (Math.Abs(tween.To - target) > 1e-4f) tweens[key] = tween = (TweenValue(tween), target, Clock);
+        return TweenValue(tween);
+    }
+    private static float TweenValue((float From, float To, double Start) tween)
+    {
+        var t = (float)UiMotion.Clamp((Clock - tween.Start) / 0.35);
+        return tween.From + (tween.To - tween.From) * (1 - (1 - t) * (1 - t) * (1 - t));
     }
 
     private void OnGUI()
@@ -312,11 +445,11 @@ public sealed partial class Plugin
         if (UiButton(en, "", card)) main.Enqueue(() => language.Value = UiLanguage.English);
         Label(korean.x, korean.y, korean.width, korean.height, "한국어", smallCenter, english ? Muted : LightGold);
         Label(en.x, en.y, en.width, en.height, "EN", smallCenter, english ? LightGold : Muted);
-        var sound = new Rect(708, 12, 56, 32);
-        MiniButton(sound, soundsEnabled.Value ? Loc.L("♪ 켬", "♪ On") : Loc.L("♪ 끔", "♪ Off"), () => soundsEnabled.Value = !soundsEnabled.Value);
+        // Mockup: a speaker (with waves when on, crossed when off), 44 px wide.
+        IconButton(new Rect(724, 12, 40, 32), soundsEnabled.Value ? soundOnIcon : soundOffIcon, 16, () => soundsEnabled.Value = !soundsEnabled.Value);
         if (!uncertain && itemId != null) MiniButton(new Rect(772, 12, 84, 32), Loc.L("새로고침", "Refresh"), () => { ReplayMotion(); RefreshTab(); });
         GUI.enabled = popup == PopupKind.None && !attemptTimeline.Active;
-        MiniButton(new Rect(864, 12, 32, 32), "×", Close, UiInteraction.Close);
+        IconButton(new Rect(864, 12, 36, 32), closeIcon, 14, Close, UiInteraction.Close);
         GUI.enabled = true;
     }
 
@@ -368,29 +501,70 @@ public sealed partial class Plugin
         var gearName = itemName ?? Loc.L("장비", "Gear");
         Label(x, area.y + 8, w, 32, gearName, itemTitle);
         var width = itemTitle.CalcSize(new GUIContent(gearName)).x;
-        Label(x + Math.Min(width, w - 80) + 10, area.y + 14, 120, 24, weapon ? Loc.L("무기", "Weapon") : Loc.L("방어구", "Armor"), kindStyle);
+        Label(x + Math.Min(width, w - 80) + 10, area.y + 14, 200, 24, KindLine(), kindStyle);
         var id = itemId ?? "";
         var level = StatPatches.Registry.StarLevel(id);
         var mythic = MythicLevel;
         string mark, extra = "";
-        Color markColor;
+        Color markColor, extraColor = Cyan;
         if (itemId == null) { mark = Loc.L("파괴됨", "Destroyed"); markColor = Danger; }
-        else if (mythic >= 0) { mark = Loc.L("✦ 신화", "✦ Mythic"); markColor = Myth; extra = Loc.L($"{mythic}단계", $"level {mythic}"); }
+        else if (mythic >= 0) { mark = Loc.L("✦ 신화", "✦ Mythic"); markColor = Myth; extra = $"{mythic} / {MythicRules.MaxLevel}"; extraColor = Myth; }
         else
         {
             var total = StatPatches.Registry.TotalLevel(id);
             mark = level >= 2 ? StarEvolution.Stars(level) : "★" + (total > 0 ? $" +{total}" : "");
             markColor = StarTint(level);
-            var transcend = StatPatches.Registry.TranscendTotal(id);
-            if (transcend > 0) extra = Loc.L($"초월 {transcend}", $"Transcend {transcend}");
+            if (StatPatches.Registry.TranscendTotal(id) > 0) extra = Loc.L("초월 ", "Transcend ") + TranscendPair(id);
         }
         var markWidth = stars.CalcSize(new GUIContent(mark)).x;
         Label(x, area.y + 40, w, 34, mark, stars, markColor);
-        if (extra.Length > 0) Label(x + markWidth + 10, area.y + 46, w - markWidth - 10, 26, extra, starsExtra, mythic >= 0 ? Myth : Cyan);
+        if (extra.Length > 0) Label(x + markWidth + 10, area.y + 46, w - markWidth - 10, 26, extra, starsExtra, extraColor);
+        Label(x, area.y + 74, w, 20, HeroLine(id), sub);
+    }
+
+    // "a/5 · b/5" of the 2-star and 3-star transcendence tracks.
+    private static string TranscendPair(string id) =>
+        $"{StatPatches.Registry.TranscendLevel(id, TranscendTrack.Second)}/{TranscendRules.MaxLevel} · {StatPatches.Registry.TranscendLevel(id, TranscendTrack.Third)}/{TranscendRules.MaxLevel}";
+
+    // Beside the name (mockup): the caliber of a weapon, "방어구 · 방탄판 N장" for armor.
+    private string KindLine()
+    {
+        if (!weapon) return Loc.L("방어구", "Armor") + (preview?.InsertedParts > 0 ? Loc.L($" · 방탄판 {preview.InsertedParts}장", $" · {preview.InsertedParts} plates") : "");
+        try { return CaliberText.Name(GameBridge.Get(selectedItem, "AmmoCaliber")?.ToString()) ?? Loc.L("무기", "Weapon"); }
+        catch (Exception) { return Loc.L("무기", "Weapon"); }
+    }
+
+    // The line under the stars follows the tab, like the mockup's hero line.
+    private string HeroLine(string id)
+    {
         var tracks = weapon ? WeaponTracks : ArmorTracks;
         var parts = new List<string>();
         foreach (var path in tracks) parts.Add(EnhanceEffects.Name(path) + " +" + (StatPatches.Registry.Find(id, path)?.Level ?? 0));
-        Label(x, area.y + 74, w, 20, string.Join(" · ", parts), sub);
+        var levels = string.Join(" · ", parts);
+        var stars = StarCount;
+        switch (tab)
+        {
+            case UiTab.Star2:
+            case UiTab.Star3:
+                return stars >= EvolutionStars ? levels + Loc.L($" · {StarEvolution.Stars(EvolutionStars)} 완료", $" · {StarEvolution.Stars(EvolutionStars)} done")
+                    : StatPatches.Registry.IsComplete(id) && stars == EvolutionStars - 1 ? levels + Loc.L($" · {StarEvolution.Stars(EvolutionStars)} 도전 가능", $" · {StarEvolution.Stars(EvolutionStars)} ready") : levels;
+            case UiTab.Transcend:
+                return Loc.L($"2성 초월 {StatPatches.Registry.TranscendLevel(id, TranscendTrack.Second)}/{TranscendRules.MaxLevel} · 3성 초월 {StatPatches.Registry.TranscendLevel(id, TranscendTrack.Third)}/{TranscendRules.MaxLevel}",
+                    $"2★ track {StatPatches.Registry.TranscendLevel(id, TranscendTrack.Second)}/{TranscendRules.MaxLevel} · 3★ track {StatPatches.Registry.TranscendLevel(id, TranscendTrack.Third)}/{TranscendRules.MaxLevel}");
+            case UiTab.Mythic when MythicLevel < 0:
+                return stars >= 3 ? Loc.L("★★★ 달성 · ??? 도전 가능", "★★★ reached · ??? open") : levels;
+            case UiTab.Mythic:
+            {
+                var tuning = StatPatches.Registry.MythicTuning;
+                var head = Loc.L($"신화 {MythicLevel}/{MythicRules.MaxLevel}", $"Mythic {MythicLevel}/{MythicRules.MaxLevel}");
+                if (weapon) return head + Loc.L($" · 탄 데미지·관통력 단계당 +{tuning.WeaponPercentPerLevel:0.#}% · 비용 단계마다 ×{tuning.CostGrowth:0.##}",
+                    $" · damage & penetration +{tuning.WeaponPercentPerLevel:0.#}% per level · cost ×{tuning.CostGrowth:0.##} per level");
+                var zones = new List<string>();
+                foreach (var zone in StatPatches.Registry.MythicZones(id)) zones.Add(MythicText.ZoneName(zone));
+                return head + (zones.Count > 0 ? Loc.L(" · 추가 보호 부위 ", " · extra zones ") + string.Join(" · ", zones) : "");
+            }
+            default: return levels;
+        }
     }
 
     private static void DrawSprite(Sprite sprite, Rect area, float alpha)

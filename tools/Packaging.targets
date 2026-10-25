@@ -36,6 +36,8 @@
     <RemoveDir Directories="$(GearPackageStage)" />
     <MakeDir Directories="$(GearPackageStage)/BepInEx/plugins/GearEnhance;$(GearPackageStage)/SPT_Runtime/user/mods/GearEnhance" />
     <Copy SourceFiles="@(GearClientAssembly)" DestinationFolder="$(GearPackageStage)/BepInEx/plugins/GearEnhance" />
+    <ItemGroup><GearFonts Include="$(GearRepositoryRoot)/src/Client/Fonts/*.ttf;$(GearRepositoryRoot)/src/Client/Fonts/OFL-*.txt" /></ItemGroup>
+    <Copy SourceFiles="@(GearFonts)" DestinationFolder="$(GearPackageStage)/BepInEx/plugins/GearEnhance/fonts" />
     <Copy SourceFiles="@(GearServerAssembly)" DestinationFolder="$(GearPackageStage)/SPT_Runtime/user/mods/GearEnhance" />
     <Copy SourceFiles="$(GearRepositoryRoot)/README.md;$(GearRepositoryRoot)/LICENSE"
           DestinationFolder="$(GearPackageStage)/SPT_Runtime/user/mods/GearEnhance" />

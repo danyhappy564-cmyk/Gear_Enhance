@@ -25,7 +25,7 @@ public sealed partial class Plugin
         Fill(new Rect(x + 1, 56, StatusWidth - 2, 1), Line);
         Label(x + 16, 0, 160, 56, Loc.L("장비 상태", "Gear stats"), new GUIStyle(bodyBold) { fontSize = 15 }, LightGold);
         GUI.enabled = popup == PopupKind.None;
-        MiniButton(new Rect(x + StatusWidth - 44, 12, 32, 32), "▶", ReplayMotion);
+        IconButton(new Rect(x + StatusWidth - 48, 12, 36, 32), refreshIcon, 14, ReplayMotion);
         GUI.enabled = true;
         var y = 70f;
         Label(x + 16, y, 60, 20, Loc.L("원본", "Base"), bodyBold, Muted);
