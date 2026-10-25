@@ -16,19 +16,45 @@ public sealed class WindowTests : IDisposable
     {
         Assert.Equal((-22f, 0f), UiMotion.Panel(0, false));
         Assert.Equal((0f, 1f), UiMotion.Panel(UiMotion.PanelTime, false));
-        // Row 2 waits 120 ms, dips 4 px past its line at 65 %, then settles.
-        Assert.Equal((-30f, 0f), UiMotion.Row(0.1, 2, false));
-        var dip = UiMotion.Row(2 * UiMotion.RowGap + UiMotion.RowTime * 0.65, 2, false);
+        // Base row 2 waits 0.14 + 2 × 0.055 s, dips 4 px past its line at 65 %, then settles.
+        var delay = UiMotion.BaseRowDelay(2);
+        Assert.Equal(0.25, delay, 6);
+        Assert.Equal((-30f, 0f), UiMotion.Row(0.2, delay, false));
+        var dip = UiMotion.Row(delay + UiMotion.RowTime * 0.65, delay, false);
         Assert.Equal(4f, dip.Offset, 3); Assert.Equal(1f, dip.Alpha);
-        Assert.Equal((0f, 1f), UiMotion.Row(5, 2, false));
+        Assert.Equal((0f, 1f), UiMotion.Row(5, delay, false));
+        Assert.Equal(0.66, UiMotion.EnhancedRowDelay(2), 6);
         Assert.Equal(0f, UiMotion.Fill(0.1, 0.24, false));
         Assert.Equal(1f, UiMotion.Fill(0.24 + UiMotion.FillTime, 0.24, false));
+        // Shake keyframes: -10 px at 20 %, +8 px at 40 % of 0.5 s from 0.04 s.
         Assert.Equal(0f, UiMotion.Shake(0.02, false));
-        Assert.NotEqual(0f, UiMotion.Shake(0.1, false));
+        Assert.Equal(-10f, UiMotion.Shake(0.14, false), 3);
+        Assert.Equal(8f, UiMotion.Shake(0.24, false), 3);
         Assert.Equal(0f, UiMotion.Shake(0.6, false));
-        Assert.Equal(1f, UiMotion.Glow(1.6, 1.6, 0.5, false));
-        Assert.Equal((0f, 0f), UiMotion.Ring(0.1, 0.23, 1.5, 5.5f));
-        Assert.True(UiMotion.Spark(0.5, 0, 1.2, 460).Distance > 20);
+        // Title glow peaks at 12 % of 1.2 s from 0.05 s; the ??? hit at 25 % of 0.7 s from 1.22 s.
+        Assert.Equal(1f, UiMotion.Glow(0.05 + 0.144, 0.05, 1.2, 0.12, false), 3);
+        Assert.Equal(1f, UiMotion.Glow(1.395, 1.22, 0.7, 0.25, false), 3);
+        Assert.Equal(0f, UiMotion.Glow(1.93, 1.22, 0.7, 0.25, false));
+        Assert.Equal(1.035f, UiMotion.ConfirmHit(1.22 + 0.135, false), 3);
+        Assert.Equal((0f, 0f), UiMotion.Ring(0.1, 0.23, 1.5, 5.5f, 1));
+        Assert.True(UiMotion.Spark(0.5, 0, 1.2, 20, 460, 0.12).Distance > 20);
+    }
+
+    [Fact]
+    public void Mythic_popup_follows_the_mockup_keyframes()
+    {
+        Assert.Equal((0.45f, -5f), UiMotion.MythIn(0, false));
+        Assert.Equal(1.07f, UiMotion.MythIn(0.45, false).Scale, 3);
+        Assert.Equal((1f, 0f), UiMotion.MythIn(0.75, false));
+        var star = UiMotion.StarIn(0.06 + 0.63, false);
+        Assert.Equal(1.35f, star.Scale, 3); Assert.Equal(15f, star.Angle, 3);
+        Assert.Equal((1f, 0f, 1f), UiMotion.StarIn(1, false));
+        Assert.Equal(-1f, UiMotion.MythPulse(0.5, false, false));
+        Assert.Equal(1f, UiMotion.MythPulse(0.75 + 1.2, false, false), 3);
+        Assert.Equal(-1f, UiMotion.MythPulse(0.3 + 2.4, true, false));
+        Assert.Equal(1f, UiMotion.PopScale(UiMotion.PopTime, false));
+        Assert.Equal(0.92f, UiMotion.PopScale(0, false), 3);
+        Assert.Equal(0.5, UiMotion.Bezier(0.42, 0, 0.58, 1, 0.5), 4);
     }
 
     [Fact]
@@ -39,7 +65,10 @@ public sealed class WindowTests : IDisposable
         Assert.Equal(1f, UiMotion.Fill(0, 1, true));
         Assert.Equal(1f, UiMotion.PopScale(0, true));
         Assert.Equal(0f, UiMotion.Shake(0.1, true));
-        Assert.Equal(0f, UiMotion.Glow(1.6, 1.6, 0.5, true));
+        Assert.Equal(0f, UiMotion.Glow(0.2, 0.05, 1.2, 0.12, true));
+        Assert.Equal((1f, 0f), UiMotion.MythIn(0, true));
+        Assert.Equal((1f, 0f, 1f), UiMotion.StarIn(0, true));
+        Assert.Equal(-1f, UiMotion.MythPulse(1, false, true));
     }
 
     [Fact]
@@ -114,9 +143,7 @@ public sealed class WindowTests : IDisposable
         Assert.Equal("✦ 신화", StatPatches.Registry.Badge("vest"));
         var args = new object[] { new HooksTests.MarkerView(new TestItem("vest")), "Gen4" };
         typeof(ItemMarkers).GetMethod("Name", BindingFlags.Static | BindingFlags.NonPublic)!.Invoke(null, args);
-        Assert.Equal("Gen4 <color=#FF6AD5>✦ 신화</color>", args[1]);
-        Assert.Equal("<color=#FF6AD5>신화 3/5</color> · <color=#40D1D9>초월 4/5·2/5</color>", StashLine.Text(3, 4, 2));
-        Assert.Equal("", StashLine.Text(-1, 0, 0));
+        Assert.Equal("<size=120%>Gen4 <color=#FF6AD5><b>✦ 신화</b></color></size>", args[1]);
         // A failed ??? destroys the gear: both records go.
         StatPatches.Registry.ApplyReceipt(new() { Action = EnhanceAction.Mystery, ItemId = "vest", FailureMode = FailureMode.Destroy, MythicLevel = -1 }, "pmc");
         Assert.Equal(-1, StatPatches.Registry.MythicLevel("vest"));
@@ -132,9 +159,8 @@ public sealed class WindowTests : IDisposable
             Returns = new[] { new ReturnLink { ItemId = "lost", Tier = InsuranceTier.Basic } } }, "pmc");
         var args = new object[] { new HooksTests.MarkerView(new TestItem("gun")), "K2" };
         typeof(ItemMarkers).GetMethod("Name", BindingFlags.Static | BindingFlags.NonPublic)!.Invoke(null, args);
-        // The stage line is its own text under the name now (StashLine), as N/5 per track.
+        // No stage line under the name (user 2026-10-26): stars only.
         Assert.Equal("K2 <color=#B989F5>★★</color>", args[1]);
-        Assert.Equal("<color=#40D1D9>초월 5/5·0/5</color>", StashLine.Text(-1, 5, 0));
         Assert.Single(StatPatches.Registry.Returns);
         Loc.English = true;
         Assert.Equal("✦ Mythic", Loc.L("✦ 신화", "✦ Mythic"));

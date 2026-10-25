@@ -82,7 +82,7 @@ public sealed partial class Plugin
     private static readonly EnhancePath[] WeaponTracks = { EnhancePath.Recoil, EnhancePath.Ergonomics, EnhancePath.Precision };
     private static readonly EnhancePath[] ArmorTracks = { EnhancePath.ArmorDurability, EnhancePath.Mobility };
     private GUI.WindowFunction drawWindow;
-    private GUIStyle title, version, itemTitle, kindStyle, stars, starsExtra, sub, body, bodyBold, bodyBoldCenter, small, smallRight, smallCenter, tiny, tinyRight;
+    private GUIStyle title, version, itemTitle, kindStyle, stars, starsExtra, mythMark, mythExtra, sub, body, bodyBold, bodyBoldCenter, small, smallRight, smallCenter, tiny, tinyRight;
     private GUIStyle number, numberBig, numberHuge, numberRight, numberCenter, costTotal, richSmall, richBody, richCenter, richSmallRight;
     private GUIStyle numberInline, numberSmallRight, costLine, costLineRight, optionLabel, materialName, stepCount, stepSign, bonusNumber, materialCost;
     private GUIStyle tabMark, tabLabel, tabSub, cardName, cardLevel, cardSub, popKicker, popTitle, popLine, wrap, wrapCenter;
@@ -118,6 +118,9 @@ public sealed partial class Plugin
         kindStyle = TextStyle(13, Muted);
         stars = TextStyle(28, Gold); stars.richText = true;
         starsExtra = TextStyle(18, Cyan); starsExtra.richText = true;
+        // User 2026-10-26: the regular-weight "✦ 신화" looked rough; mythic gear uses bold.
+        mythMark = TextStyle(28, Myth, FontStyle.Bold);
+        mythExtra = TextStyle(20, Myth, FontStyle.Bold, numeric: true);
         sub = TextStyle(13, Soft); sub.richText = true;
         body = TextStyle(14, Text); body.richText = true;
         bodyBold = TextStyle(13, Heading, FontStyle.Bold); bodyBold.richText = true;
@@ -325,14 +328,15 @@ public sealed partial class Plugin
     }
     // Two-layer bar (mockup .bar): the grey "now" part over the blue "after" part, both filling in.
     // `key` names the bar so a changed value slides there (Tween) instead of jumping.
-    private void Bar(Rect rect, double now, double next, double cap, Color nowColor, Color nextColor, float fill = 1, string key = null)
+    // `fillNext` < 0 fills both parts together; the effect rows fill the blue part later (mockup fillB).
+    private void Bar(Rect rect, double now, double next, double cap, Color nowColor, Color nextColor, float fill = 1, string key = null, float fillNext = -1)
     {
         Fill(rect, BarBack);
         if (cap <= 0) return;
         float Share(double amount) => (float)Math.Max(0, Math.Min(1, amount / cap));
         var nextShare = key == null ? Share(next) : Tween(key + ".next", Share(next));
         var nowShare = key == null ? Share(now) : Tween(key + ".now", Share(now));
-        Fill(new Rect(rect.x, rect.y, rect.width * nextShare * fill, rect.height), nextColor);
+        Fill(new Rect(rect.x, rect.y, rect.width * nextShare * (fillNext < 0 ? fill : fillNext), rect.height), nextColor);
         Fill(new Rect(rect.x, rect.y, rect.width * nowShare * fill, rect.height), nowColor);
     }
 
@@ -516,9 +520,11 @@ public sealed partial class Plugin
             markColor = StarTint(level);
             if (StatPatches.Registry.TranscendTotal(id) > 0) extra = Loc.L("초월 ", "Transcend ") + TranscendPair(id);
         }
-        var markWidth = stars.CalcSize(new GUIContent(mark)).x;
-        Label(x, area.y + 40, w, 34, mark, stars, markColor);
-        if (extra.Length > 0) Label(x + markWidth + 10, area.y + 46, w - markWidth - 10, 26, extra, starsExtra, extraColor);
+        var markStyle = mythic >= 0 && itemId != null ? mythMark : stars;
+        var extraStyle = mythic >= 0 && itemId != null ? mythExtra : starsExtra;
+        var markWidth = markStyle.CalcSize(new GUIContent(mark)).x;
+        Label(x, area.y + 40, w, 34, mark, markStyle, markColor);
+        if (extra.Length > 0) Label(x + markWidth + 10, area.y + 45, w - markWidth - 10, 26, extra, extraStyle, extraColor);
         Label(x, area.y + 74, w, 20, HeroLine(id), sub);
     }
 

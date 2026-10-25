@@ -87,7 +87,7 @@ public sealed partial class Plugin
             var entry = cards[index];
             var rect = new Rect(index * (width + gap), y, width, 56);
             var mythCard = tab == UiTab.Mythic;
-            GUI.enabled = entry.Pick != null && !busy && popup == PopupKind.None && !uncertain && itemId != null;
+            GUI.enabled = entry.Pick != null && Steady && popup == PopupKind.None && !uncertain && itemId != null;
             var hovered = GUI.enabled && rect.Contains(Event.current.mousePosition);
             var border = entry.On ? entry.Accent : entry.Ok ? Hex(0x3d5a42) : mythCard ? (hovered ? Myth : Hex(0x8a3f79)) : hovered ? Hex(0x4a525b) : Line;
             Box(rect, entry.On ? Hex(0x211d14) : mythCard ? Hex(0x1a1019) : Section, border);
@@ -190,16 +190,18 @@ public sealed partial class Plugin
         Outline(new Rect(90, y + 9, chipWidth, 16), Hex(0x3a4148));
         Label(90, y + 9, chipWidth, 16, chip, new GUIStyle(tiny) { alignment = TextAnchor.MiddleCenter });
         Label(midWidth - 216, y + 8, 200, 18, Loc.L("현재 → 성공 시", "Now → on success"), smallRight);
-        var fill = UiMotion.Fill(Motion, 0.12, Reduced);
         for (var index = 0; index < rows.Count; index++)
         {
             var row = rows[index];
+            // Mockup: the grey part from 0.18 s, the blue part from 0.56 s, 90 ms later per row.
+            var fill = UiMotion.Fill(Motion, 0.18 + index * 0.09, Reduced);
+            var fillNext = UiMotion.Fill(Motion, 0.56 + index * 0.09, Reduced);
             var top = y + 30 + index * 36;
             Label(16, top, 300, 22, row.Label, body);
             Label(midWidth - 230, top, 110, 22, row.Now, number);
             Label(midWidth - 116, top, 16, 22, "→", smallCenter);
             Label(midWidth - 100, top, 84, 22, row.Next, number, Blue);
-            Bar(new Rect(16, top + 24, midWidth - 32, 8), row.NowBar, row.NextBar, row.Cap, BarNow, Blue, fill, "effect." + index);
+            Bar(new Rect(16, top + 24, midWidth - 32, 8), row.NowBar, row.NextBar, row.Cap, BarNow, Blue, fill, "effect." + index, fillNext);
         }
         return y + height;
     }
@@ -214,7 +216,7 @@ public sealed partial class Plugin
         var pity = preview.PityPercent;
         var basic = Math.Max(0, preview.BaseSuccessPercent - pity);
         double boost;
-        if (boostDirtyAt >= 0 && preview.BoostAvailable)
+        if (BoostLocal && preview.BoostAvailable)
         {
             boost = 0;
             foreach (var kind in SuccessBoost.Kinds)
@@ -266,7 +268,7 @@ public sealed partial class Plugin
             : Loc.L("이 시도에는 재료를 쓸 수 없습니다", "No materials for this attempt");
         if (why.Length > 0) Label(midWidth - 314, top, 300, 20, why, smallRight, Muted);
         else Label(midWidth - 214, top, 200, 20, Loc.L("선택 ", "Picked ") + $"{picked} / {tuning.MaxKinds}", numberSmallRight, picked >= tuning.MaxKinds ? Blue : Muted);
-        var usable = preview?.BoostAvailable == true && !busy && popup == PopupKind.None && !uncertain;
+        var usable = preview?.BoostAvailable == true && Steady && popup == PopupKind.None && !uncertain;
         for (var index = 0; index < SuccessBoost.Kinds.Length; index++)
             DrawMaterialRow(new Rect(12, top + 24 + index * 44, midWidth - 24, 38), SuccessBoost.Kinds[index], usable, picked >= tuning.MaxKinds, tuning);
         return y + height;
@@ -401,16 +403,10 @@ public sealed partial class Plugin
                 : view.InsertSurcharge > 0 ? Loc.L("방탄판 차액 ", "Plate difference ") : Loc.L("보호비 ", "Guards ");
             line += "      " + Paint(label + Money(fee), view.InsertSurcharge > 0 ? Caution : Muted);
         }
-        var boost = view == null ? 0 : view.BoostCost;
-        if (boostDirtyAt >= 0 && view != null)
-        {
-            boost = 0;
-            foreach (var kind in SuccessBoost.Kinds)
-                if (boostOn[(int)kind]) boost += boostCount[(int)kind] * SuccessBoost.RoublesEach(kind, BoostTuning());
-        }
+        var boost = BoostRoubles(view);
         line += "      " + Loc.L("재료 루블 ", "Materials ") + Paint(Money(boost), Text);
         Label(16, y + 10, midWidth - 290, 26, line, costLine);
-        var total = view == null ? 0 : boostDirtyAt >= 0 ? view.Cost - view.BoostCost + boost : view.Cost;
+        var total = EstimatedCost(view);
         var totalText = view == null ? "—" : $"{total:N0} ₽";
         var totalWidth = costTotal.CalcSize(new GUIContent(totalText)).x;
         Label(midWidth - 16 - totalWidth - 64, y + 10, 56, 26, Loc.L("합계", "Total"), smallRight);
@@ -425,6 +421,18 @@ public sealed partial class Plugin
         Label(midWidth - 260, y + 38, 244, 20, Loc.L("보유 ", "Owned ") + Paint(view == null ? "—" : $"{view.AvailableRoubles:N0} ₽", short_ ? Loss : Muted), costLineRight);
         return y + 66;
     }
+
+    // Material roubles and the total: from the quote, or worked out here while a pick waits for its quote.
+    private long BoostRoubles(EnhanceQuote view)
+    {
+        if (view == null) return 0;
+        if (!BoostLocal) return view.BoostCost;
+        long boost = 0;
+        foreach (var kind in SuccessBoost.Kinds)
+            if (boostOn[(int)kind]) boost += (long)boostCount[(int)kind] * SuccessBoost.RoublesEach(kind, BoostTuning());
+        return boost;
+    }
+    private long EstimatedCost(EnhanceQuote view) => view == null ? 0 : BoostLocal ? view.Cost - view.BoostCost + BoostRoubles(view) : view.Cost;
 
     // ---- tickets, options and note ------------------------------------------------------
 
@@ -443,7 +451,7 @@ public sealed partial class Plugin
               + (target == 3 ? Loc.L(" · ★★용은 못 씀", " · ★★ tickets don't count") : "");
         Label(chip.x + 10, chip.y + 23, chip.width - 20, 16, state, tiny);
         var use = new Rect(chip.xMax + 8, y, midWidth * 0.30f, 44);
-        var canUse = view != null && view.TicketStars == target && view.TicketsHeld > 0 && !busy && popup == PopupKind.None && !uncertain;
+        var canUse = view != null && view.TicketStars == target && view.TicketsHeld > 0 && Steady && popup == PopupKind.None && !uncertain;
         Box(use, canUse ? Section : Inner, Line);
         GUI.enabled = canUse || useTicket;
         var toggled = UiToggle(new Rect(use.x + 10, use.y + 13, 18, 18), useTicket, "");
@@ -453,7 +461,7 @@ public sealed partial class Plugin
             : Loc.L("방지권 사용\n(실패해도 장비 유지)", "Use a ticket\n(gear kept on failure)"), tiny, canUse ? Text : Muted);
         var buy = new Rect(use.xMax + 8, y, midWidth - use.xMax - 8, 44);
         GUI.enabled = view != null && view.TicketStars == target && view.TicketsBought < view.TicketMax && view.AvailableRoubles >= view.TicketPrice
-            && !busy && popup == PopupKind.None && !uncertain;
+            && Steady && popup == PopupKind.None && !uncertain;
         MiniButton(buy, view == null ? "—" : view.TicketsBought >= view.TicketMax ? Loc.L("더 살 수 없음", "Sold out")
             : Loc.L($"1장 구매 · {view.TicketPrice:N0} ₽", $"Buy one · {view.TicketPrice:N0} ₽"), BuyTicket);
         GUI.enabled = true;
@@ -463,7 +471,7 @@ public sealed partial class Plugin
     private float DrawOptions(float y)
     {
         var view = preview;
-        var usable = !busy && popup == PopupKind.None && !uncertain;
+        var usable = Steady && popup == PopupKind.None && !uncertain;
         if (tab == UiTab.Enhance)
         {
             var plates = !weapon;
@@ -538,34 +546,40 @@ public sealed partial class Plugin
         var view = quote;
         var expired = view != null && DateTimeOffset.UtcNow.ToUnixTimeSeconds() >= view.ExpiresUnixSeconds;
         var ready = view != null && !expired && boostDirtyAt < 0 && view.CanPay && !busy && popup == PopupKind.None && !uncertain && itemId != null;
+        // A pick waiting for its quote keeps the buttons lit (text and the worked-out total) until the
+        // quote is back; a click meanwhile does nothing.
+        var pending = BoostLocal && preview != null && !attemptTimeline.Active && popup == PopupKind.None && !uncertain && itemId != null;
+        var shown = pending ? preview : view;
         var instant = !Evolving;
         var close = new Rect(BodyX, ButtonY, instant ? 175 : 233, ButtonHeight);
-        GUI.enabled = !busy && popup == PopupKind.None && !attemptTimeline.Active;
+        GUI.enabled = Steady && popup == PopupKind.None && !attemptTimeline.Active;
         if (BigButton(close, Loc.L("닫기", "Close"), ButtonKind.Dark, UiInteraction.Close)) main.Enqueue(Close);
         var actionX = close.xMax + 10;
         if (instant)
         {
-            var fee = view?.InstantAvailable == true ? settingsInstantFee : 0;
+            var fee = shown?.InstantAvailable == true ? settingsInstantFee : 0;
             var fast = new Rect(actionX, ButtonY, 175, ButtonHeight);
-            GUI.enabled = ready && view.InstantAvailable && view.AvailableRoubles >= view.Cost + fee;
-            if (BigButton(fast, Loc.L("즉시 강화", "Instant") + "\n" + Paint($"+{settingsInstantFee:N0} ₽", Hex(0x9fc4ee)), ButtonKind.Fast)) main.Enqueue(() => Execute(true));
+            GUI.enabled = (ready || pending) && shown.InstantAvailable && shown.AvailableRoubles >= (pending ? EstimatedCost(shown) : shown.Cost) + fee;
+            if (BigButton(fast, Loc.L("즉시 강화", "Instant") + "\n" + Paint($"+{settingsInstantFee:N0} ₽", Hex(0x9fc4ee)), ButtonKind.Fast) && !pending)
+                main.Enqueue(() => Execute(true));
             actionX = fast.xMax + 10;
         }
         var action = new Rect(actionX, ButtonY, BodyX + BodyWidth - actionX, ButtonHeight);
         var word = Evolving ? Loc.L("진화 시도", "Evolve") : tab == UiTab.Transcend ? Loc.L("초월 시도", "Transcend")
             : tab == UiTab.Mythic ? Loc.L("신화 강화", "Mythic attempt") : Loc.L("강화 시도", "Enhance");
         var reason = view == null ? NoQuoteReason() : null;
-        var caption = busy ? attemptTimeline.Active ? Loc.L("진행 중…", "In progress…") : Loc.L("처리 중…", "Working…")
+        var caption = pending ? $"{word} · {EstimatedCost(preview):N0} ₽"
+            : busy ? attemptTimeline.Active ? Loc.L("진행 중…", "In progress…") : Loc.L("처리 중…", "Working…")
             : view == null ? !string.IsNullOrEmpty(reason) ? ShortReason() : Loc.L("견적 확인 중", "Checking quote")
-            : expired || boostDirtyAt >= 0 ? Loc.L("견적 다시 불러오기", "Reload quote")
+            : expired ? Loc.L("견적 다시 불러오기", "Reload quote")
             : TranscendText.Missing(view).Length > 0 ? Loc.L("재료 부족", "Not enough materials")
             : !view.CanPay ? Loc.L("루블·재료 부족", "Not enough roubles or materials")
             : view.BindLegacy ? Loc.L("기존 단계에 효과 적용 · 무료", "Apply effect to old level · free")
             : $"{word} · {view.Cost:N0} ₽";
-        GUI.enabled = itemId != null && !busy && popup == PopupKind.None && !uncertain && (ready || view != null && (expired || boostDirtyAt >= 0));
-        if (BigButton(action, caption, ButtonKind.Gold))
+        GUI.enabled = pending ? preview.CanPay : itemId != null && !busy && popup == PopupKind.None && !uncertain && (ready || view != null && expired);
+        if (BigButton(action, caption, ButtonKind.Gold) && !pending)
         {
-            if (view == null || expired || boostDirtyAt >= 0) main.Enqueue(RefreshQuote);
+            if (view == null || expired) main.Enqueue(RefreshQuote);
             else main.Enqueue(() => Execute(false));
         }
         GUI.enabled = true;

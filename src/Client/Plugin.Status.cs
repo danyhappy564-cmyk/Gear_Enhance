@@ -38,13 +38,13 @@ public sealed partial class Plugin
         Label(x + 80, y, StatusWidth - 96, 20, itemId == null ? "—" : mythic >= 0 ? Loc.L("✦ 신화", "✦ Mythic") : StarEvolution.Stars(StarCount),
             new GUIStyle(bodyBold) { fontSize = 15 }, mythic >= 0 ? Myth : StarTint(StarCount));
         y += 24;
-        for (var index = 0; index < rows.Count; index++, y += 31) StatLine(x, y, rows[index], rows.Count + index, true);
+        for (var index = 0; index < rows.Count; index++, y += 31) StatLine(x, y, rows[index], index, true);
         GUI.color = old;
     }
 
     private void StatLine(float x, float y, StatRow row, int index, bool enhanced)
     {
-        var (drop, alpha) = UiMotion.Row(Motion, index, Reduced);
+        var (drop, alpha) = UiMotion.Row(Motion, enhanced ? UiMotion.EnhancedRowDelay(index) : UiMotion.BaseRowDelay(index), Reduced);
         var old = GUI.color;
         GUI.color = new Color(old.r, old.g, old.b, old.a * alpha);
         y += drop;
@@ -54,11 +54,14 @@ public sealed partial class Plugin
             Label(x + 120, y + 2, StatusWidth - 136, 26, enhanced ? row.Now : row.Base, new GUIStyle(number) { fontSize = 17 }, Text);
         else
         {
-            // Changing rows: the current value dims, the new one glows once (mockup glow, 1.2 s).
-            var glow = UiMotion.Glow(Motion - index * UiMotion.RowGap, 0.72, 0.5, Reduced);
+            // Changing rows: the current value dims, the new one glows once (mockup glowA: 12 px blue at 0.72 s).
+            var glow = UiMotion.ValueGlow(Motion, Reduced);
             Label(x + 120, y + 2, StatusWidth - 222, 26, row.Now, new GUIStyle(number) { fontSize = 17 }, Muted);
             Label(x + StatusWidth - 100, y + 2, 14, 26, "→", tinyRight);
-            Label(x + StatusWidth - 84, y + 2, 68, 26, row.Next, new GUIStyle(number) { fontSize = 17 }, Color.Lerp(Blue, Color.white, glow * 0.6f));
+            var next = new Rect(x + StatusWidth - 84, y + 2, 68, 26);
+            var style = new GUIStyle(number) { fontSize = 17 };
+            if (glow > 0) GlowText(next, row.Next, style, new Color(95 / 255f, 168 / 255f, 1f, 0.95f * glow), 3);
+            Label(next.x, next.y, next.width, next.height, row.Next, style, Blue);
         }
         GUI.color = old;
     }
@@ -164,50 +167,107 @@ public sealed partial class Plugin
     }
 
     private static ArmorStats ReadArmor(object item)
+        => ArmorStatus.Read(item);
+
+    private static object Component(object item, string typeName) => ArmorStatus.Component(item, typeName);
+
+    private static float Float(object value) => value switch
     {
+        float f => f,
+        double d => (float)d,
+        int i => i,
+        null => float.NaN,
+        _ => float.TryParse(value.ToString(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var parsed) ? parsed : float.NaN
+    };
+}
+
+// Reflection-only reader, also exercised without loading Unity or the game in client-tests.
+internal static class ArmorStatus
+{
+    internal static ArmorStats Read(object item)
+    {
+        var wasRaw = StatPatches.Raw;
         StatPatches.Raw = true;
         try
         {
-            var armor = Component(item, "ArmorComponent");
-            var repairable = Component(item, "RepairableComponent");
+            var result = new ArmorStats();
+            var penalty = GameBridge.Get(Component(item, "EquipmentPenaltyComponent"), "Template");
+            result.Speed = Float(GameBridge.Get(penalty, "SpeedPenaltyPercent"));
+            result.Turn = Float(GameBridge.Get(penalty, "MousePenalty"));
+            result.Ergonomics = Float(GameBridge.Get(penalty, "WeaponErgonomicPenalty"));
             var zones = new HashSet<string>();
+            var seen = new HashSet<object>();
             var plate = 0;
-            // The gear and the parts in its slots (soft inserts, plates, helmet add-ons); bounded.
-            var queue = new Queue<(object Item, int Depth)>();
-            queue.Enqueue((item, 0));
+            // Slots are immediate children; AllSlots already flattens descendants. Never read grids.
+            var queue = new Queue<(object Item, int Depth, bool Locked)>();
+            queue.Enqueue((item, 0, true));
             for (var visited = 0; queue.Count > 0 && visited < 64; visited++)
             {
-                var (current, depth) = queue.Dequeue();
+                var (current, depth, locked) = queue.Dequeue();
+                if (current == null || !seen.Add(current)) continue;
                 var component = Component(current, "ArmorComponent");
-                if (GameBridge.Get(component, "ArmorColliders") is IEnumerable colliders)
-                    foreach (var collider in colliders) if (collider != null) zones.Add(collider.ToString());
-                if (depth > 0 && component != null) plate = Math.Max(plate, (int)Float(GameBridge.Get(component, "ArmorClass")));
-                if (depth >= 3 || !(GameBridge.Get(current, "AllSlots") is IEnumerable slots)) continue;
+                if (component != null)
+                {
+                    var hasZones = false;
+                    if (GameBridge.Get(component, "ArmorColliders") is IEnumerable colliders)
+                        foreach (var collider in colliders)
+                            if (collider != null) { zones.Add("soft:" + collider); hasZones = true; }
+                    var hasPlates = false;
+                    var getPlates = component.GetType().GetMethod("GetArmorPlateColliders", Type.EmptyTypes);
+                    if (getPlates?.Invoke(component, null) is IEnumerable collidersPlate)
+                        foreach (var collider in collidersPlate)
+                            if (collider != null) { zones.Add("plate:" + collider); hasPlates = true; }
+                    result.Zones = hasZones || hasPlates ? zones.Count : result.Zones;
+                    var armorClass = Float(GameBridge.Get(component, "ArmorClass"));
+                    if (Finite(armorClass) && armorClass > 0 && armorClass < int.MaxValue)
+                    {
+                        if (depth > 0 && !locked && hasPlates) plate = Math.Max(plate, (int)armorClass);
+                        else result.ArmorClass = Math.Max(result.ArmorClass, (int)armorClass);
+                        var repairable = GameBridge.Get(component, "Repairable") ?? Component(current, "RepairableComponent");
+                        var templateMax = Float(GameBridge.Get(repairable, "TemplateDurability"));
+                        var durability = Float(GameBridge.Get(repairable, "Durability"));
+                        var max = Float(GameBridge.Get(repairable, "MaxDurability"));
+                        if (Finite(templateMax) && templateMax >= 0)
+                            result.TemplateMax = (Finite(result.TemplateMax) ? result.TemplateMax : 0) + templateMax;
+                        if (Finite(durability) && durability >= 0)
+                        {
+                            result.Parts ??= new List<ArmorCondition>();
+                            result.Parts.Add(new ArmorCondition { Durability = durability, Max = Finite(max) ? max : durability,
+                                TemplateMax = templateMax, Grant = StatPatches.Registry.Grant(GameBridge.Get(current, "Id")?.ToString() ?? "") });
+                        }
+                    }
+                    // The carrier template replaces its own armor penalty; children contribute once.
+                    if (depth > 0 || penalty == null)
+                    {
+                        result.Speed = Add(result.Speed, Float(GameBridge.Get(component, "SpeedPenalty")));
+                        result.Turn = Add(result.Turn, Float(GameBridge.Get(component, "MousePenalty")));
+                        result.Ergonomics = Add(result.Ergonomics, Float(GameBridge.Get(component, "WeaponErgonomicPenalty")));
+                    }
+                }
+                if (depth >= 3 || !(GameBridge.Get(current, "Slots") is IEnumerable slots)) continue;
                 foreach (var slot in slots)
                 {
                     var contained = GameBridge.Get(slot, "ContainedItem");
-                    if (contained != null) queue.Enqueue((contained, depth + 1));
+                    if (contained != null) queue.Enqueue((contained, depth + 1, GameBridge.Get(slot, "Locked") is true));
                 }
             }
-            var body = (int)Float(GameBridge.Get(armor, "ArmorClass"));
-            return new ArmorStats
-            {
-                ArmorClass = body, PlateClass = plate > body ? plate : 0, Zones = zones.Count,
-                TemplateMax = Float(GameBridge.Get(repairable, "TemplateDurability")),
-                Speed = Float(GameBridge.Get(armor, "SpeedPenalty")), Turn = Float(GameBridge.Get(armor, "MousePenalty")),
-                Ergonomics = Float(GameBridge.Get(armor, "WeaponErgonomicPenalty"))
-            };
+            result.PlateClass = plate > result.ArmorClass ? plate : 0;
+            return result;
         }
-        finally { StatPatches.Raw = false; }
+        finally { StatPatches.Raw = wasRaw; }
     }
 
-    private static object Component(object item, string typeName)
+    internal static object Component(object item, string typeName)
     {
         if (!(GameBridge.Get(item, "Components") is IEnumerable components)) return null;
         foreach (var component in components)
-            if (component != null && component.GetType().Name == typeName) return component;
+            for (var type = component?.GetType(); type != null; type = type.BaseType)
+                if (type.Name == typeName) return component;
         return null;
     }
+
+    private static bool Finite(float value) => !float.IsNaN(value) && !float.IsInfinity(value);
+    private static float Add(float total, float value) => Finite(value) ? (Finite(total) ? total : 0) + value : total;
 
     private static float Float(object value) => value switch
     {

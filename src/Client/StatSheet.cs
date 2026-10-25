@@ -24,9 +24,16 @@ internal sealed class WeaponStats
 
 internal sealed class ArmorStats
 {
-    internal int ArmorClass, PlateClass, Zones;
-    internal float TemplateMax;
-    internal float Speed, Turn, Ergonomics;
+    internal int ArmorClass = -1, PlateClass, Zones = -1;
+    internal float TemplateMax = float.NaN;
+    internal float Speed = float.NaN, Turn = float.NaN, Ergonomics = float.NaN;
+    internal List<ArmorCondition> Parts;
+}
+
+internal struct ArmorCondition
+{
+    internal float Durability, Max, TemplateMax;
+    internal double Grant;
 }
 
 // Effect sizes at one moment: what the gear has now, or what it has after the attempt.
@@ -73,17 +80,30 @@ internal static class StatSheet
     {
         string Class(GearLevels at)
         {
-            var body = TranscendEffects.ArmorClass(at.Third, raw.ArmorClass);
+            var body = raw.ArmorClass > 0 ? TranscendEffects.ArmorClass(at.Third, raw.ArmorClass).ToString() : "—";
             var plate = TranscendEffects.ArmorClass(at.Third, raw.PlateClass);
             return body + (raw.PlateClass > 0 ? Loc.L($" · 판 {plate}", $" · plate {plate}") : "");
         }
-        string Zones(GearLevels at) => Loc.L($"{raw.Zones + at.Zones}곳", $"{raw.Zones + at.Zones}");
-        string Max(GearLevels at) => Number(raw.TemplateMax * (1 + TranscendEffects.MaxDurability(at.Second, transcend) / 100), "0.#");
+        string Zones(GearLevels at) => raw.Zones < 0 ? "—" : Loc.L($"{raw.Zones + at.Zones}곳", $"{raw.Zones + at.Zones}");
+        string Max(GearLevels at)
+        {
+            if (raw.Parts == null) return Number(raw.TemplateMax * (1 + TranscendEffects.MaxDurability(at.Second, transcend) / 100), "0.#");
+            // Modular armor: the parts' maximum durability summed (the game's "장갑 내구도" when full).
+            // After the attempt: the server's grant rule raises every part's maximum (EnhanceService.Grant).
+            double total = 0;
+            foreach (var part in raw.Parts)
+            {
+                var delta = at.Second == now.Second ? 0
+                    : Math.Round(part.TemplateMax * TranscendEffects.MaxDurability(at.Second, transcend) / 100, 2) - part.Grant;
+                total += Math.Max(Math.Min(1, part.Max), part.Max + delta);
+            }
+            return Number(total, "0.#");
+        }
         string Loss(GearLevels at) => Number(100 - at.ArmorDurability, "0.#") + "%";
         string Blunt(GearLevels at) => Number(100 - TranscendEffects.Blunt(at.Third, Math.Max(1, raw.ArmorClass), transcend), "0.#") + "%";
         string Taken(GearLevels at) => Number(100 - MythicEffects.ArmorPercent(at.Mythic, mythic), "0.#") + "%";
         string Penalty(float value, GearLevels at, string unit, string format) =>
-            Number(value < 0 && at.Mobility > 0 ? EnhanceEffects.Reduce(value, at.Mobility) : value, format) + unit;
+            float.IsNaN(value) || float.IsInfinity(value) ? "—" : Number(value < 0 && at.Mobility > 0 ? EnhanceEffects.Reduce(value, at.Mobility) : value, format) + unit;
         var plain = new GearLevels { Mythic = -1 };
         return new List<StatRow>
         {

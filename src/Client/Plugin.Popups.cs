@@ -6,6 +6,18 @@ namespace GearEnhance;
 
 internal enum PopupKind { None, Charging, Result, RiskConfirm, MysteryConfirm, RerollConfirm }
 
+// Mockup flex row: natural text widths, 12 px gaps, 16 px side padding; wrap on overflow.
+internal static class PopupEffectLayout
+{
+    internal static (float Label, float Now, float Next) Widths(float width, float label, float now, float next)
+    {
+        var available = Math.Max(3, width - 34 - 36 - 20);
+        var total = Math.Max(1, label) + Math.Max(1, now) + Math.Max(1, next);
+        var scale = Math.Min(1, available / total);
+        return (Math.Max(1, label) * scale, Math.Max(1, now) * scale, Math.Max(1, next) * scale);
+    }
+}
+
 // 1.4.0 popups (design 6 and 7.1): charging gauge, results, the destroy-risk / ??? / reroll
 // questions, and the mythic effects. Effects only offset and tint what is drawn (P2).
 public sealed partial class Plugin
@@ -18,6 +30,8 @@ public sealed partial class Plugin
     private Sprite resultSprite;
     private bool popupSkip, confirmInstant;
     private Look look;
+    private GUIStyle effectLabelStyle, effectValueStyle, effectStyleSource;
+    private readonly GUIContent effectLabelContent = new GUIContent(), effectNowContent = new GUIContent(), effectNextContent = new GUIContent();
 
     private sealed class Look
     {
@@ -306,69 +320,126 @@ public sealed partial class Plugin
             if (popup == PopupKind.Result && (current.Mythic || current.MythicLite) && !Reduced) DrawMythicEffect(overlay, elapsed, current.MythicLite);
             var height = Measure(current);
             var x = (FrameWidth - 620) / 2 + (current.Shatter ? UiMotion.Shake(elapsed, Reduced) : 0);
-            // Popups slide 10 px into place over 0.3 s; they never start transparent (design 6).
-            var y = overlay.center.y - height / 2 - (Reduced ? 0 : (float)(10 * (1 - UiMotion.Clamp(elapsed / UiMotion.PopTime))));
+            var y = overlay.center.y - height / 2;
             var cardRect = new Rect(x, y, 620, height);
-            Box(cardRect, HeaderFill, Edge);
-            if (current.Mythic && elapsed > 0.75 && !Reduced)
-            {
-                var pulse = (float)(0.5 + 0.5 * Math.Sin((elapsed - 0.75) * Math.PI * 2 / 2.4));
-                Outline(new Rect(x - 1, y - 1, 622, height + 2), Color.Lerp(Myth, MythGold, pulse), 2);
-            }
-            else Outline(new Rect(x - 1, y - 1, 622, height + 2), new Color(current.Tint.r, current.Tint.g, current.Tint.b, 0.35f));
-            Fill(new Rect(x, y, 620, 5), current.Tint);
-            var top = y + 27;
-            Label(x, top, 620, 16, current.Kicker, popKicker); top += 28;
-            if (current.Mythic || current.MythicLite)
-            {
-                var size = current.Mythic ? 46 : 30;
-                var alpha = Reduced ? 1 : UiMotion.Fill(elapsed, 0.06, false);
-                var old = GUI.color; GUI.color = new Color(old.r, old.g, old.b, old.a * alpha);
-                Label(x, top, 620, size + 4, "✦", new GUIStyle(popTitle) { fontSize = size }, MythGold);
-                GUI.color = old;
-                top += size + 16;
-            }
-            var titleSize = current.Mythic ? 44 : current.MythicLite ? 36 : 34;
-            Label(x + 20, top, 580, titleSize + 8, current.Title, new GUIStyle(popTitle) { fontSize = titleSize }, TitleColor(current, elapsed));
-            top += titleSize + 20;
-            Label(x + 32, top, 556, 24, current.Line, popLine); top += 36;
-            if (current.Shatter) { DrawShatter(new Rect(x + 175, top, 270, 110), elapsed); top += 122; }
-            if (current.EffectLabel != null)
-            {
-                DrawEffectRow(new Rect(x + 32, top, 556, 48), current.EffectLabel, current.EffectNow, current.EffectNext, current.EffectColor, elapsed);
-                top += 60;
-            }
-            if (current.EffectLabel2 != null)
-            {
-                DrawEffectRow(new Rect(x + 32, top - 4, 556, 48), current.EffectLabel2, current.EffectNow2, current.EffectNext2, current.EffectColor, elapsed);
-                top += 56;
-            }
-            if (popup == PopupKind.Charging)
-            {
-                var fraction = (float)attemptTimeline.Fraction(AttemptClock);
-                Fill(new Rect(x + 32, top + 8, 556, 12), BarBack);
-                Fill(new Rect(x + 32, top + 8, 556 * fraction, 12), current.Tint);
-                top += 32;
-            }
-            if (current.Cost != null || current.Note != null)
-            {
-                Fill(new Rect(x + 32, top, 556, 1), Line); top += 12;
-                if (current.Cost != null) { Label(x + 32, top, 556, 20, Loc.L("소모 ", "Spent ") + Paint(current.Cost, Text), richCenter); top += 24; }
-                if (current.Note != null) { Label(x + 32, top, 556, 20, current.Note, smallCenter, current.NoteColor); top += 24; }
-            }
-            DrawPopupButtons(x, top + 4);
+            // Mockup .pop: popIn (scale .92 → 1). Mythic: mythIn (scale .45 / -5° → 1.07 → 1). The destroy
+            // shake and the ??? hit replace popIn there (same transform, fill-mode both). Never transparent.
+            float scale = 1, angle = 0;
+            if (current.Mythic) (scale, angle) = UiMotion.MythIn(elapsed, Reduced);
+            else if (popup == PopupKind.MysteryConfirm) scale = UiMotion.ConfirmHit(elapsed, Reduced);
+            else if (!current.Shatter) scale = UiMotion.PopScale(elapsed, Reduced);
+            var restore = Transform(cardRect.center, scale, angle);
+            try { DrawPopupCard(current, cardRect, elapsed); }
+            finally { GUI.matrix = restore; }
         }
         finally { drawingPopup = false; }
     }
 
+    private void DrawPopupCard(Look current, Rect cardRect, double elapsed)
+    {
+        var x = cardRect.x; var y = cardRect.y; var height = cardRect.height;
+        var pulse = current.Mythic || current.MythicLite ? UiMotion.MythPulse(elapsed, current.MythicLite, Reduced) : -1;
+        if (pulse >= 0) MythicCardGlow(cardRect, pulse);
+        Box(cardRect, HeaderFill, Edge);
+        if (pulse < 0) Outline(new Rect(x - 1, y - 1, 622, height + 2), new Color(current.Tint.r, current.Tint.g, current.Tint.b, 0.35f));
+        Fill(new Rect(x, y, 620, 5), current.Tint);
+        var top = y + 27;
+        Label(x, top, 620, 16, current.Kicker, popKicker); top += 28;
+        if (current.Mythic || current.MythicLite)
+        {
+            var size = current.Mythic ? 46 : 30;
+            DrawStar(new Rect(x, top, 620, size + 4), PopStyle(size), elapsed);
+            top += size + 16;
+        }
+        var titleSize = current.Mythic ? 44 : current.MythicLite ? 36 : 34;
+        var title = new Rect(x + 20, top, 580, titleSize + 8);
+        if ((current.Mythic || current.MythicLite) && !Reduced) GradientLabel(title, current.Title, PopStyle(titleSize), elapsed);
+        else
+        {
+            var glow = TitleGlow(current, elapsed);
+            // titleGlow: 22 px of its own colour; the ??? hit: 28 px pink.
+            if (glow > 0) GlowText(title, current.Title, PopStyle(titleSize), popup == PopupKind.MysteryConfirm ? Myth : current.Tint,
+                (popup == PopupKind.MysteryConfirm ? 28 : 22) / 4f * glow);
+            Label(title.x, title.y, title.width, title.height, current.Title, PopStyle(titleSize), current.Tint);
+        }
+        top += titleSize + 20;
+        Label(x + 32, top, 556, 24, current.Line, popLine); top += 36;
+        if (current.Shatter) { DrawShatter(new Rect(x + 175, top, 270, 110), elapsed); top += 122; }
+        if (current.EffectLabel != null)
+        {
+            var rowHeight = EffectRowHeight(current.EffectLabel, current.EffectNow, current.EffectNext);
+            DrawEffectRow(new Rect(x + 32, top, 556, rowHeight), current.EffectLabel, current.EffectNow, current.EffectNext, current.EffectColor, elapsed);
+            top += rowHeight + 12;
+        }
+        if (current.EffectLabel2 != null)
+        {
+            var rowHeight = EffectRowHeight(current.EffectLabel2, current.EffectNow2, current.EffectNext2);
+            DrawEffectRow(new Rect(x + 32, top - 4, 556, rowHeight), current.EffectLabel2, current.EffectNow2, current.EffectNext2, current.EffectColor, elapsed);
+            top += rowHeight + 8;
+        }
+        if (popup == PopupKind.Charging)
+        {
+            var fraction = (float)attemptTimeline.Fraction(AttemptClock);
+            Fill(new Rect(x + 32, top + 8, 556, 12), BarBack);
+            Fill(new Rect(x + 32, top + 8, 556 * fraction, 12), current.Tint);
+            top += 32;
+        }
+        if (current.Cost != null || current.Note != null)
+        {
+            Fill(new Rect(x + 32, top, 556, 1), Line); top += 12;
+            if (current.Cost != null) { Label(x + 32, top, 556, 20, Loc.L("소모 ", "Spent ") + Paint(current.Cost, Text), richCenter); top += 24; }
+            if (current.Note != null) { Label(x + 32, top, 556, 20, current.Note, smallCenter, current.NoteColor); top += 24; }
+        }
+        DrawPopupButtons(x, top + 4);
+    }
+
+    private readonly System.Collections.Generic.Dictionary<int, GUIStyle> popStyles = new System.Collections.Generic.Dictionary<int, GUIStyle>();
+    private GUIStyle popStyleSource;
+    // popTitle at another size, made once per size (the skin is rebuilt with new styles).
+    private GUIStyle PopStyle(int size)
+    {
+        if (!ReferenceEquals(popStyleSource, popTitle)) { popStyles.Clear(); popStyleSource = popTitle; }
+        if (!popStyles.TryGetValue(size, out var style)) popStyles[size] = style = new GUIStyle(popTitle) { fontSize = size };
+        return style;
+    }
+
+    // Success titles: titleGlow (1.2 s from 0.05 s, or 1.45 s for star evolutions). ???: qHit (0.7 s from 1.22 s).
+    private float TitleGlow(Look current, double elapsed) => Reduced ? 0
+        : popup == PopupKind.MysteryConfirm ? UiMotion.Glow(elapsed, 1.22, 0.7, 0.25, false)
+        : current.Glow ? UiMotion.Glow(elapsed, current.LateGlow ? 1.45 : 0.05, 1.2, 0.12, false) : 0;
+
     private void DrawEffectRow(Rect box, string label, string now, string next, Color tint, double elapsed)
     {
+        var widths = EffectWidths(label, now, next);
         Box(box, Deep, Line);
-        Label(box.x + 16, box.y, 260, 48, label, new GUIStyle(body) { fontSize = 14 }, Soft);
-        Label(box.xMax - 296, box.y, 140, 48, now, new GUIStyle(number) { fontSize = 22 });
-        Label(box.xMax - 152, box.y, 20, 48, "→", smallCenter);
-        var drop = Reduced ? 0 : 8 * (1 - UiMotion.Fill(elapsed, 0.35, false));
-        Label(box.xMax - 132, box.y - drop, 116, 48, next, new GUIStyle(number) { fontSize = 22 }, tint);
+        var valueX = box.xMax - 17 - widths.Next - 12 - 20 - 12 - widths.Now;
+        Label(box.x + 17, box.y + 13, widths.Label, box.height - 26, label, effectLabelStyle, Soft);
+        Label(valueX, box.y + 13, widths.Now, box.height - 26, now, effectValueStyle);
+        Label(valueX + widths.Now + 12, box.y + 13, 20, box.height - 26, "→", smallCenter);
+        var drop = UiMotion.EffectDrop(elapsed, Reduced);
+        Label(box.xMax - 17 - widths.Next, box.y + 13 - drop, widths.Next, box.height - 26, next, effectValueStyle, tint);
+    }
+
+    private (float Label, float Now, float Next) EffectWidths(string label, string now, string next)
+    {
+        if (!ReferenceEquals(effectStyleSource, body))
+        {
+            effectStyleSource = body;
+            effectLabelStyle = new GUIStyle(body) { fontSize = 14, wordWrap = true };
+            effectValueStyle = new GUIStyle(number) { fontSize = 22, wordWrap = true };
+        }
+        effectLabelContent.text = label;
+        effectNowContent.text = now;
+        effectNextContent.text = next;
+        return PopupEffectLayout.Widths(556, effectLabelStyle.CalcSize(effectLabelContent).x,
+            effectValueStyle.CalcSize(effectNowContent).x, effectValueStyle.CalcSize(effectNextContent).x);
+    }
+
+    private float EffectRowHeight(string label, string now, string next)
+    {
+        var widths = EffectWidths(label, now, next);
+        return Math.Max(48, 26 + Math.Max(effectLabelStyle.CalcHeight(effectLabelContent, widths.Label),
+            Math.Max(effectValueStyle.CalcHeight(effectNowContent, widths.Now), effectValueStyle.CalcHeight(effectNextContent, widths.Next))));
     }
 
     private Look ConfirmLook()
@@ -436,8 +507,8 @@ public sealed partial class Plugin
         if (current.Mythic || current.MythicLite) height += (current.Mythic ? 46 : 30) + 16;
         height += (current.Mythic ? 44 : current.MythicLite ? 36 : 34) + 20 + 36;
         if (current.Shatter) height += 122;
-        if (current.EffectLabel != null) height += 60;
-        if (current.EffectLabel2 != null) height += 56;
+        if (current.EffectLabel != null) height += EffectRowHeight(current.EffectLabel, current.EffectNow, current.EffectNext) + 12;
+        if (current.EffectLabel2 != null) height += EffectRowHeight(current.EffectLabel2, current.EffectNow2, current.EffectNext2) + 8;
         if (popup == PopupKind.Charging) height += 32;
         if (current.Cost != null || current.Note != null) height += 12 + (current.Cost != null ? 24 : 0) + (current.Note != null ? 24 : 0);
         height += popup == PopupKind.Charging ? 10 : popup == PopupKind.RiskConfirm ? 4 + 46 + 10 + 40 + 26 : 4 + 46 + 26;
@@ -471,40 +542,25 @@ public sealed partial class Plugin
 
     private static bool Pressed(KeyCode key) => Event.current.type == EventType.KeyDown && Event.current.keyCode == key;
 
-    private Color TitleColor(Look current, double elapsed)
-    {
-        if (Reduced) return current.Tint;
-        if (current.Mythic || current.MythicLite)
-        {
-            // Rainbow sweep through pink, gold, white and blue (mockup shimmer, 2.4 s).
-            var palette = new[] { Myth, MythGold, Color.white, Hex(0x9fd0ff), Myth };
-            var t = (float)((elapsed / 2.4) % 1) * 4;
-            var index = Math.Min(3, (int)t);
-            return Color.Lerp(palette[index], palette[index + 1], t - index);
-        }
-        if (popup == PopupKind.MysteryConfirm) return Color.Lerp(current.Tint, Color.white, UiMotion.Glow(elapsed, 1.22, 0.35, false) * 0.6f);
-        if (!current.Glow) return current.Tint;
-        // Star evolutions peak with star2's loudest moment (1.6 s), the rest with success (0.19 s).
-        return Color.Lerp(current.Tint, Color.white, UiMotion.Glow(elapsed, current.LateGlow ? 1.6 : 0.19, 0.5, false) * 0.55f);
-    }
-
     private static readonly Vector2[] PieceMoves =
     {
         new Vector2(-70, -50), new Vector2(0, -70), new Vector2(75, -48), new Vector2(-95, 6), new Vector2(6, 26),
         new Vector2(98, -4), new Vector2(-72, 62), new Vector2(-4, 78), new Vector2(80, 58)
     };
+    private static readonly float[] PieceTurns = { -25, 12, 28, -18, 8, 20, 30, -14, -26 };
 
-    // Nine pieces of the gear picture fly apart from 0.06 s (in time with the destroy sound).
+    // Nine pieces of the gear picture fly apart and turn from 0.06 s (in time with the destroy sound).
     private void DrawShatter(Rect area, double elapsed)
     {
         if (resultSprite == null || resultSprite.texture == null || Event.current.type != EventType.Repaint) return;
-        // 0.95 s from 0.06 s, easing out; reduced motion shows the pieces where they land.
-        var progress = Reduced ? 1f : (float)(1 - Math.Pow(1 - UiMotion.Clamp((elapsed - 0.06) / 0.95), 3));
+        // 0.95 s from 0.06 s (mockup s0-s8); reduced motion shows the pieces where they land.
+        var progress = UiMotion.Shatter(elapsed, Reduced);
         var source = resultSprite.rect;
         var fit = Math.Min(area.width / source.width, area.height / source.height);
         var w = source.width * fit / 3;
         var h = source.height * fit / 3;
         var previous = GUI.color;
+        var matrix = GUI.matrix;
         try
         {
             GUI.color = new Color(1, 0.62f, 0.52f, 1 - 0.65f * progress);
@@ -513,50 +569,80 @@ public sealed partial class Plugin
             {
                 var move = PieceMoves[row * 3 + col] * progress;
                 var rect = new Rect(area.x + (area.width - w * 3) / 2 + col * w + move.x, area.y + (area.height - h * 3) / 2 + row * h + move.y, w, h);
+                Transform(rect.center, 1, PieceTurns[row * 3 + col] * progress);
                 GUI.DrawTextureWithTexCoords(rect, resultSprite.texture,
                     new Rect((source.x + col * source.width / 3) / resultSprite.texture.width,
                         (source.y + (2 - row) * source.height / 3) / resultSprite.texture.height,
                         source.width / 3 / resultSprite.texture.width, source.height / 3 / resultSprite.texture.height));
+                GUI.matrix = matrix;
             }
         }
-        finally { GUI.color = previous; }
+        finally { GUI.color = previous; GUI.matrix = matrix; }
     }
 
-    // Mythic success (design 6 #14, 7.1): white flash, three rings and two bursts of sparks; the
-    // level-up version has two rings and three small bursts. Rings are one prebuilt texture.
+    // Mythic success (design 6 #14, 7.1; mockup .fx): rotating rays, three glowing rings, two waves of
+    // 20 spark bars and a white flash over them; the level-up / reroll version has two rings and 14 sparks.
+    private static readonly (double Delay, int Color)[] Rings = { (0, 0), (0.23, 1), (0.40, 2) }, LiteRings = { (0, 0), (0.09, 1) };
     private void DrawMythicEffect(Rect area, double elapsed, bool lite)
     {
         if (Event.current.type != EventType.Repaint) return;
-        var centre = area.center;
-        if (!lite) Fill(area, new Color(1, 1, 1, 0.9f * (1 - (float)UiMotion.Clamp(elapsed / 0.8))));
-        var rings = lite ? new[] { (0.0, Myth), (0.09, MythGold) } : new[] { (0.0, Myth), (0.23, MythGold), (0.40, Color.white) };
-        foreach (var (delay, color) in rings)
+        EnsureFx();
+        // Mockup .fx is overflow:hidden: nothing reaches the header or the status panel. Drawing is in the
+        // clip's coordinates; Transform takes window coordinates (pivot).
+        var pivot = area.center;
+        var centre = new Vector2(area.width / 2, area.height / 2);
+        var old = GUI.color;
+        var matrix = GUI.matrix;
+        GUI.BeginClip(area);
+        try
         {
-            var (scale, alpha) = UiMotion.Ring(elapsed, delay, lite ? 1.1 : 1.5, lite ? 3f : 5.5f);
-            if (alpha <= 0) continue;
-            var size = 200 * scale;
-            var old = GUI.color; GUI.color = new Color(color.r, color.g, color.b, alpha);
-            GUI.DrawTexture(new Rect(centre.x - size / 2, centre.y - size / 2, size, size), ringTexture);
-            GUI.color = old;
-        }
-        var bursts = lite ? new[] { 0.02, 0.09, 0.16 } : new[] { 0.0, 1.25 };
-        var count = lite ? 14 : 40;
-        var colors = new[] { Myth, MythGold, Color.white };
-        for (var spark = 0; spark < count; spark++)
-        {
-            var burst = bursts[spark % bursts.Length];
-            var angle = (float)(spark * 137.5 + burst * 90) * Mathf.Deg2Rad;
-            var (distance, alpha) = UiMotion.Spark(elapsed, burst, lite ? 0.9 : 1.2, lite ? 260 : 460);
-            if (alpha <= 0) continue;
-            var color = colors[spark % colors.Length];
-            var direction = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle));
-            for (var dot = 0; dot < 3; dot++)
+            if (!lite)
             {
-                var point = centre + direction * (distance - dot * 7);
-                var dotSize = (lite ? 4 : 6) - dot;
-                Fill(new Rect(point.x - dotSize / 2f, point.y - dotSize / 2f, dotSize, dotSize), new Color(color.r, color.g, color.b, alpha * (1 - dot * 0.3f)));
+                var (alpha, turn) = UiMotion.Rays(elapsed);
+                Transform(pivot, 1, turn);
+                GUI.color = new Color(1, 1, 1, alpha);
+                GUI.DrawTexture(new Rect(centre.x - 750, centre.y - 750, 1500, 1500), raysTexture);
+                GUI.matrix = matrix;
+            }
+            foreach (var (delay, tint) in lite ? LiteRings : Rings)
+            {
+                var (scale, alpha) = UiMotion.Ring(elapsed, delay, lite ? 1.1 : 1.5, lite ? 3f : 5.5f, lite ? 0.9f : 1);
+                if (alpha <= 0) continue;
+                var color = tint == 0 ? Myth : tint == 1 ? MythGold : Color.white;
+                var size = RingSpan * scale;
+                GUI.color = new Color(color.r, color.g, color.b, alpha);
+                GUI.DrawTexture(new Rect(centre.x - size / 2, centre.y - size / 2, size, size), fxRingTexture);
+            }
+            // fxspark: bar `length` × `thick` with a 12 px glow, pushed out from the centre along its angle.
+            var count = lite ? 14 : 40;
+            var length = lite ? 20f : 30f;
+            var thick = lite ? 4f : 6f;
+            for (var spark = 0; spark < count; spark++)
+            {
+                double angle, delay; Color color;
+                if (lite) { angle = spark * (360.0 / 14); delay = 0.02 + spark % 3 * 0.07; color = SparkColors[spark % 4]; }
+                else
+                {
+                    var wave = spark / 20; var index = spark % 20;
+                    angle = index * 18 + wave * 9; delay = wave * 1.25 + index % 5 * 0.04; color = SparkColors[(index + wave) % 4];
+                }
+                var (distance, stretch, alpha) = UiMotion.Spark(elapsed, delay, lite ? 0.9 : 1.2, lite ? 16 : 20, lite ? 260 : 460, lite ? 0.15 : 0.12);
+                if (alpha <= 0) continue;
+                var w = (length + 24) * stretch;
+                var h = thick + 24;
+                var middle = centre.x + distance + length / 2;
+                Transform(pivot, 1, (float)angle);
+                GUI.color = new Color(color.r, color.g, color.b, alpha);
+                GUI.DrawTexture(new Rect(middle - w / 2, centre.y - h / 2, w, h), sparkTexture);
+                GUI.matrix = matrix;
+            }
+            if (!lite)
+            {
+                var flash = UiMotion.Flash(elapsed);
+                if (flash > 0) { GUI.color = new Color(1, 1, 1, flash); GUI.DrawTexture(new Rect(0, 0, area.width, area.height), Texture2D.whiteTexture); }
             }
         }
+        finally { GUI.color = old; GUI.matrix = matrix; GUI.EndClip(); }
     }
 
     private static string ActionName(EnhanceQuote view) => view.Action switch

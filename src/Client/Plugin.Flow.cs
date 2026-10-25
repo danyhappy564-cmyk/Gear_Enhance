@@ -16,6 +16,11 @@ public sealed partial class Plugin
     private readonly bool[] boostOn = new bool[3];
     private readonly int[] boostCount = { 20, 1, 1 };
     private double boostDirtyAt = -1;
+    // A material change requotes quietly: no loading line, the picked numbers stay and the controls
+    // stay lit (user 2026-10-26: the old numbers and "견적을 불러오는 중" flashed between picks).
+    private bool boostQuiet;
+    private bool BoostLocal => boostDirtyAt >= 0 || boostQuiet;
+    private bool Steady => !busy || boostQuiet;
     private double motionStart = -100;
     private int helpOpen;
     private Vector2 midScroll;
@@ -60,7 +65,9 @@ public sealed partial class Plugin
 
     private void SelectTab(UiTab next)
     {
-        if (busy || popup != PopupKind.None || uncertain || itemId == null || tab == next) return;
+        if (busy || popup != PopupKind.None || uncertain || itemId == null) return;
+        // The current tab again only replays the panel and bars (mockup: every tab click replays them).
+        if (tab == next) { ReplayMotion(); return; }
         tab = next;
         protectDestruction = protectDowngrade = useTicket = false;
         destructionConfirmed = false;
@@ -145,12 +152,16 @@ public sealed partial class Plugin
     }
 
     private void RefreshQuote() => LoadQuote(null);
-    private async void LoadQuote(string resultMessage)
+    private async void LoadQuote(string resultMessage, bool quiet = false)
     {
         if (busy || uncertain || itemId == null) return;
         if (tab == UiTab.Insurance) { LoadInsuranceQuote(resultMessage); return; }
-        busy = true; quote = null; boostDirtyAt = -1;
-        message = resultMessage ?? Loc.L("견적을 불러오는 중입니다…", "Loading quote…");
+        busy = true; quote = null; boostQuiet = quiet;
+        if (!quiet)
+        {
+            boostDirtyAt = -1;
+            message = resultMessage ?? Loc.L("견적을 불러오는 중입니다…", "Loading quote…");
+        }
         var current = generation;
         try
         {
@@ -172,7 +183,9 @@ public sealed partial class Plugin
                 return;
             }
             var response = await GameBridge.WithTimeout(GameBridge.Query<EnhanceQuote>("/rf/gear-enhance/quote", QuoteBody(TabAction)));
-            if (current != generation) { message = SettingsChanged; return; }
+            // Another pick during a quiet requote: TickBoost asks again once this one ends. Any other
+            // change (F12 settings) keeps its notice.
+            if (current != generation) { if (!quiet || boostDirtyAt < 0) message = SettingsChanged; return; }
             quote = preview = response; weapon = response.IsWeapon;
             if (response.Action == EnhanceAction.Transcend) transcendAutomatic = response.Automatic;
             message = resultMessage ?? ""; destructionConfirmed = false;
@@ -180,7 +193,7 @@ public sealed partial class Plugin
             useTicket = response.UseTicket;
         }
         catch (Exception ex) { message = ex.GetBaseException().Message; Logger.LogWarning(ex); }
-        finally { busy = false; }
+        finally { busy = false; boostQuiet = false; }
     }
 
     private void SelectPath(EnhancePath path)
@@ -216,7 +229,7 @@ public sealed partial class Plugin
     // Material picks change locally at once; the quote follows 0.3 s after the last click.
     private void ToggleBoost(BoostMaterial kind)
     {
-        if (busy || popup != PopupKind.None || uncertain) return;
+        if (!Steady || popup != PopupKind.None || uncertain) return;
         var index = (int)kind;
         if (!boostOn[index])
         {
@@ -231,7 +244,7 @@ public sealed partial class Plugin
 
     private void SetBoostCount(BoostMaterial kind, int count)
     {
-        if (busy || popup != PopupKind.None || uncertain) return;
+        if (!Steady || popup != PopupKind.None || uncertain) return;
         var index = (int)kind;
         count = Math.Max(1, Math.Min(count, BoostLimit(kind)));
         if (count == boostCount[index]) return;
@@ -257,8 +270,7 @@ public sealed partial class Plugin
     {
         if (boostDirtyAt < 0 || Clock < boostDirtyAt || busy || popup != PopupKind.None) return;
         boostDirtyAt = -1;
-        quote = null;
-        RefreshQuote();
+        LoadQuote(null, true);
     }
 
     // Charge (or instant) attempt of the current tab.

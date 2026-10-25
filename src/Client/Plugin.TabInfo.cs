@@ -8,6 +8,9 @@ namespace GearEnhance;
 // ??? (before mythic), enhancement insurance and help tabs (design 1, 5.1, 13).
 public sealed partial class Plugin
 {
+    private GUIStyle insuranceNoteStyle, insuranceNoteSource;
+    private readonly GUIContent insuranceNoteContent = new GUIContent();
+
     private void DrawMysteryTab()
     {
         GUI.BeginGroup(new Rect(BodyX, 180, BodyWidth, ButtonY - 180));
@@ -86,9 +89,17 @@ public sealed partial class Plugin
         if (!weapon) y = DrawPlateSection(y + 10, shown);
         var note = Loc.L("레이드에서 잃으면 확률만큼 강화된 채 우편으로 돌아옵니다. 한 번 쓰면 소모되고, 강화에 성공하거나 더 비싼 방탄판 차액을 내면 다시 가입해야 합니다. 상인 보험은 강화를 지켜 주지 않습니다(돌아와도 +0).",
             "If lost in a raid, it comes back enhanced by mail at this chance. Used up once it pays out; a successful upgrade or a paid plate difference needs a new policy. Trader insurance does not keep enhancements (returns +0).");
-        var noteHeight = wrap.CalcHeight(new GUIContent(note), midWidth - 32) + 24;
+        if (!ReferenceEquals(insuranceNoteSource, wrap))
+        {
+            insuranceNoteSource = wrap;
+            // insNote uses normal line height, 13 px text and 12 x 16 px padding inside its border.
+            insuranceNoteStyle = new GUIStyle(wrap) { fontSize = 13 };
+            insuranceNoteStyle.normal.textColor = Soft;
+        }
+        insuranceNoteContent.text = note;
+        var noteHeight = insuranceNoteStyle.CalcHeight(insuranceNoteContent, midWidth - 34) + 26;
         Box(new Rect(0, y + 10, midWidth, noteHeight), Section, Line);
-        Label(16, y + 22, midWidth - 32, noteHeight - 24, note, new GUIStyle(wrap) { fontSize = 13 });
+        Label(17, y + 23, midWidth - 34, noteHeight - 26, note, insuranceNoteStyle);
         y += 10 + noteHeight;
         Label(2, y + 8, midWidth - 4, 40, insuranceMessage ?? "", new GUIStyle(wrap) { fontSize = 12 });
         y += 48;

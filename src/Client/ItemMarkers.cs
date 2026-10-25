@@ -58,17 +58,6 @@ internal static class ItemMarkers
         }
         try
         {
-            if (lineFailed) StashLine.Hide(__instance);
-            else Line(__instance);
-        }
-        catch (Exception ex)
-        {
-            if (!lineFailed) Plugin.LogError("창고 신화·초월 단계 줄 오류(그 줄만 숨김): " + ex);
-            lineFailed = true;
-            try { StashLine.Hide(__instance); } catch (Exception) { }
-        }
-        try
-        {
             if (frameFailed) MythicFrame.Hide(__instance);
             else Frame(__instance);
         }
@@ -79,18 +68,7 @@ internal static class ItemMarkers
             try { MythicFrame.Hide(__instance); } catch (Exception) { }
         }
     }
-    private static bool badgeFailed, frameFailed, lineFailed;
-    // Design 8 + user (stages as N/5): "신화 3/5 · 초월 4/5·5/5" under the name of the gear itself.
-    private static void Line(object view)
-    {
-        var item = GameBridge.Get(view, "Item");
-        var id = GameBridge.Get(item, "Id")?.ToString();
-        var text = id == null || GameBridge.Get(view, "Examined") is not true || GameBridge.IsArmorPart(item) ? ""
-            : StashLine.Text(StatPatches.Registry.MythicLevel(id), StatPatches.Registry.TranscendLevel(id, TranscendTrack.Second),
-                StatPatches.Registry.TranscendLevel(id, TranscendTrack.Third));
-        if (text.Length == 0) StashLine.Hide(view);
-        else StashLine.Show(view, text);
-    }
+    private static bool badgeFailed, frameFailed;
     // The mythic gear itself; plates inside it share its name line but not the frame.
     private static void Frame(object view)
     {
@@ -140,9 +118,10 @@ internal static class ItemMarkers
             var owner = id == null ? null : StatPatches.BadgeOwner(item, id);
             var badge = owner == null ? "" : StatPatches.Registry.Badge(owner);
             if (badge.Length == 0) return;
-            var mythic = StatPatches.Registry.MythicLevel(owner);
-            __result += " <color=" + (mythic >= 0 ? "#FF6AD5" : StarEvolution.ColorHex(StatPatches.Registry.StarLevel(owner))) + ">" + badge + "</color>";
-            // The mythic / transcendence line under the name is its own text (StashLine), drawn in AfterUpdate.
+            // User 2026-10-26: no stage line under the name (it overlapped the ammo count in equipment
+            // slots); mythic gear gets a larger caption instead.
+            if (StatPatches.Registry.MythicLevel(owner) >= 0) __result = "<size=120%>" + __result + " <color=#FF6AD5><b>" + badge + "</b></color></size>";
+            else __result += " <color=" + StarEvolution.ColorHex(StatPatches.Registry.StarLevel(owner)) + ">" + badge + "</color>";
         }
         catch (Exception ex) { Report(ex); }
     }
