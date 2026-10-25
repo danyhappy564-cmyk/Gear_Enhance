@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""Synthesizes the 1.4.0 ??? / Mythic sounds (no external samples).
+"""Synthesizes the 1.4.0 ??? / Mythic sounds (no external samples) and writes the
+trimmed user charge sound to assets/audio/edited/.
 
 Loudness is set to sit with the user-provided sounds (charge ≈ -24 dB mean, star2 ≈ -16 dB).
 
@@ -188,8 +189,30 @@ def write(path, stereo):
         w.writeframes(pcm.tobytes())
 
 
+def trim_charge(src, dst, start=0.765, fade=0.005):
+    """User charge.wav starts with ~0.775 s of near silence; cut it so the gauge starts with the sound."""
+    with wave.open(src, 'rb') as w:
+        ch, width, rate, frames = w.getnchannels(), w.getsampwidth(), w.getframerate(), w.getnframes()
+        data = np.frombuffer(w.readframes(frames), dtype='<i2').reshape(-1, ch).astype(np.float64)
+    data = data[int(round(start * rate)):]
+    n = int(fade * rate)
+    data[:n] *= np.linspace(0, 1, n)[:, None]
+    with wave.open(dst, 'wb') as w:
+        w.setnchannels(ch)
+        w.setsampwidth(width)
+        w.setframerate(rate)
+        w.writeframes(np.clip(np.round(data), -32768, 32767).astype('<i2').tobytes())
+    print(f'{dst}: {data.shape[0]} frames, {data.shape[0] / rate:.6f} s (trimmed {start} s)')
+
+
 def main():
-    out = sys.argv[1] if len(sys.argv) > 1 else os.path.join(os.path.dirname(__file__), '..', 'assets', 'audio', 'synth')
+    root = os.path.join(os.path.dirname(__file__), '..')
+    src = os.path.join(root, 'src', 'Client', 'Audio', 'charge.wav')
+    if os.path.exists(src):
+        edited = os.path.join(root, 'assets', 'audio', 'edited')
+        os.makedirs(edited, exist_ok=True)
+        trim_charge(src, os.path.join(edited, 'charge_trimmed.wav'))
+    out = sys.argv[1] if len(sys.argv) > 1 else os.path.join(root, 'assets', 'audio', 'synth')
     os.makedirs(out, exist_ok=True)
     for name, make in [('myth_confirm', myth_confirm), ('myth_charge', myth_charge), ('myth_success', myth_success), ('myth_up', myth_up)]:
         stereo = make()
