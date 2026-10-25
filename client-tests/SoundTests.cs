@@ -125,6 +125,10 @@ public sealed class SoundTests
         Assert.Equal(FeedbackCue.Success, GameFeedback.Result(new() { Success = true, FailureMode = FailureMode.Destroy }, false));
         Assert.Equal(FeedbackCue.Complete, GameFeedback.Result(new() { Success = true }, true));
         Assert.Equal(FeedbackCue.Downgrade, GameFeedback.Result(new() { FailureMode = FailureMode.Downgrade }, true));
+        // 1.4.0: a zone reroll plays myth_up like a mythic level; a ??? failure kept by its ticket is a plain failure.
+        Assert.Equal(FeedbackCue.MythicUp, GameFeedback.Result(new() { Success = true, Action = EnhanceAction.Reroll }, false));
+        Assert.Equal(FeedbackCue.Failure, GameFeedback.Result(new() { Action = EnhanceAction.Mystery, TicketUsed = true, FailureMode = FailureMode.KeepItem }, false));
+        Assert.Equal(FeedbackCue.Destroy, GameFeedback.Result(new() { Action = EnhanceAction.Mystery, FailureMode = FailureMode.Destroy }, false));
         Assert.Equal(FeedbackCue.Failure, GameFeedback.Result(new() { FailureMode = FailureMode.KeepItem }, false));
         Assert.Equal(FeedbackCue.Destroy, GameFeedback.Result(new() { FailureMode = FailureMode.Destroy }, false));
         // ??? success = mythic reached, mythic step = myth_up, ??? failure = destroy (design 7).

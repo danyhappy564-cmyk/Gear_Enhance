@@ -27,27 +27,31 @@ public sealed class MythicRecord
     public int Rerolls { get; set; }
 }
 
-// Star evolution destruction tickets of one gear. Bought counts are lifetime limits.
+// Destruction tickets of one gear: star evolutions (2, 3) and ??? (MythicRules.MysteryTicket).
+// Bought counts are lifetime limits.
 public sealed class TicketRecord
 {
     public int SecondBought { get; set; }
     public int SecondHeld { get; set; }
     public int ThirdBought { get; set; }
     public int ThirdHeld { get; set; }
+    public int MysteryBought { get; set; }
+    public int MysteryHeld { get; set; }
 
-    public int Bought(int stars) => stars >= 3 ? ThirdBought : stars == 2 ? SecondBought : 0;
-    public int Held(int stars) => stars >= 3 ? ThirdHeld : stars == 2 ? SecondHeld : 0;
+    public int Bought(int stars) => stars == MythicRules.MysteryTicket ? MysteryBought : stars == 3 ? ThirdBought : stars == 2 ? SecondBought : 0;
+    public int Held(int stars) => stars == MythicRules.MysteryTicket ? MysteryHeld : stars == 3 ? ThirdHeld : stars == 2 ? SecondHeld : 0;
 
     public void Buy(int stars)
     {
-        if (stars >= 3) { ThirdBought++; ThirdHeld++; }
+        if (stars == MythicRules.MysteryTicket) { MysteryBought++; MysteryHeld++; }
+        else if (stars == 3) { ThirdBought++; ThirdHeld++; }
         else if (stars == 2) { SecondBought++; SecondHeld++; }
     }
 
     public bool Use(int stars)
     {
         if (Held(stars) < 1) return false;
-        if (stars >= 3) ThirdHeld--; else SecondHeld--;
+        if (stars == MythicRules.MysteryTicket) MysteryHeld--; else if (stars == 3) ThirdHeld--; else SecondHeld--;
         return true;
     }
 
@@ -55,11 +59,11 @@ public sealed class TicketRecord
     public int Void(int stars)
     {
         var left = Held(stars);
-        if (stars >= 3) ThirdHeld = 0; else if (stars == 2) SecondHeld = 0;
+        if (stars == MythicRules.MysteryTicket) MysteryHeld = 0; else if (stars == 3) ThirdHeld = 0; else if (stars == 2) SecondHeld = 0;
         return left;
     }
 
-    public bool IsEmpty() => SecondBought == 0 && SecondHeld == 0 && ThirdBought == 0 && ThirdHeld == 0;
+    public bool IsEmpty() => SecondBought == 0 && SecondHeld == 0 && ThirdBought == 0 && ThirdHeld == 0 && MysteryBought == 0 && MysteryHeld == 0;
 }
 
 // A successful enhancement insurance return waiting for its tier's delay. The tree is the
@@ -93,15 +97,16 @@ public sealed partial class EnhanceService
             quote.InsuranceHours[(int)tier] = settings.ReturnHours(tier);
             if (quote.InsuranceChances[(int)tier] == 0) quote.InsuranceChances[(int)tier] = settings.ReturnPercent(tier);
         }
-        // The ticket line belongs to the next evolution: ★★ tickets before ★★, ★★★ tickets before ★★★.
+        // The ticket line belongs to the next risky step: ★★ tickets before ★★, ★★★ tickets before
+        // ★★★, ??? tickets on ★★★ gear that has not passed ??? yet.
         var stars = Stars(state, id);
-        if (quote.Action != EnhanceAction.BuyTicket) quote.TicketStars = stars < 3 ? stars + 1 : 0;
+        var mythic = state.Mythic.GetValueOrDefault(id);
+        if (quote.Action != EnhanceAction.BuyTicket) quote.TicketStars = stars < 3 ? stars + 1 : mythic == null ? MythicRules.MysteryTicket : 0;
         var tickets = state.Tickets.GetValueOrDefault(id);
         quote.TicketsHeld = tickets?.Held(quote.TicketStars) ?? 0;
         quote.TicketsBought = tickets?.Bought(quote.TicketStars) ?? 0;
         quote.TicketMax = settings.TicketMax(quote.TicketStars);
         quote.TicketPrice = settings.TicketPrice(quote.TicketStars);
-        var mythic = state.Mythic.GetValueOrDefault(id);
         quote.MythicLevel = mythic == null ? -1 : MythicRules.Clamp(mythic.Level);
         quote.Zones = mythic?.Zones.ToArray() ?? Array.Empty<string>();
         quote.Rerolls = mythic?.Rerolls ?? 0;
@@ -194,10 +199,18 @@ public sealed partial class EnhanceService
         if (action == EnhanceAction.Mystery)
         {
             if (record != null) throw Loc.Invalid("이미 신화 단계인 장비입니다.", "This gear is already mythic.");
-            if (options.Boost?.Any(b => b != null && b.Count != 0) == true || options.UseTicket || options.Instant)
-                throw Loc.Invalid("??? 는 50/50 고정이라 재료·방지권·즉시 강화를 쓸 수 없습니다.", "??? is a fixed 50/50; materials, tickets and instant cannot be used.");
+            if (options.Boost?.Any(b => b != null && b.Count != 0) == true || options.Instant)
+                throw Loc.Invalid("??? 는 50/50 고정이라 재료·즉시 강화를 쓸 수 없습니다.", "??? is a fixed 50/50; materials and instant cannot be used.");
             quote.SuccessPercent = settings.AlwaysSucceed ? 100 : tuning.MysteryChance;
             quote.FailureMode = FailureMode.Destroy;
+            // The ??? ticket (one per gear) keeps the ★★★ gear on a failure; the chance stays.
+            if (options.UseTicket)
+            {
+                if (TicketsOf(state, itemId).Held(MythicRules.MysteryTicket) < 1)
+                    throw Loc.Invalid("사용할 ??? 파괴 방지권이 없습니다. 견적을 다시 불러와 주세요.", "No ??? destruction ticket to use. Reload the quote.");
+                quote.UseTicket = true;
+                if (quote.SuccessPercent < 100) quote.FailureMode = FailureMode.KeepItem;
+            }
             quote.Cost = tuning.MysteryCost;
             quote.Materials = Need(profile, MythicRules.Ledx, tuning.RequireMaterials ? tuning.MysteryLedx : 0);
             quote.ZoneOptions = weapon ? Array.Empty<string>() : MythicRules.Candidates(backend.IsHeadArmor(target.Template), Covered(profile, itemId)).ToArray();
@@ -263,9 +276,15 @@ public sealed partial class EnhanceService
         if (tracks == null || !tracks.Values.Any(level => level > 0))
             throw Loc.Invalid("강화된 장비만 파괴 방지권을 살 수 있습니다.", "Only enhanced gear can buy destruction tickets.");
         var ticketStars = options.TicketStars;
-        if (ticketStars != 2 && ticketStars != 3) throw Loc.Argument("방지권 종류(★★ 또는 ★★★)를 골라 주세요.", "Choose the ticket (★★ or ★★★).");
+        if (ticketStars != 2 && ticketStars != 3 && ticketStars != MythicRules.MysteryTicket)
+            throw Loc.Argument("방지권 종류(★★·★★★·???)를 골라 주세요.", "Choose the ticket (★★, ★★★ or ???).");
         var stars = Stars(state, itemId);
-        if (stars != ticketStars - 1)
+        if (ticketStars == MythicRules.MysteryTicket)
+        {
+            if (stars < 3 || state.Mythic.ContainsKey(itemId))
+                throw Loc.Invalid("??? 에 도전하기 전의 ★★★ 장비만 ??? 파괴 방지권을 살 수 있습니다.", "Only ★★★ gear that has not passed ??? can buy the ??? ticket.");
+        }
+        else if (stars != ticketStars - 1)
             throw ticketStars == 3
                 ? Loc.Invalid("★★ 장비만 ★★★ 진화용 방지권을 살 수 있습니다.", "Only ★★ gear can buy ★★★ evolution tickets.")
                 : Loc.Invalid("★★ 진화 전 장비만 ★★ 진화용 방지권을 살 수 있습니다.", "Only gear before the ★★ evolution can buy ★★ evolution tickets.");

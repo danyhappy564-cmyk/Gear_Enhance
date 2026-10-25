@@ -95,6 +95,9 @@ public sealed partial class Plugin
     };
     private bool Evolving => tab == UiTab.Star2 || tab == UiTab.Star3;
     private int EvolutionStars => tab == UiTab.Star3 ? 3 : 2;
+    // The ticket line of this tab: ★★ / ★★★ evolution, or ??? (MythicRules.MysteryTicket).
+    private bool MysteryTab => tab == UiTab.Mythic && MythicLevel < 0;
+    private int TicketTarget => MysteryTab ? MythicRules.MysteryTicket : EvolutionStars;
 
     // Why this tab has nothing to quote now (shown instead of a quote), or null.
     private string NoQuoteReason()
@@ -129,7 +132,7 @@ public sealed partial class Plugin
         Protection = new EnhanceProtection { Destruction = protectDestruction, Downgrade = protectDowngrade },
         Boost = action == EnhanceAction.Mystery ? Array.Empty<BoostChoice>() : BoostRequest(), Action = action,
         Track = action == EnhanceAction.Transcend ? transcendTrack : TranscendTrack.None, Tier = insuranceTier,
-        Instant = instant, UseTicket = useTicket && (action == EnhanceAction.Evolve || action == EnhanceAction.EvolveThird),
+        Instant = instant, UseTicket = useTicket && (action == EnhanceAction.Evolve || action == EnhanceAction.EvolveThird || action == EnhanceAction.Mystery),
         TicketStars = ticketStars, Slot = slot
     };
 
@@ -205,7 +208,7 @@ public sealed partial class Plugin
 
     private void SetTicket(bool enabled)
     {
-        if (busy || popup != PopupKind.None || uncertain || !Evolving) return;
+        if (busy || popup != PopupKind.None || uncertain || !Evolving && !MysteryTab) return;
         useTicket = enabled; generation++; quote = null; destructionConfirmed = false;
         RefreshQuote();
     }
@@ -265,8 +268,9 @@ public sealed partial class Plugin
         var expired = DateTimeOffset.UtcNow.ToUnixTimeSeconds() >= quote.ExpiresUnixSeconds;
         if (expired || boostDirtyAt >= 0) { RefreshQuote(); return; }
         if (instant && !quote.InstantAvailable) return;
-        // Design 12.1: an attempt that can destroy the gear asks once more; ??? always asks.
-        if (quote.CanDestroy && !destructionConfirmed)
+        // Design 12.1: an attempt that can destroy the gear asks once more; ??? always asks
+        // (with its ticket too: the 8,000,000 ₽ and the ticket are still spent).
+        if ((quote.CanDestroy || quote.Action == EnhanceAction.Mystery) && !destructionConfirmed)
         {
             // F12 "파괴 확인 창" off, or "don't ask again" ticked in this window: no question (never for ???).
             var ask = quote.Action == EnhanceAction.Mystery || destructionPrompt?.Value != false && !skipRiskConfirm;

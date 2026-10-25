@@ -51,6 +51,14 @@ public sealed class MailReturnLoader(EnhanceService service, ISptLogger<MailRetu
             logger.Error("Gear Enhance: 강화 보험 레이드 종료 연결 실패. 잃은 강화 장비는 강화 보험으로 돌아오지 않습니다. "
                 + "Enhancement insurance raid-end hook failed; lost enhanced gear will not be returned by it.", ex);
         }
+        GameStartPatch.Service = service;
+        try { new GameStartPatch().Enable(); }
+        catch (Exception ex)
+        {
+            // The quote and state routes still roll back once the next launch sends its first request.
+            logger.Error("Gear Enhance: 게임 시작 연결 실패. 개발자 옵션 강화 되돌리기는 다음 강화 창·동기화 때 이루어집니다. "
+                + "Game start hook failed; the developer rollback happens at the next window or sync instead.", ex);
+        }
         return Task.CompletedTask;
     }
 }

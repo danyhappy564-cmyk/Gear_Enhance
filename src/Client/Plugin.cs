@@ -80,7 +80,7 @@ public sealed partial class Plugin : BaseUnityPlugin
             + "Auto: 한국어 윈도우면 한국어, 그 외는 영어. F12 글자는 창을 닫았다 다시 열면 바뀝니다."));
         ApplyLanguage();
         developerPassword = BindGeneral(DeveloperOptions.DeveloperSection, "개발자 옵션 비밀번호", "",
-            "비밀번호를 넣으면 확률·비용·항상 성공·실패·능력치·보호·진화·보험 밸런스 설정이 표시되고 적용됩니다. 잠겨 있으면 기본 밸런스로 강화합니다(바꿔 둔 값은 지우지 않음). 입력 후 F12 창을 닫았다 다시 열면 표시됩니다.");
+            "비밀번호를 넣으면 확률·비용·항상 성공·실패·능력치·보호·진화·보험 밸런스 설정이 표시되고 적용됩니다. 잠겨 있으면 기본 밸런스로 강화합니다(바꿔 둔 값은 지우지 않음). 입력 후 F12 창을 닫았다 다시 열면 표시됩니다. 열어 둔 동안 한 강화는 잠그거나 게임을 다시 켜면(Alt+F4 포함) 열기 전 기록으로 되돌아갑니다(쓴 루블·재료와 파괴된 장비는 돌아오지 않음).");
         developerUnlocked = DeveloperLock.Matches(developerPassword.Value);
         ((ConfigurationManagerAttributes)developerPassword.Description.Tags[0]).CustomDrawer = DrawPassword;
         developerOptions.SetVisible(developerUnlocked);
@@ -108,8 +108,8 @@ public sealed partial class Plugin : BaseUnityPlugin
         providedSounds = BindGeneral("7. 피드백", "전용 강화 음원 사용", true, "사용자 제공 음원6개 사용. 끄면 기존 게임 UI 소리를 사용합니다. 전용 음원 오류 시에도 기본음으로 대체합니다.");
         soundVolume = BindGeneral("7. 피드백", "전용 음원 음량 (%)", 70f, new ConfigDescription("게임의 마스터/인터페이스 음량에 추가로 곱합니다. 0이면 전용 음원 무음. 기본 게임음 모드에서는 게임 소리 설정을 사용합니다.", new AcceptableValueRange<float>(0, 100)));
         completionBonus = BindDeveloper("8. 완성 보너스", "전 항목 완성 추가 효과 (%)", (float)StarEvolution.SecondDefaultBonus, new ConfigDescription("2차 스타 성공 시 기본 강화 효과의2배(+100%). 반동15%→30%, 인체공학+10→+20. 감소율80%/추가인체공학50 상한. 일반 최대 단계만으로 자동 적용되지 않습니다.", new AcceptableValueRange<float>(0, 300)));
-        destructionProtectionPrice = BindDeveloper("9. 강화 보호", "파괴 방지 비용 계수 (%)", 50f, new ConfigDescription("추가 비용 = 기본 강화 비용 × 이 값/100 × 시도 단계². 해당 파괴 위험이 있을 때만 부과합니다.", new AcceptableValueRange<float>(0, 1000)));
-        downgradeProtectionPrice = BindDeveloper("9. 강화 보호", "단계 하락 방지 비용 계수 (%)", 35f, new ConfigDescription("추가 비용 = 기본 강화 비용 × 이 값/100 × 시도 단계². 하락 위험이 있을 때만 부과합니다. 보호비도 성공/실패와 관계없이 소모됩니다.", new AcceptableValueRange<float>(0, 1000)));
+        destructionProtectionPrice = BindDeveloper("9. 강화 보호", "파괴 방지 비용 계수 (%)", 10f, new ConfigDescription("추가 비용 = 기본 강화 비용 × 이 값/100 × 시도 단계². 해당 파괴 위험이 있을 때만 부과합니다.", new AcceptableValueRange<float>(0, 1000)));
+        downgradeProtectionPrice = BindDeveloper("9. 강화 보호", "단계 하락 방지 비용 계수 (%)", 7f, new ConfigDescription("추가 비용 = 기본 강화 비용 × 이 값/100 × 시도 단계². 하락 위험이 있을 때만 부과합니다. 보호비도 성공/실패와 관계없이 소모됩니다.", new AcceptableValueRange<float>(0, 1000)));
         evolutionChance = BindDeveloper("10. 스타 강화 진화", "진화 성공률 (%)", 30f, new ConfigDescription("1차 스타 전 항목 최대 달성 후 별도 진화 창에서 사용합니다. 실패 시 파괴, 보호 불가.", new AcceptableValueRange<float>(0, 100)));
         evolutionPrice = BindDeveloper("10. 스타 강화 진화", "진화 기준가 대비 비용 (%)", 300f, new ConfigDescription("진화 비용 = 최소 200만 루블과 본체 기준가 × 이 값/100 중 큰 값. 기본3배, 1회 최대1억 루블.", new AcceptableValueRange<float>(0, 10000)));
         thirdStarChance = BindDeveloper("11. 3차 스타 진화", "3차 스타 성공률 (%)", 10f, new ConfigDescription("2차 스타 성공 및 전 항목 최대인 장비만 시도. 실패 시 보호 없이 파괴합니다.", new AcceptableValueRange<float>(0, 100)));
@@ -142,6 +142,16 @@ public sealed partial class Plugin : BaseUnityPlugin
             if (premiumReturn.Entry.Value == 90f) premiumReturn.Entry.Value = 99f;
             balanceVersion.Value = 3;
         }
+        // 1.4.0: protection fees 1/5 (50/35 → 10/7) and evolution tickets 1/3 (3M/8M → 1M/2.7M).
+        // Only the old shipped defaults move; a value changed by hand stays.
+        if (balanceVersion.Value < 4)
+        {
+            if (destructionProtectionPrice.Entry.Value == 50f) destructionProtectionPrice.Entry.Value = 10f;
+            if (downgradeProtectionPrice.Entry.Value == 35f) downgradeProtectionPrice.Entry.Value = 7f;
+            if (secondTicketPrice.Entry.Value == 3000000) secondTicketPrice.Entry.Value = 1000000;
+            if (thirdTicketPrice.Entry.Value == 8000000) thirdTicketPrice.Entry.Value = 2700000;
+            balanceVersion.Value = 4;
+        }
         PrepareFeedback();
         LogDetailed($"강화 효과음 설정: 사용={soundsEnabled.Value}, 전용={providedSounds.Value}, 음량={soundVolume.Value:0.##}%, 준비={feedbackAudio != null}, 충전={attemptDuration:0.000}초");
         StatPatches.Registry.Configure(Tuning());
@@ -165,7 +175,10 @@ public sealed partial class Plugin : BaseUnityPlugin
                 if (unlocked == developerUnlocked) return;
                 developerUnlocked = unlocked;
                 developerOptions.SetVisible(unlocked);
-                Logger.LogInfo(unlocked ? "Gear Enhance: 개발자 옵션 열림" : "Gear Enhance: 개발자 옵션 잠김 (기본 밸런스 적용)");
+                Logger.LogInfo(unlocked ? "Gear Enhance: 개발자 옵션 열림 (이 동안의 강화는 잠그거나 게임을 다시 켜면 되돌아감)"
+                    : "Gear Enhance: 개발자 옵션 잠김 (기본 밸런스 적용, 열어 둔 동안의 강화 되돌리기)");
+                // Locking puts the records back at once (an item event, so durability follows too).
+                if (!unlocked) RequestSandboxEnd();
                 // Effective balance values changed: fall through to refresh quotes and effects.
             }
             if (ReferenceEquals(args.ChangedSetting, soundsEnabled) || ReferenceEquals(args.ChangedSetting, providedSounds)
@@ -289,6 +302,8 @@ public sealed partial class Plugin : BaseUnityPlugin
         BasicInsuranceReturnHours = basicHours.Value, AdvancedInsuranceReturnHours = advancedHours.Value, PremiumInsuranceReturnHours = premiumHours.Value,
         InstantFee = instantFee.Value, SecondTicketMax = secondTickets.Value, SecondTicketPrice = secondTicketPrice.Value,
         ThirdTicketMax = thirdTickets.Value, ThirdTicketPrice = thirdTicketPrice.Value,
+        MysteryTicketMax = mysteryTickets.Value, MysteryTicketPrice = mysteryTicketPrice.Value,
+        Developer = developerUnlocked, LaunchId = LaunchId,
         Transcend = TranscendTuning(), Boost = BoostTuning(), Mythic = MythicTuning()
     };
     private void ConfigureTranscend()
@@ -334,6 +349,7 @@ public sealed partial class Plugin : BaseUnityPlugin
                 .Invoke(null, new[] { item, (object)1, false });
             CreateBlocker(); ResetWindow();
             visible = true; PlayInteraction(UiInteraction.Open); quote = null; preview = null; firstQuote = true; destructionConfirmed = false; generation++;
+            WarmFeedback();
             protectDestruction = protectDowngrade = useTicket = false;
             for (var kind = 0; kind < boostOn.Length; kind++) boostOn[kind] = false;
             boostDirtyAt = -1; ReplayMotion();
@@ -350,7 +366,10 @@ public sealed partial class Plugin : BaseUnityPlugin
         if (expected.Length == 0) { StatPatches.Registry.Clear(); return false; }
         try
         {
-            var snapshot = await GameBridge.WithTimeout(GameBridge.Query<EnhanceSnapshot>("/rf/gear-enhance/state", new { ProtocolVersion = EnhanceProtocol.Version }));
+            var snapshot = await GameBridge.WithTimeout(GameBridge.Query<EnhanceSnapshot>("/rf/gear-enhance/state",
+                new { ProtocolVersion = EnhanceProtocol.Version, Developer = developerUnlocked, LaunchId }));
+            // Records restored after a hand edit, or the developer sandbox rolled back.
+            if (!string.IsNullOrEmpty(snapshot?.Notice)) { var notice = snapshot.Notice; main.Enqueue(() => Notify(notice)); Logger.LogWarning(notice); }
             if (request != syncGeneration || expected != GameBridge.ProfileId(activeSession)) return false;
             StatPatches.Registry.Replace(snapshot, expected);
             main.Enqueue(RefreshGameplay);
@@ -385,6 +404,19 @@ public sealed partial class Plugin : BaseUnityPlugin
             uiFeedbackUnavailable = true;
             Logger.LogWarning("강화 창 UI 소리 연결 실패: " + ex.GetBaseException().Message);
         }
+    }
+
+    // Window open: get the charge sounds ready now instead of on the first attempt (design 7).
+    private void WarmFeedback()
+    {
+        if (!soundsEnabled.Value || !providedSounds.Value || feedbackAudio == null || providedFeedbackUnavailable) return;
+        try
+        {
+            var started = Clock;
+            var ready = feedbackAudio.Warm();
+            LogDetailed($"강화 효과음 미리 준비: {(ready ? "완료" : "게임 UI 믹서 대기")} {(Clock - started) * 1000:0}ms");
+        }
+        catch (Exception ex) { ProvidedAudioFailed(ex); }
     }
 
     private void PrepareFeedback()

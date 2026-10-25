@@ -50,6 +50,8 @@ public static class MythicRules
     // Attempts at this level or higher drop one level on failure unless protected.
     public const int DropFrom = 4;
     public const string Ledx = "5c0530ee86f774697952d952";
+    // TicketStars value of the ??? destruction ticket (2 and 3 are the star evolutions).
+    public const int MysteryTicket = 4;
 
     // Collider names SPT and the game share (BodyPartColliderType). Only zones the gear does
     // not already protect are drawn; a helmet draws from the head, everything else from the body.

@@ -302,9 +302,9 @@ public sealed class MythicTests
     {
         var rig = new Rig(stars: 1);
         var quote = rig.Quote(EnhanceAction.Evolve, Gun);
-        Assert.Equal((2, 0, 0, 3, 3000000), (quote.TicketStars, quote.TicketsHeld, quote.TicketsBought, quote.TicketMax, quote.TicketPrice));
+        Assert.Equal((2, 0, 0, 3, 1000000), (quote.TicketStars, quote.TicketsHeld, quote.TicketsBought, quote.TicketMax, quote.TicketPrice));
         Assert.Throws<InvalidOperationException>(() => rig.Quote(EnhanceAction.BuyTicket, Gun, new() { TicketStars = 3 }));
-        for (var n = 0; n < 3; n++) Assert.Equal(3000000, rig.Pay(rig.Quote(EnhanceAction.BuyTicket, Gun, new() { TicketStars = 2 })).Paid);
+        for (var n = 0; n < 3; n++) Assert.Equal(1000000, rig.Pay(rig.Quote(EnhanceAction.BuyTicket, Gun, new() { TicketStars = 2 })).Paid);
         Assert.Throws<InvalidOperationException>(() => rig.Quote(EnhanceAction.BuyTicket, Gun, new() { TicketStars = 2 }));
         var evolve = rig.Quote(EnhanceAction.Evolve, Gun, new() { UseTicket = true });
         Assert.True(evolve.UseTicket); Assert.False(evolve.CanDestroy);
@@ -321,7 +321,7 @@ public sealed class MythicTests
         Assert.True(evolved.Success); Assert.True(evolved.TicketUsed);
         Assert.Equal((1, 0), (evolved.TicketsVoided, evolved.TicketsLeft));
         var next = rig.Quote(EnhanceAction.BuyTicket, Gun, new() { TicketStars = 3 });
-        Assert.Equal(8000000, next.Cost);
+        Assert.Equal(2700000, next.Cost);
         Assert.Equal((3, 0, 0, 2), (next.TicketStars, next.TicketsHeld, next.TicketsBought, next.TicketMax));
         rig.Pay(next);
         rig.Pay(rig.Quote(EnhanceAction.BuyTicket, Gun, new() { TicketStars = 3 }));
@@ -417,5 +417,104 @@ public sealed class MythicTests
             SuccessBoost.MaxCount(BoostMaterial.Bitcoin, new())));
         Assert.Equal(5, SuccessBoost.Points(BoostMaterial.Dogtag, 50, new()));
         new EnhanceSettings().Validate();
+    }
+
+    [Fact]
+    public void Mystery_ticket_keeps_the_three_star_gear_once_and_is_one_per_gear()
+    {
+        var rig = new Rig();
+        var quote = rig.Quote(EnhanceAction.Mystery, Gun);
+        Assert.Equal((MythicRules.MysteryTicket, 0, 0, 1, 5000000), (quote.TicketStars, quote.TicketsHeld, quote.TicketsBought, quote.TicketMax, quote.TicketPrice));
+        Assert.Throws<InvalidOperationException>(() => rig.Quote(EnhanceAction.Mystery, Gun, new() { UseTicket = true }));
+        Assert.Equal(5000000, rig.Pay(rig.Quote(EnhanceAction.BuyTicket, Gun, new() { TicketStars = MythicRules.MysteryTicket })).Paid);
+        // One per gear, ever.
+        Assert.Throws<InvalidOperationException>(() => rig.Quote(EnhanceAction.BuyTicket, Gun, new() { TicketStars = MythicRules.MysteryTicket }));
+        var guarded = rig.Quote(EnhanceAction.Mystery, Gun, new() { UseTicket = true });
+        Assert.True(guarded.UseTicket); Assert.False(guarded.CanDestroy); Assert.Equal(50, guarded.SuccessPercent);
+        Assert.Equal((1, 1), (guarded.TicketsHeld, guarded.TicketsBought));
+        rig.Backend.DrawValue = 0.99;
+        var failed = rig.Pay(guarded, confirm: false);
+        Assert.False(failed.Success); Assert.True(failed.TicketUsed); Assert.Equal(0, failed.TicketsLeft);
+        Assert.Equal(FailureMode.KeepItem, failed.FailureMode);
+        Assert.True(rig.Has(Gun)); Assert.Equal(3, failed.StarLevel);
+        Assert.False(rig.State.Mythic.ContainsKey(Gun.ToString()));
+        // Spent: no second ticket and no guarded try left.
+        Assert.Throws<InvalidOperationException>(() => rig.Quote(EnhanceAction.BuyTicket, Gun, new() { TicketStars = MythicRules.MysteryTicket }));
+        Assert.Throws<InvalidOperationException>(() => rig.Quote(EnhanceAction.Mystery, Gun, new() { UseTicket = true }));
+        Assert.True(rig.Quote(EnhanceAction.Mystery, Gun).CanDestroy);
+        // Only ★★★ gear before ??? can buy one; mythic gear shows no ticket line.
+        Assert.Throws<InvalidOperationException>(() => new Rig(stars: 2).Quote(EnhanceAction.BuyTicket, Gun, new() { TicketStars = MythicRules.MysteryTicket }));
+        var other = new Rig();
+        other.Mystery(Gun);
+        Assert.Equal(0, other.Quote(EnhanceAction.Mythic, Gun).TicketStars);
+        Assert.Throws<InvalidOperationException>(() => other.Quote(EnhanceAction.BuyTicket, Gun, new() { TicketStars = MythicRules.MysteryTicket }));
+    }
+
+    [Fact]
+    public void An_unused_mystery_ticket_vanishes_with_the_success()
+    {
+        var rig = new Rig();
+        rig.Pay(rig.Quote(EnhanceAction.BuyTicket, Vest, new() { TicketStars = MythicRules.MysteryTicket }));
+        var receipt = rig.Mystery();
+        Assert.True(receipt.Success); Assert.False(receipt.TicketUsed); Assert.Equal(1, receipt.TicketsVoided);
+        Assert.False(rig.State.Tickets.ContainsKey(Vest.ToString()) && rig.State.Tickets[Vest.ToString()].MysteryHeld > 0);
+    }
+
+    [Fact]
+    public void Developer_sandbox_rolls_back_on_lock_on_a_new_launch_and_at_game_start()
+    {
+        var rig = new Rig(stars: 1);
+        var roubles = rig.Roubles;
+        bool Evolved() => rig.State.EvolvedItems.Contains(Gun.ToString());
+        rig.Settings = new EnhanceSettings { Developer = true, LaunchId = "a", AlwaysSucceed = true };
+        Assert.True(rig.Pay(rig.Quote(EnhanceAction.Evolve, Gun)).Success);
+        Assert.True(Evolved()); Assert.NotNull(rig.State.Sandbox);
+        // Locked again: the next request puts the records back (the money stays spent).
+        rig.Settings = new EnhanceSettings();
+        rig.Quote(EnhanceAction.Evolve, Gun);
+        Assert.False(Evolved()); Assert.Null(rig.State.Sandbox);
+        Assert.True(rig.Roubles < roubles);
+        Assert.Contains("되돌렸습니다", rig.Service.Snapshot(Session).Notice);
+        Assert.Equal("", rig.Service.Snapshot(Session).Notice);
+        // Alt+F4 and start again: client/game/start ends it before anything else.
+        rig.Settings = new EnhanceSettings { Developer = true, LaunchId = "b", AlwaysSucceed = true };
+        rig.Pay(rig.Quote(EnhanceAction.Evolve, Gun));
+        Assert.True(Evolved());
+        Assert.True(rig.Service.GameStarted(Session));
+        Assert.False(Evolved()); Assert.False(rig.Service.GameStarted(Session));
+        // Without the game start hook, a request from another launch does it, then starts its own copy.
+        rig.Settings = new EnhanceSettings { Developer = true, LaunchId = "c", AlwaysSucceed = true };
+        rig.Pay(rig.Quote(EnhanceAction.Evolve, Gun));
+        rig.Settings = new EnhanceSettings { Developer = true, LaunchId = "d", AlwaysSucceed = true };
+        rig.Quote(EnhanceAction.Evolve, Gun);
+        Assert.False(Evolved()); Assert.Equal("d", rig.State.Sandbox!.LaunchId);
+        // The state sync of a locked client ends it too.
+        rig.Pay(rig.Quote(EnhanceAction.Evolve, Gun));
+        rig.Service.Snapshot(Session, false, "");
+        Assert.False(Evolved()); Assert.Null(rig.State.Sandbox);
+        // Records from before the sandbox survive it untouched.
+        Assert.Equal(10, rig.State.Tracks[Gun.ToString()][EnhancePath.Recoil]);
+    }
+
+    [Fact]
+    public void Records_edited_by_hand_in_the_profile_file_come_back_from_the_vault()
+    {
+        var rig = new Rig(stars: 1);
+        rig.Pay(rig.Quote(EnhanceAction.BuyTicket, Gun, new() { TicketStars = 2 }));
+        var file = System.Text.Json.Nodes.JsonNode.Parse(Json.Serialize(rig.Backend.Saved)!)!;
+        var records = file["rfGearEnhance"]!;
+        Assert.NotNull(records[StateSeal.SealKey]); Assert.NotNull(records[StateSeal.VaultKey]);
+        // The cheat: ★★★ written into the file with a text editor.
+        records["ThirdStarItems"] = new System.Text.Json.Nodes.JsonArray(Gun.ToString());
+        records["EvolvedItems"] = new System.Text.Json.Nodes.JsonArray(Gun.ToString());
+        rig.Backend.Saved = Json.Deserialize<SptProfile>(file.ToJsonString())!;
+        var restarted = new EnhanceService(rig.Backend, Json);
+        var snapshot = restarted.Snapshot(Session);
+        Assert.Contains("되돌렸습니다", snapshot.Notice);
+        Assert.All(snapshot.Items.Where(i => i.ItemId == Gun.ToString()), i => Assert.Equal(1, i.StarLevel));
+        Assert.Equal(1, rig.State.Tickets[Gun.ToString()].SecondHeld);
+        // An untouched file loads as it is, without a notice.
+        rig.Backend.Saved = Json.Deserialize<SptProfile>(Json.Serialize(rig.Backend.Saved)!)!;
+        Assert.Equal("", new EnhanceService(rig.Backend, Json).Snapshot(Session).Notice);
     }
 }

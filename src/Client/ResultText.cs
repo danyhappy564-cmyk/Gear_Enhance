@@ -26,7 +26,8 @@ internal static class ResultText
     // One status line under the window after an attempt (the popup shows the details).
     internal static string Status(EnhanceReceipt receipt) => receipt.Action switch
     {
-        EnhanceAction.Mystery => receipt.Success ? Loc.L("신화 달성!", "Mythic reached!") : Loc.L("??? 실패 · 장비 파괴", "??? failed · gear destroyed"),
+        EnhanceAction.Mystery => receipt.Success ? Loc.L("신화 달성!", "Mythic reached!")
+            : receipt.TicketUsed ? Loc.L("??? 실패 · 방지권으로 ★★★ 유지", "??? failed · ticket kept ★★★") : Loc.L("??? 실패 · 장비 파괴", "??? failed · gear destroyed"),
         EnhanceAction.Mythic => receipt.Success ? Loc.L($"신화 {receipt.Level}단계 달성", $"Mythic level {receipt.Level}")
             : receipt.FailureMode == FailureMode.Downgrade ? Loc.L($"신화 {receipt.Level}단계로 하락", $"Mythic dropped to {receipt.Level}")
             : Loc.L($"신화 강화 실패 · 천장 +{receipt.Pity:0.##}%p", $"Mythic failed · pity +{receipt.Pity:0.##}%p"),

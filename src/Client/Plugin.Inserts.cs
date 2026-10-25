@@ -17,6 +17,17 @@ public sealed partial class Plugin
     private ConfigEntry<bool> autoRegister;
     private DevSetting<float> insertSurcharge;
     private static volatile bool insertsWanted;
+    // 1.4.0 developer sandbox: the options locked; the plate sync item event carries the settings
+    // (Developer = false), so the server rolls back with the item changes in its reply.
+    private static volatile bool sandboxEndWanted;
+    // New for every game launch: the server rolls back a sandbox left by another launch.
+    private static readonly string LaunchId = Guid.NewGuid().ToString("N");
+
+    private void RequestSandboxEnd()
+    {
+        sandboxEndWanted = true;
+        nextInsertSync = Clock;
+    }
     private static double nextInsertSync;
     // Inserts since the last sync, so pricier plates still waiting for payment can be named.
     private static readonly ConcurrentQueue<(string Armor, string Part)> inserted = new ConcurrentQueue<(string, string)>();
@@ -40,7 +51,7 @@ public sealed partial class Plugin
 
     private void TickInserts()
     {
-        if (insertsWanted && !visible && !busy && !backgroundSyncing && Clock >= nextInsertSync) SyncInserts();
+        if ((insertsWanted || sandboxEndWanted) && !visible && !busy && !backgroundSyncing && Clock >= nextInsertSync) SyncInserts();
     }
 
     private async void SyncInserts()
@@ -49,7 +60,14 @@ public sealed partial class Plugin
         var seen = new List<(string Armor, string Part)>();
         for (var n = 0; n < 256 && inserted.TryDequeue(out var pair); n++) seen.Add(pair);
         var active = StatPatches.Session;
-        if (active == null || GameBridge.Get(GameBridge.RuntimeType("EFT.InGameStatus"), "InRaid") is not false) return;
+        if (active == null || GameBridge.Get(GameBridge.RuntimeType("EFT.InGameStatus"), "InRaid") is not false)
+        {
+            // In a raid (or before login): the rollback waits; retried every 5 seconds.
+            if (sandboxEndWanted) nextInsertSync = Clock + 5;
+            return;
+        }
+        var sandbox = sandboxEndWanted;
+        sandboxEndWanted = false;
         backgroundSyncing = true;
         try
         {
@@ -58,13 +76,18 @@ public sealed partial class Plugin
             if (!await GameBridge.WithTimeout(GameBridge.SyncInserts(active, settings, autoRegister.Value)))
             {
                 Logger.LogWarning("방탄판 맞추기 실패(서버가 거절). 보험·방탄판 창에서 등록할 수 있습니다.");
+                if (sandbox) { sandboxEndWanted = true; nextInsertSync = Clock + 5; }
                 return;
             }
             if (await SyncEffects(active)) main.Enqueue(ItemMarkers.RefreshAll);
             var waiting = InsertRules.Waiting(StatPatches.Registry, seen);
             if (waiting > 0) main.Enqueue(() => Notify(InsertRules.Notice(waiting, autoRegister.Value)));
         }
-        catch (Exception ex) { Logger.LogWarning("방탄판 맞추기 실패: " + ex.GetBaseException().Message); }
+        catch (Exception ex)
+        {
+            Logger.LogWarning("방탄판 맞추기 실패: " + ex.GetBaseException().Message);
+            if (sandbox) { sandboxEndWanted = true; nextInsertSync = Clock + 5; }
+        }
         finally { backgroundSyncing = false; }
     }
 

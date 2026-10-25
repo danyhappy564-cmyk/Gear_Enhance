@@ -42,6 +42,22 @@ internal sealed class EnhancementAudio : IDisposable
         UnityEngine.Object.Destroy(clip);
         throw new InvalidOperationException("강화 음원을 읽지 못했습니다.");
     }
+    // 1.4.0: called when the window opens, so the source and the ten clips (several seconds of
+    // PCM each) exist before the first charge and its sound starts with the gauge. Nothing that
+    // is playing is stopped. Returns false when the game's UI mixer is not there yet.
+    internal bool Warm()
+    {
+        var group = GameFeedback.MixerGroup() as AudioMixerGroup;
+        if (group == null) return false;
+        if (audioReset)
+        {
+            if (source != null && source.isPlaying || nativeClip != null) return false;
+            audioReset = false; nativeRoute = false; ReleaseAudio();
+            log?.Invoke("게임 오디오 재설정 감지: 강화 음원 다시 준비");
+        }
+        Build(group);
+        return true;
+    }
     private void Prepare(float volume)
     {
         // Wait until the actual game's UI mixer exists before allocating Unity
@@ -54,6 +70,14 @@ internal sealed class EnhancementAudio : IDisposable
             log?.Invoke("게임 오디오 재설정 감지: 강화 음원 다시 준비");
         }
         Stop();
+        Build(group);
+        source.outputAudioMixerGroup = group;
+        source.enabled = true; source.mute = false; source.pitch = 1;
+        source.volume = Mathf.Clamp01(volume); source.clip = null;
+        playbackVolume = source.volume;
+    }
+    private void Build(AudioMixerGroup group)
+    {
         if (source == null)
         {
             audioHost = new GameObject("GearEnhance.Audio");
@@ -68,10 +92,7 @@ internal sealed class EnhancementAudio : IDisposable
             if (clips[index] != null) UnityEngine.Object.Destroy(clips[index]);
             clips[index] = CreateClip(index);
         }
-        source.outputAudioMixerGroup = group;
-        source.enabled = true; source.mute = false; source.pitch = 1;
-        source.volume = Mathf.Clamp01(volume); source.clip = null;
-        playbackVolume = source.volume;
+        if (source.outputAudioMixerGroup != group) source.outputAudioMixerGroup = group;
     }
     // cue: Attempt, EvolutionAttempt or MysteryAttempt (the gauge follows that clip's length).
     internal double StartAttempt(float volume, FeedbackCue cue)

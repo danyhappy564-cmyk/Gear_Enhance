@@ -22,6 +22,8 @@ public sealed partial class Plugin
     private sealed class Look
     {
         internal string Kicker = "", Title = "", Line = "", EffectLabel, EffectNow, EffectNext, Cost, Note;
+        // A second effect row: a mythic weapon raises bullet damage and penetration separately.
+        internal string EffectLabel2, EffectNow2, EffectNext2;
         internal Color Tint = Gold, NoteColor = Muted, EffectColor = Blue;
         internal bool Shatter, Glow, LateGlow, Mythic, MythicLite;
     }
@@ -72,6 +74,8 @@ public sealed partial class Plugin
     private void ShowResult(EnhanceReceipt receipt, EnhanceQuote attempt)
     {
         resultReceipt = receipt;
+        // The last ticket is gone (or vanished with the success): the next quote must not ask for one.
+        if (receipt.TicketUsed && receipt.TicketsLeft <= 0 || receipt.TicketsVoided > 0) useTicket = false;
         // A cosmetic failure must never turn a confirmed payment into an unknown result.
         try
         {
@@ -123,10 +127,21 @@ public sealed partial class Plugin
                     foreach (var zone in receipt.Zones ?? Array.Empty<string>()) zones.Add(ZoneName(zone));
                     result.Line = zones.Count == 0 ? Loc.L("신화 단계가 열렸습니다", "The Mythic stage is open")
                         : Loc.L("추가 보호 부위: ", "Extra zones: ") + string.Join(" · ", zones);
-                    if (weapon) (result.EffectLabel, result.EffectNow, result.EffectNext) = (Loc.L("탄 데미지 · 관통력", "Damage · penetration"), "???",
-                        Loc.L($"단계당 +{MythicTuned.WeaponPercentPerLevel:0.#}%", $"+{MythicTuned.WeaponPercentPerLevel:0.#}% per level"));
+                    if (weapon)
+                    {
+                        var perLevel = Loc.L($"단계당 +{MythicTuned.WeaponPercentPerLevel:0.#}%", $"+{MythicTuned.WeaponPercentPerLevel:0.#}% per level");
+                        (result.EffectLabel, result.EffectNow, result.EffectNext) = (Loc.L("탄 데미지", "Bullet damage"), "???", perLevel);
+                        (result.EffectLabel2, result.EffectNow2, result.EffectNext2) = (Loc.L("관통력", "Penetration"), "???", perLevel);
+                    }
                     else (result.EffectLabel, result.EffectNow, result.EffectNext) = (Loc.L("보호 부위", "Protected zones"),
                         Loc.L("기존", "Before"), Loc.L($"+{zones.Count}곳", $"+{zones.Count}"));
+                }
+                else if (receipt.TicketUsed)
+                {
+                    result.Title = Loc.L("??? 실패 · 파괴 방지권 사용", "??? failed · ticket used"); result.Tint = Good;
+                    result.Line = Loc.L($"{gear} ★★★ 그대로 남았습니다", $"{gear} stays ★★★");
+                    result.Note = Loc.L("??? 파괴 방지권 1장을 썼습니다 · 장비당 1장이라 더 살 수 없습니다", "The ??? ticket was used · one per gear, no more to buy");
+                    result.NoteColor = Good;
                 }
                 else
                 {
@@ -143,6 +158,8 @@ public sealed partial class Plugin
                     result.Title = Loc.L("신화 강화 성공", "Mythic level up"); result.Tint = Myth; result.MythicLite = true;
                     result.Line = Loc.L($"신화  {from} → {receipt.Level}", $"Mythic  {from} → {receipt.Level}");
                     (result.EffectLabel, result.EffectNow, result.EffectNext) = MythicEffect(from, receipt.Level);
+                    // Damage and penetration rise by the same percent; both get their own row.
+                    if (weapon) (result.EffectLabel2, result.EffectNow2, result.EffectNext2) = (Loc.L("관통력", "Penetration"), result.EffectNow, result.EffectNext);
                 }
                 else Fallback(result, receipt, attempt, Loc.L("신화", "Mythic"), from);
                 break;
@@ -271,7 +288,7 @@ public sealed partial class Plugin
     }
 
     private (string, string, string) MythicEffect(int from, int to) => weapon
-        ? (Loc.L("탄 데미지 · 관통력", "Damage · penetration"), $"+{MythicEffects.WeaponPercent(from, MythicTuned):0.#}%", $"+{MythicEffects.WeaponPercent(to, MythicTuned):0.#}%")
+        ? (Loc.L("탄 데미지", "Bullet damage"), $"+{MythicEffects.WeaponPercent(from, MythicTuned):0.#}%", $"+{MythicEffects.WeaponPercent(to, MythicTuned):0.#}%")
         : (Loc.L("받는 피해 감소", "Damage taken reduction"), $"{MythicEffects.ArmorPercent(from, MythicTuned):0.#}%", $"{MythicEffects.ArmorPercent(to, MythicTuned):0.#}%");
 
     // ---- drawing ------------------------------------------------------------------------
@@ -318,14 +335,13 @@ public sealed partial class Plugin
             if (current.Shatter) { DrawShatter(new Rect(x + 175, top, 270, 110), elapsed); top += 122; }
             if (current.EffectLabel != null)
             {
-                var box = new Rect(x + 32, top, 556, 48);
-                Box(box, Deep, Line);
-                Label(box.x + 16, box.y, 260, 48, current.EffectLabel, new GUIStyle(body) { fontSize = 14 }, Soft);
-                Label(box.xMax - 296, box.y, 140, 48, current.EffectNow, new GUIStyle(number) { fontSize = 22 });
-                Label(box.xMax - 152, box.y, 20, 48, "→", smallCenter);
-                var drop = Reduced ? 0 : 8 * (1 - UiMotion.Fill(elapsed, 0.35, false));
-                Label(box.xMax - 132, box.y - drop, 116, 48, current.EffectNext, new GUIStyle(number) { fontSize = 22 }, current.EffectColor);
+                DrawEffectRow(new Rect(x + 32, top, 556, 48), current.EffectLabel, current.EffectNow, current.EffectNext, current.EffectColor, elapsed);
                 top += 60;
+            }
+            if (current.EffectLabel2 != null)
+            {
+                DrawEffectRow(new Rect(x + 32, top - 4, 556, 48), current.EffectLabel2, current.EffectNow2, current.EffectNext2, current.EffectColor, elapsed);
+                top += 56;
             }
             if (popup == PopupKind.Charging)
             {
@@ -343,6 +359,16 @@ public sealed partial class Plugin
             DrawPopupButtons(x, top + 4);
         }
         finally { drawingPopup = false; }
+    }
+
+    private void DrawEffectRow(Rect box, string label, string now, string next, Color tint, double elapsed)
+    {
+        Box(box, Deep, Line);
+        Label(box.x + 16, box.y, 260, 48, label, new GUIStyle(body) { fontSize = 14 }, Soft);
+        Label(box.xMax - 296, box.y, 140, 48, now, new GUIStyle(number) { fontSize = 22 });
+        Label(box.xMax - 152, box.y, 20, 48, "→", smallCenter);
+        var drop = Reduced ? 0 : 8 * (1 - UiMotion.Fill(elapsed, 0.35, false));
+        Label(box.xMax - 132, box.y - drop, 116, 48, next, new GUIStyle(number) { fontSize = 22 }, tint);
     }
 
     private Look ConfirmLook()
@@ -382,9 +408,12 @@ public sealed partial class Plugin
                 return new Look
                 {
                     Kicker = "???", Title = "???", Tint = Myth, Glow = true,
-                    Line = weapon ? Loc.L($"{subject.SuccessPercent:0.##}/{100 - subject.SuccessPercent:0.##} 확률로 무기가 성공하거나 부서집니다.", $"At {subject.SuccessPercent:0.##}/{100 - subject.SuccessPercent:0.##} the weapon succeeds or breaks.")
+                    Line = subject.UseTicket
+                        ? Loc.L($"{subject.SuccessPercent:0.##}% 확률로 성공 · 실패해도 파괴 방지권으로 ★★★ 장비가 남습니다.", $"{subject.SuccessPercent:0.##}% to succeed · on a failure the ticket keeps the ★★★ gear.")
+                        : weapon ? Loc.L($"{subject.SuccessPercent:0.##}/{100 - subject.SuccessPercent:0.##} 확률로 무기가 성공하거나 부서집니다.", $"At {subject.SuccessPercent:0.##}/{100 - subject.SuccessPercent:0.##} the weapon succeeds or breaks.")
                         : Loc.L($"{subject.SuccessPercent:0.##}/{100 - subject.SuccessPercent:0.##} 확률로 방어구가 성공하거나 부서집니다.", $"At {subject.SuccessPercent:0.##}/{100 - subject.SuccessPercent:0.##} the armor succeeds or breaks."),
-                    Cost = $"{subject.Cost:N0} ₽" + (subject.Materials?.Length > 0 ? $" · LEDX {subject.Materials[0].Count}" : ""),
+                    Cost = $"{subject.Cost:N0} ₽" + (subject.Materials?.Length > 0 ? $" · LEDX {subject.Materials[0].Count}" : "")
+                        + (subject.UseTicket ? Loc.L(" · ??? 방지권 1장", " · 1 ??? ticket") : ""),
                     Note = Loc.L("진행하시겠습니까?", "Proceed?"), NoteColor = Text
                 };
             case PopupKind.RerollConfirm:
@@ -408,6 +437,7 @@ public sealed partial class Plugin
         height += (current.Mythic ? 44 : current.MythicLite ? 36 : 34) + 20 + 36;
         if (current.Shatter) height += 122;
         if (current.EffectLabel != null) height += 60;
+        if (current.EffectLabel2 != null) height += 56;
         if (popup == PopupKind.Charging) height += 32;
         if (current.Cost != null || current.Note != null) height += 12 + (current.Cost != null ? 24 : 0) + (current.Note != null ? 24 : 0);
         height += popup == PopupKind.Charging ? 10 : popup == PopupKind.RiskConfirm ? 4 + 46 + 10 + 40 + 26 : 4 + 46 + 26;

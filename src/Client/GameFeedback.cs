@@ -24,10 +24,11 @@ internal static class GameFeedback
         UiInteraction.CheckBox => "MenuCheckBox", UiInteraction.Open => "MenuInspectorWindowOpen",
         UiInteraction.Close => "MenuInspectorWindowClose", _ => "ButtonClick"
     };
-    // ??? success = mythic reached, a mythic step = myth_up (design 7); ??? failure destroys.
+    // ??? success = mythic reached, a mythic step and a zone reroll = myth_up (design 7);
+    // ??? failure destroys unless its ticket kept the gear.
     internal static FeedbackCue Result(EnhanceReceipt receipt, bool complete) => receipt.Success
         ? receipt.Action == EnhanceAction.Mystery ? FeedbackCue.MythicAchieved
-        : receipt.Action == EnhanceAction.Mythic ? FeedbackCue.MythicUp
+        : receipt.Action == EnhanceAction.Mythic || receipt.Action == EnhanceAction.Reroll ? FeedbackCue.MythicUp
         : complete ? FeedbackCue.Complete : FeedbackCue.Success
         : receipt.FailureMode == FailureMode.Destroy ? FeedbackCue.Destroy
         : receipt.FailureMode == FailureMode.Downgrade ? FeedbackCue.Downgrade : FeedbackCue.Failure;

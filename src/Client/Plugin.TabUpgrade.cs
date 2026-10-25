@@ -369,10 +369,12 @@ public sealed partial class Plugin
     private float DrawTickets(float y)
     {
         var view = preview;
-        var target = EvolutionStars;
+        var target = TicketTarget;
+        var mystery = target == MythicRules.MysteryTicket;
         var chip = new Rect(0, y, midWidth * 0.42f, 44);
         Box(chip, Inner, Hex(0x3d5a42));
-        Label(chip.x + 10, chip.y + 4, chip.width - 20, 18, Loc.L($"{StarEvolution.Stars(target)} 진화 파괴 방지권", $"{StarEvolution.Stars(target)} destruction ticket"), bodyBold, Text);
+        Label(chip.x + 10, chip.y + 4, chip.width - 20, 18, mystery ? Loc.L("??? 파괴 방지권 · 장비당 1장", "??? destruction ticket · one per gear")
+            : Loc.L($"{StarEvolution.Stars(target)} 진화 파괴 방지권", $"{StarEvolution.Stars(target)} destruction ticket"), bodyBold, Text);
         var state = view == null || view.TicketStars != target ? "—"
             : Loc.L($"보유 {view.TicketsHeld}장 · 구매 {view.TicketsBought} / {view.TicketMax}", $"Held {view.TicketsHeld} · bought {view.TicketsBought} / {view.TicketMax}")
               + (view.TicketsBought >= view.TicketMax ? Loc.L(" (더 못 삼)", " (no more)") : "")
@@ -385,7 +387,8 @@ public sealed partial class Plugin
         var toggled = UiToggle(new Rect(use.x + 10, use.y + 13, 18, 18), useTicket, "");
         if (toggled != useTicket) main.Enqueue(() => SetTicket(toggled));
         GUI.enabled = true;
-        Label(use.x + 34, use.y, use.width - 40, 44, Loc.L("방지권 사용\n(실패해도 장비 유지)", "Use a ticket\n(gear kept on failure)"), tiny, canUse ? Text : Muted);
+        Label(use.x + 34, use.y, use.width - 40, 44, mystery ? Loc.L("방지권 사용\n(실패해도 ★★★ 유지)", "Use the ticket\n(★★★ kept on failure)")
+            : Loc.L("방지권 사용\n(실패해도 장비 유지)", "Use a ticket\n(gear kept on failure)"), tiny, canUse ? Text : Muted);
         var buy = new Rect(use.xMax + 8, y, midWidth - use.xMax - 8, 44);
         GUI.enabled = view != null && view.TicketStars == target && view.TicketsBought < view.TicketMax && view.AvailableRoubles >= view.TicketPrice
             && !busy && popup == PopupKind.None && !uncertain;

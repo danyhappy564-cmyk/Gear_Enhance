@@ -12,7 +12,7 @@ public sealed partial class Plugin
     private const string MythicSection = "16. ??? · 신화";
     private DevSetting<float> dogtagPoints, dogtagCap, cardPoints, cardCap, bitcoinPoints, bitcoinCap;
     private DevSetting<int> dogtagPrice, cardPrice, bitcoinPrice, boostKinds;
-    private DevSetting<int> instantFee, secondTickets, secondTicketPrice, thirdTickets, thirdTicketPrice;
+    private DevSetting<int> instantFee, secondTickets, secondTicketPrice, thirdTickets, thirdTicketPrice, mysteryTickets, mysteryTicketPrice;
     private DevSetting<float> basicHours, advancedHours, premiumHours;
     private DevSetting<float> mysteryChance, mythicPity, mythicPityCap, mythicGrowth, mythicProtection, mythicWeapon, mythicArmor, rerollGrowth;
     private DevSetting<int> mysteryCost, mysteryLedx, mythicCost, mythicLedx, mythicZones, rerollCost, rerollCards;
@@ -50,12 +50,16 @@ public sealed partial class Plugin
         const string ticketNote = "장비 하나가 평생 살 수 있는 장수입니다. 다 사면 더 살 수 없습니다.";
         const string ticketPriceNote = "방지권 1장 가격입니다. 쓰면 진화 시도마다 1장 소모, 실패해도 장비가 남습니다.";
         secondTickets = BindDeveloper(InstantSection, "★★ 진화 방지권 최대 (장)", 3, new ConfigDescription(ticketNote, new AcceptableValueRange<int>(0, 10)));
-        secondTicketPrice = BindDeveloper(InstantSection, "★★ 진화 방지권 가격 (루블)", 3000000, new ConfigDescription(ticketPriceNote, new AcceptableValueRange<int>(0, 100000000)));
+        secondTicketPrice = BindDeveloper(InstantSection, "★★ 진화 방지권 가격 (루블)", 1000000, new ConfigDescription(ticketPriceNote, new AcceptableValueRange<int>(0, 100000000)));
         thirdTickets = BindDeveloper(InstantSection, "★★★ 진화 방지권 최대 (장)", 2, new ConfigDescription(ticketNote, new AcceptableValueRange<int>(0, 10)));
-        thirdTicketPrice = BindDeveloper(InstantSection, "★★★ 진화 방지권 가격 (루블)", 8000000, new ConfigDescription(ticketPriceNote, new AcceptableValueRange<int>(0, 100000000)));
+        thirdTicketPrice = BindDeveloper(InstantSection, "★★★ 진화 방지권 가격 (루블)", 2700000, new ConfigDescription(ticketPriceNote, new AcceptableValueRange<int>(0, 100000000)));
+        mysteryTickets = BindDeveloper(InstantSection, "??? 방지권 최대 (장)", 1, new ConfigDescription(
+            "★★★ 장비 하나가 평생 살 수 있는 ??? 파괴 방지권 장수입니다. 기본 1장(추가 구매 불가).", new AcceptableValueRange<int>(0, 10)));
+        mysteryTicketPrice = BindDeveloper(InstantSection, "??? 방지권 가격 (루블)", 5000000, new ConfigDescription(
+            "??? 파괴 방지권 1장 가격입니다. 쓰면 그 ??? 시도에 1장 소모, 실패해도 ★★★ 장비가 그대로 남습니다.", new AcceptableValueRange<int>(0, 100000000)));
 
         mysteryChance = BindDeveloper(MythicSection, "??? 성공 확률 (%)", 50f, new ConfigDescription(
-            "★★★ 장비만 도전합니다. 실패하면 장비·부착물·기록이 파괴됩니다. 재료·방지권·즉시 강화는 쓸 수 없습니다.", new AcceptableValueRange<float>(0, 100)));
+            "★★★ 장비만 도전합니다. 실패하면 장비·부착물·기록이 파괴됩니다(??? 방지권을 쓰면 유지). 재료·즉시 강화는 쓸 수 없습니다.", new AcceptableValueRange<float>(0, 100)));
         mysteryCost = BindDeveloper(MythicSection, "??? 비용 (루블)", 8000000, new ConfigDescription("??? 한 번 도전 비용입니다.", new AcceptableValueRange<int>(0, 100000000)));
         mysteryLedx = BindDeveloper(MythicSection, "??? LEDX (개)", 1, new ConfigDescription("??? 한 번에 필요한 LEDX 수입니다.", new AcceptableValueRange<int>(0, 10)));
         mythicChances = BindDeveloper(MythicSection, "신화 성공률 (→1~→5, %)", "40, 30, 20, 15, 10", "다섯 숫자를 쉼표로 구분합니다. 형식이 틀리면 기본값을 씁니다.");

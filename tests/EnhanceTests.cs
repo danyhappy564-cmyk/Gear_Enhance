@@ -637,7 +637,7 @@ public sealed class EnhanceTests
         Assert.Equal(5, retry.CurrentLevel); Assert.Equal(6, retry.NextLevel);
         Assert.True(retry.HighRisk);
         Assert.True(retry.Protection.Destruction); Assert.True(retry.Protection.Downgrade);
-        Assert.Equal(964369, retry.Cost);
+        Assert.Equal(217289, retry.Cost);
         Assert.Equal(30518, retry.BaseCost);
         rig.Execute(retry);
         Assert.Equal(5, rig.Service.Receipt(Session, retry.QuoteId)!.Level);
@@ -831,9 +831,10 @@ public sealed class EnhanceTests
         Assert.True(quote.Protection.Downgrade);
         Assert.False(quote.CanDestroy);
         Assert.Equal(38147, quote.BaseCost);
-        Assert.Equal(934602, quote.DestructionProtectionFee);
-        Assert.Equal(654222, quote.DowngradeProtectionFee);
-        Assert.Equal(1626971, quote.Cost);
+        // 1.4.0: 10% / 7% (1/5 of 50% / 35%) × level².
+        Assert.Equal(186921, quote.DestructionProtectionFee);
+        Assert.Equal(130845, quote.DowngradeProtectionFee);
+        Assert.Equal(355913, quote.Cost);
         rig.Execute(quote);
         Assert.Equal(10000000 - quote.Cost, rig.Money);
         Assert.Equal(6, rig.Service.Snapshot(Session).Items.Single(i => i.Path == EnhancePath.Recoil).Level);
@@ -892,11 +893,11 @@ public sealed class EnhanceTests
         var protectedQuote = await Query(true);
         Assert.True(unprotected.CanDestroy);
         Assert.False(protectedQuote.CanDestroy);
-        Assert.Equal(972749, protectedQuote.Cost);
+        Assert.Equal(225068, protectedQuote.Cost);
         Assert.Throws<InvalidOperationException>(() => rig.Execute(unprotected, true));
         Assert.Equal(10000000, rig.Money);
         rig.Execute(protectedQuote);
-        Assert.Equal(9027251, rig.Money);
+        Assert.Equal(9774932, rig.Money);
         Assert.NotNull(rig.Item);
     }
 
@@ -909,7 +910,7 @@ public sealed class EnhanceTests
             CostPerLevel = 1, FailureMode = FailureMode.Destroy };
         var quote = rig.Service.Quote(Session, Target.ToString(), settings, EnhancePath.Recoil);
         Assert.Equal(10000000, quote.Cost);
-        Assert.Equal(500000000, quote.DestructionProtectionFee);
+        Assert.Equal(100000000, quote.DestructionProtectionFee);
         Assert.Throws<InvalidOperationException>(() => rig.Service.Quote(Session, Target.ToString(), settings,
             EnhancePath.Recoil, new() { Destruction = true }));
         Assert.Equal(10000000, rig.Money);
@@ -1264,8 +1265,8 @@ public sealed class EnhanceTests
         var quote = rig.Service.Quote(Session, Target.ToString(), new(), EnhancePath.Recoil,
             new() { Destruction = true, Downgrade = true }, options: Boost((BoostMaterial.Bitcoin, 1)));
         Assert.Equal(50, quote.BaseSuccessPercent); Assert.Equal(55, quote.SuccessPercent);
-        Assert.Equal(933851, quote.ProtectionCost); Assert.Equal(30518, quote.BaseCost);
-        Assert.Equal(300000, quote.BoostCost); Assert.Equal(30518 + 933851 + 300000, quote.Cost);
+        Assert.Equal(186771, quote.ProtectionCost); Assert.Equal(30518, quote.BaseCost);
+        Assert.Equal(300000, quote.BoostCost); Assert.Equal(30518 + 186771 + 300000, quote.Cost);
     }
 
     [Fact]

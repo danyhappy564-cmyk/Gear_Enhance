@@ -11,7 +11,7 @@ namespace GearEnhance;
 internal static class DeveloperLock
 {
     private const string Salt = "rf.gearenhance.developer:";
-    internal const string PasswordHash = "9f909295d2843e573c06b1525497058ca2f3ce8e28f4f0459009e1b6f96d4f41";
+    internal const string PasswordHash = "f64ead0944b6c0cc9684a11869713215fe3f2425d75609c16e8c554896f7787a";
 
     internal static string HashOf(string password)
     {

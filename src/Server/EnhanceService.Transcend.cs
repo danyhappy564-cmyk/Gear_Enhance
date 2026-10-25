@@ -323,6 +323,8 @@ public sealed partial class EnhanceService
             state.AutoRegisterInserts = autoRegister;
             var changed = output.ProfileChanges?[session]?.Items?.ChangedItems
                 ?? throw Loc.Invalid("SPT 아이템 응답을 준비할 수 없습니다.", "Cannot prepare the SPT item response.");
+            // The client sends this when the developer options lock, so put-back durability reaches it.
+            Sandbox(session, profile, state, settings, changed);
             // Registration changes the armor's value and quote; an open quote must be reloaded.
             pending.Remove(session);
             return ReconcileInserts(profile, state, settings, autoRegister, changed);

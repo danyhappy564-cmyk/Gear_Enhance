@@ -120,6 +120,14 @@ button{font-family:inherit}
                 <span class="num peff" style="font-size: 22px; font-weight: 700; color: {{p.effColor}}">{{p.eff.next}}</span>
               </div>
             </sc-if>
+            <sc-if value="{{p.hasEff2}}" hint-placeholder-val="{{false}}">
+              <div style="display: flex; align-items: baseline; gap: 12px; width: 100%; box-sizing: border-box; padding: 12px 16px; background: #0e1114; border: 1px solid #2a3037; margin-top: -6px">
+                <span style="font-size: 14px; color: #b9b3a6">{{p.eff2.label}}</span>
+                <span class="num" style="margin-left: auto; font-size: 22px; font-weight: 700; color: #c4c0b6">{{p.eff2.cur}}</span>
+                <span style="color: #7d8794">→</span>
+                <span class="num peff" style="font-size: 22px; font-weight: 700; color: {{p.effColor}}">{{p.eff2.next}}</span>
+              </div>
+            </sc-if>
             <sc-if value="{{p.charging}}" hint-placeholder-val="{{false}}">
               <div style="width: 100%; padding: 8px 0 4px">
                 <div style="position: relative; height: 12px; background: #22282e"><div class="{{p.gaugeCls}}" style="position: absolute; left: 0; top: 0; right: 0; bottom: 0; background: {{p.tint}}"></div></div>
@@ -151,19 +159,20 @@ class Component extends DCLogic {
       fail: { kicker: '일반 강화', title: '강화 실패', line: '반동 제어  +4 유지', tint: '#e07a6e', cost: '24,415 ₽', note: '비용만 소모되었습니다' },
       drop: { kicker: '일반 강화 · 고위험', title: '단계 하락', line: '정밀성  +7 → +6', tint: '#ffb26b', eff: { label: '탄 퍼짐 감소', cur: '4.63%', next: '3.47%' }, down: true, cost: '47,684 ₽' },
       destroy: { kicker: '일반 강화 · 고위험', title: '장비 파괴', line: 'Daewoo K2와 부착물·탄창이 사라졌습니다', tint: '#ff6b5e', shatter: true, cost: '47,684 ₽', note: '강화 기록과 강화 보험도 함께 사라집니다' },
-      protect: { kicker: '일반 강화 · 고위험', title: '강화 실패 · 보호 발동', line: '정밀성  +7 유지', tint: OK, cost: '1,573,572 ₽', note: '파괴 방지가 장비를 지켰습니다', noteOk: true },
+      protect: { kicker: '일반 강화 · 고위험', title: '강화 실패 · 보호 발동', line: '정밀성  +7 유지', tint: OK, cost: '352,862 ₽', note: '파괴 방지가 장비를 지켰습니다', noteOk: true },
       evo2: { kicker: '★★ 진화', title: '★★ 진화 성공', line: '모든 항목 효과 ×2', tint: PURPLE, eff: { label: '반동 감소', cur: '15%', next: '30%' }, cost: '2,000,000 ₽' },
       evo3: { kicker: '★★★ 진화', title: '★★★ 진화 성공', line: '모든 항목 효과 ×3', tint: '#ff6b6b', eff: { label: '반동 감소', cur: '30%', next: '45%' }, cost: '4,000,000 ₽' },
       evoFail: { kicker: '★★ 진화', title: '진화 실패 · 장비 파괴', line: 'Daewoo K2와 부착물·탄창이 사라졌습니다', tint: '#ff6b5e', shatter: true, cost: '2,000,000 ₽', note: '진화 실패는 보호할 수 없습니다' },
       trans: { kicker: '초월', title: '초월 성공', line: '3성 초월  0 → 1', tint: TEAL, eff: { label: '발사속도', cur: '750', next: '795 rpm' }, cost: '3,000,000 ₽ · 군용 회로 기판 1' },
       transFail: { kicker: '초월', title: '초월 실패', line: '2성 초월  2 유지', tint: '#7fb7b2', cost: '1,000,000 ₽ · 무기 부품 2 · 화약 1', note: '다음 성공률 +5%p (누적 +15%p)' },
       confirm: { kicker: '???', title: '???', line: '50/50 확률로 무기가 성공하거나 부서집니다.', tint: '#ff6ad5', cost: '8,000,000 ₽ · LEDX 1', note: '진행하시겠습니까?', noteBright: true },
-      myth: { kicker: '???', title: '신화 달성', line: '신화 단계가 열렸습니다', tint: '#ff6ad5', eff: { label: '탄 데미지 · 관통력', cur: '???', next: '단계당 +2%' }, cost: '8,000,000 ₽ · LEDX 1' },
+      myth: { kicker: '???', title: '신화 달성', line: '신화 단계가 열렸습니다', tint: '#ff6ad5', eff: { label: '탄 데미지', cur: '???', next: '단계당 +2%' }, eff2: { label: '관통력', cur: '???', next: '단계당 +2%' }, cost: '8,000,000 ₽ · LEDX 1' },
       mythFail: { kicker: '???', title: '??? 실패 · 장비 파괴', line: 'Daewoo K2와 부착물·탄창이 사라졌습니다', tint: '#ff6b5e', shatter: true, cost: '8,000,000 ₽ · LEDX 1', note: '50% 판정에서 부서졌습니다' },
+      mythKeep: { kicker: '???', title: '??? 실패 · 파괴 방지권 사용', line: 'Daewoo K2 ★★★ 그대로 남았습니다', tint: OK, cost: '8,000,000 ₽ · LEDX 1 · ??? 방지권 1장', note: '??? 파괴 방지권 1장을 썼습니다 · 장비당 1장이라 더 살 수 없습니다', noteOk: true },
       mythArmor: { kicker: '???', title: '신화 달성', line: '추가 보호 부위: 허벅지 (오른쪽) · 아래팔 (왼쪽)', tint: '#ff6ad5', eff: { label: '보호 부위', cur: '7곳', next: '9곳' }, cost: '8,000,000 ₽ · LEDX 1' },
       ticketSave: { kicker: '★★ 진화', title: '진화 실패 · 파괴 방지권 사용', line: 'Daewoo K2 유지 · 단계 그대로', tint: OK, cost: '2,000,000 ₽', note: '파괴 방지권 1장을 썼습니다 · 남은 2장', noteOk: true },
       reroll: { kicker: '신화 · 추가 보호 부위', title: '부위 다시 뽑기 완료', line: '허벅지 (오른쪽)  →  엉덩이', tint: '#ff6ad5', eff: { label: '추가 보호 부위', cur: '허벅지 (오른쪽)', next: '엉덩이' }, cost: '2,000,000 ₽ · 그래픽 카드 1' },
-      mythUp: { kicker: '신화', title: '신화 강화 성공', line: '신화  2 → 3', tint: '#ff6ad5', eff: { label: '탄 데미지 · 관통력', cur: '+4%', next: '+6%' }, cost: '6,050,000 ₽ · LEDX 1' },
+      mythUp: { kicker: '신화', title: '신화 강화 성공', line: '신화  2 → 3', tint: '#ff6ad5', eff: { label: '탄 데미지', cur: '+4%', next: '+6%' }, eff2: { label: '관통력', cur: '+4%', next: '+6%' }, cost: '6,050,000 ₽ · LEDX 1' },
       insured: { kicker: '강화 보험', title: '강화 보험 반환', line: 'Daewoo K2 ★ 가 강화된 채 돌아옵니다 · 12시간 뒤 우편 도착', tint: '#7fb2ff', note: '고급 보험 55% 성공 (일반 1일 · 고급 12시간 · 프리미엄 즉시) · 보험은 소모되었습니다', noteOk: true }
     };
     var popup = function (kind, loop) {
@@ -177,7 +186,7 @@ class Component extends DCLogic {
       var SPARK = ['#ff6ad5', '#ffd878', '#ffffff', '#9fd0ff'];
       if (big) for (var w = 0; w < 2; w++) for (var j = 0; j < 20; j++) sparks.push({ a: j * 18 + w * 9, d: w * 1250 + (j % 5) * 40, c: SPARK[(j + w) % 4] });
       if (lite) for (var q = 0; q < 14; q++) sparks.push({ a: q * (360 / 14), d: 20 + (q % 3) * 70, c: SPARK[q % 4] });
-      return Object.assign(d, { shatter: !!d.shatter, pieces: pieces, hasEff: !!d.eff, eff: d.eff || { label: '', cur: '', next: '' },
+      return Object.assign(d, { shatter: !!d.shatter, pieces: pieces, hasEff: !!d.eff, eff: d.eff || { label: '', cur: '', next: '' }, hasEff2: !!d.eff2, eff2: d.eff2 || { label: '', cur: '', next: '' },
         effColor: d.down ? RED : BLUE, charging: kind === 'charging', gaugeCls: loop ? 'gauge loop' : 'gauge',
         hasFoot: kind !== 'charging', hasCost: !!d.cost, hasNote: !!d.note, noteColor: d.noteOk ? OK : d.noteBright ? '#e6e2d8' : MUTED,
         hasButton: kind !== 'charging' && kind !== 'confirm', hasConfirm: kind === 'confirm', cardCls: lite ? 'pop mythlite' : fx ? 'pop mythic' : d.shatter ? 'pop shake' : kind === 'confirm' ? 'pop confirm' : 'pop',
@@ -199,11 +208,12 @@ class Component extends DCLogic {
       ['transFail', '초월 실패 · 천장 누적'],
       ['insured', '레이드 후 강화 보험 반환 (제안)'],
       ['confirm', '??? 도전 확인 (★★★ 무기만)'],
-      ['myth', '??? 성공 · 신화 단계 열림 (무기)'],
+      ['myth', '??? 성공 · 신화 단계 열림 (무기: 탄 데미지·관통력 두 줄)'],
       ['mythArmor', '??? 성공 · 신화 (방어구·헬멧: 무작위 부위 2곳 추가)'],
       ['mythFail', '??? 실패 · 장비 파괴'],
-      ['mythUp', '신화 강화 성공 (작은 연출)'],
-      ['reroll', '방어구 신화 · 추가 부위 다시 뽑기 (200만 + 그래픽 카드, 매번 ×1.5)']
+      ['mythKeep', '??? 실패 · ??? 파괴 방지권으로 ★★★ 유지 (장비당 1장 · 500만)'],
+      ['mythUp', '신화 강화 성공 (작은 연출 · 무기는 탄 데미지·관통력 두 줄)'],
+      ['reroll', '방어구 신화 · 추가 부위 다시 뽑기 (200만 + 그래픽 카드, 매번 ×1.5 · 소리 myth_up)']
     ];
     var cards = list.map(function (x, i) {
       return Object.assign(popup(x[0], x[0] === 'charging'), { no: (i < 9 ? '0' : '') + (i + 1), caption: x[1] });

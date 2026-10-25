@@ -14,7 +14,7 @@ public enum InsuranceTier { None, Basic, Advanced, Premium }
 
 public static class EnhanceProtocol
 {
-    public const int Version = 10;
+    public const int Version = 11;
     public const string ModVersion = "1.4.0";
     public static void Validate(int version)
     {
@@ -37,8 +37,9 @@ public sealed class EnhanceSettings
     public FailureMode FailureMode { get; set; } = FailureMode.KeepItem;
     public bool HighRiskEnabled { get; set; } = true;
     public double HighRiskDestructionPercent { get; set; } = 25;
-    public double DestructionProtectionPercent { get; set; } = 50;
-    public double DowngradeProtectionPercent { get; set; } = 35;
+    // 1.4.0: 1/5 of 1.3.0 (50 / 35); the formula (base × % × level²) is unchanged.
+    public double DestructionProtectionPercent { get; set; } = 10;
+    public double DowngradeProtectionPercent { get; set; } = 7;
     public double EvolutionSuccessPercent { get; set; } = 30;
     public double ThirdStarSuccessPercent { get; set; } = 10;
     public double EvolutionCostPercent { get; set; } = 300;
@@ -59,9 +60,16 @@ public sealed class EnhanceSettings
     public int InstantFee { get; set; } = 50000;
     // 1.4.0 star evolution destruction tickets: lifetime purchases per gear and price of one.
     public int SecondTicketMax { get; set; } = 3;
-    public int SecondTicketPrice { get; set; } = 3000000;
+    public int SecondTicketPrice { get; set; } = 1000000;
     public int ThirdTicketMax { get; set; } = 2;
-    public int ThirdTicketPrice { get; set; } = 8000000;
+    public int ThirdTicketPrice { get; set; } = 2700000;
+    // ??? destruction ticket (TicketStars = MythicRules.MysteryTicket): one per gear, ever.
+    public int MysteryTicketMax { get; set; } = 1;
+    public int MysteryTicketPrice { get; set; } = 5000000;
+    // 1.4.0 developer sandbox: true while the F12 developer options are unlocked; LaunchId is
+    // new for every game launch. Not balance: the server copies the records while it is on.
+    public bool Developer { get; set; }
+    public string LaunchId { get; set; } = "";
     public EffectTuning Effects { get; set; } = new EffectTuning();
     public TranscendTuning Transcend { get; set; } = new TranscendTuning();
     public BoostTuning Boost { get; set; } = new BoostTuning();
@@ -73,8 +81,8 @@ public sealed class EnhanceSettings
         : tier == InsuranceTier.Advanced ? AdvancedInsuranceFeePercent : tier == InsuranceTier.Basic ? BasicInsuranceFeePercent : 0;
     public double ReturnHours(InsuranceTier tier) => tier == InsuranceTier.Premium ? PremiumInsuranceReturnHours
         : tier == InsuranceTier.Advanced ? AdvancedInsuranceReturnHours : tier == InsuranceTier.Basic ? BasicInsuranceReturnHours : 0;
-    public int TicketMax(int stars) => stars >= 3 ? ThirdTicketMax : stars == 2 ? SecondTicketMax : 0;
-    public int TicketPrice(int stars) => stars >= 3 ? ThirdTicketPrice : stars == 2 ? SecondTicketPrice : 0;
+    public int TicketMax(int stars) => stars == MythicRules.MysteryTicket ? MysteryTicketMax : stars == 3 ? ThirdTicketMax : stars == 2 ? SecondTicketMax : 0;
+    public int TicketPrice(int stars) => stars == MythicRules.MysteryTicket ? MysteryTicketPrice : stars == 3 ? ThirdTicketPrice : stars == 2 ? SecondTicketPrice : 0;
 
     public void Validate()
     {
@@ -95,6 +103,8 @@ public sealed class EnhanceSettings
             || InstantFee < 0 || InstantFee > 100000000
             || SecondTicketMax < 0 || SecondTicketMax > 10 || ThirdTicketMax < 0 || ThirdTicketMax > 10
             || SecondTicketPrice < 0 || SecondTicketPrice > 100000000 || ThirdTicketPrice < 0 || ThirdTicketPrice > 100000000
+            || MysteryTicketMax < 0 || MysteryTicketMax > 10 || MysteryTicketPrice < 0 || MysteryTicketPrice > 100000000
+            || (LaunchId?.Length ?? 0) > 64
             || MaxLevel < 1 || MaxLevel > 100
             || !Finite(CostPercent) || CostPercent < 0 || CostPercent > 1000
             || !Finite(CostPerLevel) || CostPerLevel < 1 || CostPerLevel > 3
@@ -221,7 +231,7 @@ public sealed class EnhanceQuote
     public int DurabilityPending { get; set; }
     // Indexed by InsuranceTier: real hours until a successful return is mailed.
     public double[] InsuranceHours { get; set; } = new double[4];
-    // 1.4.0 destruction tickets of the evolution to TicketStars (2 or 3), on every quote of the gear.
+    // 1.4.0 destruction tickets of the evolution to TicketStars (2 or 3), or of ??? (4), on every quote of the gear.
     public int TicketStars { get; set; }
     public int TicketsHeld { get; set; }
     public int TicketsBought { get; set; }
@@ -295,6 +305,8 @@ public sealed class EnhanceSnapshot
     // 1.4.0: mythic gear, and insured gear still waiting to be mailed back.
     public MythicLink[] Mythic { get; set; } = Array.Empty<MythicLink>();
     public ReturnLink[] Returns { get; set; } = Array.Empty<ReturnLink>();
+    // 1.4.0: shown once (records restored after a hand edit, developer sandbox rolled back).
+    public string Notice { get; set; } = "";
 }
 
 public sealed class MythicLink

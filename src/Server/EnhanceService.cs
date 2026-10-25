@@ -16,7 +16,16 @@ using SPTarkov.Server.Core.Utils;
 
 namespace GearEnhance;
 
-public sealed class EnhanceState
+// The saved records (profile extension "rfGearEnhance"). Every field lives in EnhanceRecords so the
+// seal converter (StateSeal.cs) can write and read them without calling itself.
+[System.Text.Json.Serialization.JsonConverter(typeof(SealedStateConverter))]
+public sealed class EnhanceState : EnhanceRecords
+{
+    // Set when the records were read back from a tampered file; the next state sync shows it once.
+    internal string? Notice { get; set; }
+}
+
+public class EnhanceRecords
 {
     public Dictionary<string, int> Levels { get; set; } = new();
     public List<EnhanceReceipt> Receipts { get; set; } = new();
@@ -42,6 +51,17 @@ public sealed class EnhanceState
     public Dictionary<string, MythicRecord> Mythic { get; set; } = new();
     public Dictionary<string, TicketRecord> Tickets { get; set; } = new();
     public List<PendingReturn> Returns { get; set; } = new();
+    // 1.4.0: the records as they were when the F12 developer options were unlocked; put back
+    // when they are locked again or at the next game start (Alt+F4 included).
+    public DeveloperSandbox? Sandbox { get; set; }
+}
+
+public sealed class DeveloperSandbox
+{
+    public string LaunchId { get; set; } = "";
+    public long StartedUnixSeconds { get; set; }
+    // EnhanceRecords JSON without Sandbox.
+    public string Records { get; set; } = "";
 }
 
 public sealed class InsertRecord
@@ -77,7 +97,9 @@ public sealed partial class EnhanceService(SptEnhanceBackend backend, JsonUtil s
 {
     private const string StateKey = "rfGearEnhance";
     private const string Roubles = "5449016a4bdc2d6f028b456f";
-    private readonly object sync = new();
+    // Shared with the seal converter: SPT writes the records only between two changes.
+    internal static readonly object Gate = new();
+    private readonly object sync = Gate;
     private readonly Dictionary<MongoId, PendingQuote> pending = new();
 
     private sealed record PendingQuote(EnhanceQuote View, string Fingerprint, string TrackFingerprint, int Stars, PriceBasis Basis,
@@ -96,6 +118,7 @@ public sealed partial class EnhanceService(SptEnhanceBackend backend, JsonUtil s
             var profile = GetPmc(session);
             var state = State(session);
             DeliverDue(session, state);
+            Sandbox(session, profile, state, settings, new List<Item>());
             var target = GetTarget(profile, itemId);
             state.LastSettings = settings;
             // Discard metadata only for items no longer owned by this profile. Insured
@@ -364,13 +387,18 @@ public sealed partial class EnhanceService(SptEnhanceBackend backend, JsonUtil s
         lock (sync) return State(session).Receipts.LastOrDefault(r => r.QuoteId == quoteId);
     }
 
-    public EnhanceSnapshot Snapshot(MongoId session)
+    // `developer`/`launch` come from 1.4.0 clients: a locked or other launch ends the sandbox.
+    public EnhanceSnapshot Snapshot(MongoId session, bool? developer = null, string? launch = null)
     {
         lock (sync)
         {
             var profile = GetPmc(session);
             var state = State(session);
             DeliverDue(session, state);
+            if (developer != null && state.Sandbox != null && (developer == false || state.Sandbox.LaunchId != (launch ?? "")))
+                EndSandbox(session, profile, state, new List<Item>());
+            var notice = state.Notice ?? "";
+            state.Notice = null;
             // Mail attachments are included so the returned item already shows its badge.
             var owned = Tracked(session, profile);
             var inventory = InventoryItems(profile).Select(i => i.Id.ToString()).ToHashSet();
@@ -379,6 +407,7 @@ public sealed partial class EnhanceService(SptEnhanceBackend backend, JsonUtil s
                 EnsureInserts(state, id, Parts(profile, id));
             return new EnhanceSnapshot
             {
+                Notice = notice,
                 Inserts = state.Inserts.Where(p => owned.ContainsKey(p.Key) && p.Value.Ids.Count > 0)
                     .Select(p => new InsertLink { ArmorId = p.Key, PartIds = p.Value.Ids.ToArray() }).ToArray(),
                 ProfileId = profile.Id.ToString() ?? "",
@@ -473,7 +502,8 @@ public sealed partial class EnhanceService(SptEnhanceBackend backend, JsonUtil s
             var pity = 0.0;
             var receipt = new EnhanceReceipt();
             // A ticket is spent on every attempt that uses it, success or failure (design 14).
-            if (quote.UseTicket) receipt.TicketUsed = TicketsOf(state, quote.ItemId).Use(quote.NextStars);
+            // TicketStars names it: the evolution's next stars, or the ??? ticket.
+            if (quote.UseTicket) receipt.TicketUsed = TicketsOf(state, quote.ItemId).Use(quote.TicketStars);
             if (quote.Action == EnhanceAction.Transcend)
                 pity = ApplyTranscend(state, quote, success, failureMode == FailureMode.Downgrade);
             else if (quote.Action == EnhanceAction.Mythic)
@@ -497,7 +527,11 @@ public sealed partial class EnhanceService(SptEnhanceBackend backend, JsonUtil s
                     ReturnHours = quote.InsuranceHours[(int)quote.InsuranceTier] };
             else if (quote.Action == EnhanceAction.RegisterInserts) { }
             else if (quote.Action == EnhanceAction.Mystery && success)
+            {
                 state.Mythic[quote.ItemId] = new MythicRecord { Zones = zones, Candidates = quote.ZoneOptions.ToList() };
+                // Like the evolutions: an unused ??? ticket does not carry over (no refund).
+                receipt.TicketsVoided = TicketsOf(state, quote.ItemId).Void(MythicRules.MysteryTicket);
+            }
             else if (success && quote.IsEvolution)
             {
                 state.EvolvedItems.Add(quote.ItemId);
@@ -752,9 +786,28 @@ public sealed partial class EnhanceService(SptEnhanceBackend backend, JsonUtil s
         if (!profile.ExtensionData.TryGetValue(StateKey, out var raw))
             profile.ExtensionData[StateKey] = raw = new EnhanceState();
         if (raw is JsonElement json)
-            profile.ExtensionData[StateKey] = raw = serializer.Deserialize<EnhanceState>(json.GetRawText())
+        {
+            // 1.4.0 seal: records edited by hand come back as the last valid copy (StateSeal.cs).
+            var (text, verdict) = StateSeal.Open(json.GetRawText(), session.ToString(), StateSeal.StoreDirectory);
+            var loaded = serializer.Deserialize<EnhanceState>(text)
                 ?? throw Loc.Invalid("강화 기록을 읽을 수 없습니다.", "Cannot read the enhancement records.");
-        if (raw is not EnhanceState state || state.Levels == null || state.Receipts == null || state.Paths == null || state.Tracks == null)
+            if (verdict is SealVerdict.Restored or SealVerdict.Reset)
+            {
+                loaded.Notice = StateSeal.Notice(verdict);
+                RaidEndPatch.Logger?.Warning(loaded.Notice);
+            }
+            profile.ExtensionData[StateKey] = raw = loaded;
+        }
+        if (raw is not EnhanceState state)
+            throw Loc.Invalid("강화 기록 형식이 다릅니다.", "The enhancement record format is different.");
+        Normalize(state);
+        return state;
+    }
+
+    // Missing collections of older files, the grant price index and the 0.2 migration.
+    private static void Normalize(EnhanceState state)
+    {
+        if (state.Levels == null || state.Receipts == null || state.Paths == null || state.Tracks == null)
             throw Loc.Invalid("강화 기록 형식이 다릅니다.", "The enhancement record format is different.");
         state.EvolvedItems ??= new();
         state.ThirdStarItems ??= new();
@@ -785,7 +838,6 @@ public sealed partial class EnhanceService(SptEnhanceBackend backend, JsonUtil s
             state.Levels.Remove(entry.Key);
             state.Paths.Remove(entry.Key);
         }
-        return state;
     }
 
     private Item GetTarget(PmcData profile, string itemId)

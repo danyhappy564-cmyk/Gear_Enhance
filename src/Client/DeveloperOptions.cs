@@ -147,8 +147,8 @@ internal static class ConfigText
             = "Enhancement value = the base cost of reaching the current levels and stars (armor includes its registered plates). At least the minimum cost.",
 
         ["개발자 옵션 비밀번호"] = "Developer options password",
-        ["비밀번호를 넣으면 확률·비용·항상 성공·실패·능력치·보호·진화·보험 밸런스 설정이 표시되고 적용됩니다. 잠겨 있으면 기본 밸런스로 강화합니다(바꿔 둔 값은 지우지 않음). 입력 후 F12 창을 닫았다 다시 열면 표시됩니다."]
-            = "Enter the password to show and apply the chance, cost, always-succeed, failure, stat, protection, evolution and insurance balance settings. While locked, enhancing uses the default balance (changed values are kept, not deleted). Close and reopen F12 after entering it.",
+        ["비밀번호를 넣으면 확률·비용·항상 성공·실패·능력치·보호·진화·보험 밸런스 설정이 표시되고 적용됩니다. 잠겨 있으면 기본 밸런스로 강화합니다(바꿔 둔 값은 지우지 않음). 입력 후 F12 창을 닫았다 다시 열면 표시됩니다. 열어 둔 동안 한 강화는 잠그거나 게임을 다시 켜면(Alt+F4 포함) 열기 전 기록으로 되돌아갑니다(쓴 루블·재료와 파괴된 장비는 돌아오지 않음)."]
+            = "Enter the password to show and apply the chance, cost, always-succeed, failure, stat, protection, evolution and insurance balance settings. While locked, enhancing uses the default balance (changed values are kept, not deleted). Close and reopen F12 after entering it. What is enhanced while it is open goes back to the records from before it opened when you lock it or start the game again (Alt+F4 included); spent roubles, materials and destroyed gear do not come back.",
         ["강화 메뉴 사용"] = "Enable the Enhance gear menu",
         ["창고의 무기·방어구 우클릭에 장비 강화를 표시합니다. 방탄판·내피는 방어구와 함께 강화되므로 표시하지 않습니다."]
             = "Adds \"Enhance gear\" to the right-click menu of weapons and armor in the stash. Plates and inserts are enhanced with their armor, so they do not get it.",
@@ -263,8 +263,12 @@ internal static class ConfigText
         ["★★ 진화 방지권 가격 (루블)"] = "★★ evolution ticket price (roubles)",
         ["★★★ 진화 방지권 최대 (장)"] = "★★★ evolution tickets (max)",
         ["★★★ 진화 방지권 가격 (루블)"] = "★★★ evolution ticket price (roubles)",
+        ["??? 방지권 최대 (장)"] = "??? tickets (max)",
+        ["??? 방지권 가격 (루블)"] = "??? ticket price (roubles)",
+        ["★★★ 장비 하나가 평생 살 수 있는 ??? 파괴 방지권 장수입니다. 기본 1장(추가 구매 불가)."] = "??? destruction tickets one ★★★ gear can ever buy. Default 1 (no more after it).",
+        ["??? 파괴 방지권 1장 가격입니다. 쓰면 그 ??? 시도에 1장 소모, 실패해도 ★★★ 장비가 그대로 남습니다."] = "Price of one ??? ticket. Using it spends it on that ??? try; a failure keeps the ★★★ gear.",
         ["??? 성공 확률 (%)"] = "??? success chance (%)",
-        ["★★★ 장비만 도전합니다. 실패하면 장비·부착물·기록이 파괴됩니다. 재료·방지권·즉시 강화는 쓸 수 없습니다."] = "★★★ gear only. Failure destroys the gear, its attachments and records. No materials, tickets or instant.",
+        ["★★★ 장비만 도전합니다. 실패하면 장비·부착물·기록이 파괴됩니다(??? 방지권을 쓰면 유지). 재료·즉시 강화는 쓸 수 없습니다."] = "★★★ gear only. Failure destroys the gear, its attachments and records (kept with the ??? ticket). No materials or instant.",
         ["??? 비용 (루블)"] = "??? cost (roubles)",
         ["??? 한 번 도전 비용입니다."] = "Cost of one ??? attempt.",
         ["??? LEDX (개)"] = "??? LEDX (items)",
