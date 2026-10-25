@@ -56,8 +56,28 @@ internal static class ItemMarkers
             badgeFailed = true;
             try { InsuranceBadge.Hide(__instance); } catch (Exception) { }
         }
+        try
+        {
+            if (frameFailed) MythicFrame.Hide(__instance);
+            else Frame(__instance);
+        }
+        catch (Exception ex)
+        {
+            if (!frameFailed) Plugin.LogError("신화 칸 테두리 오류(테두리만 숨김): " + ex);
+            frameFailed = true;
+            try { MythicFrame.Hide(__instance); } catch (Exception) { }
+        }
     }
-    private static bool badgeFailed;
+    private static bool badgeFailed, frameFailed;
+    // The mythic gear itself; plates inside it share its name line but not the frame.
+    private static void Frame(object view)
+    {
+        var item = GameBridge.Get(view, "Item");
+        var id = GameBridge.Get(item, "Id")?.ToString();
+        if (id == null || StatPatches.Registry.MythicLevel(id) < 0 || GameBridge.Get(view, "Examined") is not true || GameBridge.IsArmorPart(item))
+            MythicFrame.Hide(view);
+        else MythicFrame.Show(view);
+    }
     private static void Mark(object __instance)
     {
         // Registered views are refreshed only after a state/receipt change, never in Update.
@@ -80,7 +100,8 @@ internal static class ItemMarkers
         if (GameBridge.Get(image, "color") is not Color color || color.g < 0.9f || color.b < 0.9f) return;
         // Same gold background used by GridItemView for native repair buffs.
         // One background color per cell: transcended gear shows cyan over its star color (approved mockup).
-        background.SetValue(__instance, StatPatches.Registry.TranscendTotal(owner) > 0 ? new Color(64f / 255, 209f / 255, 217f / 255, 56f / 255)
+        background.SetValue(__instance, StatPatches.Registry.MythicLevel(owner) >= 0 ? new Color(1f, 106f / 255, 213f / 255, 60f / 255)
+            : StatPatches.Registry.TranscendTotal(owner) > 0 ? new Color(64f / 255, 209f / 255, 217f / 255, 56f / 255)
             : StatPatches.Registry.StarLevel(owner) >= 3
             ? new Color(232f / 255, 70f / 255, 70f / 255, 65f / 255)
             : StatPatches.Registry.IsEvolved(owner) ? new Color(163f / 255, 103f / 255, 232f / 255, 65f / 255)
@@ -96,9 +117,15 @@ internal static class ItemMarkers
             var id = GameBridge.Get(item, "Id")?.ToString();
             var owner = id == null ? null : StatPatches.BadgeOwner(item, id);
             var badge = owner == null ? "" : StatPatches.Registry.Badge(owner);
-            if (badge.Length > 0) __result += " <color=" + StarEvolution.ColorHex(StatPatches.Registry.StarLevel(owner)) + ">" + badge + "</color>";
-            var transcend = badge.Length == 0 ? 0 : StatPatches.Registry.TranscendTotal(owner);
-            if (transcend > 0) __result += " <color=#40D1D9>" + Loc.L("초월 ", "Transcend ") + transcend + "</color>";
+            if (badge.Length == 0) return;
+            var mythic = StatPatches.Registry.MythicLevel(owner);
+            __result += " <color=" + (mythic >= 0 ? "#FF6AD5" : StarEvolution.ColorHex(StatPatches.Registry.StarLevel(owner))) + ">" + badge + "</color>";
+            // Design 8: the line under the stars, mythic level first, then transcendence.
+            var transcend = StatPatches.Registry.TranscendTotal(owner);
+            var below = new List<string>();
+            if (mythic >= 0) below.Add("<color=#FF6AD5>" + Loc.L($"{mythic}단계", $"Level {mythic}") + "</color>");
+            if (transcend > 0) below.Add("<color=#40D1D9>" + (mythic >= 0 ? Loc.L($"초월 {transcend}", $"Transcend {transcend}") : Loc.L($"초월 {transcend}단계", $"Transcend {transcend}")) + "</color>");
+            if (below.Count > 0) __result += "\n" + string.Join(" · ", below);
         }
         catch (Exception ex) { Report(ex); }
     }
@@ -111,7 +138,11 @@ internal static class ItemMarkers
             InsuranceBadge.Hide(view);
         else InsuranceBadge.Show(view, StatPatches.Registry.Coverage(id));
     }
-    private static void Kill(object __instance) => views.Remove(__instance);
+    private static void Kill(object __instance)
+    {
+        views.Remove(__instance);
+        try { MythicFrame.Hide(__instance); } catch (Exception) { }
+    }
     internal static void Refresh(string itemId)
     {
         if (string.IsNullOrEmpty(itemId)) return;
@@ -146,5 +177,5 @@ internal static class ItemMarkers
         }
         return false;
     }
-    internal static void Clear() { views.Clear(); unknown.Clear(); }
+    internal static void Clear() { views.Clear(); unknown.Clear(); MythicFrame.Clear(); }
 }

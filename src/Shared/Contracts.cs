@@ -135,8 +135,10 @@ public sealed class EnhanceQuote
     public long DestructionProtectionFee { get; set; }
     public long DowngradeProtectionFee { get; set; }
     public int ProtectionCost => Cost - BaseCost - BoostCost - InsertSurcharge - InstantFee;
-    // 1.4.0 chance materials (at most two kinds) and their rouble price.
+    // 1.4.0 chance materials (at most two kinds) and their rouble price. BoostOwned is the
+    // usable stock of every kind (indexed by BoostMaterial), chosen or not, for the window.
     public BoostLine[] Boost { get; set; } = Array.Empty<BoostLine>();
+    public long[] BoostOwned { get; set; } = new long[3];
     public int BoostCost { get; set; }
     public double BaseSuccessPercent { get; set; }
     public double BoostPoints => SuccessPercent - BaseSuccessPercent;

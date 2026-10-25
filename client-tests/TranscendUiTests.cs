@@ -73,25 +73,40 @@ public sealed class TranscendUiTests : IDisposable
         Assert.Equal("3-star transcendence dropped to level 2 · nothing destroyed · pity +9%p", ResultText.Detail(dropped));
     }
 
-    [Fact]
-    public void Window_text_has_an_english_pair_and_the_quote_names_the_track()
+    [Theory]
+    [InlineData("Plugin.View.cs")]
+    [InlineData("Plugin.Flow.cs")]
+    [InlineData("Plugin.TabUpgrade.cs")]
+    [InlineData("Plugin.TabInfo.cs")]
+    [InlineData("Plugin.Popups.cs")]
+    [InlineData("Plugin.Status.cs")]
+    [InlineData("StatSheet.cs")]
+    public void Window_text_has_an_english_pair(string file)
     {
-        var view = Source("Plugin.TranscendView.cs");
-        // Every Korean literal in the window goes through Loc.L with an English partner.
+        var view = Source(file);
+        // Every Korean literal in the 1.4.0 window goes through Loc.L with an English partner.
         foreach (Match line in Regex.Matches(view, "^.*[가-힣].*$", RegexOptions.Multiline))
         {
             var text = line.Value.Trim();
-            // Log lines stay Korean like the rest of the mod's logs.
-            if (text.StartsWith("//") || text.Contains("Logger.Log")) continue;
-            Assert.True(text.Contains("Loc.L(") || text.StartsWith("$\""), text);
+            // Log lines stay Korean like the rest of the mod's logs; the language button names itself.
+            // Font names are system names, not window text.
+            if (text.StartsWith("//") || text.Contains("Logger.Log") || text.Contains("LogDetailed(") || text.Contains("\"한국어\"")
+                || text.Contains("\"Malgun Gothic\"")) continue;
+            Assert.True(text.Contains("Loc.L(") || text.Contains("Loc.Invalid(") || text.Contains("Loc.Argument(") || text.StartsWith("$\""), text);
         }
-        var plugin = Source("Plugin.cs");
-        Assert.Contains("Track = transcendMode ? transcendTrack : TranscendTrack.None", plugin);
-        Assert.Contains("Action = transcendMode ? EnhanceAction.Transcend", plugin);
+    }
+
+    [Fact]
+    public void The_quote_names_the_track_and_the_plates_follow_the_server()
+    {
+        var flow = Source("Plugin.Flow.cs");
+        Assert.Contains("Track = action == EnhanceAction.Transcend ? transcendTrack : TranscendTrack.None", flow);
+        Assert.Contains("UiTab.Transcend => EnhanceAction.Transcend", flow);
+        // ??? never sends chance materials; the server refuses them anyway.
+        Assert.Contains("Boost = action == EnhanceAction.Mystery ? Array.Empty<BoostChoice>() : BoostRequest()", flow);
         // The plate re-registration follows the server's CanRegister (it includes DurabilityPending).
-        var insurance = Source("Plugin.Insurance.cs");
-        Assert.Contains("!shown.CanRegister", insurance);
-        Assert.Contains("view?.CanRegister == true", insurance);
+        Assert.Contains("!shown.CanRegister", Source("Plugin.Insurance.cs"));
+        Assert.Contains("view?.CanRegister == true", Source("Plugin.TabInfo.cs"));
         var markers = Source("ItemMarkers.cs");
         Assert.Contains("TranscendTotal(owner) > 0", markers);
     }

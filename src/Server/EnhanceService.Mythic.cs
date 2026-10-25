@@ -118,6 +118,14 @@ public sealed partial class EnhanceService
     // limit and the price are the server's. Stock is counted again at execution.
     private void ApplyBoost(EnhanceQuote quote, PmcData profile, BoostChoice[]? choices, BoostTuning tuning)
     {
+        // Stock of every kind, minus what the attempt's own materials already take.
+        long Usable(BoostMaterial kind)
+        {
+            var templates = SuccessBoost.Templates(kind);
+            var reserved = quote.Materials?.Where(m => templates.Contains(m.Template)).Sum(m => (long)m.Count) ?? 0;
+            return Math.Max(0, Materials(profile, templates).Sum(Count) - reserved);
+        }
+        if (quote.BoostAvailable) foreach (var kind in SuccessBoost.Kinds) quote.BoostOwned[(int)kind] = Usable(kind);
         var chosen = (choices ?? Array.Empty<BoostChoice>()).Where(c => c != null && c.Count != 0).ToArray();
         if (chosen.Length == 0) return;
         if (quote.Action == EnhanceAction.Mystery)
@@ -135,13 +143,10 @@ public sealed partial class EnhanceService
             var max = SuccessBoost.MaxCount(choice.Kind, tuning);
             if (choice.Count < 1 || choice.Count > max)
                 throw Loc.Invalid($"성공률 재료 개수가 올바르지 않습니다(최대 {max}개).", $"Invalid chance material count (at most {max}).");
-            var templates = SuccessBoost.Templates(choice.Kind);
-            var reserved = quote.Materials?.Where(m => templates.Contains(m.Template)).Sum(m => (long)m.Count) ?? 0;
             var line = new BoostLine
             {
                 Kind = choice.Kind, Count = choice.Count, MaxCount = max, Points = SuccessBoost.Points(choice.Kind, choice.Count, tuning),
-                Roubles = (long)choice.Count * SuccessBoost.RoublesEach(choice.Kind, tuning),
-                Owned = Math.Max(0, Materials(profile, templates).Sum(Count) - reserved)
+                Roubles = (long)choice.Count * SuccessBoost.RoublesEach(choice.Kind, tuning), Owned = quote.BoostOwned[(int)choice.Kind]
             };
             roubles += line.Roubles;
             lines.Add(line);

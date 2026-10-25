@@ -37,9 +37,7 @@ public sealed partial class Plugin : BaseUnityPlugin
     private EnhancePath selectedPath;
     private EnhanceQuote quote, preview;
     private bool visible, busy, destructionConfirmed, uncertain, weapon, firstQuote;
-    private bool protectDestruction, protectDowngrade, chanceBoost;
-    private bool evolutionMode;
-    private int evolutionTargetStars = 2;
+    private bool protectDestruction, protectDowngrade;
     private int generation, syncGeneration;
     private string message = "";
     private long repaintCount, repaintTicks, maximumRepaintTicks;
@@ -294,6 +292,8 @@ public sealed partial class Plugin : BaseUnityPlugin
     {
         try { StatPatches.Registry.ConfigureTranscend(TranscendTuning()); }
         catch (System.Exception ex) { Logger.LogWarning("Gear Enhance: F12 초월 설정을 적용하지 못해 이전 값을 씁니다: " + ex.Message); }
+        try { StatPatches.Registry.ConfigureMythic(MythicTuning()); }
+        catch (System.Exception ex) { Logger.LogWarning("Gear Enhance: F12 신화 설정을 적용하지 못해 이전 값을 씁니다: " + ex.Message); }
     }
 
     private static void MenuPostfix(object __instance, object itemContext, object __result)
@@ -313,14 +313,14 @@ public sealed partial class Plugin : BaseUnityPlugin
 
     private void Open(object context, object item)
     {
-        if (busy || resultVisible) return;
+        if (busy || popup != PopupKind.None) return;
         try
         {
             session = GameBridge.Get(context, "ClientSession") ?? throw Loc.Invalid("PMC 세션이 없습니다.", "No PMC session.");
             uiContext = context; selectedItem = item;
             itemId = GameBridge.Get(item, "Id")?.ToString() ?? throw Loc.Invalid("아이템 ID가 없습니다.", "No item ID.");
             weapon = GameBridge.IsWeapon(item);
-            evolutionMode = transcendMode = false;
+            tab = UiTab.Enhance; skipRiskConfirm = false; midScroll = Vector2.zero;
             selectedPath = StatPatches.Registry.Find(itemId)?.Path ?? (weapon ? EnhancePath.Recoil : EnhancePath.ArmorDurability);
             itemName = GameBridge.Get(item, "ShortName")?.ToString() ?? itemId;
             var manager = GameBridge.RuntimeType("EFT.LocalizationManager");
@@ -331,7 +331,9 @@ public sealed partial class Plugin : BaseUnityPlugin
                 .Invoke(null, new[] { item, (object)1, false });
             CreateBlocker(); ResetWindow();
             visible = true; PlayInteraction(UiInteraction.Open); quote = null; preview = null; firstQuote = true; destructionConfirmed = false; generation++;
-            protectDestruction = protectDowngrade = chanceBoost = false;
+            protectDestruction = protectDowngrade = useTicket = false;
+            for (var kind = 0; kind < boostOn.Length; kind++) boostOn[kind] = false;
+            boostDirtyAt = -1; ReplayMotion();
             if (uncertain) message = UncertainNotice;
             else RefreshQuote();
         }
@@ -369,167 +371,6 @@ public sealed partial class Plugin : BaseUnityPlugin
             ItemMarkers.Refresh(itemId);
         }
         catch (Exception ex) { Logger.LogWarning("강화 능력치 재계산: " + ex.GetBaseException().Message); }
-    }
-
-    private void RefreshQuote() => LoadQuote(null);
-    private async void LoadQuote(string resultMessage)
-    {
-        if (busy || uncertain || itemId == null) return;
-        busy = true; quote = null; message = resultMessage ?? Loc.L("견적을 불러오는 중입니다…", "Loading quote…");
-        var current = generation;
-        try
-        {
-            await GameBridge.Flush(session);
-            if (firstQuote)
-            {
-                if (!weapon) await ApplyInserts(session);
-                if (!await SyncEffects(session))
-                    throw Loc.Invalid("강화 기록을 동기화하지 못했습니다. 서버 모드 버전과 연결을 확인하고 다시 불러와 주세요.",
-                        "Could not sync enhancement records. Check the server mod version and connection, then reload.");
-                selectedPath = StatPatches.Registry.Find(itemId)?.Path ?? selectedPath;
-                firstQuote = false;
-            }
-            if (evolutionMode && StatPatches.Registry.StarLevel(itemId) >= evolutionTargetStars)
-            {
-                preview = null;
-                message = resultMessage ?? StarEvolution.Stars(evolutionTargetStars) + Loc.L(" 스타 강화 진화를 완료했습니다.", " star evolution complete.");
-                return;
-            }
-            if (transcendMode && StatPatches.Registry.TranscendLevel(itemId, transcendTrack) >= TranscendRules.MaxLevel)
-            {
-                preview = null;
-                message = resultMessage ?? Loc.L("이 초월은 최대 단계입니다. 다른 탭을 골라 주세요.", "This transcendence track is at the maximum level. Choose the other tab.");
-                return;
-            }
-            if (!evolutionMode && !transcendMode && (StatPatches.Registry.Find(itemId, selectedPath)?.Level ?? 0) >= maxLevel.Value)
-            {
-                preview = null;
-                message = resultMessage ?? Loc.L("이 항목은 최대 단계입니다. 다른 항목을 선택해 주세요.", "This track is at the maximum level. Choose another track.");
-                return;
-            }
-            var response = await GameBridge.WithTimeout(GameBridge.Query<EnhanceQuote>(
-                "/rf/gear-enhance/quote", new { ProtocolVersion = EnhanceProtocol.Version, ItemId = itemId, Path = selectedPath, Settings = Settings(),
-                    Protection = new EnhanceProtection { Destruction = protectDestruction, Downgrade = protectDowngrade }, Boost = BoostRequest(),
-                    Action = transcendMode ? EnhanceAction.Transcend : evolutionMode ? evolutionTargetStars == 3 ? EnhanceAction.EvolveThird : EnhanceAction.Evolve : EnhanceAction.Upgrade,
-                    Track = transcendMode ? transcendTrack : TranscendTrack.None }));
-            if (current != generation) { message = SettingsChanged; return; }
-            quote = preview = response; weapon = response.IsWeapon;
-            if (response.Action == EnhanceAction.Transcend) transcendAutomatic = response.Automatic; message = resultMessage ?? ""; destructionConfirmed = false;
-            chanceBoost = response.Boost.Length > 0;
-            protectDestruction = response.Protection.Destruction; protectDowngrade = response.Protection.Downgrade;
-        }
-        catch (Exception ex) { message = ex.GetBaseException().Message; Logger.LogWarning(ex); }
-        finally { busy = false; }
-    }
-
-    private void SelectPath(EnhancePath path)
-    {
-        if (busy || resultVisible || evolutionMode || transcendMode || selectedPath == path) return;
-        selectedPath = path; quote = preview = null; generation++; RefreshQuote();
-    }
-
-    private void Execute()
-    {
-        if (busy || resultVisible || quote == null || uncertain) return;
-        if (attemptTimeline.Active) return;
-        // Transcendence reuses the evolution charge sound and its length.
-        var grand = evolutionMode || transcendMode;
-        var duration = grand ? evolutionAttemptDuration : attemptDuration;
-        if (quote.ExpiresWithin(DateTimeOffset.UtcNow.ToUnixTimeSeconds(), duration + QuoteSubmitMargin))
-        {
-            LoadQuote(Loc.L("견적 유효 시간이 얼마 남지 않아 새로 불러왔습니다. 비용을 확인하고 다시 눌러 주세요.",
-                "The quote was about to expire, so it was reloaded. Check the cost and press again."));
-            return;
-        }
-        var started = Clock;
-        attemptUsesAudioClock = false;
-        if (soundsEnabled.Value && providedSounds.Value && feedbackAudio != null && !providedFeedbackUnavailable)
-        {
-            try { started = feedbackAudio.StartAttempt(soundVolume.Value / 100, grand); attemptUsesAudioClock = true; }
-            catch (Exception ex) { ProvidedAudioFailed(ex); }
-        }
-        if (!soundsEnabled.Value) LogDetailed("강화 충전음 생략: F12 효과음 OFF");
-        if (!attemptUsesAudioClock && soundsEnabled.Value) PlayFeedback(grand ? FeedbackCue.EvolutionAttempt : FeedbackCue.Attempt, false);
-        if (!attemptTimeline.Begin(started, duration)) return;
-        attemptWallStart = Clock;
-        pendingAttempt = quote; pendingDestructionConfirmation = destructionConfirmed; pendingGeneration = generation;
-        busy = true; quote = null; message = transcendMode ? Loc.L("초월 진행 중…", "Transcending…") : Loc.L("강화 진행 중…", "Enhancing…");
-    }
-
-    // Until the 1.4.0 tab window (stage 2) the old checkbox buys one bitcoin (+5%p).
-    private BoostChoice[] BoostRequest() => chanceBoost
-        ? new[] { new BoostChoice { Kind = BoostMaterial.Bitcoin, Count = 1 } } : Array.Empty<BoostChoice>();
-    private static long OwnedBitcoins(EnhanceQuote view) => view?.Boost?.Length > 0 ? view.Boost[0].Owned : 0;
-
-    private void SetChanceBoost(bool enabled)
-    {
-        if (busy || resultVisible || uncertain) return;
-        chanceBoost = enabled; generation++; quote = null; destructionConfirmed = false;
-        RefreshQuote();
-    }
-
-    private void SetProtection(bool destruction, bool enabled)
-    {
-        if (busy || resultVisible || evolutionMode || uncertain) return;
-        if (destruction) protectDestruction = enabled; else protectDowngrade = enabled;
-        generation++; quote = null; destructionConfirmed = false;
-        RefreshQuote();
-    }
-
-    private async void SubmitAttempt(EnhanceQuote attempt, bool confirmed, int expectedGeneration)
-    {
-        var submitted = false;
-        var completed = false;
-        try
-        {
-            if (expectedGeneration != generation || !visible || !GameBridge.InStash(uiContext))
-                throw Loc.Invalid("강화 준비 중 설정이나 화면이 바뀌었습니다. 견적을 다시 불러와 주세요.", "Settings or screen changed while preparing. Reload the quote.");
-            await GameBridge.Flush(session);
-            if (expectedGeneration != generation || !visible || !GameBridge.InStash(uiContext))
-                throw Loc.Invalid("강화 준비가 취소됐습니다. 견적을 다시 불러와 주세요.", "Preparation was cancelled. Reload the quote.");
-            message = Loc.L("강화 결과를 확인하는 중입니다…", "Checking the result…");
-            submitted = true;
-            var ok = await GameBridge.WithTimeout(GameBridge.Execute(session, attempt.QuoteId, confirmed), 30000);
-            if (!ok) { message = Loc.L("강화가 거절됐습니다. 서버 오류 안내를 확인하고 견적을 다시 불러와 주세요.", "The enhancement was rejected. Check the server error notice and reload the quote."); return; }
-            var receipt = await GameBridge.WithTimeout(GameBridge.Query<EnhanceReceipt>("/rf/gear-enhance/receipt", new { ProtocolVersion = EnhanceProtocol.Version, attempt.QuoteId }));
-            message = receipt.Success
-                ? Loc.L($"{(attempt.BindLegacy ? "기존 단계 복원 완료" : "강화 성공")}! {EnhanceEffects.Name(receipt.Path)} +{receipt.Level} · {receipt.Paid:N0} ₽ 소모",
-                    $"{(attempt.BindLegacy ? "Old level restored" : "Enhanced")}! {EnhanceEffects.Name(receipt.Path)} +{receipt.Level} · spent {receipt.Paid:N0} ₽")
-                : receipt.FailureMode == FailureMode.Downgrade
-                    ? Loc.L($"강화 실패 · {EnhanceEffects.Name(receipt.Path)} +{receipt.Level}로 하락 · {receipt.Paid:N0} ₽ 소모",
-                        $"Failed · {EnhanceEffects.Name(receipt.Path)} dropped to +{receipt.Level} · spent {receipt.Paid:N0} ₽")
-                    : Loc.L($"강화 실패 · {receipt.Paid:N0} ₽ 소모", $"Failed · spent {receipt.Paid:N0} ₽") + "\n" + FailureText(receipt.FailureMode);
-            if (receipt.Success && receipt.IsEvolution) message = Loc.L($"스타 강화 진화 성공! {StarEvolution.Stars(receipt.StarLevel)} {StarEvolution.ColorName(receipt.StarLevel)} 표식 · 진화 보너스 적용",
-                $"Star evolution succeeded! {StarEvolution.Stars(receipt.StarLevel)} {StarEvolution.ColorName(receipt.StarLevel)} marker · evolution bonus applied");
-            else if (receipt.Transcend != TranscendTrack.None)
-                message = ResultText.Title(receipt, false) + " · " + ResultText.Detail(receipt) + Loc.L($" · {receipt.Paid:N0} ₽ 소모", $" · spent {receipt.Paid:N0} ₽");
-            else if (receipt.Success && attempt.CompletesOnSuccess) message += Loc.L(" · 1차 스타 전 항목 완성! 진화 창을 열 수 있습니다.", " · All 1st star tracks maxed! Star evolution is open.");
-            StatPatches.Registry.ApplyReceipt(receipt, GameBridge.ProfileId(session));
-            completed = true;
-            ShowResultFeedback(receipt);
-            QueueFeedback(GameFeedback.Result(receipt, (receipt.IsEvolution || receipt.Transcend != TranscendTrack.None) && receipt.Success));
-            RefreshGameplay();
-            await SyncEffects(session);
-            if (!receipt.Success && receipt.FailureMode == FailureMode.Destroy) { itemId = null; selectedItem = null; itemIcon = null; preview = null; }
-        }
-        catch (Exception ex)
-        {
-            uncertain = submitted;
-            message = ex.GetBaseException().Message + (submitted
-                ? "\n" + UncertainNotice
-                : Loc.L("\n아직 강화를 전송하지 않았습니다.", "\nThe enhancement was not sent yet."));
-            Logger.LogError(ex);
-        }
-        finally
-        {
-            busy = false; destructionConfirmed = false;
-            attemptTimeline.Reset(); pendingAttempt = null;
-            if (completed && itemId != null && !uncertain)
-            {
-                var result = message;
-                main.Enqueue(() => LoadQuote(result));
-            }
-        }
     }
 
     private void PlayInteraction(UiInteraction cue)
@@ -595,6 +436,10 @@ public sealed partial class Plugin : BaseUnityPlugin
         for (var n = 0; n < 32 && main.TryDequeue(out var action); n++) action();
         if (syncWanted && !visible && !busy && !backgroundSyncing && Clock >= nextBackgroundSync) BackgroundSync();
         TickInserts();
+        TickBoost();
+        if (MythicFrame.Count > 0)
+            try { MythicFrame.Tick(Clock, mythicShimmer.Value && !reducedMotion.Value); }
+            catch (Exception ex) { MythicFrame.Clear(); Logger.LogWarning("신화 칸 반짝임 중단: " + ex.GetBaseException().Message); }
         try { feedbackAudio?.Tick(); }
         catch (Exception ex) { ProvidedAudioFailed(ex); }
         if (pendingAttempt != null && (attemptTimeline.TryComplete(AttemptClock) || AudioClockStalled() && attemptTimeline.ForceComplete()))
@@ -642,13 +487,13 @@ public sealed partial class Plugin : BaseUnityPlugin
             Logger.LogInfo($"강화 창 UI CPU: Repaint {repaintCount}회, 평균 {repaintTicks * 1000.0 / System.Diagnostics.Stopwatch.Frequency / repaintCount:0.00}ms, 최대 {maximumRepaintTicks * 1000.0 / System.Diagnostics.Stopwatch.Frequency:0.00}ms (GPU/FPS 측정 아님)");
         repaintCount = repaintTicks = maximumRepaintTicks = 0;
         visible = false; quote = preview = null; session = uiContext = selectedItem = itemIcon = null; generation++;
-        insuranceVisible = false; insuranceQuote = null; insuranceMessage = "";
+        insuranceQuote = null; insuranceMessage = "";
         itemId = null;
         attemptTimeline.Reset(); pendingAttempt = null;
         feedbackAudio?.Stop();
-        resultSprite = null; resultStarted = -100;
-        resultVisible = false; resultReceipt = null;
-        evolutionMode = transcendMode = false;
+        resultSprite = null; resultReceipt = null; look = null;
+        popup = PopupKind.None; popupQuote = null; tab = UiTab.Enhance;
+        skipRiskConfirm = false; boostDirtyAt = -1; statKey = null;
         if (blocker != null) Destroy(blocker);
         blocker = null;
     }

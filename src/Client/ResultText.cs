@@ -23,6 +23,17 @@ internal static class ResultText
         : receipt.FailureMode == FailureMode.ZeroDurability ? Loc.L("현재 내구도 0 · 장비와 강화 단계는 유지됩니다.", "Current durability 0 · gear and levels kept.")
         : Loc.L("비용만 소모 · 장비와 강화 단계는 유지됩니다.", "Fee only · gear and levels kept.");
 
+    // One status line under the window after an attempt (the popup shows the details).
+    internal static string Status(EnhanceReceipt receipt) => receipt.Action switch
+    {
+        EnhanceAction.Mystery => receipt.Success ? Loc.L("신화 달성!", "Mythic reached!") : Loc.L("??? 실패 · 장비 파괴", "??? failed · gear destroyed"),
+        EnhanceAction.Mythic => receipt.Success ? Loc.L($"신화 {receipt.Level}단계 달성", $"Mythic level {receipt.Level}")
+            : receipt.FailureMode == FailureMode.Downgrade ? Loc.L($"신화 {receipt.Level}단계로 하락", $"Mythic dropped to {receipt.Level}")
+            : Loc.L($"신화 강화 실패 · 천장 +{receipt.Pity:0.##}%p", $"Mythic failed · pity +{receipt.Pity:0.##}%p"),
+        EnhanceAction.Reroll => Loc.L("추가 부위를 다시 뽑았습니다", "Extra zone rerolled"),
+        _ => Title(receipt, receipt.IsEvolution && receipt.Success) + " · " + Detail(receipt)
+    } + Loc.L($" · {receipt.Paid:N0} ₽ 소모", $" · spent {receipt.Paid:N0} ₽");
+
     // 1.3.0 transcendence: never destroys; a failure keeps or drops one level and raises pity.
     internal static string Track(TranscendTrack track) => track == TranscendTrack.Third ? Loc.L("3성 초월", "3-star transcendence") : Loc.L("2성 초월", "2-star transcendence");
     private static string TranscendTitle(EnhanceReceipt receipt) => receipt.Success ? Loc.L("초월 성공!", "Transcended!")
@@ -64,4 +75,29 @@ internal static class TranscendText
                 parts.Add(MaterialName(material.Template) + Loc.L($" {material.Count - material.Owned:N0}개", $" ×{material.Count - material.Owned:N0}"));
         return string.Join(", ", parts);
     }
+}
+
+// 1.4.0 mythic window and stash text without Unity types (testable).
+internal static class MythicText
+{
+    // Body and head zone names (MythicRules zones, BodyPartColliderType).
+    internal static string ZoneName(string zone) => zone switch
+    {
+        "NeckFront" => Loc.L("목 앞", "Front of neck"),
+        "NeckBack" => Loc.L("목 뒤", "Back of neck"),
+        "LeftUpperArm" => Loc.L("위팔 (왼쪽)", "Left upper arm"),
+        "RightUpperArm" => Loc.L("위팔 (오른쪽)", "Right upper arm"),
+        "LeftForearm" => Loc.L("아래팔 (왼쪽)", "Left forearm"),
+        "RightForearm" => Loc.L("아래팔 (오른쪽)", "Right forearm"),
+        "Pelvis" => Loc.L("사타구니", "Groin"),
+        "PelvisBack" => Loc.L("엉덩이", "Buttocks"),
+        "LeftThigh" => Loc.L("허벅지 (왼쪽)", "Left thigh"),
+        "RightThigh" => Loc.L("허벅지 (오른쪽)", "Right thigh"),
+        "ParietalHead" => Loc.L("정수리", "Top of head"),
+        "BackHead" => Loc.L("뒤통수", "Back of head"),
+        "Ears" => Loc.L("귀", "Ears"),
+        "Eyes" => Loc.L("눈", "Eyes"),
+        "Jaw" => Loc.L("턱", "Jaw"),
+        _ => zone ?? ""
+    };
 }

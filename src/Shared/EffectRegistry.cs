@@ -18,6 +18,10 @@ public sealed class EffectRegistry
     private volatile Dictionary<string, double> grants = new Dictionary<string, double>();
     private volatile Dictionary<string, (InsuranceTier Tier, double Percent)> coverage = new Dictionary<string, (InsuranceTier, double)>();
     private volatile TranscendTuning transcendTuning = new TranscendTuning();
+    // 1.4.0: mythic level and added zones per gear, and insured gear waiting to be mailed back.
+    private volatile Dictionary<string, (int Level, string[] Zones)> mythic = new Dictionary<string, (int, string[])>();
+    private volatile ReturnLink[] returns = Array.Empty<ReturnLink>();
+    private volatile MythicTuning mythicTuning = new MythicTuning();
     private int version;
     public string ProfileId { get; private set; } = "";
     // Bumped on every change; per-weapon caches compare it instead of re-reading ids.
@@ -25,7 +29,19 @@ public sealed class EffectRegistry
     // Hot hooks leave at once while nothing is transcended or granted.
     public bool HasTranscend => transcend.Count > 0;
     public bool HasGrants => grants.Count > 0;
+    public bool HasMythic => mythic.Count > 0;
     public TranscendTuning TranscendTuning => transcendTuning;
+    public MythicTuning MythicTuning => mythicTuning;
+    // -1 when the gear is not mythic.
+    public int MythicLevel(string id) => mythic.TryGetValue(id, out var held) ? held.Level : -1;
+    public string[] MythicZones(string id) => mythic.TryGetValue(id, out var held) ? held.Zones : Array.Empty<string>();
+    public ReturnLink[] Returns => returns;
+    public void ConfigureMythic(MythicTuning value)
+    {
+        value.Validate();
+        mythicTuning = value;
+        Interlocked.Increment(ref version);
+    }
     public void Clear()
     {
         records = new Dictionary<string, Dictionary<EnhancePath, EnhanceRecord>>();
@@ -33,6 +49,8 @@ public sealed class EffectRegistry
         transcend = new Dictionary<string, (int, int)>();
         grants = new Dictionary<string, double>();
         coverage = new Dictionary<string, (InsuranceTier, double)>();
+        mythic = new Dictionary<string, (int, string[])>();
+        returns = Array.Empty<ReturnLink>();
         ProfileId = "";
         Interlocked.Increment(ref version);
     }
@@ -79,7 +97,12 @@ public sealed class EffectRegistry
         foreach (var link in snapshot.Coverage ?? Array.Empty<CoverageLink>())
             if (!string.IsNullOrEmpty(link?.ItemId) && link!.Tier != InsuranceTier.None && Enum.IsDefined(typeof(InsuranceTier), link.Tier))
                 insured[link.ItemId] = (link.Tier, double.IsFinite(link.Percent) ? Math.Max(0, Math.Min(100, link.Percent)) : 0);
-        records = next; inserts = links; transcend = levels; grants = added; coverage = insured; ProfileId = expectedProfile;
+        var mythical = new Dictionary<string, (int, string[])>(StringComparer.Ordinal);
+        foreach (var link in snapshot.Mythic ?? Array.Empty<MythicLink>())
+            if (!string.IsNullOrEmpty(link?.ItemId) && link!.Level >= 0)
+                mythical[link.ItemId] = (MythicRules.Clamp(link.Level), link.Zones ?? Array.Empty<string>());
+        records = next; inserts = links; transcend = levels; grants = added; coverage = insured; mythic = mythical;
+        returns = snapshot.Returns ?? Array.Empty<ReturnLink>(); ProfileId = expectedProfile;
         Interlocked.Increment(ref version);
     }
     public EnhanceRecord? Find(string id, EnhancePath path) =>
@@ -100,8 +123,9 @@ public sealed class EffectRegistry
     }
     public string Badge(string id)
     {
+        // 1.4.0 (design 8): the total only while at one star; stars alone once evolved; ✦ Mythic instead of stars.
         var total = TotalLevel(id);
-        return total > 0 ? (IsEvolved(id) ? $"{StarEvolution.Stars(StarLevel(id))} {Loc.L("진화", "Evolved")} +{total}" : $"★ +{total}") : "";
+        return total <= 0 ? "" : MythicLevel(id) >= 0 ? Loc.L("✦ 신화", "✦ Mythic") : IsEvolved(id) ? StarEvolution.Stars(StarLevel(id)) : $"★ +{total}";
     }
     public bool IsEvolved(string id) => StarLevel(id) >= 2;
     public int StarLevel(string id)
@@ -123,7 +147,24 @@ public sealed class EffectRegistry
         if (string.IsNullOrEmpty(expectedProfile)) throw Loc.Invalid("PMC 프로필이 없습니다.", "No PMC profile.");
         // Insurance and registration never change levels. A transcendence receipt carries
         // the track's level in Level and names some enhancement Path: never a track level.
-        if (receipt.Action == EnhanceAction.Insure || receipt.Action == EnhanceAction.RegisterInserts) return;
+        if (receipt.Action == EnhanceAction.Insure || receipt.Action == EnhanceAction.RegisterInserts || receipt.Action == EnhanceAction.BuyTicket) return;
+        // 1.4.0 ???, mythic and reroll receipts carry the mythic level in MythicLevel; never a track level.
+        if (receipt.Action == EnhanceAction.Mystery || receipt.Action == EnhanceAction.Mythic || receipt.Action == EnhanceAction.Reroll)
+        {
+            if (ProfileId != expectedProfile) return;
+            var held = new Dictionary<string, (int, string[])>(mythic, StringComparer.Ordinal);
+            if (receipt.Action == EnhanceAction.Mystery && !receipt.Success && receipt.FailureMode == FailureMode.Destroy)
+            {
+                held.Remove(receipt.ItemId);
+                var left = new Dictionary<string, Dictionary<EnhancePath, EnhanceRecord>>(records, StringComparer.Ordinal);
+                left.Remove(receipt.ItemId);
+                records = left;
+            }
+            else if (receipt.MythicLevel >= 0) held[receipt.ItemId] = (MythicRules.Clamp(receipt.MythicLevel), receipt.Zones ?? Array.Empty<string>());
+            mythic = held;
+            Interlocked.Increment(ref version);
+            return;
+        }
         if (receipt.Action == EnhanceAction.Transcend)
         {
             if (ProfileId != expectedProfile || !TranscendRules.Valid(receipt.Transcend)) return;

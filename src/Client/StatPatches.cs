@@ -11,6 +11,8 @@ namespace GearEnhance;
 internal static class StatPatches
 {
     internal static readonly EffectRegistry Registry = new EffectRegistry();
+    // 1.4.0 status panel: true while it reads the game's own values (every hook returns at once).
+    [ThreadStatic] internal static bool Raw;
 
     internal static void Install(Harmony harmony)
     {
@@ -93,21 +95,25 @@ internal static class StatPatches
 
     private static void Recoil(object __instance, ref float __result)
     {
+        if (Raw) return;
         var amount = Amount(__instance, EnhancePath.Recoil);
         if (amount > 0) __result = EnhanceEffects.RecoilDelta(__result, amount);
     }
     private static void Ergonomics(object __instance, ref float __result)
     {
+        if (Raw) return;
         var amount = Amount(__instance, EnhancePath.Ergonomics);
         if (amount > 0) __result = EnhanceEffects.Ergonomics(__result, amount);
     }
     private static void Precision(object __instance, ref float __result)
     {
+        if (Raw) return;
         var amount = Amount(__instance, EnhancePath.Precision);
         if (amount > 0) __result = EnhanceEffects.Reduce(__result, amount);
     }
     private static void Mobility(object __instance, ref float __result)
     {
+        if (Raw) return;
         var amount = Amount(GameBridge.Get(__instance, "Item"), EnhancePath.Mobility, true);
         if (amount > 0 && __result < 0) __result = EnhanceEffects.Reduce(__result, amount);
     }

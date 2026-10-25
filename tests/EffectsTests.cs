@@ -103,14 +103,14 @@ public sealed class EffectsTests
         Assert.Equal(30, registry.Amount("gun", EnhancePath.Recoil));
         Assert.Equal(20, registry.Amount("gun", EnhancePath.Ergonomics));
         Assert.Equal(20, registry.Amount("gun", EnhancePath.Precision));
-        Assert.Equal("★★ 진화 +30", registry.Badge("gun"));
+        Assert.Equal("★★", registry.Badge("gun"));
         registry.ApplyReceipt(new() { ItemId = "gun", Path = EnhancePath.Precision, Level = 9, FailureMode = FailureMode.Downgrade, Evolved = true }, "a");
         Assert.False(registry.IsComplete("gun"));
         Assert.True(registry.IsEvolved("gun"));
         Assert.Equal(30, registry.Amount("gun", EnhancePath.Recoil));
         Assert.Equal(10, registry.Find("gun", EnhancePath.Recoil)!.Level);
         Assert.Equal(9, registry.Find("gun", EnhancePath.Precision)!.Level);
-        Assert.Equal("★★ 진화 +29", registry.Badge("gun"));
+        Assert.Equal("★★", registry.Badge("gun"));
         registry.ApplyReceipt(new() { ItemId = "gun", Path = EnhancePath.Precision, Level = 0, FailureMode = FailureMode.Downgrade, Evolved = true }, "a");
         Assert.Null(registry.Find("gun", EnhancePath.Precision));
         Assert.NotNull(registry.Find("gun", EnhancePath.Recoil));

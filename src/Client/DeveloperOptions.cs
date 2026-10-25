@@ -228,6 +228,12 @@ internal static class ConfigText
         ["3차 스타 성공 시 기본 강화 효과의3배(+200%). 2차 배율에 중첩하지 않습니다. 반동15%→45%, 인체공학+10→+30. 감소율80%/추가인체공학50 상한, 빨간색 ★★★."]
             = "On 3rd star success, 3x the base effect (+200%). Does not stack with the 2nd star. Recoil 15% → 45%, ergonomics +10 → +30. Capped at 80% reduction / +50 ergonomics, red ★★★.",
         // 1.4.0
+        ["연출 줄이기"] = "Reduce motion",
+        ["켜면 상태창 떨어짐·막대 채움·창 흔들림·신화 섬광·빛 고리·불꽃을 끄고 바로 보여 줍니다."] = "Turns off the stat drop-in, bar fills, shake, mythic flash, rings and sparks; everything shows at once.",
+        ["창고 신화 칸 반짝임"] = "Stash mythic shimmer",
+        ["창고에서 신화 장비 칸 테두리가 분홍↔금빛으로 반짝입니다. 끄면 고정된 분홍 테두리만 보입니다."] = "Mythic gear cells in the stash shimmer pink and gold. Off: a steady pink border.",
+        ["파괴 확인 창"] = "Destruction prompt",
+        ["파괴될 수 있는 시도(파괴 방지 없는 +6 이상, 스타 진화) 전에 한 번 더 묻습니다. ??? 는 이 설정과 관계없이 항상 묻습니다."] = "Asks once more before an attempt that can destroy the gear (unguarded +6 and up, star evolution). ??? always asks.",
         ["14. 성공률 재료"] = "14. Chance materials",
         ["15. 즉시 강화 · 파괴 방지권"] = "15. Instant · destruction tickets",
         ["16. ??? · 신화"] = "16. ??? · Mythic",

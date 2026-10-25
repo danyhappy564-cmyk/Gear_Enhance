@@ -997,7 +997,7 @@ public sealed class EnhanceTests
         Assert.Equal(8000000, rig.Money);
         Assert.All(rig.Service.Snapshot(Session).Items, i => { Assert.Equal(10, i.Level); Assert.True(i.Evolved); });
         before.ApplyReceipt(receipt, Session.ToString());
-        Assert.Equal("★★ 진화 +30", before.Badge(Target.ToString()));
+        Assert.Equal("★★", before.Badge(Target.ToString()));
         Assert.Equal(30, before.Amount(Target.ToString(), EnhancePath.Recoil));
         rig.Backend.Saved = Json.Deserialize<SptProfile>(Json.Serialize(rig.Backend.Saved))!;
         var restored = new EnhanceService(rig.Backend, Json);
@@ -1087,7 +1087,7 @@ public sealed class EnhanceTests
         Assert.Equal(3, receipt.StarLevel);
         before.ApplyReceipt(receipt, Session.ToString());
         Assert.Equal(3, before.StarLevel(Target.ToString()));
-        Assert.Equal(weapon ? "★★★ 진화 +30" : "★★★ 진화 +20", before.Badge(Target.ToString()));
+        Assert.Equal("★★★", before.Badge(Target.ToString()));
         Assert.All(service.Snapshot(Session).Items, record => { Assert.Equal(10, record.Level); Assert.Equal(3, record.StarLevel); });
         rig.Backend.Saved = Json.Deserialize<SptProfile>(Json.Serialize(rig.Backend.Saved))!;
         var restored = new EnhanceService(rig.Backend, Json);

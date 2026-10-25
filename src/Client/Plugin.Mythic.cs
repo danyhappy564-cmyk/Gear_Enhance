@@ -19,9 +19,13 @@ public sealed partial class Plugin
     private DevSetting<string> mythicChances;
     private DevSetting<bool> mythicMaterials;
     private bool mythicChancesReported;
+    private ConfigEntry<bool> reducedMotion, mythicShimmer, destructionPrompt;
 
     private void BindMythic()
     {
+        reducedMotion = BindGeneral("7. 피드백", "연출 줄이기", false, "켜면 상태창 떨어짐·막대 채움·창 흔들림·신화 섬광·빛 고리·불꽃을 끄고 바로 보여 줍니다.");
+        mythicShimmer = BindGeneral("7. 피드백", "창고 신화 칸 반짝임", true, "창고에서 신화 장비 칸 테두리가 분홍↔금빛으로 반짝입니다. 끄면 고정된 분홍 테두리만 보입니다.");
+        destructionPrompt = BindGeneral("7. 피드백", "파괴 확인 창", true, "파괴될 수 있는 시도(파괴 방지 없는 +6 이상, 스타 진화) 전에 한 번 더 묻습니다. ??? 는 이 설정과 관계없이 항상 묻습니다.");
         const string hoursNote = "레이드에서 잃은 장비가 강화 보험으로 돌아올 때 우편이 오기까지의 실제 시간입니다. 0이면 즉시. 가입할 때 값으로 고정됩니다.";
         basicHours = BindDeveloper("12. 강화 보험", "일반 보험 돌아오는 시간 (시간)", 24f, new ConfigDescription(hoursNote, new AcceptableValueRange<float>(0, 720)));
         advancedHours = BindDeveloper("12. 강화 보험", "고급 보험 돌아오는 시간 (시간)", 12f, new ConfigDescription(hoursNote, new AcceptableValueRange<float>(0, 720)));
