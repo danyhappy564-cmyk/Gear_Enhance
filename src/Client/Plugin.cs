@@ -189,6 +189,8 @@ public sealed partial class Plugin : BaseUnityPlugin
             // Each transcendence effect stands alone: a missing hook disables only that effect.
             foreach (var failed in TranscendPatches.Install(harmony))
                 Logger.LogError("Gear Enhance: 초월 효과 연결 실패(나머지 기능은 정상) / transcendence hook failed: " + failed);
+            foreach (var failed in MythicPatches.Install(harmony))
+                Logger.LogError("Gear Enhance: 신화 효과 연결 실패(나머지 기능은 정상) / mythic hook failed: " + failed);
             ItemMarkers.Install(harmony);
             // Optional: without it plates still register from the insurance · plates window.
             try { InsertWatch.Install(harmony); }

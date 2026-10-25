@@ -56,6 +56,9 @@ public static class MythicRules
     public static readonly string[] BodyZones =
         { "NeckFront", "NeckBack", "LeftUpperArm", "RightUpperArm", "LeftForearm", "RightForearm", "Pelvis", "PelvisBack", "LeftThigh", "RightThigh" };
     public static readonly string[] HeadZones = { "ParietalHead", "BackHead", "Ears", "Eyes", "Jaw" };
+    // Hits the armor reduction applies to (game EDamageType flags): Explosion, GrenadeFragment, Bullet,
+    // Melee, Landmine, Sniper, Blunt, Btr, Artillery, ThermobaricExplosion. Falls, bleeding, poison stay.
+    public const int HitDamageTypes = 4 | 32 | 512 | 1024 | 2048 | 4096 | 8192 | 4194304 | 8388608 | 33554432;
 
     public static int Clamp(int level) => Math.Max(0, Math.Min(MaxLevel, level));
 

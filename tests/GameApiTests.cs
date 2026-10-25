@@ -277,6 +277,73 @@ public sealed class GameApiTests
         }
     }
 
+    // 1.4.0 mythic hooks (MythicPatches): every hooked method is large or virtual, so the JIT
+    // cannot inline it into its callers (kb 2.61), and the members read by name exist as named.
+    [GameAssemblyFact]
+    public void Mythic_hooks_bind_to_real_members_that_are_not_inlined()
+    {
+        using var game = Game();
+        var calculator = game.MainModule.GetType("EFT.Ballistics.BallisticsCalculator");
+        var create = Assert.Single(calculator.Methods, m => m.Name == "CreateShot" && m.Parameters.Count == 8);
+        Assert.Equal(["ammo", "origin", "direction", "fireIndex", "player", "weapon", "speedFactor", "fragmentIndex"], create.Parameters.Select(p => p.Name));
+        Assert.Equal("System.String", create.Parameters[4].ParameterType.FullName);
+        Assert.Equal("EFT.Ballistics.Shot", create.ReturnType.FullName);
+        Assert.True(create.Body.CodeSize >= 20);
+        var shot = game.MainModule.GetType("EFT.Ballistics.Shot");
+        foreach (var field in new[] { "Damage", "PenetrationPower" })
+            Assert.Equal("System.Single", shot.Fields.Single(f => f.Name == field).FieldType.FullName);
+        var armor = game.MainModule.GetType("EFT.InventoryLogic.ArmorComponent");
+        var matches = Assert.Single(armor.Methods, m => m.Name == "ShotMatches" && m.Parameters.Count == 2);
+        Assert.True(matches.IsVirtual);
+        Assert.Equal("EBodyPartColliderType", matches.Parameters[0].ParameterType.FullName);
+        Assert.Contains(armor.Properties, p => p.Name == "ArmorPlateCollidersMask");
+        var health = game.MainModule.GetType("EFT.HealthSystem.ActiveHealthController");
+        var damage = Assert.Single(health.Methods, m => m.Name == "ApplyDamage" && m.Parameters.Count == 3);
+        Assert.Equal(["bodyPart", "damage", "damageInfo"], damage.Parameters.Select(p => p.Name));
+        Assert.Equal("System.Single", damage.Parameters[1].ParameterType.FullName);
+        Assert.True(damage.Body.CodeSize >= 20);
+        Assert.Contains(health.Fields, f => f.Name == "Player");
+        var info = game.MainModule.GetType(damage.Parameters[2].ParameterType.FullName);
+        Assert.True(info.Fields.Any(f => f.Name == "DamageType") || info.Properties.Any(p => p.Name == "DamageType"));
+        // EDamageType flags the reduction counts as hits (MythicRules.HitDamageTypes).
+        var types = game.MainModule.GetType("EFT.EDamageType").Fields.Where(f => f.HasConstant).ToDictionary(f => f.Name, f => (int)f.Constant);
+        var hits = new[] { "Explosion", "GrenadeFragment", "Bullet", "Melee", "Landmine", "Sniper", "Blunt", "Btr", "Artillery", "ThermobaricExplosion" };
+        Assert.Equal(GearEnhance.MythicRules.HitDamageTypes, hits.Sum(name => types[name]));
+        Assert.Equal(2, types["Fall"]);
+        // Owner root is an interface property: read through IItemOwner, never by name (kb 2.60).
+        Assert.Contains(game.MainModule.GetType("EFT.InventoryLogic.Item").Properties, p => p.Name == "Owner");
+        Assert.Contains(game.MainModule.GetType("EFT.InventoryLogic.IItemOwner").Properties, p => p.Name == "RootItem");
+        Assert.Contains(game.MainModule.GetType("EFT.GameWorld").Fields, f => f.Name == "MainPlayer");
+        var player = game.MainModule.GetType("EFT.Player");
+        foreach (var name in new[] { "ProfileId", "IsYourPlayer", "Inventory" }) Assert.Contains(player.Properties, p => p.Name == name);
+        Assert.Contains(game.MainModule.GetType("EFT.InventoryLogic.Inventory").Fields, f => f.Name == "Equipment");
+        Assert.Single(game.MainModule.GetType("EFT.InventoryLogic.InventoryEquipment").Methods, m => m.Name == "GetSlot" && m.Parameters.Count == 1);
+        var slots = game.MainModule.GetType("EFT.InventoryLogic.EquipmentSlot").Fields.Select(f => f.Name).ToHashSet();
+        foreach (var name in new[] { "ArmorVest", "TacticalVest", "Headwear", "FaceCover", "Eyewear" }) Assert.Contains(name, slots);
+        // Zone names the server draws are real collider names.
+        var colliders = game.MainModule.GetType("EBodyPartColliderType").Fields.Select(f => f.Name).ToHashSet();
+        foreach (var zone in GearEnhance.MythicRules.BodyZones.Concat(GearEnhance.MythicRules.HeadZones)) Assert.Contains(zone, colliders);
+    }
+
+    // 1.4.0 status panel reads (Plugin.Status.cs) by these names.
+    [GameAssemblyFact]
+    public void Status_panel_reads_existing_members()
+    {
+        using var game = Game();
+        var template = game.MainModule.GetType("EFT.InventoryLogic.WeaponTemplate");
+        foreach (var field in new[] { "RecoilForceUp", "RecoilForceBack" }) Assert.Contains(template.Fields, f => f.Name == field);
+        var weapon = game.MainModule.GetType("EFT.InventoryLogic.Weapon");
+        foreach (var name in new[] { "RecoilDelta", "ErgonomicsTotal", "FireRate", "WeapFireType", "Template" }) Assert.Contains(weapon.Properties, p => p.Name == name);
+        Assert.Single(weapon.Methods, m => m.Name == "GetTotalCenterOfImpact" && m.Parameters.Count == 1);
+        var armor = game.MainModule.GetType("EFT.InventoryLogic.ArmorComponent");
+        foreach (var name in new[] { "ArmorClass", "SpeedPenalty", "MousePenalty", "WeaponErgonomicPenalty", "ArmorColliders" })
+            Assert.Contains(armor.Properties, p => p.Name == name);
+        Assert.Contains(game.MainModule.GetType("EFT.InventoryLogic.RepairableComponent").Properties, p => p.Name == "TemplateDurability");
+        Assert.Contains(game.MainModule.GetType("EFT.InventoryLogic.Item").Fields, f => f.Name == "Components");
+        Assert.Contains(game.MainModule.GetType("EFT.InventoryLogic.CompoundItem").Properties, p => p.Name == "AllSlots");
+        Assert.Contains(game.MainModule.GetType("EFT.InventoryLogic.Slot").Properties, p => p.Name == "ContainedItem");
+    }
+
     private static void AssertCalls(MethodDefinition caller, string target) =>
         Assert.Contains(caller.Body.Instructions, i => i.Operand is MethodReference method && method.Name == target);
 }
