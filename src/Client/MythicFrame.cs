@@ -16,6 +16,10 @@ internal static class MythicFrame
     private static Type image;
     private static PropertyInfo color;
     private static readonly List<(Component View, Component[] Lines)> shown = new List<(Component, Component[])>();
+    // Band 0 = the 2 px border; bands 1-3 outside at 2, 4, 6 px; bands 4-6 inside at 2, 4, 6 px.
+    // Declared before Weights: static fields initialize in text order and Bands() reads Layout.
+    private static readonly (float Offset, float Weight)[] Layout =
+        { (0, 1), (2, 0.55f), (4, 0.3f), (6, 0.12f), (-2, 0.28f), (-4, 0.15f), (-6, 0.07f) };
     // Per line of a frame (same order as Create): base opacity. 4 lines per band.
     private static readonly float[] Weights = Bands();
     internal static int Count => shown.Count;
@@ -69,9 +73,6 @@ internal static class MythicFrame
         }
     }
 
-    // Band 0 = the 2 px border; bands 1-3 outside at 2, 4, 6 px; bands 4-6 inside at 2, 4, 6 px.
-    private static readonly (float Offset, float Weight)[] Layout =
-        { (0, 1), (2, 0.55f), (4, 0.3f), (6, 0.12f), (-2, 0.28f), (-4, 0.15f), (-6, 0.07f) };
     private static float[] Bands()
     {
         var weights = new List<float>();
