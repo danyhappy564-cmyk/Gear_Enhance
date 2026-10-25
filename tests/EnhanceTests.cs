@@ -96,7 +96,14 @@ public sealed class EnhanceTests
                 ParentId = Stash, SlotId = "hideout", Upd = new() { StackObjectsCount = count, SpawnedInSession = foundInRaid } };
             Pmc.Inventory!.Items!.Add(item); return item;
         }
-        public long Bitcoins => Pmc.Inventory!.Items!.Where(i => i.Template.ToString() == SuccessBoost.BitcoinTemplate)
+        public long Bitcoins => Stock(SuccessBoost.BitcoinTemplate);
+        public Item AddMaterial(string template, int count = 1)
+        {
+            var item = new Item { Id = new(Guid.NewGuid().ToString("N")[..24]), Template = new(template),
+                ParentId = Stash, SlotId = "hideout", Upd = new() { StackObjectsCount = count } };
+            Pmc.Inventory!.Items!.Add(item); return item;
+        }
+        public long Stock(string template) => Pmc.Inventory!.Items!.Where(i => i.Template.ToString() == template)
             .Sum(i => (long)(i.Upd?.StackObjectsCount ?? 1));
         public void AddPart(string slot = "mod_scope") => Pmc.Inventory!.Items!.Add(new()
         {
@@ -683,12 +690,17 @@ public sealed class EnhanceTests
     }
 
     [Fact]
-    public void Armor_completion_has_a_bonus_and_uses_the_normal_failure_setting()
+    public void Armor_completion_has_a_bonus_and_takes_the_weapon_risk_from_plus_six()
     {
         var rig = new Rig(); rig.Backend.WeaponCategory = false;
         rig.Seed((EnhancePath.ArmorDurability, 10), (EnhancePath.Mobility, 9));
+        // 1.4.0 design 4: armor attempts to +6 and above can be destroyed or drop like weapons.
+        var risky = rig.Service.Quote(Session, Target.ToString(), new() { SuccessPercent = 50, SuccessLossPerLevel = 0 }, EnhancePath.Mobility);
+        Assert.True(risky.HighRisk); Assert.True(risky.CanDestroy);
+        Assert.True(risky.DestructionProtectionAvailable); Assert.True(risky.DowngradeProtectionAvailable);
+        Assert.Equal(25, risky.DestructionPercent); Assert.Equal(FailureMode.Downgrade, risky.FailureMode);
         var quote = rig.Service.Quote(Session, Target.ToString(), new() { AlwaysSucceed = true }, EnhancePath.Mobility);
-        Assert.False(quote.HighRisk);
+        Assert.True(quote.HighRisk);
         Assert.False(quote.CanDestroy);
         Assert.True(quote.CompletesOnSuccess);
         Assert.Equal(20, quote.NextEffect);
@@ -1145,47 +1157,54 @@ public sealed class EnhanceTests
         Assert.Equal(8000000, rig.Money);
     }
 
+    private static QuoteOptions Boost(params (BoostMaterial Kind, int Count)[] choices) =>
+        new() { Boost = choices.Select(c => new BoostChoice { Kind = c.Kind, Count = c.Count }).ToArray() };
+
     [Theory]
-    [InlineData(EnhanceAction.Upgrade, false, 82, 1, 510000)]
-    [InlineData(EnhanceAction.Upgrade, true, 82, 1, 510000)]
-    [InlineData(EnhanceAction.Evolve, false, 40, 3, 3000000)]
-    [InlineData(EnhanceAction.Evolve, true, 40, 3, 3000000)]
-    [InlineData(EnhanceAction.EvolveThird, false, 20, 10, 7000000)]
-    [InlineData(EnhanceAction.EvolveThird, true, 20, 10, 7000000)]
-    public void Boost_consumes_fixed_cash_and_bitcoins_once_on_both_success_and_failure_regardless_of_fir(
-        EnhanceAction action, bool succeeds, int chance, int coins, int cash)
+    [InlineData(EnhanceAction.Upgrade, false, 88, 910000)]
+    [InlineData(EnhanceAction.Upgrade, true, 88, 910000)]
+    [InlineData(EnhanceAction.Evolve, false, 43, 2900000)]
+    [InlineData(EnhanceAction.Evolve, true, 43, 2900000)]
+    [InlineData(EnhanceAction.EvolveThird, false, 23, 4900000)]
+    [InlineData(EnhanceAction.EvolveThird, true, 23, 4900000)]
+    public void Materials_consume_cash_and_items_once_on_both_success_and_failure_regardless_of_fir(
+        EnhanceAction action, bool succeeds, double chance, int cash)
     {
         var rig = new Rig(20000000);
         if (action != EnhanceAction.Upgrade)
             rig.Seed((EnhancePath.Recoil, 10), (EnhancePath.Ergonomics, 10), (EnhancePath.Precision, 10));
         if (action == EnhanceAction.EvolveThird)
             rig.Execute(rig.Service.Quote(Session, Target.ToString(), new() { AlwaysSucceed = true }, action: EnhanceAction.Evolve));
-        for (var i = 0; i < 12; i++) rig.AddBitcoin(foundInRaid: i % 2 == 0);
+        for (var i = 0; i < 6; i++) { rig.AddBitcoin(foundInRaid: i % 2 == 0); rig.AddMaterial(SuccessBoost.GraphicsCardTemplate); }
         rig.Backend.DrawValue = succeeds ? 0 : 0.999999;
         var money = rig.Money;
-        var quote = rig.Service.Quote(Session, Target.ToString(), new(), action: action, chanceBoost: true);
-        Assert.True(quote.ChanceBoost); Assert.Equal(chance, quote.SuccessPercent);
-        Assert.Equal(action == EnhanceAction.Upgrade ? 7 : 10, quote.BoostPoints);
-        Assert.Equal(coins, quote.BoostBitcoins); Assert.Equal(12, quote.AvailableBitcoins);
+        // Bitcoin 2 (+10%p, 600,000) + graphics card 3 (+3%p, 300,000) on top of 75 / 30 / 10.
+        var quote = rig.Service.Quote(Session, Target.ToString(), new(), action: action,
+            options: Boost((BoostMaterial.Bitcoin, 2), (BoostMaterial.GraphicsCard, 3)));
+        Assert.Equal(chance, quote.SuccessPercent); Assert.Equal(13, quote.BoostPoints, 6);
+        Assert.Equal(900000, quote.BoostCost); Assert.Equal(2, quote.Boost.Length);
+        Assert.Equal(6, quote.Boost.Single(b => b.Kind == BoostMaterial.Bitcoin).Owned);
         Assert.Equal(cash, quote.Cost); Assert.Equal(0, quote.ProtectionCost); Assert.True(quote.CanPay);
         rig.Execute(quote, quote.CanDestroy);
         var receipt = rig.Service.Receipt(Session, quote.QuoteId)!;
-        Assert.Equal(succeeds, receipt.Success); Assert.Equal(coins, receipt.BitcoinsPaid); Assert.Equal(cash, receipt.Paid);
-        Assert.Equal(money - cash, rig.Money); Assert.Equal(12 - coins, rig.Bitcoins);
+        Assert.Equal(succeeds, receipt.Success); Assert.Equal(cash, receipt.Paid);
+        Assert.Equal(2, receipt.Boost.Single(b => b.Kind == BoostMaterial.Bitcoin).Count);
+        Assert.Equal(money - cash, rig.Money); Assert.Equal(4, rig.Bitcoins); Assert.Equal(3, rig.Stock(SuccessBoost.GraphicsCardTemplate));
         if (!succeeds && action != EnhanceAction.Upgrade)
             Assert.Equal(FailureMode.Destroy, receipt.FailureMode);
         Assert.Throws<InvalidOperationException>(() => rig.Execute(quote, true));
-        Assert.Equal(money - cash, rig.Money); Assert.Equal(12 - coins, rig.Bitcoins);
+        Assert.Equal(money - cash, rig.Money); Assert.Equal(4, rig.Bitcoins);
     }
 
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    public void Boost_checks_both_wallets_again_at_execution_before_consuming_either(bool insufficientCash)
+    public void Materials_are_checked_again_at_execution_before_consuming_any(bool insufficientCash)
     {
-        var rig = new Rig(insufficientCash ? 509999 : 1000000);
+        var rig = new Rig(insufficientCash ? 309999 : 1000000);
         var coin = rig.AddBitcoin();
-        var quote = rig.Service.Quote(Session, Target.ToString(), new(), chanceBoost: true);
+        var quote = rig.Service.Quote(Session, Target.ToString(), new(), options: Boost((BoostMaterial.Bitcoin, 1)));
+        Assert.Equal(310000, quote.Cost);
         if (!insufficientCash) rig.Pmc.Inventory!.Items!.Remove(coin); // consumed elsewhere after the quote
         var money = rig.Money; var bitcoin = rig.Bitcoins;
         Assert.Throws<InvalidOperationException>(() => rig.Execute(quote));
@@ -1194,42 +1213,76 @@ public sealed class EnhanceTests
     }
 
     [Fact]
-    public async Task Boost_is_bound_to_the_server_quote_and_unchecking_invalidates_the_previous_purchase()
+    public async Task Materials_are_bound_to_the_server_quote_and_reloading_without_them_invalidates_the_purchase()
     {
         var rig = new Rig(1000000); rig.AddBitcoin();
         var router = new EnhanceQueries(Json, rig.Service);
         var body = Newtonsoft.Json.JsonConvert.SerializeObject(new { ProtocolVersion = EnhanceProtocol.Version,
-            ItemId = Target.ToString(), ChanceBoost = true, Settings = new EnhanceSettings() });
+            ItemId = Target.ToString(), Boost = new[] { new { Kind = (int)BoostMaterial.Bitcoin, Count = 1 } }, Settings = new EnhanceSettings() });
         var response = await router.HandleStaticAsync("/rf/gear-enhance/quote", body, Session, "");
         var boosted = Newtonsoft.Json.JsonConvert.DeserializeObject<ApiReply<EnhanceQuote>>((string)response)!;
-        Assert.True(boosted.Ok, boosted.Error); Assert.True(boosted.Data!.ChanceBoost);
-        Assert.Equal(82, boosted.Data.SuccessPercent); Assert.Equal(510000, boosted.Data.Cost);
-        Assert.Equal(1, boosted.Data.BoostBitcoins); Assert.True(boosted.Data.CanPay);
+        Assert.True(boosted.Ok, boosted.Error);
+        Assert.Equal(80, boosted.Data!.SuccessPercent); Assert.Equal(310000, boosted.Data.Cost);
+        Assert.Single(boosted.Data.Boost); Assert.True(boosted.Data.CanPay);
         var unboosted = rig.Service.Quote(Session, Target.ToString(), new() { AlwaysSucceed = true });
         Assert.Throws<InvalidOperationException>(() => rig.Execute(boosted.Data));
         rig.Execute(unboosted);
         Assert.Equal(990000, rig.Money); Assert.Equal(1, rig.Bitcoins);
-        Assert.Equal(0, rig.Service.Receipt(Session, unboosted.QuoteId)!.BitcoinsPaid);
+        Assert.Empty(rig.Service.Receipt(Session, unboosted.QuoteId)!.Boost);
     }
 
     [Fact]
-    public void Boost_preserves_stage_prices_and_protection_fees_caps_at_one_hundred_and_skips_unneeded_purchase()
+    public void Material_rules_two_kinds_per_kind_caps_and_the_hundred_percent_limit()
+    {
+        var rig = new Rig(10000000); rig.AddBitcoin(10); rig.AddMaterial(SuccessBoost.GraphicsCardTemplate, 20);
+        rig.AddMaterial(SuccessBoost.DogtagTemplates[0], 30); rig.AddMaterial(SuccessBoost.DogtagTemplates[^1], 30);
+        Assert.Throws<InvalidOperationException>(() => rig.Service.Quote(Session, Target.ToString(), new(),
+            options: Boost((BoostMaterial.Bitcoin, 1), (BoostMaterial.GraphicsCard, 1), (BoostMaterial.Dogtag, 1))));
+        Assert.Throws<ArgumentException>(() => rig.Service.Quote(Session, Target.ToString(), new(),
+            options: Boost((BoostMaterial.Bitcoin, 1), (BoostMaterial.Bitcoin, 1))));
+        Assert.Throws<InvalidOperationException>(() => rig.Service.Quote(Session, Target.ToString(), new(), options: Boost((BoostMaterial.Dogtag, 51))));
+        Assert.Throws<InvalidOperationException>(() => rig.Service.Quote(Session, Target.ToString(), new(), options: Boost((BoostMaterial.Bitcoin, 5))));
+        Assert.Throws<InvalidOperationException>(() => rig.Service.Quote(Session, Target.ToString(), new(), options: Boost((BoostMaterial.GraphicsCard, -1))));
+        // Every dogtag kind counts: 30 BEAR + 30 USEC prestige; 50 of them are +5%p for 250,000.
+        var tags = rig.Service.Quote(Session, Target.ToString(), new(), options: Boost((BoostMaterial.Dogtag, 50)));
+        Assert.Equal(80, tags.SuccessPercent); Assert.Equal(250000, tags.BoostCost); Assert.Equal(60, tags.Boost[0].Owned);
+        rig.Execute(tags);
+        Assert.Equal(10, rig.Stock(SuccessBoost.DogtagTemplates[0]) + rig.Stock(SuccessBoost.DogtagTemplates[^1]));
+        var capped = rig.Service.Quote(Session, Target.ToString(), new() { SuccessPercent = 98, SuccessLossPerLevel = 0 },
+            options: Boost((BoostMaterial.Bitcoin, 4), (BoostMaterial.GraphicsCard, 10)));
+        Assert.Equal(100, capped.SuccessPercent); Assert.Equal(2, capped.BoostPoints); Assert.False(capped.CanDestroy);
+        var guaranteed = rig.Service.Quote(Session, Target.ToString(), new() { AlwaysSucceed = true }, options: Boost((BoostMaterial.Bitcoin, 1)));
+        Assert.False(guaranteed.BoostAvailable); Assert.Empty(guaranteed.Boost);
+        Assert.Equal(0, guaranteed.BoostCost); Assert.Equal(guaranteed.BaseCost, guaranteed.Cost);
+    }
+
+    [Fact]
+    public void Materials_keep_stage_prices_and_protection_fees()
     {
         var rig = new Rig(10000000); rig.AddBitcoin(2);
         rig.Seed((EnhancePath.Recoil, 5));
         var quote = rig.Service.Quote(Session, Target.ToString(), new(), EnhancePath.Recoil,
-            new() { Destruction = true, Downgrade = true }, chanceBoost: true);
-        Assert.Equal(50, quote.BaseSuccessPercent); Assert.Equal(57, quote.SuccessPercent);
-        Assert.Equal(1464369, quote.Cost); Assert.Equal(933851, quote.ProtectionCost);
-        Assert.Equal(500000, quote.BoostCost); Assert.Equal(30518, quote.BaseCost);
-        var capped = rig.Service.Quote(Session, Target.ToString(), new() { SuccessPercent = 98, SuccessLossPerLevel = 0 },
-            chanceBoost: true);
-        Assert.Equal(100, capped.SuccessPercent); Assert.Equal(2, capped.BoostPoints);
-        Assert.False(capped.CanDestroy);
-        var guaranteed = rig.Service.Quote(Session, Target.ToString(), new() { AlwaysSucceed = true }, chanceBoost: true);
-        Assert.False(guaranteed.ChanceBoost); Assert.False(guaranteed.ChanceBoostAvailable);
-        Assert.Equal(0, guaranteed.BoostCost); Assert.Equal(0, guaranteed.BoostBitcoins);
-        Assert.Equal(guaranteed.BaseCost, guaranteed.Cost); Assert.Equal(2, rig.Bitcoins);
+            new() { Destruction = true, Downgrade = true }, options: Boost((BoostMaterial.Bitcoin, 1)));
+        Assert.Equal(50, quote.BaseSuccessPercent); Assert.Equal(55, quote.SuccessPercent);
+        Assert.Equal(933851, quote.ProtectionCost); Assert.Equal(30518, quote.BaseCost);
+        Assert.Equal(300000, quote.BoostCost); Assert.Equal(30518 + 933851 + 300000, quote.Cost);
+    }
+
+    [Fact]
+    public void Instant_adds_its_fee_and_is_refused_for_star_evolution()
+    {
+        var rig = new Rig(20000000);
+        var quote = rig.Service.Quote(Session, Target.ToString(), new() { AlwaysSucceed = true }, options: new() { Instant = true });
+        Assert.True(quote.Instant); Assert.Equal(50000, quote.InstantFee); Assert.Equal(60000, quote.Cost);
+        Assert.Equal(0, quote.ProtectionCost);
+        rig.Execute(quote);
+        Assert.True(rig.Service.Receipt(Session, quote.QuoteId)!.Instant);
+        Assert.Equal(20000000 - 60000, rig.Money);
+        rig.Seed((EnhancePath.Recoil, 10), (EnhancePath.Ergonomics, 10), (EnhancePath.Precision, 10));
+        Assert.Throws<InvalidOperationException>(() => rig.Service.Quote(Session, Target.ToString(), new(),
+            action: EnhanceAction.Evolve, options: new() { Instant = true }));
+        Assert.Throws<InvalidOperationException>(() => rig.Service.Quote(Session, Target.ToString(), new(),
+            action: EnhanceAction.EvolveThird, options: new() { Instant = true }));
     }
 
     [Fact]
@@ -1237,8 +1290,8 @@ public sealed class EnhanceTests
     {
         var rig = new Rig(20000000);
         var coin = rig.AddBitcoin(); coin.ParentId = Session;
-        var unavailable = rig.Service.Quote(Session, Target.ToString(), new(), chanceBoost: true);
-        Assert.Equal(0, unavailable.AvailableBitcoins); Assert.False(unavailable.CanPay);
+        var unavailable = rig.Service.Quote(Session, Target.ToString(), new(), options: Boost((BoostMaterial.Bitcoin, 1)));
+        Assert.Equal(0, unavailable.Boost[0].Owned); Assert.False(unavailable.CanPay);
         Assert.Throws<InvalidOperationException>(() => rig.Execute(unavailable));
         rig.Seed((EnhancePath.Recoil, 10), (EnhancePath.Ergonomics, 10), (EnhancePath.Precision, 10));
         rig.Execute(rig.Service.Quote(Session, Target.ToString(), new() { AlwaysSucceed = true }, action: EnhanceAction.Evolve));

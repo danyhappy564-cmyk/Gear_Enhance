@@ -52,7 +52,7 @@ public sealed partial class EnhanceService
 {
     private EnhanceQuote TranscendQuote(MongoId session, PmcData profile, Item target, EnhanceState state, EnhanceSettings settings,
         TranscendTrack track, bool weapon, List<Item> parts, double bodyPrice, string source, double partsPrice, double paidParts,
-        EnhanceProtection? protection, bool chanceBoost)
+        EnhanceProtection? protection, QuoteOptions options)
     {
         var itemId = target.Id.ToString();
         if (!TranscendRules.Valid(track)) throw Loc.Argument("초월 종류를 골라 주세요.", "Choose a transcendence track.");
@@ -85,7 +85,6 @@ public sealed partial class EnhanceService
             Path = tracks.Keys.First(), CurrentLevel = level, NextLevel = next,
             Cost = TranscendRules.Cost(bodyPrice + partsPrice, track, level, tuning),
             AvailableRoubles = Money(profile).Sum(i => Count(i)),
-            AvailableBitcoins = Materials(profile, SuccessBoost.BitcoinTemplate).Sum(Count),
             SuccessPercent = chance, BaseSuccessPercent = chance,
             PityPercent = pity, PityStep = TranscendRules.PityStep(track, tuning), PityCap = tuning.PityCap,
             PriceSource = source, FailureMode = TranscendRules.DropsOnFailure(next) ? FailureMode.Downgrade : FailureMode.KeepItem,
@@ -96,13 +95,11 @@ public sealed partial class EnhanceService
         };
         Describe(quote, kind, level, next, tuning);
         quote.BaseCost = quote.Cost;
-        quote.ChanceBoost = chanceBoost && quote.ChanceBoostAvailable;
-        if (quote.ChanceBoost)
-        {
-            quote.BoostCost = SuccessBoost.TranscendRoubles;
-            quote.BoostBitcoins = SuccessBoost.TranscendBitcoins;
-            quote.SuccessPercent = Math.Min(100, quote.SuccessPercent + SuccessBoost.TranscendPoints);
-        }
+        quote.Materials = tuning.RequireMaterials
+            ? TranscendRules.Materials(weapon, track, next).Select(m => new TranscendMaterial
+                { Template = m.Template, Count = m.Count, Owned = Materials(profile, m.Template).Sum(Count) }).ToArray()
+            : Array.Empty<TranscendMaterial>();
+        ApplyBoost(quote, profile, options.Boost, settings.Boost);
         // Nothing is ever destroyed; only the drop from level 4 and 5 attempts can be prevented.
         quote.Protection = new() { Downgrade = protection?.Downgrade == true && quote.DowngradeProtectionAvailable };
         quote.DowngradeProtectionFee = quote.DowngradeProtectionAvailable
@@ -111,10 +108,7 @@ public sealed partial class EnhanceService
         quote.Cost = ProtectionCosts.Total(quote.Cost, quote.BoostCost, 0);
         quote.InsertSurcharge = weapon ? 0 : EnhanceRules.InsertSurcharge(Owed(state, itemId, parts, partsPrice, paidParts), tracks, stars, settings, record.Second, record.Third);
         quote.Cost = ProtectionCosts.Total(quote.Cost, quote.InsertSurcharge, 0);
-        quote.Materials = tuning.RequireMaterials
-            ? TranscendRules.Materials(weapon, track, next).Select(m => new TranscendMaterial
-                { Template = m.Template, Count = m.Count, Owned = Materials(profile, m.Template).Sum(Count) }).ToArray()
-            : Array.Empty<TranscendMaterial>();
+        ApplyInstant(quote, options.Instant, settings);
         pending[session] = new(quote, Fingerprint(tree), StateFingerprint(state, itemId), stars, settings.PriceBasis, tuning);
         return quote;
     }
@@ -140,22 +134,31 @@ public sealed partial class EnhanceService
         return pity;
     }
 
-    // Materials are checked with the money, before the roll, and consumed on any outcome.
-    private List<(TranscendMaterial Need, List<Item> Stock)> MaterialStock(PmcData profile, EnhanceQuote quote)
+    // Materials (transcendence, ???, mythic, reroll) and chance materials are checked with the
+    // money, before the roll, and consumed on any outcome. Needs of the same item add up
+    // (a graphics card both as a material and as a chance boost).
+    private List<(int Count, List<Item> Stock)> MaterialStock(PmcData profile, EnhanceQuote quote)
     {
-        var stock = (quote.Materials ?? Array.Empty<TranscendMaterial>())
-            .Select(need => (need, Materials(profile, need.Template).ToList())).ToList();
-        if (stock.Any(s => s.Item2.Sum(Count) < s.need.Count))
-            throw Loc.Invalid("창고의 초월 재료가 부족합니다.", "Not enough transcendence materials in the stash.");
+        var needs = new Dictionary<string, (int Count, IReadOnlyList<string> Templates)>();
+        void Add(IReadOnlyList<string> templates, int count)
+        {
+            var key = string.Join(",", templates);
+            needs[key] = (needs.GetValueOrDefault(key).Count + count, templates);
+        }
+        foreach (var need in quote.Materials ?? Array.Empty<TranscendMaterial>()) Add(new[] { need.Template }, need.Count);
+        foreach (var line in quote.Boost ?? Array.Empty<BoostLine>()) Add(SuccessBoost.Templates(line.Kind), line.Count);
+        var stock = needs.Values.Where(n => n.Count > 0).Select(n => (n.Count, Materials(profile, n.Templates).ToList())).ToList();
+        if (stock.Any(s => s.Item2.Sum(Count) < s.Count))
+            throw Loc.Invalid("창고의 재료(초월·신화·성공률 재료)가 부족합니다.", "Not enough materials (transcendence, mythic or chance) in the stash.");
         return stock;
     }
 
-    private void Consume(PmcData profile, List<(TranscendMaterial Need, List<Item> Stock)> stock, MongoId session,
+    private void Consume(PmcData profile, List<(int Count, List<Item> Stock)> stock, MongoId session,
         SPTarkov.Server.Core.Models.Eft.ItemEvent.ItemEventRouterResponse output)
     {
-        foreach (var (need, items) in stock)
+        foreach (var (count, items) in stock)
         {
-            var remaining = need.Count;
+            var remaining = count;
             foreach (var item in items)
             {
                 if (remaining == 0) break;
@@ -384,7 +387,11 @@ public sealed partial class EnhanceService
     private static string StateFingerprint(EnhanceState state, string id)
     {
         var record = state.Transcend.GetValueOrDefault(id);
+        var mythic = state.Mythic.GetValueOrDefault(id);
+        var tickets = state.Tickets.GetValueOrDefault(id);
         return TracksFingerprint(state.Tracks.GetValueOrDefault(id))
-            + (record == null ? "" : $"#{record.Second}:{record.Third}:{record.SecondPity}:{record.ThirdPity}");
+            + (record == null ? "" : $"#{record.Second}:{record.Third}:{record.SecondPity}:{record.ThirdPity}")
+            + (mythic == null ? "" : $"#m{mythic.Level}:{mythic.Pity}:{string.Join(",", mythic.Zones)}:{mythic.Rerolls}")
+            + (tickets == null ? "" : $"#t{tickets.SecondBought}:{tickets.SecondHeld}:{tickets.ThirdBought}:{tickets.ThirdHeld}");
     }
 }

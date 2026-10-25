@@ -90,14 +90,14 @@ public sealed partial class Plugin : BaseUnityPlugin
         chance = BindDeveloper("2. 확률", "성공률 (%)", 75f, new ConfigDescription("+0에서 +1로 강화할 때 성공률. 이후 현재 단계 × 단계별 감소량만큼 줄어듭니다.", new AcceptableValueRange<float>(0, 100)));
         chanceLoss = BindDeveloper("2. 확률", "단계별 성공률 감소 (%p)", 5f, new ConfigDescription("기본: +1 시도 75%, +10 시도 30%. 0이면 같은 확률을 유지합니다.", new AcceptableValueRange<float>(0, 100)));
         always = BindDeveloper("2. 확률", "항상 성공 (100%)", false, "켜면 성공률 설정 대신 100%를 적용합니다. 비용은 소모됩니다.");
-        maxLevel = BindDeveloper("2. 확률", "최대 강화 단계", 10, new ConfigDescription("각 항목 최대 단계. 효과 곡선·1차 스타 진화 조건도 함께 바뀝니다. 무기 고위험 시작은 선택 항목 +6 시도(+5→+6)로 고정됩니다.", new AcceptableValueRange<int>(1, 100)));
+        maxLevel = BindDeveloper("2. 확률", "최대 강화 단계", 10, new ConfigDescription("각 항목 최대 단계. 효과 곡선·1차 스타 진화 조건도 함께 바뀝니다. 고위험 시작은 선택 항목 +6 시도(+5→+6)로 고정됩니다.", new AcceptableValueRange<int>(1, 100)));
         price = BindDeveloper("3. 비용", "기준 가격", PriceBasis.Handbook, "Handbook = 북밸류, Flea = SPT 플리 기준가. 무기는 본체만, 방어구는 슬롯에 끼운 방탄판·삽입물·바이저 가격을 더합니다.");
         percent = BindDeveloper("3. 비용", "기준 가격 대비 비용 (%)", 10f, new ConfigDescription("0이면 최소 비용만 적용됩니다.", new AcceptableValueRange<float>(0, 1000)));
         growth = BindDeveloper("3. 비용", "단계별 비용 배수", 1.25f, new ConfigDescription("기준가 × 비용 비율 × 배수^현재단계. 최대 1억 루블.", new AcceptableValueRange<float>(1, 3)));
         minimum = BindDeveloper("3. 비용", "최소 비용 (루블)", 1000, new ConfigDescription("창고 안의 잠기지 않은 루블을 사용합니다.", new AcceptableValueRange<int>(0, 100000000)));
         failure = BindDeveloper("4. 실패", "실패 처리", FailureMode.KeepItem,
-            "일반 구간 실패 처리. KeepItem: 비용만 / ZeroDurability: 현재 내구도 0 / Destroy: 본체·부착물·탄약 삭제 / Downgrade: 선택 항목 -1. 무기 고위험 구간에서는 아래 파괴·하락 규칙이 우선합니다.");
-        highRiskEnabled = BindDeveloper("4. 실패", "무기 고위험 강화", true, "선택한 무기 항목의 다음 단계가 +6 이상이면(+5→+6부터) 실패 시 파괴 또는 해당 항목 -1. 다른 항목 단계는 무관합니다. 방어구는 일반 실패 처리를 따릅니다.");
+            "일반 구간 실패 처리. KeepItem: 비용만 / ZeroDurability: 현재 내구도 0 / Destroy: 본체·부착물·탄약 삭제 / Downgrade: 선택 항목 -1. 고위험 구간에서는 아래 파괴·하락 규칙이 우선합니다.");
+        highRiskEnabled = BindDeveloper("4. 실패", "고위험 강화 (무기·방어구)", true, "선택한 항목의 다음 단계가 +6 이상이면(+5→+6부터) 실패 시 파괴 또는 해당 항목 -1. 1.4.0부터 방어구도 같습니다. 다른 항목 단계는 무관합니다.");
         destructionChance = BindDeveloper("4. 실패", "고위험 실패 중 파괴 확률 (%)", 25f, new ConfigDescription("성공 판정과 별도입니다. 고위험 실패 중 이 확률로 본체·부착물·탄약 파괴, 나머지는 선택 항목 -1. 0은 하락만, 100은 파괴만.", new AcceptableValueRange<float>(0, 100)));
         BindEffect(EnhancePath.Recoil, "5. 무기 효과", 1.5f, 15);
         BindEffect(EnhancePath.Ergonomics, "5. 무기 효과", 1, 10);
@@ -117,11 +117,12 @@ public sealed partial class Plugin : BaseUnityPlugin
         thirdStarBonus = BindDeveloper("11. 3차 스타 진화", "3차 스타 총 추가 효과 (%)", (float)StarEvolution.ThirdDefaultBonus, new ConfigDescription("3차 스타 성공 시 기본 강화 효과의3배(+200%). 2차 배율에 중첩하지 않습니다. 반동15%→45%, 인체공학+10→+30. 감소율80%/추가인체공학50 상한, 빨간색 ★★★.", new AcceptableValueRange<float>(0, 300)));
         basicReturn = BindDeveloper("12. 강화 보험", "일반 보험 반환 확률 (%)", 20f, new ConfigDescription("레이드에서 잃은 강화 장비가 강화된 상태로 우편 반환될 확률. 가입할 때의 값으로 고정됩니다.", new AcceptableValueRange<float>(0, 100)));
         advancedReturn = BindDeveloper("12. 강화 보험", "고급 보험 반환 확률 (%)", 55f, new ConfigDescription("레이드에서 잃은 강화 장비가 강화된 상태로 우편 반환될 확률. 가입할 때의 값으로 고정됩니다.", new AcceptableValueRange<float>(0, 100)));
-        premiumReturn = BindDeveloper("12. 강화 보험", "프리미엄 보험 반환 확률 (%)", 90f, new ConfigDescription("레이드에서 잃은 강화 장비가 강화된 상태로 우편 반환될 확률. 가입할 때의 값으로 고정됩니다.", new AcceptableValueRange<float>(0, 100)));
+        premiumReturn = BindDeveloper("12. 강화 보험", "프리미엄 보험 반환 확률 (%)", 99f, new ConfigDescription("레이드에서 잃은 강화 장비가 강화된 상태로 우편 반환될 확률. 가입할 때의 값으로 고정됩니다.", new AcceptableValueRange<float>(0, 100)));
         basicFee = BindDeveloper("12. 강화 보험", "일반 보험료 (강화 가치 대비 %)", 5f, new ConfigDescription("강화 가치 = 지금 단계·스타까지 강화하는 데 드는 기본 비용 합계(방어구는 등록한 방탄판 가격 포함). 최소 비용 이상.", new AcceptableValueRange<float>(0, 1000)));
         advancedFee = BindDeveloper("12. 강화 보험", "고급 보험료 (강화 가치 대비 %)", 15f, new ConfigDescription("강화 가치 = 지금 단계·스타까지 강화하는 데 드는 기본 비용 합계(방어구는 등록한 방탄판 가격 포함). 최소 비용 이상.", new AcceptableValueRange<float>(0, 1000)));
         premiumFee = BindDeveloper("12. 강화 보험", "프리미엄 보험료 (강화 가치 대비 %)", 30f, new ConfigDescription("강화 가치 = 지금 단계·스타까지 강화하는 데 드는 기본 비용 합계(방어구는 등록한 방탄판 가격 포함). 최소 비용 이상.", new AcceptableValueRange<float>(0, 1000)));
         BindTranscend();
+        BindMythic();
         // Migrate the previous shipped default once; preserve custom developer odds.
         var balanceVersion = Config.Bind("0. 내부", "밸런스 설정 버전", 0,
             new ConfigDescription("내부 설정 이전용", null, new ConfigurationManagerAttributes { Browsable = false }));
@@ -135,6 +136,12 @@ public sealed partial class Plugin : BaseUnityPlugin
             completionBonus.Entry.Value = (float)StarEvolution.UpgradeLegacyBonus(2, completionBonus.Entry.Value);
             thirdStarBonus.Entry.Value = (float)StarEvolution.UpgradeLegacyBonus(3, thirdStarBonus.Entry.Value);
             balanceVersion.Value = 2;
+        }
+        // 1.4.0: premium insurance 90% → 99% (design 13); a value changed by hand stays.
+        if (balanceVersion.Value < 3)
+        {
+            if (premiumReturn.Entry.Value == 90f) premiumReturn.Entry.Value = 99f;
+            balanceVersion.Value = 3;
         }
         PrepareFeedback();
         LogDetailed($"강화 효과음 설정: 사용={soundsEnabled.Value}, 전용={providedSounds.Value}, 음량={soundVolume.Value:0.##}%, 준비={feedbackAudio != null}, 충전={attemptDuration:0.000}초");
@@ -278,7 +285,10 @@ public sealed partial class Plugin : BaseUnityPlugin
         BasicInsuranceReturnPercent = basicReturn.Value, AdvancedInsuranceReturnPercent = advancedReturn.Value,
         PremiumInsuranceReturnPercent = premiumReturn.Value, BasicInsuranceFeePercent = basicFee.Value,
         AdvancedInsuranceFeePercent = advancedFee.Value, PremiumInsuranceFeePercent = premiumFee.Value,
-        Transcend = TranscendTuning()
+        BasicInsuranceReturnHours = basicHours.Value, AdvancedInsuranceReturnHours = advancedHours.Value, PremiumInsuranceReturnHours = premiumHours.Value,
+        InstantFee = instantFee.Value, SecondTicketMax = secondTickets.Value, SecondTicketPrice = secondTicketPrice.Value,
+        ThirdTicketMax = thirdTickets.Value, ThirdTicketPrice = thirdTicketPrice.Value,
+        Transcend = TranscendTuning(), Boost = BoostTuning(), Mythic = MythicTuning()
     };
     private void ConfigureTranscend()
     {
@@ -399,13 +409,13 @@ public sealed partial class Plugin : BaseUnityPlugin
             }
             var response = await GameBridge.WithTimeout(GameBridge.Query<EnhanceQuote>(
                 "/rf/gear-enhance/quote", new { ProtocolVersion = EnhanceProtocol.Version, ItemId = itemId, Path = selectedPath, Settings = Settings(),
-                    Protection = new EnhanceProtection { Destruction = protectDestruction, Downgrade = protectDowngrade }, ChanceBoost = chanceBoost,
+                    Protection = new EnhanceProtection { Destruction = protectDestruction, Downgrade = protectDowngrade }, Boost = BoostRequest(),
                     Action = transcendMode ? EnhanceAction.Transcend : evolutionMode ? evolutionTargetStars == 3 ? EnhanceAction.EvolveThird : EnhanceAction.Evolve : EnhanceAction.Upgrade,
                     Track = transcendMode ? transcendTrack : TranscendTrack.None }));
             if (current != generation) { message = SettingsChanged; return; }
             quote = preview = response; weapon = response.IsWeapon;
             if (response.Action == EnhanceAction.Transcend) transcendAutomatic = response.Automatic; message = resultMessage ?? ""; destructionConfirmed = false;
-            chanceBoost = response.ChanceBoost;
+            chanceBoost = response.Boost.Length > 0;
             protectDestruction = response.Protection.Destruction; protectDowngrade = response.Protection.Downgrade;
         }
         catch (Exception ex) { message = ex.GetBaseException().Message; Logger.LogWarning(ex); }
@@ -445,6 +455,11 @@ public sealed partial class Plugin : BaseUnityPlugin
         pendingAttempt = quote; pendingDestructionConfirmation = destructionConfirmed; pendingGeneration = generation;
         busy = true; quote = null; message = transcendMode ? Loc.L("초월 진행 중…", "Transcending…") : Loc.L("강화 진행 중…", "Enhancing…");
     }
+
+    // Until the 1.4.0 tab window (stage 2) the old checkbox buys one bitcoin (+5%p).
+    private BoostChoice[] BoostRequest() => chanceBoost
+        ? new[] { new BoostChoice { Kind = BoostMaterial.Bitcoin, Count = 1 } } : Array.Empty<BoostChoice>();
+    private static long OwnedBitcoins(EnhanceQuote view) => view?.Boost?.Length > 0 ? view.Boost[0].Owned : 0;
 
     private void SetChanceBoost(bool enabled)
     {

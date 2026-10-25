@@ -6,14 +6,16 @@ namespace GearEnhance;
 public enum PriceBasis { Handbook, Flea }
 public enum FailureMode { KeepItem, ZeroDurability, Destroy, Downgrade }
 public enum EnhancePath { Recoil, Ergonomics, Precision, ArmorDurability, Mobility }
-public enum EnhanceAction { Upgrade, Evolve, EvolveThird, Insure, RegisterInserts, Transcend }
+// Appended only: receipts store the number. 1.4.0 adds ???, the mythic track, evolution
+// destruction tickets and the armor mythic zone reroll.
+public enum EnhanceAction { Upgrade, Evolve, EvolveThird, Insure, RegisterInserts, Transcend, Mystery, Mythic, BuyTicket, Reroll }
 // Enhancement insurance (1.2.0): bought in the enhancement window, separate from traders.
 public enum InsuranceTier { None, Basic, Advanced, Premium }
 
 public static class EnhanceProtocol
 {
-    public const int Version = 9;
-    public const string ModVersion = "1.3.0";
+    public const int Version = 10;
+    public const string ModVersion = "1.4.0";
     public static void Validate(int version)
     {
         if (version != Version)
@@ -45,17 +47,34 @@ public sealed class EnhanceSettings
     // Chance that lost gear comes back enhanced, and fee as % of its enhancement value.
     public double BasicInsuranceReturnPercent { get; set; } = 20;
     public double AdvancedInsuranceReturnPercent { get; set; } = 55;
-    public double PremiumInsuranceReturnPercent { get; set; } = 90;
+    public double PremiumInsuranceReturnPercent { get; set; } = 99;
     public double BasicInsuranceFeePercent { get; set; } = 5;
     public double AdvancedInsuranceFeePercent { get; set; } = 15;
     public double PremiumInsuranceFeePercent { get; set; } = 30;
+    // 1.4.0: a successful return is mailed this many real hours after the raid (0 = at once).
+    public double BasicInsuranceReturnHours { get; set; } = 24;
+    public double AdvancedInsuranceReturnHours { get; set; } = 12;
+    public double PremiumInsuranceReturnHours { get; set; }
+    // 1.4.0: skip the charge gauge for a flat fee (enhancement, transcendence, mythic).
+    public int InstantFee { get; set; } = 50000;
+    // 1.4.0 star evolution destruction tickets: lifetime purchases per gear and price of one.
+    public int SecondTicketMax { get; set; } = 3;
+    public int SecondTicketPrice { get; set; } = 3000000;
+    public int ThirdTicketMax { get; set; } = 2;
+    public int ThirdTicketPrice { get; set; } = 8000000;
     public EffectTuning Effects { get; set; } = new EffectTuning();
     public TranscendTuning Transcend { get; set; } = new TranscendTuning();
+    public BoostTuning Boost { get; set; } = new BoostTuning();
+    public MythicTuning Mythic { get; set; } = new MythicTuning();
 
     public double ReturnPercent(InsuranceTier tier) => tier == InsuranceTier.Premium ? PremiumInsuranceReturnPercent
         : tier == InsuranceTier.Advanced ? AdvancedInsuranceReturnPercent : tier == InsuranceTier.Basic ? BasicInsuranceReturnPercent : 0;
     public double FeePercent(InsuranceTier tier) => tier == InsuranceTier.Premium ? PremiumInsuranceFeePercent
         : tier == InsuranceTier.Advanced ? AdvancedInsuranceFeePercent : tier == InsuranceTier.Basic ? BasicInsuranceFeePercent : 0;
+    public double ReturnHours(InsuranceTier tier) => tier == InsuranceTier.Premium ? PremiumInsuranceReturnHours
+        : tier == InsuranceTier.Advanced ? AdvancedInsuranceReturnHours : tier == InsuranceTier.Basic ? BasicInsuranceReturnHours : 0;
+    public int TicketMax(int stars) => stars >= 3 ? ThirdTicketMax : stars == 2 ? SecondTicketMax : 0;
+    public int TicketPrice(int stars) => stars >= 3 ? ThirdTicketPrice : stars == 2 ? SecondTicketPrice : 0;
 
     public void Validate()
     {
@@ -72,6 +91,10 @@ public sealed class EnhanceSettings
             || !Finite(BasicInsuranceFeePercent) || BasicInsuranceFeePercent < 0 || BasicInsuranceFeePercent > 1000
             || !Finite(AdvancedInsuranceFeePercent) || AdvancedInsuranceFeePercent < 0 || AdvancedInsuranceFeePercent > 1000
             || !Finite(PremiumInsuranceFeePercent) || PremiumInsuranceFeePercent < 0 || PremiumInsuranceFeePercent > 1000
+            || !Hours(BasicInsuranceReturnHours) || !Hours(AdvancedInsuranceReturnHours) || !Hours(PremiumInsuranceReturnHours)
+            || InstantFee < 0 || InstantFee > 100000000
+            || SecondTicketMax < 0 || SecondTicketMax > 10 || ThirdTicketMax < 0 || ThirdTicketMax > 10
+            || SecondTicketPrice < 0 || SecondTicketPrice > 100000000 || ThirdTicketPrice < 0 || ThirdTicketPrice > 100000000
             || MaxLevel < 1 || MaxLevel > 100
             || !Finite(CostPercent) || CostPercent < 0 || CostPercent > 1000
             || !Finite(CostPerLevel) || CostPerLevel < 1 || CostPerLevel > 3
@@ -84,10 +107,15 @@ public sealed class EnhanceSettings
         Effects.Validate();
         if (Transcend == null) throw Loc.Argument("초월 강화 설정이 없습니다.", "Transcendence settings are missing.");
         Transcend.Validate();
+        if (Boost == null) throw Loc.Argument("성공률 재료 설정이 없습니다.", "Chance material settings are missing.");
+        Boost.Validate();
+        if (Mythic == null) throw Loc.Argument("신화 설정이 없습니다.", "Mythic settings are missing.");
+        Mythic.Validate();
     }
 
     private static bool Finite(double value) => !double.IsNaN(value) && !double.IsInfinity(value);
     private static bool Percent(double value) => Finite(value) && value >= 0 && value <= 100;
+    private static bool Hours(double value) => Finite(value) && value >= 0 && value <= 720;
 }
 
 public sealed class EnhanceProtection
@@ -106,16 +134,22 @@ public sealed class EnhanceQuote
     public int BaseCost { get; set; }
     public long DestructionProtectionFee { get; set; }
     public long DowngradeProtectionFee { get; set; }
-    public int ProtectionCost => Cost - BaseCost - BoostCost - InsertSurcharge;
-    public bool ChanceBoost { get; set; }
+    public int ProtectionCost => Cost - BaseCost - BoostCost - InsertSurcharge - InstantFee;
+    // 1.4.0 chance materials (at most two kinds) and their rouble price.
+    public BoostLine[] Boost { get; set; } = Array.Empty<BoostLine>();
     public int BoostCost { get; set; }
-    public int BoostBitcoins { get; set; }
-    public long AvailableBitcoins { get; set; }
     public double BaseSuccessPercent { get; set; }
     public double BoostPoints => SuccessPercent - BaseSuccessPercent;
-    public bool ChanceBoostAvailable => !BindLegacy && BaseSuccessPercent < 100;
-    public bool CanPay => AvailableRoubles >= Cost && AvailableBitcoins >= BoostBitcoins
-        && (Materials == null || Array.TrueForAll(Materials, m => m != null && m.Owned >= m.Count));
+    // ??? is a fixed 50/50; insurance, plates, tickets and rerolls are not rolled.
+    public bool BoostAvailable => !BindLegacy && BaseSuccessPercent < 100 && (Action == EnhanceAction.Upgrade
+        || Action == EnhanceAction.Evolve || Action == EnhanceAction.EvolveThird || Action == EnhanceAction.Transcend || Action == EnhanceAction.Mythic);
+    // The charge gauge can be skipped for a fee, except for star evolution and ???.
+    public bool InstantAvailable => !BindLegacy && (Action == EnhanceAction.Upgrade || Action == EnhanceAction.Transcend || Action == EnhanceAction.Mythic);
+    public bool Instant { get; set; }
+    public int InstantFee { get; set; }
+    public bool CanPay => AvailableRoubles >= Cost
+        && (Materials == null || Array.TrueForAll(Materials, m => m != null && m.Owned >= m.Count))
+        && (Boost == null || Array.TrueForAll(Boost, b => b != null && b.Owned >= b.Count));
     // The charge gauge runs before submission; the server must still accept the quote then.
     public bool ExpiresWithin(long nowUnixSeconds, double seconds) => ExpiresUnixSeconds - nowUnixSeconds < seconds;
     public EnhanceProtection Protection { get; set; } = new EnhanceProtection();
@@ -129,10 +163,12 @@ public sealed class EnhanceQuote
     public bool HighRisk { get; set; }
     // Conditional chance after a failed attempt. FailureMode is the other outcome.
     public double DestructionPercent { get; set; }
-    public bool DestructionProtectionAvailable => !IsEvolution && NextLevel >= 6 && SuccessPercent < 100 && (FailureMode == FailureMode.Destroy || DestructionPercent > 0);
-    public bool DowngradeProtectionAvailable => !IsEvolution && SuccessPercent < 100
-        && NextLevel >= (Transcend != TranscendTrack.None ? TranscendRules.DropFrom : 6)
-        && FailureMode == FailureMode.Downgrade && DestructionPercent < 100;
+    public bool DestructionProtectionAvailable => Action == EnhanceAction.Upgrade && NextLevel >= 6 && SuccessPercent < 100
+        && (FailureMode == FailureMode.Destroy || DestructionPercent > 0);
+    public bool DowngradeProtectionAvailable => SuccessPercent < 100 && FailureMode == FailureMode.Downgrade && DestructionPercent < 100
+        && (Action == EnhanceAction.Upgrade && NextLevel >= 6
+            || Action == EnhanceAction.Transcend && NextLevel >= TranscendRules.DropFrom
+            || Action == EnhanceAction.Mythic && NextLevel >= MythicRules.DropFrom);
     public bool CanDestroy => SuccessPercent < 100 && (FailureMode == FailureMode.Destroy || DestructionPercent > 0) && !Protection.Destruction;
     public int AttachedItems { get; set; }
     public long ExpiresUnixSeconds { get; set; }
@@ -181,6 +217,22 @@ public sealed class EnhanceQuote
     public TranscendMaterial[] Materials { get; set; } = Array.Empty<TranscendMaterial>();
     // Armor items whose max durability the next registration brings back in line.
     public int DurabilityPending { get; set; }
+    // Indexed by InsuranceTier: real hours until a successful return is mailed.
+    public double[] InsuranceHours { get; set; } = new double[4];
+    // 1.4.0 destruction tickets of the evolution to TicketStars (2 or 3), on every quote of the gear.
+    public int TicketStars { get; set; }
+    public int TicketsHeld { get; set; }
+    public int TicketsBought { get; set; }
+    public int TicketMax { get; set; }
+    public int TicketPrice { get; set; }
+    public bool UseTicket { get; set; }
+    // 1.4.0 mythic state of the gear (-1 = not mythic) and, for armor, its added zones.
+    public int MythicLevel { get; set; } = -1;
+    public string[] Zones { get; set; } = Array.Empty<string>();
+    // ???: zones the success may add. Reroll: zones the chosen slot may become.
+    public string[] ZoneOptions { get; set; } = Array.Empty<string>();
+    public int Rerolls { get; set; }
+    public int Slot { get; set; }
 }
 
 public sealed class EnhanceReceipt
@@ -205,6 +257,17 @@ public sealed class EnhanceReceipt
     public TranscendTrack Transcend { get; set; }
     // Pity of that track after the attempt (0 after a success).
     public double Pity { get; set; }
+    // 1.4.0
+    public bool Instant { get; set; }
+    public BoostLine[] Boost { get; set; } = Array.Empty<BoostLine>();
+    public bool TicketUsed { get; set; }
+    public int TicketsLeft { get; set; }
+    // Tickets of the finished evolution that vanished with its success (no refund).
+    public int TicketsVoided { get; set; }
+    public int MythicLevel { get; set; } = -1;
+    public string[] Zones { get; set; } = Array.Empty<string>();
+    public string OldZone { get; set; } = "";
+    public string NewZone { get; set; } = "";
 }
 
 public sealed class EnhanceRecord
@@ -227,6 +290,28 @@ public sealed class EnhanceSnapshot
     public DurabilityLink[] Durability { get; set; } = Array.Empty<DurabilityLink>();
     // Enhancement insurance per gear, for the stash label under the badge.
     public CoverageLink[] Coverage { get; set; } = Array.Empty<CoverageLink>();
+    // 1.4.0: mythic gear, and insured gear still waiting to be mailed back.
+    public MythicLink[] Mythic { get; set; } = Array.Empty<MythicLink>();
+    public ReturnLink[] Returns { get; set; } = Array.Empty<ReturnLink>();
+}
+
+public sealed class MythicLink
+{
+    public string ItemId { get; set; } = "";
+    public int Level { get; set; }
+    public string[] Zones { get; set; } = Array.Empty<string>();
+}
+
+public sealed class ReturnLink
+{
+    public string ItemId { get; set; } = "";
+    public string Template { get; set; } = "";
+    public bool IsWeapon { get; set; }
+    public int Stars { get; set; }
+    public int MythicLevel { get; set; } = -1;
+    public InsuranceTier Tier { get; set; }
+    public long StartUnixSeconds { get; set; }
+    public long DueUnixSeconds { get; set; }
 }
 
 public sealed class CoverageLink

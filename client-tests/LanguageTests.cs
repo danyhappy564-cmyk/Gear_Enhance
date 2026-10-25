@@ -21,8 +21,8 @@ public sealed class LanguageTests : IDisposable
     [Fact]
     public void Every_f12_section_key_and_description_has_an_english_pair()
     {
-        // 1.3.0 transcendence entries live in their own partial file.
-        var awake = Source("Plugin.cs") + Source("Plugin.Transcend.cs");
+        // 1.3.0 transcendence and 1.4.0 mythic entries live in their own partial files.
+        var awake = Source("Plugin.cs") + Source("Plugin.Transcend.cs") + Source("Plugin.Mythic.cs");
         var binds = Regex.Matches(awake, @"Bind(?:General|Developer)\((?<args>(?:[^;])*?)\);", RegexOptions.Singleline);
         Assert.True(binds.Count >= 25, binds.Count.ToString());
         var missing = new List<string>();
@@ -38,7 +38,11 @@ public sealed class LanguageTests : IDisposable
             foreach (var key in new[] { name + " / 단계" + unit, name + " 상한" + unit })
                 if (!ConfigText.Has(key)) missing.Add(key);
         }
-        foreach (var section in new[] { "5. 무기 효과", "6. 방어구 효과", "13. 초월 강화" }) if (!ConfigText.Has(section)) missing.Add(section);
+        foreach (var section in new[] { "5. 무기 효과", "6. 방어구 효과", "13. 초월 강화", "14. 성공률 재료", "15. 즉시 강화 · 파괴 방지권", "16. ??? · 신화" })
+            if (!ConfigText.Has(section)) missing.Add(section);
+        // Constants hold the notes shared by several entries.
+        foreach (Match constant in Regex.Matches(Source("Plugin.Mythic.cs"), "const string \\w+ = \"(?<text>[^\"]*)\";"))
+            if (!ConfigText.Has(constant.Groups["text"].Value)) missing.Add(constant.Groups["text"].Value);
         Assert.Empty(missing);
     }
 

@@ -44,6 +44,13 @@ public class SptEnhanceBackend(SaveServer saves, ItemHelper items, InventoryHelp
     public virtual bool Automatic(MongoId template) => items.GetItem(template).Value?.Properties?.WeapFireType?
         .Any(mode => mode == "fullauto" || mode == "burst") == true;
 
+    // 1.4.0 mythic armor: zones a template protects (soft armor colliders), and whether gear
+    // draws its extra zones from the head (helmets, face covers, eyewear) or the body.
+    public virtual IEnumerable<string> ArmorZones(MongoId template) =>
+        items.GetItem(template).Value?.Properties?.ArmorColliders ?? Enumerable.Empty<string>();
+    public virtual bool IsHeadArmor(MongoId template) => new[] { BaseClasses.HEADWEAR, BaseClasses.FACE_COVER, BaseClasses.VISORS }
+        .Any(c => items.IsOfBaseclass(template, c));
+
     // Template maximum durability; the base of the armor 2nd transcendence grant.
     public virtual double TemplateMaxDurability(MongoId template) => items.GetItem(template).Value?.Properties?.MaxDurability ?? 0;
 

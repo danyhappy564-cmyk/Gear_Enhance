@@ -435,12 +435,12 @@ public sealed partial class Plugin
     {
         Surface(new Rect(24, 550, 347, 112), cardGradient, Line);
         Surface(new Rect(385, 550, 351, 112), cardGradient, Line);
-        Label(45, 558, 300, 28, Loc.L("성공률", "Success chance") + (preview?.ChanceBoost == true ? $" (+{preview.BoostPoints:0.##}%p)" : ""), body);
+        Label(45, 558, 300, 28, Loc.L("성공률", "Success chance") + (preview?.Boost.Length > 0 ? $" (+{preview.BoostPoints:0.##}%p)" : ""), body);
         Label(44, 585, 300, 49, preview == null ? "—" : $"{preview.SuccessPercent:0.##}%", chanceValue);
         Bar(new Rect(48, 643, 296, 9), preview?.SuccessPercent ?? 0, 100, Gold);
         Label(405, 558, 310, 28, evolutionMode ? Loc.L("진화 비용", "Evolution cost") : Loc.L("총 강화 비용", "Total cost"), body);
         Label(406, 587, 310, 40, preview == null ? "—" : $"{preview.Cost:N0} ₽", costValue);
-        Label(407, 628, 309, 25, preview == null ? "" : Loc.L("보유 ", "Have ") + $"{preview.AvailableRoubles:N0} ₽ · BTC {preview.AvailableBitcoins:N0}", small);
+        Label(407, 628, 309, 25, preview == null ? "" : Loc.L("보유 ", "Have ") + $"{preview.AvailableRoubles:N0} ₽", small);
         Label(24, 670, 515, 23, evolutionMode && evolutionTargetStars == 3 ? Loc.L("가격 기준: 3차 진화 4,000,000 ₽ 고정", "Price: 3rd evolution fixed at 4,000,000 ₽")
             : Loc.L("가격 기준: ", "Price: ") + (preview == null ? Loc.L("견적 확인 중", "checking quote") : Loc.PriceSource(preview.PriceSource))
               + (preview?.PartsPrice > 0 ? Loc.L(" · 본체+방탄판", " · body + plates") : Loc.L(" · 장비 본체", " · gear body only"))
@@ -520,14 +520,13 @@ public sealed partial class Plugin
     }
     private void DrawChanceBoost(float x, float y, float width)
     {
-        var stars = evolutionMode ? evolutionTargetStars : 1;
-        var coins = transcendMode ? SuccessBoost.TranscendBitcoins : SuccessBoost.Bitcoins(evolutionMode, stars);
-        var fee = transcendMode ? SuccessBoost.TranscendRoubles : SuccessBoost.Roubles(evolutionMode, stars);
-        var points = transcendMode ? SuccessBoost.TranscendPoints : SuccessBoost.Points(evolutionMode);
-        GUI.enabled = !busy && !resultVisible && !uncertain && (chanceBoost || quote?.ChanceBoostAvailable == true);
+        var tuning = new BoostTuning();
+        var points = SuccessBoost.Points(BoostMaterial.Bitcoin, 1, tuning);
+        var fee = SuccessBoost.RoublesEach(BoostMaterial.Bitcoin, tuning);
+        GUI.enabled = !busy && !resultVisible && !uncertain && (chanceBoost || quote?.BoostAvailable == true);
+        var owned = chanceBoost ? Loc.L($" (보유 {OwnedBitcoins(preview):N0}개)", $" (have {OwnedBitcoins(preview):N0})") : "";
         var enabled = UiToggle(new Rect(x, y, width, 28), chanceBoost,
-            Loc.L($" 성공률 +{points}%p · BTC {coins}개 + {fee:N0} ₽ (보유 {preview?.AvailableBitcoins ?? 0:N0}개)",
-                $" Chance +{points}%p · {coins} BTC + {fee:N0} ₽ (have {preview?.AvailableBitcoins ?? 0:N0})"));
+            Loc.L($" 성공률 +{points}%p · BTC 1개 + {fee:N0} ₽", $" Chance +{points}%p · 1 BTC + {fee:N0} ₽") + owned);
         if (enabled != chanceBoost) main.Enqueue(() => SetChanceBoost(enabled));
         GUI.enabled = true;
     }

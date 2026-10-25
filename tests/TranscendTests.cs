@@ -124,9 +124,10 @@ public sealed class TranscendTests
 
         public EnhanceQuote Quote(TranscendTrack track, MongoId? item = null, bool protect = false, bool boost = false) =>
             Service.Quote(Session, (item ?? Vest).ToString(), Settings, null, new EnhanceProtection { Downgrade = protect },
-                EnhanceAction.Transcend, boost, InsuranceTier.None, track);
+                EnhanceAction.Transcend, boost ? new QuoteOptions { Boost = [new BoostChoice { Kind = BoostMaterial.Bitcoin, Count = 1 }] } : null,
+                InsuranceTier.None, track);
         public EnhanceQuote Manage(EnhanceAction action, InsuranceTier tier = InsuranceTier.None) =>
-            Service.Quote(Session, Vest.ToString(), Settings, null, null, action, false, tier);
+            Service.Quote(Session, Vest.ToString(), Settings, null, null, action, null, tier);
         public void Pay(EnhanceQuote quote)
         {
             LastOutput = new() { ProfileChanges = new() { [Session] = new() { Items = new() { NewItems = [], ChangedItems = [], DeletedItems = [] } } } };
@@ -212,7 +213,7 @@ public sealed class TranscendTests
         Assert.Throws<ArgumentException>(() => new EnhanceSettings { Transcend = new() { HorizontalRecoilPerLevel = 17 } }.Validate());
         Assert.Throws<ArgumentException>(() => new EnhanceSettings { Transcend = null! }.Validate());
         new EnhanceSettings().Validate();
-        Assert.Equal(9, EnhanceProtocol.Version);
+        Assert.Equal(10, EnhanceProtocol.Version);
     }
 
     [Fact]
@@ -485,17 +486,28 @@ public sealed class TranscendTests
     }
 
     [Fact]
-    public void Chance_boost_uses_three_bitcoins_and_a_million()
+    public void Chance_materials_apply_to_transcendence()
     {
         var rig = new Rig();
         rig.Settings = new EnhanceSettings();
         var quote = rig.Quote(TranscendTrack.Second, boost: true);
-        Assert.True(quote.ChanceBoost);
-        Assert.Equal((3, 1000000, 65d), (quote.BoostBitcoins, quote.BoostCost, quote.SuccessPercent));
+        Assert.Equal((300000, 65d), (quote.BoostCost, quote.SuccessPercent));
         rig.Backend.DrawValue = 0.62;
         rig.Pay(quote);
         Assert.Equal(1, rig.State.Transcend[Vest.ToString()].Second);
-        Assert.Equal(17, rig.Stock(SuccessBoost.BitcoinTemplate));
+        Assert.Equal(19, rig.Stock(SuccessBoost.BitcoinTemplate));
+    }
+
+    [Fact]
+    public void A_graphics_card_needed_as_a_material_is_not_offered_again_as_a_chance_boost()
+    {
+        // The armor 2nd track to level 5 needs one graphics card; the boost sees the other 19.
+        var rig = new Rig();
+        rig.Settings = new EnhanceSettings();
+        rig.State.Transcend[Vest.ToString()] = new TranscendRecord { Second = 4 };
+        var quote = rig.Service.Quote(Session, Vest.ToString(), rig.Settings, null, null, EnhanceAction.Transcend,
+            new QuoteOptions { Boost = [new BoostChoice { Kind = BoostMaterial.GraphicsCard, Count = 3 }] }, InsuranceTier.None, TranscendTrack.Second);
+        Assert.Equal(19, quote.Boost[0].Owned);
     }
 
     [Fact]

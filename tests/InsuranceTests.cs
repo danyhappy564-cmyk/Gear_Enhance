@@ -90,7 +90,7 @@ public sealed class InsuranceTests
         public static EnhanceSettings Sure => new() { AlwaysSucceed = true };
         public EnhanceQuote Quote(EnhanceAction action = EnhanceAction.Upgrade, InsuranceTier tier = InsuranceTier.None,
             EnhancePath path = EnhancePath.ArmorDurability) =>
-            Service.Quote(Session, Vest.ToString(), Sure, path, null, action, false, tier);
+            Service.Quote(Session, Vest.ToString(), Sure, path, null, action, null, tier);
         public void Pay(EnhanceQuote quote) => Service.Execute(Session, Pmc, quote.QuoteId, false, Output());
         public void Upgrade(int times, EnhancePath path = EnhancePath.ArmorDurability)
         {
@@ -199,7 +199,7 @@ public sealed class InsuranceTests
         foreach (var action in new[] { EnhanceAction.Upgrade, EnhanceAction.Insure, EnhanceAction.RegisterInserts })
         {
             var error = Assert.ThrowsAny<Exception>(() => rig.Service.Quote(Session, Spare.ToString(), Rig.Sure,
-                EnhancePath.ArmorDurability, null, action, false, InsuranceTier.Basic));
+                EnhancePath.ArmorDurability, null, action, null, InsuranceTier.Basic));
             Assert.Contains("따로 강화할 수 없습니다", error.Message);
         }
         // The vest itself is unaffected.
@@ -228,7 +228,7 @@ public sealed class InsuranceTests
         var low = rig.Quote(EnhanceAction.Insure, InsuranceTier.Advanced);
         Assert.Equal(EnhanceRules.Value(110000, new Dictionary<EnhancePath, int> { [EnhancePath.ArmorDurability] = 2 }, 1, Rig.Sure), low.InsuredValue);
         Assert.True(low.InsuranceFees[1] < low.InsuranceFees[2] && low.InsuranceFees[2] < low.InsuranceFees[3]);
-        Assert.Equal([0, 20, 55, 90], low.InsuranceChances);
+        Assert.Equal([0, 20, 55, 99], low.InsuranceChances);
         // Two armor tracks at different levels (the quote and the payment check must agree).
         rig.Upgrade(4, EnhancePath.Mobility);
         var high = rig.Quote(EnhanceAction.Insure, InsuranceTier.Advanced);

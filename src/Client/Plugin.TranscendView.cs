@@ -235,13 +235,13 @@ public sealed partial class Plugin
     {
         Surface(new Rect(24, 576, 347, 112), cardGradient, Line);
         Surface(new Rect(385, 576, 351, 112), cardGradient, Line);
-        Label(45, 582, 310, 26, Loc.L("성공률", "Success chance") + (preview?.ChanceBoost == true ? Paint($" (+{preview.BoostPoints:0.##}%p)", Good) : ""), richBody);
+        Label(45, 582, 310, 26, Loc.L("성공률", "Success chance") + (preview?.Boost.Length > 0 ? Paint($" (+{preview.BoostPoints:0.##}%p)", Good) : ""), richBody);
         Label(44, 606, 120, 46, preview == null ? "—" : $"{preview.SuccessPercent:0.##}%", chanceValue);
         if (preview != null)
         {
             var basic = Math.Max(0, preview.BaseSuccessPercent - preview.PityPercent);
             Label(160, 612, 200, 20, Loc.L($"기본 {basic:0.##}%", $"Base {basic:0.##}%") + Paint(Loc.L($" · 천장 +{preview.PityPercent:0.##}%p", $" · pity +{preview.PityPercent:0.##}%p"), Cyan)
-                + (preview.ChanceBoost ? Paint($" · BTC +{preview.BoostPoints:0.##}%p", Good) : ""), richSmall);
+                + (preview.Boost.Length > 0 ? Paint($" · BTC +{preview.BoostPoints:0.##}%p", Good) : ""), richSmall);
             Label(160, 632, 200, 20, Loc.L($"천장: 실패마다 +{preview.PityStep:0.##}%p · 최대 {preview.PityCap:0.##}%p", $"Pity: +{preview.PityStep:0.##}%p per failure · max {preview.PityCap:0.##}%p"), small);
             // One bar in three colors: base, pity, bitcoin boost.
             Bar(new Rect(48, 663, 296, 9), 0, 100, Gold);
@@ -257,7 +257,7 @@ public sealed partial class Plugin
         }
         Label(405, 582, 310, 26, Loc.L("초월 비용", "Transcendence cost"), body);
         Label(406, 610, 310, 40, preview == null ? "—" : $"{preview.Cost:N0} ₽", costValue);
-        Label(407, 652, 309, 25, preview == null ? "" : Loc.L("보유 ", "Have ") + $"{preview.AvailableRoubles:N0} ₽ · BTC {preview.AvailableBitcoins:N0}", small);
+        Label(407, 652, 309, 25, preview == null ? "" : Loc.L("보유 ", "Have ") + $"{preview.AvailableRoubles:N0} ₽", small);
         Label(24, 692, 712, 22, Loc.L("가격 기준: ", "Price: ") + (preview == null ? Loc.L("견적 확인 중", "checking quote") : Loc.PriceSource(preview.PriceSource))
             + (preview?.PartsPrice > 0 ? Loc.L(" · 본체+방탄판", " · body + plates") : Loc.L(" · 장비 본체", " · gear body only"))
             + Loc.L($" · 최소 비용 {MinimumTranscendCost:N0} ₽", $" · minimum {MinimumTranscendCost:N0} ₽")
