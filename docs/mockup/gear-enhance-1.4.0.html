@@ -1,0 +1,1220 @@
+<title>Gear Enhance 1.4.0 목업</title>
+<!-- 사용자 디자인 원본(Main.dc.html) 그대로. React는 support.js가 jsDelivr(react@18.3.1, SRI)에서 불러옴 -->
+<script src="./support.js"></script>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&amp;family=Rajdhani:wght@600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#07090b}
+a{color:#d9b36c}a:hover{color:#f0cf8c}
+button{font-family:inherit}
+.num{font-family:'Rajdhani','Noto Sans KR',sans-serif;font-variant-numeric:tabular-nums}
+.tab{all:unset;box-sizing:border-box;display:flex;align-items:center;gap:10px;width:100%;min-height:58px;padding:8px 12px;border-bottom:1px solid #22282e;cursor:pointer;color:#c9c4b8}
+.tab:hover{background:#171b20}
+.tab:focus-visible{outline:2px solid #d9b36c;outline-offset:-2px}
+.tab.on{background:#2a2416;color:#f3e3bf}
+.tmark{width:34px;flex:none;text-align:center;font-size:13px;font-weight:700}
+.tlabel{display:block;font-size:14px;font-weight:700}
+.tsub{display:block;font-size:11px;color:#9aa1a8;margin-top:2px}
+.tab.on .tsub{color:#cdb88c}
+.mid{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;display:flex;flex-direction:column;gap:10px;scrollbar-width:thin;scrollbar-color:#3a4148 transparent}
+.mid > *{flex-shrink:0}
+.tab:disabled{cursor:not-allowed;color:#5d646b}
+.tab:disabled:hover{background:none}
+.tab:disabled .tsub{color:#5d646b}
+.card.myth{border-color:#8a3f79;background:#1a1019;cursor:default}
+.card.myth .clv{color:#ff6ad5}
+.card.mythpick{border-color:#8a3f79;background:#1a1019}
+.card.mythpick:hover{border-color:#ff6ad5}
+.card.mythpick .clv{color:#ff6ad5}
+.card.mythpick .csub{color:#ff9be4}
+.btn.danger{background:#a8325e;color:#fff}
+.btn.danger:hover{background:#bd3b6b}
+.lang{display:flex;border:1px solid #333a42}
+.lbtn{all:unset;box-sizing:border-box;display:flex;align-items:center;justify-content:center;min-height:32px;min-width:44px;padding:0 10px;font-size:12px;font-weight:700;color:#9aa1a8;background:#15191d;cursor:pointer}
+.lbtn:hover{color:#e6e2d8}
+.lbtn:focus-visible{outline:2px solid #d9b36c;outline-offset:-2px}
+.lbtn.on{background:#2a2416;color:#f3e3bf}
+.card{all:unset;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;min-height:56px;padding:4px 8px;border:1px solid #2a3037;background:#13171b;color:#e6e2d8;cursor:pointer;text-align:center}
+.card:hover{border-color:#4a525b}
+.card:focus-visible{outline:2px solid #d9b36c;outline-offset:2px}
+.card.on{border-color:#d9b36c;background:#211d14}
+.card.fixed{cursor:default}
+.card.ok{border-color:#3d5a42}
+.cname{font-size:14px;font-weight:700}
+.clv{font-size:20px;font-weight:700;color:#d9b36c;line-height:1}
+.card.ok .clv{color:#8fd694}
+.csub{font-size:11px;color:#9aa1a8}
+.bar{position:relative;height:8px;background:#22282e;margin-top:6px}
+.bar > div{transition:width .35s ease-out}
+.bnext{position:absolute;left:0;top:0;bottom:0;background:#5fa8ff}
+.bcur{position:absolute;left:0;top:0;bottom:0;background:#6b737c}
+.bbase{position:absolute;left:0;top:0;bottom:0;background:#c4c0b6}
+.opt{display:flex;align-items:center;gap:8px;min-height:44px;padding:0 12px;border:1px solid #2a3037;background:#13171b;cursor:pointer;font-size:13px;color:#e6e2d8}
+.opt input,.mname input{width:16px;height:16px;accent-color:#d9b36c;margin:0;flex:none}
+.opt.off{color:#6f777f;cursor:not-allowed;background:#101316}
+.oprice{margin-left:auto;font-size:13px;color:#c9b07a}
+.opt.off .oprice{color:#6f777f}
+.chip{display:flex;flex-direction:column;justify-content:center;gap:1px;min-height:44px;padding:0 10px;border:1px solid #2a3037;background:#101316;font-size:11px;color:#9aa1a8}
+.chip b{font-size:13px;color:#e6e2d8}
+.chip.warn{border-color:#8a6a3b;background:#1f1a12;color:#ffb26b}
+.mrow{display:grid;grid-template-columns:196px 116px 52px minmax(0,1fr) 104px 64px;align-items:center;gap:10px;min-height:38px;padding:0 12px;border:1px solid #2a3037;background:#101316}
+.mrow.on{border-color:#3b5f8a;background:#121a24}
+.mrow.locked{opacity:.55}
+.mname{display:flex;align-items:center;gap:10px;min-height:38px;cursor:pointer}
+.mrow.locked .mname{cursor:not-allowed}
+.mt{display:block;font-size:14px;font-weight:700}
+.ms{display:block;font-size:11px;color:#9aa1a8}
+.step{display:flex;align-items:center;justify-content:space-between;border:1px solid #2a3037;background:#0d1013}
+.sbtn{all:unset;box-sizing:border-box;width:36px;height:34px;display:flex;align-items:center;justify-content:center;font-size:18px;color:#e6e2d8;cursor:pointer}
+.sbtn:hover{background:#1f252b}
+.sbtn:focus-visible{outline:2px solid #d9b36c;outline-offset:-2px}
+.sbtn:disabled{color:#4b5259;cursor:not-allowed;background:none}
+.scount{font-size:18px;font-weight:700;min-width:34px;text-align:center}
+.mbonus{font-size:18px;font-weight:700}
+.mcap{font-size:11px;color:#9aa1a8;margin-left:4px}
+.mcost{font-size:15px;text-align:right}
+.mheld{font-size:11px;color:#9aa1a8;text-align:right}
+.btn{all:unset;box-sizing:border-box;display:flex;align-items:center;justify-content:center;min-height:48px;font-size:15px;font-weight:700;cursor:pointer;text-align:center}
+.btn:focus-visible{outline:2px solid #f3e3bf;outline-offset:2px}
+.btn.sec{background:#1b2025;border:1px solid #333a42;color:#e6e2d8}
+.btn.sec:hover{background:#222830}
+.btn.act{background:#d9b36c;color:#1a1408}
+.btn.act:hover{background:#e6c47f}
+.btn.fast{background:#1d2a38;border:1px solid #3b5f8a;color:#cfe4ff;flex-direction:column;gap:0}
+.btn.fast:hover{background:#233447}
+.btn.dis{background:#1e2226;color:#7b838b;cursor:not-allowed;border:1px solid #2a3037;flex-direction:column;gap:0}
+.fsub{font-size:11px;font-weight:500;opacity:.85}
+.mini{all:unset;box-sizing:border-box;display:flex;align-items:center;justify-content:center;min-height:32px;min-width:32px;padding:0 10px;border:1px solid #333a42;background:#1b2025;color:#e6e2d8;font-size:12px;cursor:pointer}
+.mini:hover{background:#252b32}
+.mini:focus-visible{outline:2px solid #d9b36c;outline-offset:2px}
+.mini:disabled{color:#4b5259;cursor:not-allowed;background:#15191d}
+.tier{all:unset;box-sizing:border-box;display:flex;flex-direction:column;gap:6px;padding:16px;border:1px solid #2a3037;background:#13171b;cursor:pointer;color:#e6e2d8}
+.tier:hover{border-color:#4a525b}
+.tier:focus-visible{outline:2px solid #d9b36c;outline-offset:2px}
+.tier.on{border-color:#d9b36c;background:#211d14}
+.hq{all:unset;box-sizing:border-box;display:flex;align-items:center;width:100%;min-height:48px;padding:0 16px;cursor:pointer;font-size:15px;font-weight:700;color:#e6e2d8}
+.hq:hover{background:#181c21}
+.hq:focus-visible{outline:2px solid #d9b36c;outline-offset:-2px}
+.srow{display:flex;align-items:baseline;gap:6px;padding:7px 0;border-bottom:1px solid #22282e;font-size:13px}
+.slabel{color:#b9b3a6}
+.sval{margin-left:auto;font-size:17px;font-weight:700;color:#e6e2d8}
+.snext{font-size:17px;font-weight:700;color:#5fa8ff}
+.sarrow{color:#7d8794;font-size:12px}
+.srow.chg .sval{color:#9aa1a8}
+.dropA{animation:dropA .46s cubic-bezier(.2,.9,.3,1.3) both}
+.dropB{animation:dropB .46s cubic-bezier(.2,.9,.3,1.3) both}
+@keyframes dropA{0%{opacity:0;transform:translateY(-30px)}65%{opacity:1;transform:translateY(4px)}100%{opacity:1;transform:none}}
+@keyframes dropB{0%{opacity:0;transform:translateY(-30px)}65%{opacity:1;transform:translateY(4px)}100%{opacity:1;transform:none}}
+.panelA{animation:panelA .28s ease-out both}
+.panelB{animation:panelB .28s ease-out both}
+@keyframes panelA{0%{opacity:0;transform:translateX(-22px)}100%{opacity:1;transform:none}}
+@keyframes panelB{0%{opacity:0;transform:translateX(-22px)}100%{opacity:1;transform:none}}
+.glowA .snext{animation:glowA 1.2s ease-out both}
+.glowB .snext{animation:glowB 1.2s ease-out both}
+@keyframes glowA{0%,40%{text-shadow:0 0 0 rgba(95,168,255,0)}60%{text-shadow:0 0 12px rgba(95,168,255,.95)}100%{text-shadow:0 0 0 rgba(95,168,255,0)}}
+@keyframes glowB{0%,40%{text-shadow:0 0 0 rgba(95,168,255,0)}60%{text-shadow:0 0 12px rgba(95,168,255,.95)}100%{text-shadow:0 0 0 rgba(95,168,255,0)}}
+.fillA{transform-origin:left center;animation:fillA .75s cubic-bezier(.25,.8,.3,1) both}
+.fillB{transform-origin:left center;animation:fillB .75s cubic-bezier(.25,.8,.3,1) both}
+@keyframes fillA{0%{transform:scaleX(0)}100%{transform:scaleX(1)}}
+@keyframes fillB{0%{transform:scaleX(0)}100%{transform:scaleX(1)}}
+.pop{animation:popIn .3s cubic-bezier(.2,.9,.3,1.2) both}
+.pop.shake{animation:popIn .3s cubic-bezier(.2,.9,.3,1.2) both,shake .5s .04s both}
+.pop.confirm{animation:popIn .3s cubic-bezier(.2,.9,.3,1.2) both,confirmHit .45s 1.22s both}
+@keyframes confirmHit{0%{transform:none}30%{transform:scale(1.035)}100%{transform:none}}
+.pop.confirm .ptitle{animation:qHit .7s 1.22s ease-out both}
+@keyframes qHit{0%{text-shadow:0 0 0 transparent}25%{text-shadow:0 0 28px #ff6ad5}100%{text-shadow:0 0 0 transparent}}
+@keyframes popIn{0%{transform:scale(.92)}100%{transform:none}}
+@keyframes shake{0%,100%{transform:none}20%{transform:translateX(-10px)}40%{transform:translateX(8px)}60%{transform:translateX(-6px)}80%{transform:translateX(3px)}}
+.ptitle.glow{animation:titleGlow 1.2s .05s ease-out both}
+.ptitle.glow.late{animation-delay:1.45s}
+@keyframes titleGlow{0%{text-shadow:0 0 0 transparent}12%{text-shadow:0 0 22px currentColor}100%{text-shadow:0 0 0 transparent}}
+.peff{animation:effIn .5s .35s ease-out both}
+@keyframes effIn{0%{transform:translateY(-8px)}100%{transform:none}}
+.gauge{transform-origin:left center;animation:gauge 4.412s linear both}
+.gauge.wait{animation:none;transform:scaleX(0)}
+@keyframes gauge{0%{transform:scaleX(0)}100%{transform:scaleX(1)}}
+.piece{position:absolute;width:90px;height:37px;overflow:hidden;animation-duration:.95s;animation-delay:.06s;animation-timing-function:cubic-bezier(.2,.7,.3,1);animation-fill-mode:both}
+.p0{animation-name:s0}.p1{animation-name:s1}.p2{animation-name:s2}.p3{animation-name:s3}.p4{animation-name:s4}.p5{animation-name:s5}.p6{animation-name:s6}.p7{animation-name:s7}.p8{animation-name:s8}
+@keyframes s0{0%{transform:none;opacity:1}100%{transform:translate(-70px,-50px) rotate(-25deg);opacity:.35}}
+@keyframes s1{0%{transform:none;opacity:1}100%{transform:translate(0,-70px) rotate(12deg);opacity:.35}}
+@keyframes s2{0%{transform:none;opacity:1}100%{transform:translate(75px,-48px) rotate(28deg);opacity:.35}}
+@keyframes s3{0%{transform:none;opacity:1}100%{transform:translate(-95px,6px) rotate(-18deg);opacity:.35}}
+@keyframes s4{0%{transform:none;opacity:1}100%{transform:translate(6px,26px) rotate(8deg);opacity:.35}}
+@keyframes s5{0%{transform:none;opacity:1}100%{transform:translate(98px,-4px) rotate(20deg);opacity:.35}}
+@keyframes s6{0%{transform:none;opacity:1}100%{transform:translate(-72px,62px) rotate(30deg);opacity:.35}}
+@keyframes s7{0%{transform:none;opacity:1}100%{transform:translate(-4px,78px) rotate(-14deg);opacity:.35}}
+@keyframes s8{0%{transform:none;opacity:1}100%{transform:translate(80px,58px) rotate(-26deg);opacity:.35}}
+.fx{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.fxflash{position:absolute;inset:0;background:#fff;animation:fxFlash .8s ease-out both}
+@keyframes fxFlash{0%{opacity:.9}100%{opacity:0}}
+.fxrays{position:absolute;left:50%;top:50%;width:1500px;height:1500px;margin:-750px 0 0 -750px;border-radius:50%;background:repeating-conic-gradient(rgba(255,106,213,.26) 0deg 5deg,transparent 5deg 18deg,rgba(255,216,120,.2) 18deg 22deg,transparent 22deg 36deg);-webkit-mask:radial-gradient(circle,#000 0,#000 22%,transparent 62%);mask:radial-gradient(circle,#000 0,#000 22%,transparent 62%);animation:fxSpin 16s linear infinite,fxFade .9s ease-out both}
+@keyframes fxSpin{to{transform:rotate(360deg)}}
+@keyframes fxFade{0%{opacity:0}100%{opacity:1}}
+.fxring{position:absolute;left:50%;top:50%;width:200px;height:200px;margin:-100px 0 0 -100px;border-radius:50%;border:3px solid #ff6ad5;box-shadow:0 0 24px #ff6ad5;animation:fxRing 1.5s cubic-bezier(.2,.7,.3,1) both}
+.fxring.r2{border-color:#ffd878;box-shadow:0 0 24px #ffd878;animation-delay:.23s}
+.fxring.r3{border-color:#fff;box-shadow:0 0 24px #fff;animation-delay:.4s}
+.fx.lite .fxring.r2{animation-delay:.09s}
+@keyframes fxRing{0%{transform:scale(.2);opacity:1}100%{transform:scale(5.5);opacity:0}}
+.fxspark{position:absolute;left:50%;top:50%;width:0;height:0}
+.fxspark i{position:absolute;left:0;top:-3px;width:30px;height:6px;border-radius:3px;background:currentColor;box-shadow:0 0 12px currentColor;animation:fxShoot 1.2s cubic-bezier(.15,.7,.3,1) both}
+@keyframes fxShoot{0%{transform:translateX(20px) scaleX(.3);opacity:0}12%{opacity:1}100%{transform:translateX(460px) scaleX(1);opacity:0}}
+.fx.loop .fxspark i,.fx.loop .fxring,.fx.loop .fxflash{animation-iteration-count:infinite}
+.fx.loop .fxspark i{animation-duration:2.4s}
+.fx.loop .fxring{animation-duration:2.4s}
+.fx.loop .fxflash{animation-duration:2.4s;animation-name:fxFlashLoop}
+@keyframes fxFlashLoop{0%{opacity:.5}25%,100%{opacity:0}}
+.pop.mythic{animation:mythIn .75s cubic-bezier(.2,.9,.25,1.25) both,mythGlow 2.4s .75s ease-in-out infinite}
+@keyframes mythIn{0%{transform:scale(.45) rotate(-5deg)}60%{transform:scale(1.07)}100%{transform:none}}
+@keyframes mythGlow{0%,100%{box-shadow:0 0 0 1px #ff6ad5,0 0 34px rgba(255,106,213,.4)}50%{box-shadow:0 0 0 2px #ffd878,0 0 80px rgba(255,106,213,.8)}}
+.ptitle.mythic{background:linear-gradient(90deg,#ff6ad5,#ffd878,#ffffff,#9fd0ff,#ff6ad5);background-size:300% 100%;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;font-size:44px !important;letter-spacing:2px;animation:shimmer 2.4s linear infinite}
+@keyframes shimmer{to{background-position:300% 0}}
+.fxstar{font-size:46px;line-height:1;color:#ffd878;text-shadow:0 0 18px #ff6ad5,0 0 36px #ffd878;animation:starIn .9s .06s cubic-bezier(.2,.9,.3,1.3) both}
+@keyframes starIn{0%{transform:scale(0) rotate(-200deg);opacity:0}70%{transform:scale(1.35) rotate(15deg);opacity:1}100%{transform:none;opacity:1}}
+.fx.lite .fxrays,.fx.lite .fxflash,.fx.lite .fxring.r3{display:none}
+.fx.lite .fxring{animation-name:fxRingS;animation-duration:1.1s}
+@keyframes fxRingS{0%{transform:scale(.2);opacity:.9}100%{transform:scale(3);opacity:0}}
+.fx.lite .fxspark i{animation-name:fxShootS;animation-duration:.9s;width:20px;height:4px}
+@keyframes fxShootS{0%{transform:translateX(16px) scaleX(.3);opacity:0}15%{opacity:1}100%{transform:translateX(260px) scaleX(1);opacity:0}}
+.pop.mythlite{animation:popIn .3s cubic-bezier(.2,.9,.3,1.2) both,mythGlow 1.2s .3s ease-in-out 2}
+.ptitle.mythlite{background:linear-gradient(90deg,#ff6ad5,#ffd878,#ffffff,#9fd0ff,#ff6ad5);background-size:300% 100%;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;font-size:36px !important;animation:shimmer 2.4s linear infinite}
+.fxstar.lite{font-size:30px}
+.snd svg{display:block}
+@media (prefers-reduced-motion: reduce){.dropA,.dropB,.panelA,.panelB,.glowA .snext,.glowB .snext,.fillA,.fillB,.pop,.pop.shake,.ptitle.glow,.peff,.gauge,.piece,.fxflash,.fxrays,.fxring,.fxspark i,.pop.mythic,.ptitle.mythic,.fxstar,.pop.mythlite,.ptitle.mythlite{animation:none}.fxflash,.fxring,.fxspark{display:none}}
+</style>
+</helmet>
+<div style="width: 1240px; height: 2140px; box-sizing: border-box; padding: 24px; background: #07090b; font-family: 'Noto Sans KR', 'Malgun Gothic', sans-serif; color: #e6e2d8; display: flex; flex-direction: column; gap: 40px">
+<sc-for list="{{screens}}" as="S" hint-placeholder-count="2">
+<div style="display: flex; flex-direction: column; gap: 12px">
+<div style="font-size: 16px; font-weight: 700; color: #9aa1a8">{{S.caption}}</div>
+<div style="display: flex; align-items: flex-start; gap: 16px">
+
+  <div style="position: relative; display: flex; width: 908px; height: 980px; border: 1px solid #353c44; background: #111417; flex: none">
+
+    <sc-if value="{{S.showOverlay}}" hint-placeholder-val="{{false}}">
+      <div role="dialog" aria-modal="true" aria-label="{{S.T.resultAria}}" style="position: absolute; left: 0; right: 0; top: 56px; bottom: 0; z-index: 5; background: rgba(0, 0, 0, 0.65); display: flex; align-items: center; justify-content: center">
+        <sc-if value="{{S.p.fx}}" hint-placeholder-val="{{false}}">
+          <div class="{{S.p.fxCls}}" aria-hidden="true">
+            <div class="fxrays"></div>
+            <div class="fxring"></div><div class="fxring r2"></div><div class="fxring r3"></div>
+            <sc-for list="{{S.p.sparks}}" as="k" hint-placeholder-count="0"><div class="fxspark" style="transform: rotate({{k.a}}deg); color: {{k.c}}"><i style="animation-delay: {{k.d}}ms"></i></div></sc-for>
+            <div class="fxflash"></div>
+          </div>
+        </sc-if>
+        <div class="{{S.p.cardCls}}" style="position: relative; z-index: 1; width: 620px; box-sizing: border-box; background: #15191d; border: 1px solid #353c44; box-shadow: 0 0 0 1px {{S.p.tintSoft}}, 0 24px 60px rgba(0, 0, 0, 0.6)">
+          <div style="height: 5px; background: {{S.p.tint}}"></div>
+          <div style="padding: 22px 32px 26px; display: flex; flex-direction: column; align-items: center; gap: 12px; text-align: center">
+            <div style="font-size: 12px; letter-spacing: 2px; color: #9aa1a8">{{S.p.kicker}}</div>
+            <sc-if value="{{S.p.fx}}" hint-placeholder-val="{{false}}"><div class="{{S.p.starCls}}" aria-hidden="true">✦</div></sc-if>
+            <div class="{{S.p.titleCls}}" style="font-size: 34px; font-weight: 700; line-height: 1.15; color: {{S.p.tint}}">{{S.p.title}}</div>
+            <div style="font-size: 17px; color: #e6e2d8">{{S.p.line}}</div>
+            <sc-if value="{{S.p.shatter}}" hint-placeholder-val="{{false}}">
+              <div style="position: relative; width: 270px; height: 110px; margin: 6px 0">
+                <sc-for list="{{S.p.pieces}}" as="s" hint-placeholder-count="9">
+                  <div class="{{s.cls}}" style="left: {{s.x}}px; top: {{s.y}}px">
+                    <sc-if value="{{s.gun}}" hint-placeholder-val="{{true}}"><svg width="270" height="110" viewBox="0 0 300 110" aria-hidden="true" style="position: absolute; left: {{s.ox}}px; top: {{s.oy}}px"><rect x="8" y="42" width="62" height="20" fill="#4a5158"></rect><rect x="8" y="38" width="14" height="30" fill="#3d434a"></rect><rect x="70" y="34" width="118" height="28" fill="#59616a"></rect><rect x="106" y="22" width="44" height="12" fill="#4a5158"></rect><rect x="188" y="38" width="72" height="20" fill="#4f565e"></rect><rect x="260" y="45" width="36" height="6" fill="#3d434a"></rect><path d="M118 62h24l6 40h-22z" fill="#3d434a"></path><path d="M88 62h16l-4 30h-14z" fill="#3d434a"></path></svg></sc-if>
+                    <sc-if value="{{s.vest}}" hint-placeholder-val="{{false}}"><svg width="270" height="110" viewBox="-60 0 240 120" aria-hidden="true" style="position: absolute; left: {{s.ox}}px; top: {{s.oy}}px"><path d="M30 8h18v16h24V8h18v22l12 12v70H18V42l12-12z" fill="#4f565e"></path><rect x="36" y="42" width="48" height="40" fill="#59616a"></rect><rect x="24" y="90" width="72" height="16" fill="#3d434a"></rect></svg></sc-if>
+                  </div>
+                </sc-for>
+              </div>
+            </sc-if>
+            <sc-if value="{{S.p.hasEff}}" hint-placeholder-val="{{true}}">
+              <div style="display: flex; align-items: baseline; gap: 12px; width: 100%; box-sizing: border-box; padding: 12px 16px; background: #0e1114; border: 1px solid #2a3037">
+                <span style="font-size: 14px; color: #b9b3a6">{{S.p.eff.label}}</span>
+                <span class="num" style="margin-left: auto; font-size: 22px; font-weight: 700; color: #c4c0b6">{{S.p.eff.cur}}</span>
+                <span style="color: #7d8794">→</span>
+                <span class="num peff" style="font-size: 22px; font-weight: 700; color: {{S.p.effColor}}">{{S.p.eff.next}}</span>
+              </div>
+            </sc-if>
+            <sc-if value="{{S.p.charging}}" hint-placeholder-val="{{false}}">
+              <div style="width: 100%; padding: 8px 0 4px">
+                <div style="position: relative; height: 12px; background: #22282e"><div class="{{S.p.gaugeCls}}" style="position: absolute; left: 0; top: 0; right: 0; bottom: 0; background: {{S.p.tint}}; animation-duration: {{S.p.gaugeMs}}ms"></div></div>
+              </div>
+            </sc-if>
+            <sc-if value="{{S.p.hasFoot}}" hint-placeholder-val="{{true}}">
+              <div style="width: 100%; border-top: 1px solid #2a3037; padding-top: 12px; display: flex; flex-direction: column; gap: 4px">
+                <sc-if value="{{S.p.hasCost}}" hint-placeholder-val="{{true}}"><div style="font-size: 13px; color: #9aa1a8">{{S.T.spent}} <span class="num" style="font-size: 16px; color: #e6e2d8; margin-left: 6px">{{S.p.cost}}</span></div></sc-if>
+                <sc-if value="{{S.p.hasNote}}" hint-placeholder-val="{{false}}"><div style="font-size: 13px; color: {{S.p.noteColor}}">{{S.p.note}}</div></sc-if>
+              </div>
+            </sc-if>
+            <sc-if value="{{S.p.hasButton}}" hint-placeholder-val="{{true}}"><button type="button" class="btn act" style="width: 330px; min-height: 46px; margin-top: 4px" onClick="{{S.p.close}}">{{S.T.ok}}</button></sc-if>
+            <sc-if value="{{S.p.hasSkip}}" hint-placeholder-val="{{false}}"><label class="opt" for="{{S.p.skipId}}" style="width: 100%; box-sizing: border-box"><input type="checkbox" id="{{S.p.skipId}}" checked="{{S.p.skipOn}}" onChange="{{S.p.skipToggle}}"><span>{{S.T.skipRisk}}</span></label></sc-if>
+            <sc-if value="{{S.p.hasConfirm}}" hint-placeholder-val="{{false}}"><div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; width: 100%; margin-top: 4px"><button type="button" class="btn sec" onClick="{{S.p.close}}">{{S.T.cancel}}</button><button type="button" class="btn danger" onClick="{{S.p.proceed}}">{{S.T.proceed}}</button></div></sc-if>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+    <nav aria-label="{{S.T.menuAria}}" style="width: 148px; flex: none; border-right: 1px solid #2a3037; background: #0d1013; display: flex; flex-direction: column">
+      <div style="height: 56px; display: flex; align-items: center; justify-content: center; border-bottom: 1px solid #2a3037; font-size: 13px; font-weight: 700; color: #9aa1a8; letter-spacing: 2px">{{S.T.list}}</div>
+      <sc-for list="{{S.tabs}}" as="t" hint-placeholder-count="6">
+        <button type="button" class="{{t.cls}}" onClick="{{t.pick}}" disabled="{{t.off}}" style="box-shadow: inset 0 0 0 2px {{t.ring}}">
+          <span class="tmark" style="color: {{t.color}}">{{t.mark}}</span>
+          <span><span class="tlabel">{{t.label}}</span><span class="tsub">{{t.sub}}</span></span>
+        </button>
+      </sc-for>
+    </nav>
+
+    <div style="flex: 1; min-width: 0; display: flex; flex-direction: column">
+      <header style="height: 56px; flex: none; display: flex; align-items: center; gap: 8px; padding: 0 12px 0 20px; border-bottom: 1px solid #2a3037; background: #15191d">
+        <h2 style="margin: 0; font-size: 22px; font-weight: 700; color: #f3e3bf"><span class="num" style="font-size: 26px; letter-spacing: 1px">GEAR Enhance</span></h2>
+        <span class="num" style="font-size: 14px; color: #9aa1a8; padding-top: 4px">v1.4.0</span>
+        <span style="flex: 1"></span>
+        <div class="lang" role="group" aria-label="Language">
+          <sc-for list="{{S.langs}}" as="lg" hint-placeholder-count="2">
+            <button type="button" class="{{lg.cls}}" lang="{{lg.code}}" aria-pressed="{{lg.on}}" onClick="{{lg.pick}}">{{lg.label}}</button>
+          </sc-for>
+        </div>
+        <button type="button" class="mini snd" onClick="{{S.snd.toggle}}" aria-pressed="{{S.snd.on}}" aria-label="{{S.snd.label}}" title="{{S.snd.label}}">
+          <sc-if value="{{S.snd.on}}" hint-placeholder-val="{{true}}"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2 6h3l4-3v10l-4-3H2z"></path><path d="M11 5.5a3.5 3.5 0 0 1 0 5"></path><path d="M12.8 3.5a6 6 0 0 1 0 9"></path></svg></sc-if>
+          <sc-if value="{{S.snd.off}}" hint-placeholder-val="{{false}}"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2 6h3l4-3v10l-4-3H2z"></path><path d="M11 6l4 4M15 6l-4 4"></path></svg></sc-if>
+        </button>
+        <button type="button" class="mini" onClick="{{S.replay}}" style="font-size: 13px; padding: 0 12px">{{S.T.refresh}}</button>
+        <button type="button" class="mini" aria-label="{{S.T.close}}"><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 2l10 10M12 2L2 12"></path></svg></button>
+      </header>
+
+      <div style="flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 10px; padding: 14px 20px 16px">
+
+        <section aria-label="{{S.T.infoAria}}" style="display: flex; align-items: center; height: 100px; flex: none; border: 1px solid #2a3037; background: #0e1114">
+          <div style="width: 300px; flex: none; display: flex; align-items: center; justify-content: center">
+            <sc-if value="{{S.isWeapon}}" hint-placeholder-val="{{true}}">
+              <svg width="250" height="88" viewBox="0 0 300 110" aria-hidden="true">
+                <rect x="8" y="42" width="62" height="20" fill="#4a5158"></rect>
+                <rect x="8" y="38" width="14" height="30" fill="#3d434a"></rect>
+                <rect x="70" y="34" width="118" height="28" fill="#59616a"></rect>
+                <rect x="106" y="22" width="44" height="12" fill="#4a5158"></rect>
+                <rect x="188" y="38" width="72" height="20" fill="#4f565e"></rect>
+                <rect x="260" y="45" width="36" height="6" fill="#3d434a"></rect>
+                <path d="M118 62h24l6 40h-22z" fill="#3d434a"></path>
+                <path d="M88 62h16l-4 30h-14z" fill="#3d434a"></path>
+              </svg>
+            </sc-if>
+            <sc-if value="{{S.isArmor}}" hint-placeholder-val="{{false}}">
+              <svg width="88" height="88" viewBox="0 0 120 120" aria-hidden="true">
+                <path d="M30 8h18v16h24V8h18v22l12 12v70H18V42l12-12z" fill="#4f565e"></path>
+                <rect x="36" y="42" width="48" height="40" fill="#59616a"></rect>
+                <rect x="24" y="90" width="72" height="16" fill="#3d434a"></rect>
+              </svg>
+            </sc-if>
+          </div>
+          <div style="width: 1px; align-self: stretch; margin: 16px 0; background: #353c44"></div>
+          <div style="display: flex; flex-direction: column; gap: 4px; min-width: 0; padding-left: 20px">
+            <div style="display: flex; align-items: baseline; gap: 10px">
+              <span style="font-size: 24px; font-weight: 700">{{S.name}}</span>
+              <span style="font-size: 13px; color: #9aa1a8">{{S.kind}}</span>
+            </div>
+            <div style="font-size: 28px; line-height: 1.1; letter-spacing: 2px; color: {{S.v.heroColor}}">{{S.v.heroStars}}<span style="font-size: 18px; letter-spacing: 0; margin-left: 10px; color: {{S.v.heroExtraColor}}">{{S.v.heroExtra}}</span></div>
+            <div style="font-size: 13px; color: #b9b3a6">{{S.v.heroSub}}</div>
+          </div>
+        </section>
+
+        <sc-if value="{{S.isEnhance}}" hint-placeholder-val="{{true}}">
+          <div style="display: flex; flex-direction: column; gap: 10px; flex: 1; min-height: 0">
+          <div class="mid">
+            <div style="display: flex; align-items: center; gap: 12px; flex: none">
+              <div style="flex: 1; height: 1px; background: #2a3037"></div>
+              <div style="padding: 3px 16px; border: 1px solid #3a4148; font-size: 13px; font-weight: 700; color: #d6d0c3">{{S.v.listTitle}}</div>
+              <div style="flex: 1; height: 1px; background: #2a3037"></div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat({{S.v.cardCols}}, minmax(0, 1fr)); gap: 10px; flex: none">
+              <sc-for list="{{S.v.cards}}" as="c" hint-placeholder-count="3">
+                <sc-if value="{{c.clickable}}" hint-placeholder-val="{{true}}">
+                  <button type="button" class="{{c.cls}}" onClick="{{c.pick}}"><span class="cname">{{c.name}}</span><span class="clv num">{{c.lv}}</span><span class="csub">{{c.sub}}</span></button>
+                </sc-if>
+                <sc-if value="{{c.fixed}}" hint-placeholder-val="{{false}}">
+                  <div class="{{c.cls}}"><span class="cname">{{c.name}}</span><span class="clv num">{{c.lv}}</span><span class="csub">{{c.sub}}</span></div>
+                </sc-if>
+              </sc-for>
+            </div>
+
+            <section aria-label="{{S.T.effect}}" style="flex: none; padding: 10px 16px 12px; border: 1px solid #2a3037; background: #13171b">
+              <div style="display: flex; align-items: center; font-size: 13px; color: #9aa1a8">
+                <span style="font-weight: 700; color: #d6d0c3">{{S.T.effect}}</span>
+                <span style="margin-left: 8px; padding: 1px 6px; border: 1px solid #3a4148; font-size: 11px">{{S.v.mult}}</span>
+                <span style="margin-left: auto">{{S.T.curNext}}</span>
+              </div>
+              <sc-for list="{{S.v.effects}}" as="e" hint-placeholder-count="1">
+                <div style="padding-top: 2px">
+                  <div style="display: flex; align-items: baseline; gap: 10px; line-height: 1.3">
+                    <span style="font-size: 14px">{{e.label}}</span>
+                    <span class="num" style="margin-left: auto; font-size: 18px; font-weight: 700; color: #c4c0b6">{{e.cur}}</span>
+                    <span style="color: #7d8794">→</span>
+                    <span class="num" style="font-size: 18px; font-weight: 700; color: #5fa8ff; min-width: 76px; text-align: right">{{e.nxt}}</span>
+                  </div>
+                  <div class="bar"><div class="{{e.nextCls}}" style="width: {{e.nw}}%; animation-delay: {{e.nextDelay}}ms"></div><div class="{{e.curCls}}" style="width: {{e.cw}}%; animation-delay: {{e.curDelay}}ms"></div></div>
+                </div>
+              </sc-for>
+            </section>
+
+            <section aria-label="{{S.T.chance}}" style="flex: none; padding: 10px 14px; border: 1px solid #2a3037; background: #13171b; display: flex; flex-direction: column; gap: 6px">
+              <div style="display: flex; align-items: flex-end; gap: 16px">
+                <div>
+                  <div style="font-size: 13px; font-weight: 700; color: #d6d0c3">{{S.T.chance}}</div>
+                  <div class="num" style="font-size: 34px; font-weight: 700; line-height: 1.05; color: #f3e3bf">{{S.v.chanceText}}</div>
+                </div>
+                <div style="flex: 1; min-width: 0; padding-bottom: 6px">
+                  <div style="display: flex; align-items: baseline; gap: 8px; font-size: 13px; color: #b9b3a6">
+                    <span>{{S.T.base}} <span class="num" style="font-size: 16px; color: #e6e2d8">{{S.v.baseText}}</span></span>
+                    <span>{{S.T.plusMats}} <span class="num" style="font-size: 16px; color: #5fa8ff">{{S.v.bonusText}}</span></span>
+                    <span style="margin-left: auto; font-size: 12px; color: {{S.v.failColor}}">{{S.v.failText}}</span>
+                  </div>
+                  <div class="bar"><div class="{{S.v.chanceNextCls}}" style="width: {{S.v.chanceBar}}%; animation-delay: 620ms"></div><div class="{{S.v.chanceBaseCls}}" style="width: {{S.v.baseBar}}%; animation-delay: 240ms"></div></div>
+                </div>
+              </div>
+              <div style="display: flex; align-items: center; font-size: 12px; color: #9aa1a8; padding-top: 2px">
+                <span style="font-weight: 700; color: #d6d0c3; font-size: 13px">{{S.T.boost}}</span>
+                <span style="margin-left: 8px">{{S.T.upTo2}}</span>
+                <span class="num" style="margin-left: auto; font-size: 14px; color: {{S.v.pickColor}}">{{S.T.picked}} {{S.v.picked}} / 2</span>
+              </div>
+              <sc-for list="{{S.mats}}" as="m" hint-placeholder-count="3">
+                <div class="{{m.rowCls}}">
+                  <label class="mname" for="{{m.id}}"><input type="checkbox" id="{{m.id}}" checked="{{m.on}}" disabled="{{m.lockCheck}}" onChange="{{m.toggle}}"><span><span class="mt">{{m.name}}</span><span class="ms">{{m.rate}}</span></span></label>
+                  <div class="step">
+                    <button type="button" class="sbtn" onClick="{{m.dec}}" disabled="{{m.decOff}}" aria-label="{{m.decLabel}}">−</button>
+                    <span class="scount num">{{m.count}}</span>
+                    <button type="button" class="sbtn" onClick="{{m.inc}}" disabled="{{m.incOff}}" aria-label="{{m.incLabel}}">+</button>
+                  </div>
+                  <button type="button" class="mini" onClick="{{m.max}}" disabled="{{m.incOff}}">{{S.T.maxBtn}}</button>
+                  <span><span class="mbonus num" style="color: {{m.bonusColor}}">{{m.bonus}}</span><span class="mcap">{{m.cap}}</span></span>
+                  <span class="mcost num">{{m.cost}}</span>
+                  <span class="mheld">{{m.held}}</span>
+                </div>
+              </sc-for>
+            </section>
+
+            <section aria-label="{{S.T.costAria}}" style="flex: none; padding: 10px 16px; border: 1px solid #2a3037; background: #13171b">
+              <div style="display: flex; align-items: center; gap: 18px; font-size: 12px; color: #9aa1a8">
+                <span>{{S.T.cost}} <span class="num" style="font-size: 15px; color: #e6e2d8">{{S.v.baseCostText}}</span></span>
+                <sc-if value="{{S.v.hasFee}}" hint-placeholder-val="{{false}}"><span style="color: {{S.v.feeColor}}">{{S.v.feeLabel}} <span class="num" style="font-size: 15px">{{S.v.feeText}}</span></span></sc-if>
+                <span>{{S.T.matRub}} <span class="num" style="font-size: 15px; color: #e6e2d8">{{S.v.matCostText}}</span></span>
+                <span style="margin-left: auto">{{S.T.total}}</span>
+                <span class="num" style="font-size: 26px; font-weight: 700; color: #f3e3bf">{{S.v.costText}}</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 14px; font-size: 12px; margin-top: 2px; color: #9aa1a8">
+                <sc-for list="{{S.v.costLines}}" as="l" hint-placeholder-count="0">
+                  <span style="color: {{l.color}}">{{l.name}} <span class="num" style="font-size: 14px">{{l.count}}</span></span>
+                </sc-for>
+                <span style="margin-left: auto; color: {{S.v.heldColor}}">{{S.T.held}} <span class="num" style="font-size: 14px">{{S.v.heldText}}</span></span>
+              </div>
+            </section>
+
+            <sc-if value="{{S.v.hasTicket}}" hint-placeholder-val="{{false}}">
+              <div style="display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) 210px; gap: 8px; flex: none">
+                <div class="chip" style="border-color: #3d5a42"><b>{{S.tk.title}}</b><span>{{S.tk.state}}</span></div>
+                <label class="{{S.tk.useCls}}" for="{{S.tk.id}}"><input type="checkbox" id="{{S.tk.id}}" checked="{{S.tk.use}}" disabled="{{S.tk.useOff}}" onChange="{{S.tk.toggle}}"><span>{{S.tk.useLabel}}</span></label>
+                <button type="button" class="mini" style="min-height: 44px" onClick="{{S.tk.buy}}" disabled="{{S.tk.buyOff}}">{{S.tk.buyText}}</button>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{S.v.hasRow}}" hint-placeholder-val="{{true}}">
+              <div style="display: grid; grid-template-columns: {{S.v.rowCols}}; gap: 8px; flex: none">
+                <sc-for list="{{S.v.options}}" as="o" hint-placeholder-count="2">
+                  <label class="{{o.cls}}" for="{{o.id}}"><input type="checkbox" id="{{o.id}}" checked="{{o.checked}}" disabled="{{o.disabled}}" onChange="{{o.toggle}}"><span>{{o.label}}</span><span class="oprice num">{{o.price}}</span></label>
+                </sc-for>
+                <sc-if value="{{S.v.hasPlates}}" hint-placeholder-val="{{false}}">
+                  <div class="{{S.plateCls}}"><b>{{S.T.plates}}</b><span>{{S.plateState}}</span></div>
+                  <button type="button" class="mini" style="min-height: 44px" onClick="{{S.payPlate}}" disabled="{{S.plateDone}}">{{S.plateAction}}</button>
+                </sc-if>
+              </div>
+            </sc-if>
+
+          </div>
+            <div style="display: grid; grid-template-columns: {{S.v.btnCols}}; gap: 10px; margin-top: auto; flex: none">
+              <button type="button" class="btn sec">{{S.T.close}}</button>
+              <sc-if value="{{S.v.hasInstant}}" hint-placeholder-val="{{true}}"><button type="button" class="{{S.v.fastCls}}" disabled="{{S.v.instantOff}}" onClick="{{S.instant}}"><span>{{S.T.instant}}</span><span class="fsub num">+50,000 ₽</span></button></sc-if>
+              <button type="button" class="{{S.v.actionCls}}" disabled="{{S.v.actionOff}}" onClick="{{S.charge}}">{{S.v.actionText}}</button>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{S.isMystery}}" hint-placeholder-val="{{false}}">
+          <div style="display: flex; flex-direction: column; gap: 10px; flex: 1; min-height: 0">
+            <div style="display: flex; align-items: center; gap: 12px; flex: none">
+              <div style="flex: 1; height: 1px; background: #2a3037"></div>
+              <div style="padding: 3px 16px; border: 1px solid #5a2f52; font-size: 13px; font-weight: 700; color: #ff9be4">???</div>
+              <div style="flex: 1; height: 1px; background: #2a3037"></div>
+            </div>
+            <div style="flex: 1; min-height: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; padding: 24px; border: 1px solid #5a2f52; background: #160f15; text-align: center">
+              <div class="num" style="font-size: 96px; font-weight: 700; line-height: 1; letter-spacing: 10px; color: #ff6ad5">???</div>
+              <div style="font-size: 16px; color: #e6e2d8">{{S.T.mysteryLead}}</div>
+              <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; width: 420px">
+                <div style="padding: 14px; border: 1px solid #3b5f8a; background: #121a24"><div style="font-size: 13px; color: #9aa1a8">{{S.T.success}}</div><div class="num" style="font-size: 40px; font-weight: 700; color: #5fa8ff">50%</div></div>
+                <div style="padding: 14px; border: 1px solid #7a3530; background: #1f1312"><div style="font-size: 13px; color: #9aa1a8">{{S.T.destroyed}}</div><div class="num" style="font-size: 40px; font-weight: 700; color: #ff8a7e">50%</div></div>
+              </div>
+              <div style="font-size: 13px; color: #9aa1a8; max-width: 520px">{{S.T.mysteryNote}}</div>
+              <div style="font-size: 13px; color: #b9b3a6">{{S.T.costLabel}} <span class="num" style="font-size: 16px; color: #e6e2d8">{{S.T.mythCost}}</span></div>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 10px; flex: none">
+              <button type="button" class="btn sec">{{S.T.close}}</button>
+              <button type="button" class="btn danger" onClick="{{S.askMyth}}">{{S.T.challenge}}</button>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{S.isInsurance}}" hint-placeholder-val="{{false}}">
+          <div style="display: flex; flex-direction: column; gap: 10px; flex: 1; min-height: 0">
+          <div class="mid">
+            <div style="display: flex; align-items: center; gap: 12px; flex: none">
+              <div style="flex: 1; height: 1px; background: #2a3037"></div>
+              <div style="padding: 3px 16px; border: 1px solid #3a4148; font-size: 13px; font-weight: 700; color: #d6d0c3">{{S.T.insurance}}</div>
+              <div style="flex: 1; height: 1px; background: #2a3037"></div>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px">
+              <div style="padding: 14px 16px; border: 1px solid #2a3037; background: #13171b">
+                <div style="font-size: 13px; color: #9aa1a8">{{S.T.nowIns}}</div>
+                <div style="font-size: 24px; font-weight: 700; color: {{S.insNowColor}}; margin-top: 4px">{{S.insNow}}</div>
+              </div>
+              <div style="padding: 14px 16px; border: 1px solid #2a3037; background: #13171b">
+                <div style="font-size: 13px; color: #9aa1a8">{{S.T.value}}</div>
+                <div class="num" style="font-size: 30px; font-weight: 700; margin-top: 2px">{{S.insValue}}</div>
+              </div>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px">
+              <sc-for list="{{S.tiers}}" as="r" hint-placeholder-count="3">
+                <button type="button" class="{{r.cls}}" onClick="{{r.pick}}">
+                  <span style="display: flex; align-items: center; font-size: 16px; font-weight: 700; color: {{r.color}}">{{r.name}}<span style="margin-left: auto; font-size: 11px; font-weight: 700; color: {{r.color}}">{{r.badge}}</span></span>
+                  <span style="font-size: 12px; color: #9aa1a8">{{r.returnText}}</span>
+                  <span class="num" style="font-size: 40px; font-weight: 700; line-height: 1; color: {{r.color}}">{{r.chance}}</span>
+                  <span style="font-size: 12px; color: #9aa1a8; margin-top: 6px">{{r.feeLabel}}</span>
+                  <span class="num" style="font-size: 20px; font-weight: 700">{{r.fee}}</span>
+                  <span style="font-size: 12px; color: #9aa1a8; margin-top: 6px">{{r.timeLabel}}</span>
+                  <span style="font-size: 17px; font-weight: 700; color: {{r.color}}">{{r.time}}</span>
+                </button>
+              </sc-for>
+            </div>
+            <div style="padding: 10px 14px 12px; border: 1px solid #2a3037; background: #13171b">
+              <div style="display: flex; align-items: baseline; font-size: 13px"><span style="font-weight: 700; color: #d6d0c3">{{S.T.returning}}</span><span style="margin-left: auto; font-size: 12px; color: #9aa1a8">{{S.T.returningSub}}</span></div>
+              <sc-for list="{{S.pendingReturns}}" as="pr" hint-placeholder-count="2">
+                <div style="padding-top: 8px">
+                  <div style="display: flex; align-items: baseline; gap: 10px; font-size: 13px">
+                    <span style="font-weight: 700; color: #e6e2d8">{{pr.name}}</span>
+                    <span style="color: {{pr.color}}">{{pr.tier}}</span>
+                    <span class="num" style="margin-left: auto; font-size: 16px; font-weight: 700; color: #e6e2d8">{{pr.left}}</span>
+                  </div>
+                  <div class="bar"><div class="bnext" style="width: {{pr.pct}}%; background: {{pr.color}}"></div></div>
+                </div>
+              </sc-for>
+            </div>
+            <div style="padding: 12px 16px; border: 1px solid #2a3037; background: #13171b; font-size: 13px; color: #b9b3a6">{{S.T.insNote}}</div>
+          </div>
+            <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 10px; margin-top: auto; flex: none">
+              <button type="button" class="btn sec">{{S.T.close}}</button>
+              <button type="button" class="{{S.tierCls}}" disabled="{{S.tierOff}}" onClick="{{S.buy}}">{{S.tierAction}}</button>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{S.isHelp}}" hint-placeholder-val="{{false}}">
+          <div style="display: flex; flex-direction: column; gap: 10px; flex: 1; min-height: 0">
+          <div class="mid">
+            <div style="display: flex; align-items: center; gap: 12px; flex: none">
+              <div style="flex: 1; height: 1px; background: #2a3037"></div>
+              <div style="padding: 3px 16px; border: 1px solid #3a4148; font-size: 13px; font-weight: 700; color: #d6d0c3">{{S.T.help}}</div>
+              <div style="flex: 1; height: 1px; background: #2a3037"></div>
+            </div>
+            <div style="border: 1px solid #2a3037; background: #13171b">
+              <sc-for list="{{S.help}}" as="h" hint-placeholder-count="8">
+                <div style="border-bottom: 1px solid #22282e">
+                  <button type="button" class="hq" onClick="{{h.pick}}" aria-expanded="{{h.open}}"><span>{{h.q}}</span><span style="margin-left: auto; color: #9aa1a8; font-size: 13px">{{h.sign}}</span></button>
+                  <sc-if value="{{h.open}}" hint-placeholder-val="{{false}}">
+                    <div style="padding: 0 16px 14px; font-size: 14px; line-height: 1.65; color: #c9c4b8; white-space: pre-line">{{h.a}}</div>
+                  </sc-if>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+            <div style="display: grid; grid-template-columns: 1fr; gap: 10px; margin-top: auto; flex: none">
+              <button type="button" class="btn sec">{{S.T.close}}</button>
+            </div>
+          </div>
+        </sc-if>
+
+      </div>
+    </div>
+  </div>
+
+  <aside aria-label="{{S.T.status}}" class="{{S.panelCls}}" style="width: 268px; flex: none; border: 1px solid #353c44; background: #111417">
+    <div style="height: 56px; display: flex; align-items: center; padding: 0 12px 0 16px; border-bottom: 1px solid #2a3037; background: #15191d">
+      <span style="font-size: 15px; font-weight: 700; color: #f3e3bf">{{S.T.status}}</span>
+      <button type="button" class="mini" onClick="{{S.replay}}" aria-label="{{S.T.replayAria}}" style="margin-left: auto"><svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M13.5 8A5.5 5.5 0 1 1 11.9 4.1"></path><path d="M12.5 1.5v3.2H9.3"></path></svg></button>
+    </div>
+    <div style="padding: 14px 16px 4px">
+      <div style="display: flex; align-items: baseline; gap: 8px"><span style="font-size: 13px; font-weight: 700; color: #9aa1a8">{{S.T.original}}</span><span style="font-size: 15px; font-weight: 700">{{S.name}}</span></div>
+      <sc-for list="{{S.baseRows}}" as="r" hint-placeholder-count="6">
+        <div class="{{r.cls}}" style="animation-delay: {{r.delay}}ms"><span class="slabel">{{r.label}}</span><span class="sval num">{{r.val}}</span></div>
+      </sc-for>
+    </div>
+    <div style="padding: 18px 16px 16px">
+      <div style="display: flex; align-items: baseline; gap: 8px"><span style="font-size: 13px; font-weight: 700; color: #9aa1a8">{{S.T.after}}</span><span style="font-size: 15px; letter-spacing: 1px; color: {{S.v.heroColor}}">{{S.v.heroStars}}</span></div>
+      <sc-for list="{{S.afterRows}}" as="r" hint-placeholder-count="6">
+        <div class="{{r.cls}}" style="animation-delay: {{r.delay}}ms"><span class="slabel">{{r.label}}</span><span class="sval num">{{r.val}}</span><sc-if value="{{r.has}}" hint-placeholder-val="{{false}}"><span class="sarrow">→</span><span class="snext num">{{r.next}}</span></sc-if></div>
+      </sc-for>
+    </div>
+  </aside>
+
+</div>
+</div>
+</sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"lockMyth":{"editor":"boolean","default":false,"section":"목업 상태 (??? 잠금 보기)"},"tagRoubles":{"editor":"int","default":5000,"min":0,"max":1000000,"step":1000,"unit":"₽","section":"재료 루블 (확정)"},"gpuRoubles":{"editor":"int","default":100000,"min":0,"max":5000000,"step":10000,"unit":"₽","section":"재료 루블 (확정)"},"btcRoubles":{"editor":"int","default":300000,"min":0,"max":5000000,"step":10000,"unit":"₽","section":"재료 루블 (확정)"},"$preview":{"width":1240,"height":2140}}'>
+class Component extends DCLogic {
+  componentWillUnmount() { var t = this._t || {}; Object.keys(t).forEach(function (k) { clearTimeout(t[k]); }); }
+  renderVals() {
+    var self = this;
+    var KEY = 'gear-enhance-mock-v2';
+    // Remember the mockup state for this browser tab, so a re-render of the canvas
+    // keeps the open tab and popup instead of falling back to the first screen.
+    if (!self._s) {
+      try { self._s = JSON.parse(window.sessionStorage.getItem(KEY) || '{}') || {}; } catch (e) { self._s = {}; }
+      ['weapon', 'armor'].forEach(function (g) { if (self._s[g] && self._s[g].phase === 'charging') self._s[g].phase = 'result'; });
+    }
+    var save = function () { try { window.sessionStorage.setItem(KEY, JSON.stringify(self._s)); } catch (e) {} };
+    var all = Object.assign({}, this.state || {}, self._s);
+    var props = this.props;
+    self._t = self._t || {};
+
+    var auto = 'en';
+    try { auto = /^ko/i.test((navigator.languages && navigator.languages[0]) || navigator.language || '') ? 'ko' : 'en'; } catch (e) {}
+    var lang = all.lang || auto;
+    var K = lang === 'ko';
+    var L = function (ko, en) { return K ? ko : en; };
+    var setLang = function (code) { return function () { self._s.lang = code; save(); self.setState({ lang: code }); }; };
+    var langs = [
+      { code: 'ko', label: '한국어', on: K, cls: K ? 'lbtn on' : 'lbtn', pick: setLang('ko') },
+      { code: 'en', label: 'EN', on: !K, cls: !K ? 'lbtn on' : 'lbtn', pick: setLang('en') }
+    ];
+
+    // Sounds: the user's own clips for the existing events, synthesized ones for ??? / Mythic.
+    var SND = {
+      charge: './assets/2be08d898ffafc150c89907deed90b0e.webm', success: './assets/a5d8f5a14afe0807399962fbfe19bd93.webm',
+      failure: './assets/b5b946c0e40f92e2a272efa55b06939d.webm', destroy: './assets/23135a2bfcd2a3bb470aac5ffa7a5914.webm',
+      star2: './assets/1753fb625c6d5be162f8591dbd865771.webm', evo: './assets/24db917af0629f633972bfed868af4ca.webm',
+      mythConfirm: './assets/c558da6a11ec3c671afd849b4913deac.webm', mythCharge: './assets/661d3e65c0a764af495524fb0768857c.webm',
+      mythSuccess: './assets/174be39f5ff7613a989acb9741c9d357.webm', mythUp: './assets/f5044fe1ad1259684063f55c3f3e660c.webm'
+    };
+    var soundOn = self._s.sound !== false;
+    var stopAll = function () { try { Object.keys(self._aud || {}).forEach(function (k) { self._aud[k].pause(); }); } catch (e) {} };
+    // Load every clip up front: a clip fetched on first click starts late and drifts from the gauge.
+    if (!self._pre) {
+      self._pre = true;
+      self._aud = self._aud || {};
+      Object.keys(SND).forEach(function (k) { try { var a = new Audio(SND[k]); a.preload = 'auto'; a.load(); self._aud[k] = a; } catch (e) {} });
+    }
+    // onStart runs when the clip is really playing (or at once when muted / blocked, at most 600 ms late),
+    // so the gauge and the result can be timed from the sound like the game's audio clock.
+    var play = function (name, onStart) {
+      var started = false;
+      var go = function () { if (!started) { started = true; if (onStart) onStart(); } };
+      if (!soundOn || !SND[name]) { go(); return; }
+      try {
+        self._aud = self._aud || {};
+        var a = self._aud[name] || (self._aud[name] = new Audio(SND[name]));
+        a.volume = 0.7; a.currentTime = 0;
+        if (onStart) { a.addEventListener('playing', go, { once: true }); setTimeout(go, 600); }
+        var pr = a.play(); if (pr && pr.catch) pr.catch(go);
+      } catch (e) { go(); }
+    };
+    var RESULT_SND = { success: 'success', fail: 'failure', drop: 'failure', protect: 'failure', destroy: 'destroy', evo2: 'star2', evo3: 'star2', evoFail: 'destroy',
+      trans: 'success', transFail: 'failure', myth: 'mythSuccess', mythFail: 'destroy', mythUp: 'mythUp', mythUpFail: 'failure', reroll: 'mythUp', ticketSave: 'failure' };
+    var toggleSound = function () { if (soundOn) stopAll(); self._s.sound = !soundOn; save(); self.setState({ sound: !soundOn }); };
+
+    var fmt = function (n) { return Math.round(n).toLocaleString('en-US'); };
+    var trim = function (n) { return String(Math.round(n * 10) / 10); };
+    var GOLD = '#d9b36c', PURPLE = '#b49cff', RED = '#ff8a7e', TEAL = '#4fd1c5', MUTED = '#9aa1a8', OK = '#8fd694', BLUE = '#5fa8ff', ORANGE = '#ffb26b', MYTH = '#ff6ad5';
+    // Tweak: show the ??? tab locked (weapon below ★★★). Turning it on also resets a reached Mythic stage.
+    if (props.lockMyth) ['weapon', 'armor'].forEach(function (g) { var s = self._s[g]; if (s && s.mythDone) { s.mythDone = false; s.mythZones = null; if (s.tab === 'myth') s.tab = 'normal'; save(); } });
+    var HELD = 8420000, INSTANT = 50000;
+
+    var T = {
+      list: L('목록', 'MENU'), refresh: L('새로고침', 'Refresh'), close: L('닫기', 'Close'), ok: L('확인', 'OK'),
+      menuAria: L('강화 메뉴', 'Enhance menu'), infoAria: L('장비 정보', 'Gear info'), resultAria: L('강화 결과', 'Result'),
+      effect: L('강화 효과', 'Effect'), curNext: L('현재 → 성공 시', 'Now → on success'),
+      chance: L('성공률', 'Success chance'), base: L('기본', 'Base'), plusMats: L('+ 재료', '+ Materials'),
+      boost: L('성공률 올리기', 'Boost chance'), upTo2: L('재료 2종까지', 'Up to 2 kinds'), picked: L('선택', 'Picked'), maxBtn: L('최대', 'Max'),
+      costAria: L('비용', 'Cost'), cost: L('강화비', 'Cost'), matRub: L('재료 루블', 'Materials'), total: L('합계', 'Total'), held: L('보유', 'Owned'),
+      instant: L('즉시 강화', 'Instant'), plates: L('방탄판 4장', '4 plates'), spent: L('소모', 'Spent'),
+      insurance: L('강화 보험', 'Enhancement insurance'), nowIns: L('지금 가입', 'Current'), value: L('강화 가치', 'Enhanced value'),
+      insNote: L('레이드에서 잃으면 확률만큼 강화된 채 우편으로 돌아옵니다. 돌아오는 시간: 일반 1일 · 고급 12시간 · 프리미엄 즉시. 한 번 쓰면 소모됩니다.', 'If lost in a raid, it comes back enhanced by mail at this chance. Return time: Basic 1 day · Advanced 12 h · Premium instant. Used up once it pays out.'),
+      help: L('도움말', 'Help'), status: L('장비 상태', 'Gear stats'), original: L('원본', 'Base'), after: L('강화 후', 'Enhanced'),
+      replayAria: L('애니메이션 다시 보기', 'Replay animation'),
+      returning: L('돌아오는 중', 'On the way back'), returningSub: L('레이드에서 잃은 강화 장비 · 우편 도착까지', 'Enhanced gear lost in raids · until the mail arrives'),
+      skipRisk: L('이 창을 닫을 때까지 다시 묻지 않기', 'Don’t ask again until this window closes'),
+      cancel: L('취소', 'Cancel'), proceed: L('진행', 'Proceed'),
+      mysteryLead: L('★★★ 장비만 도전할 수 있는 마지막 단계입니다.', 'The final step, open only to ★★★ gear.'),
+      success: L('성공', 'Success'), destroyed: L('파괴', 'Destroyed'),
+      mysteryNote: L('보호·성공률 올리기·즉시 강화를 쓸 수 없습니다. 성공하면 신화 단계가 열립니다.', 'No guards, boosts or instant. Success unlocks the Mythic stage.'),
+      costLabel: L('비용', 'Cost'), mythCost: '8,000,000 ₽ · LEDX 1', challenge: L('도전하기', 'Challenge')
+    };
+
+    var build = function (g) {
+      var W = g === 'weapon';
+      var st = Object.assign({ tab: 'normal', item: W ? 'recoil' : 'dur', track: 'second', pDestroy: false, pDrop: false, tier: 'adv', help: 0, anim: 0,
+        tagOn: true, tagN: 20, gpuOn: false, gpuN: 1, btcOn: true, btcN: 1, owned: null, phase: null, pending: null, platePaid: false }, all[g] || {});
+      var put = function (patch, replay) {
+        var old = self._s[g] || all[g] || {};
+        var cur = Object.assign({}, old, patch);
+        if (replay) cur.anim = (old.anim || 0) + 1;
+        self._s[g] = cur;
+        save();
+        var o = {}; o[g] = cur; self.setState(o);
+      };
+      var set = function (patch, replay) { return function () { put(patch, replay); }; };
+      var clear = { pDestroy: false, pDrop: false };
+      var NAME = W ? 'Daewoo K2' : L('Gen4 완전형', 'Gen4 Full');
+      // ???: weapons only, opens after ★★★; a 50/50 success turns it into the Mythic stage.
+      var mythLocked = !!props.lockMyth;
+      // Armor Mythic: two random body zones it does not cover yet become covered (helmets: head zones).
+      var ZONES = [['아래팔 (왼쪽)', 'Left forearm'], ['아래팔 (오른쪽)', 'Right forearm'], ['엉덩이', 'Buttocks'], ['허벅지 (왼쪽)', 'Left thigh'], ['허벅지 (오른쪽)', 'Right thigh']];
+      var pickZones = function () {
+        var pool = ZONES.map(function (z, i) { return i; });
+        var a = pool.splice(Math.floor(Math.random() * pool.length), 1)[0];
+        var b = pool.splice(Math.floor(Math.random() * pool.length), 1)[0];
+        return [a, b];
+      };
+      var zoneName = function (i) { return L(ZONES[i][0], ZONES[i][1]); };
+      var mythDone = !mythLocked && !!st.mythDone;
+      if (st.tab === 'myth' && mythLocked) st.tab = 'normal';
+      var fillCls = st.anim % 2 === 0 ? 'fillA' : 'fillB';
+
+      // Return chance and mail delay per tier: Basic 20% / 1 day, Advanced 55% / 12 h, Premium 99% / instant.
+      var tier = function (ko, en, chance, fee, color, rank, time) { return { name: L(ko, en), chance: chance, fee: fee, color: color, rank: rank, time: time }; };
+      var T1 = L('1일 뒤', 'After 1 day'), T2 = L('12시간 뒤', 'After 12 h'), T3 = L('즉시', 'Instant');
+      var TIERS = W
+        ? { basic: tier('일반', 'Basic', '20%', '27,047 ₽', OK, 1, T1), adv: tier('고급', 'Advanced', '55%', '81,139 ₽', '#7fb2ff', 2, T2), prem: tier('프리미엄', 'Premium', '99%', '162,278 ₽', '#ffc46b', 3, T3) }
+        : { basic: tier('일반', 'Basic', '20%', '12,058 ₽', OK, 1, T1), adv: tier('고급', 'Advanced', '55%', '36,172 ₽', '#7fb2ff', 2, T2), prem: tier('프리미엄', 'Premium', '99%', '72,343 ₽', '#ffc46b', 3, T3) };
+      var own = st.owned ? TIERS[st.owned] : null;
+
+      var tabDefs = [
+        { id: 'normal', mark: '+', color: GOLD, label: L('일반 강화', 'Enhance'), sub: L('항목별 +10', 'Each to +10') },
+        { id: 'star2', mark: '★★', color: PURPLE, label: L('★★성', '★★ Star'), sub: L('진화 · 효과 ×2', 'Evolve · ×2') },
+        { id: 'star3', mark: '★★★', color: RED, label: L('★★★성', '★★★ Star'), sub: L('진화 · 효과 ×3', 'Evolve · ×3') },
+        { id: 'trans', mark: '◆', color: TEAL, label: L('초월', 'Transcend'), sub: L('2성 · 3성 트랙', '2★ · 3★ tracks') },
+        { id: 'ins', mark: 'P', color: '#ffc46b', label: L('보험', 'Insurance'), sub: '' },
+        { id: 'help', mark: '?', color: MUTED, label: L('도움말', 'Help'), sub: L('규칙 요약', 'Rules') }
+      ];
+      tabDefs.splice(4, 0, { id: 'myth', mark: mythDone ? '✦' : '◈', color: mythLocked ? '#5d646b' : MYTH,
+        label: mythDone ? L('신화', 'Mythic') : '???',
+        sub: mythLocked ? L('★★★ 이후 열림', 'Opens after ★★★') : mythDone ? (W ? L('데미지·관통 0/5', 'Dmg · pen 0/5') : L('추가 부위 2곳 · 0/5', '+2 zones · 0/5')) : '50 / 50', off: mythLocked });
+      var tabs = tabDefs.map(function (t) {
+        var ins = t.id === 'ins';
+        return Object.assign({}, t, { cls: t.id === st.tab ? 'tab on' : 'tab', off: !!t.off,
+          pick: t.off ? function () {} : set(Object.assign({ tab: t.id }, clear), true),
+          ring: ins && own ? own.color : 'transparent', color: ins && own ? own.color : t.color,
+          sub: ins ? (own ? own.name + ' ' + own.chance : L('미가입', 'None')) : t.sub });
+      });
+
+      // Weapons and armor both turn high risk from the +6 attempt.
+      var ITEMS = W ? [
+        { id: 'recoil', name: L('반동 제어', 'Recoil'), lv: 4, sub: L('수직·수평 반동', 'Vertical & horizontal'), eff: { label: L('반동 감소', 'Recoil reduction'), cur: '3.16%', nxt: '3.95%', cw: 21.1, nw: 26.3 }, chance: 55, base: 24415 },
+        { id: 'ergo', name: L('조작성', 'Handling'), lv: 10, sub: L('인체공학 · 최대', 'Ergonomics · max'), eff: { label: L('인체공학', 'Ergonomics'), cur: '+10', nxt: L('최대', 'Max'), cw: 100, nw: 100 }, maxed: true },
+        { id: 'prec', name: L('정밀성', 'Precision'), lv: 7, sub: L('탄 퍼짐', 'Spread'), eff: { label: L('탄 퍼짐 감소', 'Spread reduction'), cur: '4.63%', nxt: '6.11%', cw: 46.3, nw: 61.1 }, chance: 40, base: 47684, risky: true, fees: [1525888, 1068122], dropTo: '3.47%' }
+      ] : [
+        { id: 'dur', name: L('내구성', 'Durability'), lv: 6, sub: L('내구도 소모', 'Durability loss'), eff: { label: L('내구도 소모 감소', 'Durability loss reduction'), cur: '10.42%', nxt: '13.9%', cw: 34.7, nw: 46.3 }, chance: 45, base: 61035, risky: true, fees: [1495358, 1046751], dropTo: '7.9%' },
+        { id: 'mob', name: L('기동성', 'Mobility'), lv: 3, sub: L('장비 페널티', 'Gear penalty'), eff: { label: L('장비 페널티 완화', 'Penalty relief'), cur: '3.16%', nxt: '4.21%', cw: 15.8, nw: 21.1 }, chance: 60, base: 31250 }
+      ];
+      var levelLine = ITEMS.map(function (i) { return i.name + ' +' + i.lv; }).join(' · ');
+      var maxLine = ITEMS.map(function (i) { return i.name + ' +10'; }).join(' · ');
+      var sel = ITEMS.filter(function (i) { return i.id === st.item; })[0] || ITEMS[0];
+
+      var v = { heroStars: '★', heroExtra: '', heroExtraColor: TEAL, heroColor: GOLD, heroSub: levelLine, listTitle: L('강화 목록', 'Upgrades'), cardCols: ITEMS.length, cards: [], effects: [], mult: '×1', options: [], costLines: [], hasPlates: false };
+      var chance = 0, base = 0, fees = [0, 0], risky = false, maxed = false, missing = false, failSafe = '';
+      var actionWord = L('강화 시도', 'Enhance');
+      var card = function (name, lv, sub, on, pick) {
+        return { name: name, lv: lv, sub: sub, clickable: !!pick, fixed: !pick, pick: pick, cls: pick ? (on ? 'card on' : 'card') : 'card fixed ok' };
+      };
+      var guards = function (on) {
+        return [
+          { id: g + '-destroy', label: L('파괴 방지', 'Destroy guard'), price: on ? '+' + fmt(fees[0]) : L('+6부터', 'From +6'), on: on, checked: st.pDestroy, key: 'pDestroy' },
+          { id: g + '-drop', label: L('하락 방지', 'Drop guard'), price: on ? '+' + fmt(fees[1]) : L('+6부터', 'From +6'), on: on, checked: st.pDrop, key: 'pDrop' }
+        ];
+      };
+
+      if (st.tab === 'normal' || st.tab === 'ins' || st.tab === 'help') {
+        v.cards = ITEMS.map(function (i) { return card(i.name, '+' + i.lv, i.sub, i.id === sel.id, set(Object.assign({ item: i.id }, clear), true)); });
+        v.effects = [sel.eff];
+        chance = sel.chance || 0; base = sel.base || 0; maxed = !!sel.maxed; risky = !!sel.risky; fees = sel.fees || [0, 0];
+        failSafe = L('실패 시 비용만 소모', 'Fail: cost only');
+        v.options = guards(risky);
+        v.hasPlates = !W && st.tab === 'normal';
+      } else if (st.tab === 'star2' || st.tab === 'star3') {
+        var three = st.tab === 'star3';
+        v.heroStars = three ? '★★' : '★';
+        v.heroColor = three ? PURPLE : GOLD;
+        v.heroSub = maxLine + (three ? L(' · ★★★ 도전 가능', ' · ★★★ ready') : L(' · ★★ 도전 가능', ' · ★★ ready'));
+        v.listTitle = three ? L('★★★ 진화 조건', '★★★ requirements') : L('★★ 진화 조건', '★★ requirements');
+        v.cards = ITEMS.map(function (i) { return card(i.name, '+10', L('조건 충족', 'Met')); });
+        v.mult = three ? '×2 → ×3' : '×1 → ×2';
+        var e = function (ko, en, cur, nxt, cw, nw) { return { label: L(ko, en), cur: cur, nxt: nxt, cw: cw, nw: nw }; };
+        v.effects = W ? (three ? [
+          e('반동 감소', 'Recoil reduction', '30%', '45%', 66.7, 100), e('인체공학', 'Ergonomics', '+20', '+30', 66.7, 100), e('탄 퍼짐 감소', 'Spread reduction', '20%', '30%', 66.7, 100)
+        ] : [
+          e('반동 감소', 'Recoil reduction', '15%', '30%', 33.3, 66.7), e('인체공학', 'Ergonomics', '+10', '+20', 33.3, 66.7), e('탄 퍼짐 감소', 'Spread reduction', '10%', '20%', 33.3, 66.7)
+        ]) : (three ? [
+          e('내구도 소모 감소', 'Durability loss reduction', '60%', L('80% (상한)', '80% (cap)'), 75, 100), e('장비 페널티 완화', 'Penalty relief', '40%', '60%', 66.7, 100)
+        ] : [
+          e('내구도 소모 감소', 'Durability loss reduction', '30%', '60%', 37.5, 75), e('장비 페널티 완화', 'Penalty relief', '20%', '40%', 33.3, 66.7)
+        ]);
+        chance = three ? 10 : 30; base = three ? 4000000 : 2000000;
+        actionWord = L('진화 시도', 'Evolve');
+      } else if (st.tab === 'trans') {
+        v.heroStars = '★★★';
+        v.heroExtra = L('초월 2단계', 'Transcend 2');
+        v.heroColor = RED;
+        v.heroSub = L('2성 초월 2/5 · 3성 초월 0/5', '2★ track 2/5 · 3★ track 0/5');
+        v.listTitle = L('초월 트랙', 'Transcend tracks');
+        v.cardCols = 2;
+        var pickTrack = function (id) { return set(Object.assign({ track: id }, clear), true); };
+        v.cards = [
+          card(L('2성 초월', '2★ track'), '2 / 5', W ? L('수평 반동', 'Horizontal recoil') : L('최대 내구도', 'Max durability'), st.track === 'second', pickTrack('second')),
+          card(L('3성 초월', '3★ track'), '0 / 5', W ? L('발사속도', 'Fire rate') : L('방어 등급 · 둔탁상', 'Class · blunt'), st.track === 'third', pickTrack('third'))
+        ];
+        var mat = function (ko, en, count, ok) { return { name: L(ko, en), count: count, color: ok ? OK : RED }; };
+        if (st.track === 'second') {
+          v.effects = [W ? { label: L('수평 반동 감소', 'Horizontal recoil reduction'), cur: '12%', nxt: '18%', cw: 40, nw: 60 } : { label: L('최대 내구도', 'Max durability'), cur: '+12%', nxt: '+18%', cw: 40, nw: 60 }];
+          chance = 50; base = 1000000;
+          v.costLines = W ? [mat('무기 부품', 'Weapon parts', '2 / 3', true), mat("화약 '이글'", "Gunpowder 'Eagle'", '1 / 0', false)]
+            : [mat('아라미드 원단', 'Aramid fabric', '2 / 4', true), mat('립스탑 원단', 'Ripstop fabric', '1 / 2', true)];
+          missing = W;
+          failSafe = L('실패 시 비용·재료만 · 천장 +10%p 포함', 'Fail: cost & materials · +10%p pity included');
+        } else {
+          v.effects = [W ? { label: L('발사속도', 'Fire rate'), cur: '750', nxt: '795 rpm', cw: 0, nw: 20 } : { label: L('둔탁상 감소', 'Blunt reduction'), cur: '0%', nxt: '5%', cw: 0, nw: 20 }];
+          chance = 40; base = 3000000;
+          v.costLines = W ? [mat('군용 회로 기판', 'Military circuit board', '1 / 1', true)] : [mat('아라미드 원단', 'Aramid fabric', '2 / 4', true)];
+          failSafe = L('실패 시 비용·재료만', 'Fail: cost & materials');
+        }
+        v.options = [{ id: g + '-tdrop', label: L('하락 방지', 'Drop guard'), price: L('→4부터', 'From →4'), on: false, checked: false, key: 'pDrop' }];
+        actionWord = L('초월 시도', 'Transcend');
+      } else if (st.tab === 'myth' && mythDone) {
+        // Mythic: one track like transcendence. Mythic gear shows the Mythic mark instead of stars.
+        // Weapon: bullet damage and penetration +2% per level, only when fired from this gun.
+        // Armor: two extra zones from the ??? success, then damage taken -2% per level (designer proposal).
+        v.heroStars = L('✦ 신화', '✦ Mythic');
+        v.heroExtra = L('0단계', 'Lv 0');
+        v.heroExtraColor = MYTH;
+        v.heroColor = MYTH;
+        var zones = (st.mythZones || [0, 3]).map(zoneName);
+        // Rerolling one extra zone: 2,000,000 ₽ + 1 graphics card, ×1.5 for every reroll on this item.
+        var rerollCost = Math.round(2000000 * Math.pow(1.5, st.rerolls || 0));
+        if (W) {
+          v.heroSub = L('신화 0/5 · 탄 데미지·관통력 단계당 +2% · 비용 단계마다 ×1.1', 'Mythic 0/5 · damage & penetration +2% per level · cost ×1.1 per level');
+          v.listTitle = L('신화 트랙 · 이 총으로 쏠 때만', 'Mythic track · only when fired from this gun');
+          v.cardCols = 1;
+          v.cards = [Object.assign(card(L('신화', 'Mythic'), '0 / 5', L('탄 데미지 · 관통력', 'Bullet damage · penetration')), { cls: 'card fixed myth' })];
+          v.effects = [
+            { label: L('탄 데미지', 'Bullet damage'), cur: '+0%', nxt: '+2%', cw: 0, nw: 20 },
+            { label: L('관통력', 'Penetration'), cur: '+0%', nxt: '+2%', cw: 0, nw: 20 }
+          ];
+        } else {
+          v.heroSub = L('신화 0/5 · 추가 보호 부위 ', 'Mythic 0/5 · extra zones ') + zones.join(' · ');
+          v.listTitle = L('신화 · 추가 보호 부위 2곳', 'Mythic · 2 extra protected zones');
+          v.cardCols = 3;
+          v.cards = [Object.assign(card(L('신화', 'Mythic'), '0 / 5', L('피격 피해 감소', 'Damage taken')), { cls: 'card fixed myth' })]
+            .concat(zones.map(function (z, i) {
+              return Object.assign(card(z, '+', L('다시 뽑기 · ' + fmt(rerollCost / 10000) + '만', 'Reroll · ' + (rerollCost / 1000000).toFixed(1) + 'M'), false, function () { askReroll(i); }), { cls: 'card mythpick' });
+            }));
+          v.effects = [{ label: L('피격 피해 감소', 'Damage taken reduction'), cur: '0%', nxt: '2%', cw: 0, nw: 20 }];
+        }
+        chance = 40; base = 5000000;
+        v.costLines = [{ name: L('LEDX (임시)', 'LEDX (temp)'), count: '1 / 1', color: OK }];
+        failSafe = L('실패 시 비용·재료만 · →4부터 하락', 'Fail: cost & materials · drops from →4');
+        v.options = [{ id: g + '-mdrop', label: L('하락 방지', 'Drop guard'), price: L('→4부터', 'From →4'), on: false, checked: false, key: 'pDrop' }];
+        actionWord = L('신화 강화', 'Mythic up');
+      } else if (st.tab === 'myth') {
+        v.heroStars = '★★★';
+        v.heroColor = RED;
+        v.heroSub = L('★★★ 달성 · ??? 도전 가능', '★★★ reached · ??? open');
+      }
+
+      // Destruction ticket for star evolutions: at most 3 per item for ★★, 2 for ★★★, never more once bought.
+      // A ticket is spent on every attempt it is used for (success or failure); on failure the item stays as it was.
+      // ★★ and ★★★ tickets are separate: ★★ tickets left after the ★★ success are gone, never moved to ★★★.
+      var evoT = st.tab === 'star2' || st.tab === 'star3';
+      // ??? is a fixed 50/50: success materials never apply to it.
+      var mystery = st.tab === 'myth' && !mythDone;
+      var TK = st.tab === 'star3' ? { b: 't3b', h: 't3h', cap: 2, price: 8000000, star: '★★★' } : { b: 't2b', h: 't2h', cap: 3, price: 3000000, star: '★★' };
+      var tBought = st[TK.b] || 0, tHeld = st[TK.h] || 0;
+      var useTicket = evoT && !!st.useTicket && tHeld > 0;
+      v.hasTicket = evoT;
+
+      v.effects = v.effects.map(function (e, i) {
+        return Object.assign({}, e, { curCls: 'bcur ' + fillCls, nextCls: 'bnext ' + fillCls, curDelay: 180 + i * 90, nextDelay: 560 + i * 90 });
+      });
+
+      // Success materials: per piece bonus + roubles, each capped; two kinds at most.
+      var matDefs = [
+        { k: 'tag', name: L('독택', 'Dogtag'), per: 0.1, cap: 5, held: 37, rub: props.tagRoubles ?? 5000 },
+        { k: 'gpu', name: L('그래픽 카드', 'Graphics card'), per: 1, cap: 10, held: 3, rub: props.gpuRoubles ?? 100000 },
+        { k: 'btc', name: L('비트코인', 'Bitcoin'), per: 5, cap: 20, held: 4, rub: props.btcRoubles ?? 300000 }
+      ];
+      var picked = matDefs.filter(function (m) { return st[m.k + 'On']; }).length;
+      var bonus = 0, matCost = 0, usedParts = [];
+      var mats = matDefs.map(function (m) {
+        var on = !!st[m.k + 'On'] && !maxed && !mystery;
+        var limit = Math.min(Math.round(m.cap / m.per), m.held);
+        var n = Math.max(1, Math.min(st[m.k + 'N'], limit));
+        var add = on ? Math.round(n * m.per * 10) / 10 : 0;
+        bonus += add; if (on) { matCost += n * m.rub; usedParts.push(m.name + ' ' + n); }
+        var nKey = m.k + 'N', onKey = m.k + 'On';
+        var setN = function (x) { return function () { var p = {}; p[nKey] = Math.max(1, Math.min(limit, x)); put(p); }; };
+        var locked = maxed || (!on && picked >= 2);
+        return {
+          id: g + '-m-' + m.k, name: m.name, rate: L('개당 +', 'each +') + m.per + '% · ' + fmt(m.rub) + ' ₽',
+          on: on, lockCheck: locked, rowCls: on ? 'mrow on' : locked ? 'mrow locked' : 'mrow',
+          toggle: function () { var p = {}; p[onKey] = !st[onKey]; put(p); },
+          count: on ? n : '—', dec: setN(n - 1), inc: setN(n + 1), max: setN(limit),
+          decOff: !on || n <= 1, incOff: !on || n >= limit,
+          decLabel: m.name + L(' 하나 빼기', ': one less'), incLabel: m.name + L(' 하나 더하기', ': one more'),
+          bonus: on ? '+' + trim(add) + '%' : '+0%', bonusColor: on ? BLUE : '#6f777f', cap: L('최대 ', 'max ') + m.cap + '%',
+          cost: on ? fmt(n * m.rub) + ' ₽' : '—', held: L('보유 ', 'own ') + m.held
+        };
+      });
+      v.picked = maxed ? 0 : picked;
+      v.pickColor = picked >= 2 ? BLUE : MUTED;
+
+      var shown = maxed ? 0 : Math.min(100, Math.round((chance + bonus) * 10) / 10);
+      v.chanceText = maxed ? L('최대', 'Max') : trim(shown) + '%';
+      v.baseText = maxed ? '—' : chance + '%';
+      v.bonusText = maxed ? '—' : trim(bonus) + '%';
+      v.chanceBar = maxed ? 100 : shown;
+      v.baseBar = maxed ? 100 : chance;
+      v.chanceBaseCls = 'bbase ' + fillCls;
+      v.chanceNextCls = 'bnext ' + fillCls;
+      if (maxed) { v.failText = L('최대 단계', 'Max level'); v.failColor = MUTED; }
+      else if (risky) {
+        var fail = 100 - shown, d = trim(fail * 0.25), dr = trim(fail * 0.75);
+        if (st.pDestroy && st.pDrop) { v.failText = L('실패 시 비용만 (보호)', 'Fail: cost only (guarded)'); v.failColor = OK; }
+        else if (st.pDestroy) { v.failText = L('파괴 막음 · 하락 ', 'No destroy · drop ') + dr + '%'; v.failColor = '#ffc46b'; }
+        else if (st.pDrop) { v.failText = L('파괴 ', 'Destroy ') + d + L('% · 하락 막음', '% · no drop'); v.failColor = RED; }
+        else { v.failText = L('실패 시 파괴 ', 'Fail: destroy ') + d + L('% · 하락 ', '% · drop ') + dr + '%'; v.failColor = RED; }
+      } else if ((st.tab === 'star2' || st.tab === 'star3') && useTicket) { v.failText = L('방지권 1장 소모 · 실패해도 장비 유지', '1 ticket spent · item kept on failure'); v.failColor = OK; }
+      else if (st.tab === 'star2' || st.tab === 'star3') { v.failText = L('실패 시 장비 파괴', 'Fail: item destroyed'); v.failColor = RED; }
+      else { v.failText = failSafe; v.failColor = MUTED; }
+
+      // Armor: a pricier unpaid plate adds its difference to the next attempt.
+      var PLATE_FEE = 49687;
+      var plateOwed = !W && !st.platePaid;
+      var guardFee = (st.pDestroy ? fees[0] : 0) + (st.pDrop ? fees[1] : 0);
+      var plateFee = st.tab === 'normal' && plateOwed ? PLATE_FEE : 0;
+      var fee = maxed ? 0 : guardFee + plateFee;
+      var total = maxed ? 0 : base + fee + matCost;
+      v.baseCostText = maxed ? '—' : fmt(base) + ' ₽';
+      v.hasFee = fee > 0;
+      v.feeLabel = plateFee && guardFee ? L('보호비·방탄판 차액', 'Guards & plate diff.') : plateFee ? L('방탄판 차액', 'Plate difference') : L('보호비', 'Guards');
+      v.feeColor = plateFee ? ORANGE : MUTED;
+      v.feeText = fmt(fee) + ' ₽';
+      v.matCostText = maxed ? '—' : fmt(matCost) + ' ₽';
+      v.costText = maxed ? '—' : fmt(total) + ' ₽';
+      v.heldText = fmt(HELD) + ' ₽';
+      v.heldColor = total > HELD ? RED : MUTED;
+
+      v.options = v.options.map(function (o) {
+        return Object.assign({}, o, { disabled: !o.on || maxed, checked: !!o.checked && o.on, cls: o.on && !maxed ? 'opt' : 'opt off',
+          toggle: function () { var p = {}; p[o.key] = !st[o.key]; put(p); } });
+      });
+      v.hasRow = v.options.length > 0 || v.hasPlates;
+      v.rowCols = v.hasPlates ? 'minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.2fr) 168px' : 'repeat(' + Math.max(1, v.options.length) + ', minmax(0, 1fr))';
+
+      var blocked = maxed || missing || total > HELD;
+      // Star evolutions have no instant option; enhancement and transcendence do.
+      var noInstant = st.tab === 'star2' || st.tab === 'star3';
+      var instantOff = noInstant || blocked || total + INSTANT > HELD;
+      v.hasInstant = !noInstant;
+      v.btnCols = noInstant ? '1fr 2fr' : '1fr 1fr 2fr';
+      v.actionOff = blocked;
+      v.instantOff = instantOff;
+      v.actionCls = blocked ? 'btn dis' : 'btn act';
+      v.fastCls = instantOff ? 'btn dis' : 'btn fast';
+      v.actionText = maxed ? L('최대 단계', 'Max level') : missing ? L('재료 부족', 'Missing materials') : total > HELD ? L('루블 부족', 'Not enough ₽') : actionWord + ' · ' + fmt(total) + ' ₽';
+
+      // Result popups. Mockup roll only: levels and items do not actually change.
+      var lost = W ? L(NAME + '와 부착물·탄창이 사라졌습니다', NAME + ', its attachments and magazines are gone')
+        : L(NAME + '과 방탄판이 사라졌습니다', NAME + ' and its plates are gone');
+      var eff0 = v.effects[0] || { label: '', cur: '', nxt: '' };
+      var effUp = { label: eff0.label, cur: eff0.cur, next: eff0.nxt };
+      var DEF = {
+        charging: { tint: GOLD },
+        success: { title: L('강화 성공', 'Enhanced'), tint: GOLD },
+        fail: { title: L('강화 실패', 'Failed'), tint: '#e07a6e', note: L('비용만 소모되었습니다', 'Only the cost was spent') },
+        drop: { title: L('단계 하락', 'Level dropped'), line: sel.name + '  +' + sel.lv + ' → +' + (sel.lv - 1), tint: ORANGE, eff: { label: sel.eff.label, cur: sel.eff.cur, next: sel.dropTo || '' }, down: true },
+        destroy: { title: L('장비 파괴', 'Destroyed'), line: lost, tint: '#ff6b5e', shatter: true, note: L('강화 기록과 강화 보험도 함께 사라집니다', 'Its enhancement record and insurance are gone too') },
+        protect: { title: L('강화 실패 · 보호 발동', 'Failed · guard triggered'), tint: OK, noteOk: true },
+        evo2: { title: L('★★ 진화 성공', '★★ Evolved'), line: L('모든 항목 효과 ×2', 'All effects ×2'), tint: PURPLE, eff: effUp },
+        evo3: { title: L('★★★ 진화 성공', '★★★ Evolved'), line: L('모든 항목 효과 ×3', 'All effects ×3'), tint: '#ff6b6b', eff: effUp },
+        evoFail: { title: L('진화 실패 · 장비 파괴', 'Evolution failed · destroyed'), line: lost, tint: '#ff6b5e', shatter: true, note: L('진화 실패는 보호할 수 없습니다', 'Evolution failure cannot be guarded') },
+        trans: { title: L('초월 성공', 'Transcended'), tint: TEAL },
+        transFail: { title: L('초월 실패', 'Transcend failed'), tint: '#7fb7b2' },
+        confirm: { kicker: '???', title: '???', line: W ? L('50/50 확률로 무기가 성공하거나 부서집니다.', 'A 50/50 roll: the weapon either succeeds or breaks.') : L('50/50 확률로 방어구가 성공하거나 부서집니다.', 'A 50/50 roll: the armor either succeeds or breaks.'), tint: MYTH,
+          cost: T.mythCost, note: L('진행하시겠습니까?', 'Do you want to proceed?') },
+        myth: { title: L('신화 달성', 'Mythic reached'), line: L('신화 단계가 열렸습니다', 'The Mythic stage is open'), tint: MYTH,
+          eff: { label: L('탄 데미지 · 관통력', 'Damage · penetration'), cur: '???', next: L('단계당 +2%', '+2% per level') } },
+        mythFail: { title: L('??? 실패 · 장비 파괴', '??? failed · destroyed'), line: lost, tint: '#ff6b5e', shatter: true, note: L('50% 판정에서 부서졌습니다', 'It broke on the 50/50') },
+        mythUp: { title: L('신화 강화 성공', 'Mythic up'), tint: MYTH },
+        mythUpFail: { title: L('신화 강화 실패', 'Mythic failed'), tint: '#c98ab8' },
+        ticketSave: { title: L('진화 실패 · 파괴 방지권 사용', 'Evolution failed · ticket used'), tint: OK, noteOk: true },
+        riskConfirm: { title: L('장비가 파괴될 수 있습니다', 'The item can be destroyed'), tint: '#ff6b5e', note: L('진행하시겠습니까?', 'Do you want to proceed?') },
+        rerollConfirm: { kicker: L('신화 · 추가 보호 부위', 'Mythic · extra zone'), title: L('부위 다시 뽑기', 'Reroll zone'), tint: MYTH,
+          note: L('다시 뽑은 결과는 되돌릴 수 없습니다. 진행하시겠습니까?', 'The new zone cannot be undone. Proceed?') },
+        reroll: { kicker: L('신화 · 추가 보호 부위', 'Mythic · extra zone'), title: L('부위 다시 뽑기 완료', 'Zone rerolled'), tint: MYTH }
+      };
+      var popup = function (kind, over, close) {
+        var dd = Object.assign({}, DEF[kind], over || {});
+        var pieces = [];
+        if (dd.shatter) for (var i = 0; i < 9; i++) { var px = (i % 3) * 90, py = Math.floor(i / 3) * 37; pieces.push({ cls: 'piece p' + i, x: px, y: py, ox: -px, oy: -py, gun: W, vest: !W }); }
+        var good = ['success', 'evo2', 'evo3', 'trans', 'myth', 'mythUp'].indexOf(kind) >= 0;
+        // Mythic reached: light burst, rays, rings and two waves of sparks. A Mythic level up gets a small version.
+        var lite = kind === 'mythUp' || kind === 'reroll';
+        var fx = kind === 'myth' || lite, sparks = [];
+        var SPARK = [MYTH, '#ffd878', '#ffffff', '#9fd0ff'];
+        if (kind === 'myth') for (var w = 0; w < 2; w++) for (var j = 0; j < 20; j++) sparks.push({ a: j * 18 + w * 9, d: w * 1250 + (j % 5) * 40, c: SPARK[(j + w) % 4] });
+        if (lite) for (var q = 0; q < 14; q++) sparks.push({ a: q * (360 / 14), d: 20 + (q % 3) * 70, c: SPARK[q % 4] });
+        return Object.assign(dd, { shatter: !!dd.shatter, pieces: pieces, hasEff: !!dd.eff, eff: dd.eff || { label: '', cur: '', next: '' },
+          effColor: dd.down ? RED : BLUE, charging: kind === 'charging',
+          hasFoot: kind !== 'charging', hasCost: !!dd.cost, hasNote: !!dd.note, noteColor: dd.noteOk ? OK : kind === 'confirm' || kind === 'rerollConfirm' || kind === 'riskConfirm' ? '#e6e2d8' : MUTED,
+          hasButton: ['charging', 'confirm', 'rerollConfirm', 'riskConfirm'].indexOf(kind) < 0,
+          hasConfirm: kind === 'confirm' || kind === 'rerollConfirm' || kind === 'riskConfirm', proceed: function () {},
+          hasSkip: kind === 'riskConfirm', skipId: g + '-skip', skipOn: !!st.skipRisk, skipToggle: function () { put({ skipRisk: !st.skipRisk }); },
+          close: close || function () {}, cardCls: lite ? 'pop mythlite' : fx ? 'pop mythic' : dd.shatter ? 'pop shake' : kind === 'confirm' ? 'pop confirm' : 'pop',
+          fx: fx, fxCls: lite ? 'fx lite' : 'fx', sparks: sparks, starCls: lite ? 'fxstar lite' : 'fxstar',
+          titleCls: lite ? 'ptitle mythlite' : fx ? 'ptitle mythic' : kind === 'evo2' || kind === 'evo3' ? 'ptitle glow late' : good ? 'ptitle glow' : 'ptitle', tintSoft: (dd.tint || GOLD) + '55' });
+      };
+      var TABTINT = { normal: GOLD, star2: PURPLE, star3: RED, trans: TEAL, myth: MYTH };
+      var trackName = st.track === 'second' ? L('2성 초월', '2★ track') : L('3성 초월', '3★ track');
+      var trackLv = st.track === 'second' ? 2 : 0;
+      var evoTab = st.tab === 'star2' || st.tab === 'star3';
+      var attempt = st.tab === 'normal' ? sel.name + ' +' + sel.lv + ' → +' + (sel.lv + 1) : st.tab === 'star2' ? '★ → ★★' : st.tab === 'star3' ? '★★ → ★★★' : trackName + ' ' + trackLv + ' → ' + (trackLv + 1);
+      var kicker = { normal: risky ? L('일반 강화 · 고위험', 'Enhance · high risk') : L('일반 강화', 'Enhance'), star2: L('★★ 진화', '★★ Evolution'), star3: L('★★★ 진화', '★★★ Evolution'), trans: L('초월', 'Transcendence'), myth: mythDone ? L('신화', 'Mythic') : '???' }[st.tab] || L('일반 강화', 'Enhance');
+      if (st.tab === 'myth') attempt = mythDone ? L('신화 0 → 1', 'Mythic 0 → 1') : '???';
+      var keptLine = sel.name + '  +' + sel.lv + L(' 유지', ' kept');
+      // Store only the outcome and amounts, so a language switch re-labels an open popup.
+      var roll = function (fast) {
+        var hit = Math.random() * 100 < shown;
+        var r = { fast: !!fast, total: total + (fast ? INSTANT : 0) };
+        if (st.tab === 'myth') {
+          r.kind = mythDone ? (hit ? 'mythUp' : 'mythUpFail') : (Math.random() < 0.5 ? 'myth' : 'mythFail');
+          if (r.kind === 'myth' && !W) r.zones = pickZones();
+          return r;
+        }
+        if (evoTab) { r.kind = hit ? (st.tab === 'star3' ? 'evo3' : 'evo2') : useTicket ? 'ticketSave' : 'evoFail'; if (useTicket) { r.ticketKey = TK.h; r.left = tHeld - 1; } if (hit && st.tab === 'star2') r.lost2 = useTicket ? tHeld - 1 : tHeld; }
+        else if (st.tab === 'trans') r.kind = hit ? 'trans' : 'transFail';
+        else if (hit) r.kind = 'success';
+        else if (!risky) r.kind = 'fail';
+        else if (Math.random() < 0.25) { r.kind = st.pDestroy ? 'protect' : 'destroy'; r.guard = 'destroy'; }
+        else { r.kind = st.pDrop ? 'protect' : 'drop'; r.guard = 'drop'; }
+        return r;
+      };
+      var describe = function (r) {
+        var extra = usedParts.concat(st.tab === 'trans' ? v.costLines.map(function (l) { return l.name + ' ' + String(l.count).split(' / ')[0]; }) : []);
+        if (r.fast) extra.push(L('즉시 강화', 'Instant'));
+        var head = { kicker: kicker, cost: fmt(r.total) + ' ₽' + (extra.length ? ' · ' + extra.join(' · ') : '') };
+        if (r.kind === 'success') head.line = sel.name + '  +' + sel.lv + ' → +' + (sel.lv + 1), head.eff = effUp;
+        if (r.kind === 'fail') head.line = keptLine;
+        if (r.kind === 'protect') { head.line = keptLine; head.note = r.guard === 'destroy' ? L('파괴 방지가 장비를 지켰습니다', 'Destroy guard saved the item') : L('하락 방지가 단계를 지켰습니다', 'Drop guard kept the level'); }
+        if (r.kind === 'trans') { head.line = trackName + '  ' + trackLv + ' → ' + (trackLv + 1); head.eff = effUp; }
+        if (r.kind === 'transFail') { head.line = trackName + '  ' + trackLv + L(' 유지', ' kept'); head.note = L('다음 성공률 +', 'Next chance +') + (st.track === 'second' ? 5 : 3) + '%p'; }
+        if (r.kind === 'myth' || r.kind === 'mythFail') head.cost = T.mythCost;
+        if (r.kind === 'myth' && !W && r.zones) {
+          head.line = L('추가 보호 부위: ', 'Extra zones: ') + r.zones.map(zoneName).join(' · ');
+          head.eff = { label: L('보호 부위', 'Protected zones'), cur: L('7곳', '7'), next: L('9곳', '9') };
+        }
+        if (r.kind === 'mythUp' && !W) head.line = L('신화  0 → 1 · 피격 피해 -2%', 'Mythic  0 → 1 · damage taken -2%');
+        if ((r.kind === 'evo2' || r.kind === 'evo3') && r.ticketKey) {
+          head.note = L('파괴 방지권 1장 사용 · 남은 ', 'Used 1 destruction ticket · ') + r.left + L('장', ' left');
+        }
+        if (r.kind === 'evo2' && r.lost2 > 0) {
+          head.note = (head.note ? head.note + ' · ' : '') + L('남은 ★★ 방지권 ', 'The ') + r.lost2 + L('장은 ★★★로 옮겨지지 않아 사라졌습니다', ' ★★ ticket(s) left do not carry over to ★★★ and are gone');
+        }
+        if (r.kind === 'ticketSave') {
+          head.line = NAME + L(' 유지 · 단계 그대로', ' kept · levels unchanged');
+          head.note = L('파괴 방지권 1장을 썼습니다 · 남은 ', 'Used 1 destruction ticket · ') + r.left + L('장', ' left');
+        }
+        if (r.kind === 'reroll') {
+          head.kicker = L('신화 · 추가 보호 부위', 'Mythic · extra zone');
+          head.line = zoneName(r.from) + '  →  ' + zoneName(r.to);
+          head.eff = { label: L('추가 보호 부위', 'Extra zone'), cur: zoneName(r.from), next: zoneName(r.to) };
+          head.cost = fmt(r.cost) + L(' ₽ · 그래픽 카드 1', ' ₽ · 1 graphics card');
+        }
+        if (r.kind === 'mythUp') { head.line = L('신화  0 → 1', 'Mythic  0 → 1'); head.eff = effUp; }
+        if (r.kind === 'mythUpFail') { head.line = L('신화  0 유지', 'Mythic  0 kept'); head.note = L('다음 성공률 +3%p', 'Next chance +3%p'); }
+        return head;
+      };
+      var closePop = function () { clearTimeout(self._t[g]); self._tok = (self._tok || 0) + 1; stopAll(); put({ phase: null, pending: null, chargeStarted: false }); };
+      var charge = function () {
+        if (blocked && st.tab !== 'myth') return;
+        clearTimeout(self._t[g]);
+        stopAll();
+        var pending = roll(false);
+        var token = self._tok = (self._tok || 0) + 1;
+        var clip = st.tab === 'myth' && !mythDone ? 'mythCharge' : evoTab ? 'evo' : 'charge';
+        // The trimmed charge sound is 3.647 s; the evolution and ??? charges stay 4.412 s.
+        var ms = clip === 'charge' ? 3647 : 4412;
+        put({ phase: 'charging', pending: pending, chargeStarted: false, chargeMs: ms });
+        // Gauge and the result timer start together with the charge sound.
+        play(clip, function () {
+          if (token !== self._tok) return;
+          put({ chargeStarted: true });
+          self._t[g] = setTimeout(function () {
+            if (token !== self._tok) return;
+            // The popup appears when the result sound really starts, so its first beat lands on the visuals.
+            // The Mythic tab opens only then, not while the gauge fills.
+            play(RESULT_SND[pending.kind], function () {
+              if (token !== self._tok) return;
+              put(Object.assign({ phase: 'result', chargeStarted: false }, pending.kind === 'myth' ? { mythDone: true, mythZones: pending.zones || null } : {}, pending.ticketKey ? (function () { var o = {}; o[pending.ticketKey] = pending.left; return o; })() : {}, pending.kind === 'evo2' ? { t2h: 0 } : {}));
+            });
+          }, ms);
+        });
+      };
+      var askMyth = function () { stopAll(); play('mythConfirm'); put({ phase: 'confirm', pending: null }); };
+      // Safety: an attempt that can destroy the item (unguarded high risk, star evolution) asks once more.
+      // The tick box silences it until the window closes.
+      var canDestroy = (risky && !st.pDestroy) || (evoTab && !useTicket);
+      var askRisk = function (fast) {
+        return function () {
+          if (fast ? instantOff : blocked) return;
+          if (canDestroy && !st.skipRisk) { stopAll(); put({ phase: 'risk', riskFast: fast, pending: null }); return; }
+          if (fast) instant(); else charge();
+        };
+      };
+      var askReroll = function (i) { stopAll(); put({ phase: 'reroll', rerollIdx: i, pending: null }); };
+      // One zone is redrawn from the candidates the armor still does not cover (never the other extra zone).
+      var doReroll = function () {
+        var held = (st.mythZones || [0, 3]).slice();
+        var i = st.rerollIdx || 0, from = held[i];
+        var pool = ZONES.map(function (z, k) { return k; }).filter(function (k) { return held.indexOf(k) < 0; });
+        if (!pool.length) { closePop(); return; }
+        var to = pool[Math.floor(Math.random() * pool.length)];
+        held[i] = to;
+        var cost = Math.round(2000000 * Math.pow(1.5, st.rerolls || 0));
+        var token = self._tok = (self._tok || 0) + 1;
+        play('mythUp', function () {
+          if (token !== self._tok) return;
+          put({ phase: 'result', mythZones: held, rerolls: (st.rerolls || 0) + 1, pending: { kind: 'reroll', from: from, to: to, cost: cost } });
+        });
+      };
+      var instant = function () {
+        if (instantOff) return;
+        var r = roll(true), token = self._tok = (self._tok || 0) + 1;
+        stopAll();
+        play(RESULT_SND[r.kind], function () { if (token === self._tok) put({ phase: 'result', pending: r }); });
+      };
+      var overlay = null;
+      if (st.phase === 'charging') overlay = popup('charging', { kicker: kicker, title: evoTab ? L('진화 진행 중…', 'Evolving…') : st.tab === 'trans' ? L('초월 진행 중…', 'Transcending…') : mystery ? L('??? 진행 중…', '??? in progress…') : st.tab === 'myth' ? L('신화 강화 중…', 'Mythic upgrade…') : L('강화 진행 중…', 'Enhancing…'),
+        line: NAME + ' · ' + attempt + ' · ' + (mystery ? '50 / 50' : trim(shown) + '%'), tint: TABTINT[st.tab] || GOLD, gaugeCls: st.chargeStarted ? 'gauge' : 'gauge wait', gaugeMs: st.chargeMs || 4412 });
+      else if (st.phase === 'confirm') { overlay = popup('confirm', null, closePop); overlay.proceed = charge; }
+      else if (st.phase === 'risk') {
+        overlay = popup('riskConfirm', { kicker: kicker,
+          line: evoTab ? L('실패하면 장비가 파괴됩니다 · 성공률 ', 'A failure destroys the item · chance ') + trim(shown) + '%' : v.failText,
+          cost: fmt(total + (st.riskFast ? INSTANT : 0)) + ' ₽' + (st.riskFast ? L(' · 즈시 강화', ' · instant') : '') }, closePop);
+        overlay.proceed = st.riskFast ? instant : charge;
+      }
+      else if (st.phase === 'reroll') {
+        var rz = (st.mythZones || [0, 3])[st.rerollIdx || 0];
+        overlay = popup('rerollConfirm', { line: zoneName(rz) + L('  →  무작위 다른 부위', '  →  another random zone'),
+          cost: fmt(Math.round(2000000 * Math.pow(1.5, st.rerolls || 0))) + L(' ₽ · 그래픽 카드 1', ' ₽ · 1 graphics card') }, closePop);
+        overlay.proceed = doReroll;
+      }
+      else if (st.phase === 'result' && st.pending && st.pending.kind) overlay = popup(st.pending.kind, describe(st.pending), closePop);
+
+      var tiers = ['basic', 'adv', 'prem'].map(function (id) {
+        var r = TIERS[id];
+        return Object.assign({ id: id }, r, { cls: id === st.tier ? 'tier on' : 'tier', pick: set({ tier: id }, false), badge: st.owned === id ? L('가입 중', 'Active') : '',
+          returnText: L('잃었을 때 강화 유지 반환', 'Returned enhanced if lost'), feeLabel: L('보험료', 'Fee'), timeLabel: L('돌아오는 시간', 'Return time') });
+      });
+      var chosen = TIERS[st.tier];
+      var tierOff = !!own && own.rank >= chosen.rank;
+      var tierAction = tierOff ? (own.rank === chosen.rank ? chosen.name + L(' 가입 중', ' active') : L('더 높은 등급 가입 중', 'Higher tier active'))
+        : own ? L(chosen.name + '으로 변경 · ', 'Switch to ' + chosen.name + ' · ') + chosen.fee : L(chosen.name + ' 가입 · ', 'Buy ' + chosen.name + ' · ') + chosen.fee;
+
+      var helpDefs = [
+        [L('일반 강화', 'Enhance'), L('항목마다 +10까지 따로 올립니다.\n성공률 75%에서 단계마다 5%p씩 내려갑니다.\n+5까지는 실패해도 비용만 나갑니다.', 'Each item goes up to +10 on its own.\nThe chance starts at 75% and drops 5%p per level.\nUp to +5, a failure only costs money.')],
+        [L('고위험 구간 (+6 시도부터)', 'High risk (attempts from +6)'), L('무기·방어구 모두, 실패하면 그중 25%는 파괴, 75%는 1단계 하락입니다.\n파괴 방지·하락 방지로 각각 막을 수 있습니다.\n파괴될 수 있는 시도(파괴 방지 없이 +6 이상, 스타 진화)는 한 번 더 묻습니다. 창을 닫을 때까지 끌 수 있습니다.', 'For weapons and armor, a failure destroys the item 25% of the time and drops one level 75% of the time.\nDestroy guard and drop guard block each one.\nAn attempt that can destroy the item (unguarded +6 and up, star evolution) asks once more; you can silence it until the window closes.')],
+        [L('성공률 올리기', 'Boost chance'), L('재료를 넣은 개수만큼 성공률이 오릅니다. 재료는 2종까지 고를 수 있습니다.\n독택 개당 +0.1% (최대 5%) · 그래픽 카드 개당 +1% (최대 10%) · 비트코인 개당 +5% (최대 20%).\n재료마다 개당 루블도 함께 냅니다.', 'Each piece adds chance. Pick up to 2 kinds.\nDogtag +0.1% each (max 5%) · Graphics card +1% each (max 10%) · Bitcoin +5% each (max 20%).\nEach piece also costs roubles.')],
+        [L('즉시 강화', 'Instant'), L('충전 게이지 없이 바로 결과를 봅니다.\n한 번에 50,000 ₽가 더 들고, 확률은 같습니다.\n일반 강화와 초월에서만 쓸 수 있고, ★★·★★★ 진화에는 없습니다.', 'Skips the charge gauge and shows the result at once.\nCosts 50,000 ₽ more per use; the chance is the same.\nAvailable for enhancing and transcending, not for ★★ / ★★★ evolution.')],
+        [L('방어구 방탄판', 'Armor plates'), L('방어구에 끼운 방탄판도 방어구 강화를 함께 받습니다.\n더 비싼 방탄판으로 바꾸면 차액을 한 번 내야 적용됩니다.', 'Plates in the armor share its enhancement.\nA pricier plate needs the price difference paid once.')],
+        [L('★★ / ★★★ 진화', '★★ / ★★★ evolution'), L('모든 항목이 +10이면 도전합니다.\n성공률 30% / 10%, 실패하면 장비가 파괴됩니다.\n성공하면 강화 효과 ×2 / ×3.\n파괴 방지권: 쓰면 시도할 때마다(성공·실패 관계없이) 1장 소모, 실패해도 장비가 남습니다. ★★용과 ★★★용은 따로이고, ★★ 성공 뒤 남은 ★★용은 사라집니다. 장비마다 ★★용 최대 3장(1장 300만 ₽), ★★★용 최대 2장(1장 800만 ₽)만 살 수 있고, 다 사면 더 살 수 없습니다.', 'Open when every item is +10.\n30% / 10% chance; a failure destroys the item.\nSuccess multiplies the effects ×2 / ×3.\nDestruction ticket: one is spent on every attempt it is used for (success or failure); on failure the item stays. ★★ and ★★★ tickets are separate, and ★★ tickets left after the ★★ success are gone. Per item you can buy at most 3 for ★★ (3,000,000 ₽ each) and 2 for ★★★ (8,000,000 ₽ each), never more.')],
+        [L('초월', 'Transcendence'), L('★★ 이상 장비의 추가 트랙(각 5단계)입니다.\n파괴는 없고, 실패할수록 다음 성공률이 오릅니다(최대 +30%p).\n→4·→5는 실패 시 1단계 하락합니다.', 'Extra tracks (5 levels each) for ★★ gear and up.\nNo destruction; each failure raises the next chance (up to +30%p).\n→4 and →5 drop one level on failure.')],
+        [L('??? / 신화', '??? / Mythic'), L('★★★ 장비에만 ??? 칸이 열립니다. 50% 성공 / 50% 파괴, 도전 비용은 8,000,000 ₽ + LEDX 1개입니다.\n성공하면 별 대신 ✦ 신화 표시가 붙고 신화 단계(0~5)가 열립니다. 비용은 500만 ₽에서 단계마다 ×1.1 + LEDX 1개.\n무기: 탄 데미지·관통력 단계당 +2% (최대 10%). 이 총으로 쏠 때만 적용되고, 같은 탄을 다른 총으로 쏘면 효과가 없습니다.\n방어구·헬멧: 아직 못 막는 부위 중 무작위 2곳을 더 막고, 신화 단계마다 받는 피해 -2% (최대 10%).\n추가 부위가 마음에 안 들면 한 곳씩 다시 뽑을 수 있습니다: 200만 ₽ + 그래픽 카드 1개, 다시 뽑을 때마다 ×1.5.', 'The ??? slot opens only on ★★★ gear. 50% success / 50% destroyed; a try costs 8,000,000 ₽ + 1 LEDX.\nSuccess swaps the stars for a ✦ Mythic mark and opens Mythic levels 0-5, costing 5,000,000 ₽ ×1.1 per level + 1 LEDX.\nWeapons: bullet damage and penetration +2% per level (max 10%), only when fired from this gun.\nArmor and helmets: two random zones they did not cover become covered, then damage taken -2% per level (max 10%).\nEach extra zone can be rerolled: 2,000,000 ₽ + 1 graphics card, ×1.5 per reroll.')],
+        [L('강화할 수 있는 장비', 'What can be enhanced'), L('무기, 방탄복·조끼, 헬멧, 방어력이 있는 안면 마스크.\n선글라스·안경 같은 눈 보호 장비와 방어력 없는 마스크(발라클라바 등)는 강화할 수 없습니다.\n방탄판·바이저 같은 부품은 방어구에 끼운 채 방어구와 함께 강화됩니다.', 'Weapons, body armor and rigs, helmets, and face masks with armor.\nEyewear (sunglasses, glasses) and masks without armor (balaclavas and such) cannot be enhanced.\nPlates and visors are enhanced together with the armor they sit in.')],
+        [L('강화 보험', 'Enhancement insurance'), L('레이드에서 잃었을 때 확률만큼 강화된 채 우편으로 돌아옵니다.\n일반 20% · 1일 뒤 / 고급 55% · 12시간 뒤 / 프리미엄 99% · 즉시.\n한 번 쓰면 소모되고, 강화하면 다시 가입해야 합니다.', 'If lost in a raid, the gear comes back enhanced by mail at the tier chance.\nBasic 20% · after 1 day / Advanced 55% · after 12 h / Premium 99% · instant.\nUsed up once it pays out; enhancing again needs a new policy.')]
+      ];
+      var help = helpDefs.map(function (h, i) {
+        var open = st.help === i;
+        return { q: h[0], a: h[1], open: open, sign: open ? L('접기', 'Hide') : L('열기', 'Show'), pick: set({ help: open ? -1 : i }, false) };
+      });
+
+      // Status panel
+      var labels, baseVals, cur, next = {};
+      if (W) {
+        labels = [['v', L('수직 반동', 'Vertical recoil')], ['h', L('수평 반동', 'Horizontal recoil')], ['e', L('인체공학', 'Ergonomics')], ['m', L('정확도 (MOA)', 'Accuracy (MOA)')], ['r', L('발사속도', 'Fire rate')], ['d', L('내구도', 'Durability')], ['dm', L('탄 데미지', 'Bullet damage')], ['pn', L('관통력', 'Penetration')]];
+        baseVals = { v: '112', h: '268', e: '48', m: '3.10', r: '750', d: '100/100', dm: '100%', pn: '100%' };
+        cur = { v: '108.5', h: '259.5', e: '58', m: '2.96', r: '750', d: '100/100' };
+        if (st.tab === 'normal') next = st.item === 'recoil' ? { v: '107.6', h: '257.4' } : st.item === 'prec' ? { m: '2.91' } : {};
+        else if (st.tab === 'star2') { cur = { v: '95.2', h: '227.8', e: '58', m: '2.79', r: '750', d: '100/100' }; next = { v: '78.4', h: '187.6', e: '68', m: '2.48' }; }
+        else if (st.tab === 'star3') { cur = { v: '78.4', h: '187.6', e: '68', m: '2.48', r: '750', d: '100/100' }; next = { v: '61.6', h: '147.4', e: '78', m: '2.17' }; }
+        else if (st.tab === 'trans') { cur = { v: '61.6', h: '129.7', e: '78', m: '2.17', r: '750', d: '100/100' }; next = st.track === 'second' ? { h: '120.9' } : { r: '795' }; }
+        else if (st.tab === 'myth') { cur = { v: '61.6', h: '129.7', e: '78', m: '2.17', r: '750', d: '100/100' }; next = mythDone ? { dm: '102%', pn: '102%' } : {}; }
+        cur.dm = cur.dm || '100%'; cur.pn = cur.pn || '100%';
+      } else {
+        var cls = L('4 · 판 5', '4 · plate 5');
+        labels = [['c', L('방어 등급', 'Armor class')], ['z', L('보호 부위', 'Protected zones')], ['x', L('최대 내구도', 'Max durability')], ['w', L('내구도 소모', 'Durability loss')], ['b', L('둔탁상', 'Blunt damage')], ['dr', L('피격 피해', 'Damage taken')], ['s', L('이동 속도', 'Move speed')], ['t', L('회전 속도', 'Turn speed')], ['e', L('인체공학', 'Ergonomics')]];
+        baseVals = { c: cls, z: L('7곳', '7'), x: '64', w: '100%', b: '100%', dr: '100%', s: '-8%', t: '-7%', e: '-10' };
+        cur = { c: cls, x: '64', w: '89.6%', b: '100%', s: '-7.75%', t: '-6.78%', e: '-9.7' };
+        if (st.tab === 'normal') next = st.item === 'dur' ? { w: '86.1%' } : { s: '-7.66%', t: '-6.71%', e: '-9.6' };
+        else if (st.tab === 'star2') { cur = { c: cls, x: '64', w: '70%', b: '100%', s: '-6.4%', t: '-5.6%', e: '-8' }; next = { w: '40%', s: '-4.8%', t: '-4.2%', e: '-6' }; }
+        else if (st.tab === 'star3') { cur = { c: cls, x: '64', w: '40%', b: '100%', s: '-4.8%', t: '-4.2%', e: '-6' }; next = { w: '20%', s: '-3.2%', t: '-2.8%', e: '-4' }; }
+        else if (st.tab === 'trans') { cur = { c: cls, x: '71.7', w: '20%', b: '100%', s: '-3.2%', t: '-2.8%', e: '-4' }; next = st.track === 'second' ? { x: '75.5' } : { b: '95%' }; }
+        else if (st.tab === 'myth') { cur = { c: cls, x: '71.7', w: '20%', b: '100%', s: '-3.2%', t: '-2.8%', e: '-4' }; if (mythDone) { cur.z = L('9곳', '9'); next = { dr: '98%' }; } else next = { z: L('9곳', '9') }; }
+        cur.z = cur.z || L('7곳', '7'); cur.dr = cur.dr || '100%';
+      }
+      var even = st.anim % 2 === 0;
+      var animCls = even ? 'dropA' : 'dropB';
+      var glowCls = even ? 'glowA' : 'glowB';
+      var baseRows = labels.map(function (l, i) { return { label: l[1], val: baseVals[l[0]], delay: 140 + i * 55, cls: 'srow ' + animCls }; });
+      var afterRows = labels.map(function (l, i) {
+        var has = next[l[0]] !== undefined;
+        return { label: l[1], val: cur[l[0]], next: next[l[0]] || '', has: has, delay: 520 + i * 70, cls: 'srow ' + animCls + (has ? ' chg ' + glowCls : '') };
+      });
+
+      return {
+        T: T, langs: langs,
+        snd: { on: soundOn, off: !soundOn, toggle: toggleSound, label: soundOn ? L('효과음 끄기', 'Mute sounds') : L('효과음 켜기', 'Unmute sounds') },
+        caption: W ? L('무기 · Daewoo K2로 강화 창을 열었을 때', 'Weapon · window opened on a Daewoo K2') : L('방어구 · Gen4 완전형으로 강화 창을 열었을 때', 'Armor · window opened on a Gen4 Full'),
+        name: NAME, kind: W ? '5.56x45 NATO' : L('방어구 · 방탄판 4장', 'Armor · 4 plates'), isWeapon: W, isArmor: !W,
+        tabs: tabs, v: v, mats: mats, tiers: tiers, tierAction: tierAction, help: help,
+        tierOff: tierOff, tierCls: tierOff ? 'btn dis' : 'btn act', buy: function () { put({ owned: st.tier }); },
+        insNow: own ? own.name + L(' · 반환 ', ' · returns ') + own.chance + ' · ' + own.time : L('미가입', 'None'), insNowColor: own ? own.color : '#c4c0b6',
+        insValue: W ? '540,926 ₽' : '241,142 ₽',
+        // Example queue: insured gear lost in earlier raids, shown until its mail arrives.
+        pendingReturns: W ? [
+          { name: 'M4A1 ★★', tier: L('고급', 'Advanced'), color: '#7fb2ff', left: L('7시간 12분 남음', '7 h 12 min left'), pct: 40 },
+          { name: 'AK-74N ★ +18', tier: L('일반', 'Basic'), color: OK, left: L('18시간 3분 남음', '18 h 3 min left'), pct: 25 }
+        ] : [
+          { name: '6B43 ★', tier: L('일반', 'Basic'), color: OK, left: L('21시간 40분 남음', '21 h 40 min left'), pct: 10 }
+        ],
+        tk: {
+          id: g + '-ticket', title: L('파괴 방지권', 'Destruction ticket') + ' · ' + TK.star,
+          state: L('보유 ', 'Held ') + tHeld + L('장 · 구매 ', ' · bought ') + tBought + ' / ' + TK.cap + (tBought >= TK.cap ? L(' (더 못 삼)', ' (no more)') : '') + (st.tab === 'star3' ? L(' · ★★용은 못 씀', ' · ★★ tickets do not count') : ''),
+          use: useTicket, useOff: tHeld <= 0, useCls: tHeld > 0 ? 'opt' : 'opt off', useLabel: L('방지권 사용 (이번 시도에 1장)', 'Use a ticket (1 per attempt)'),
+          toggle: function () { put({ useTicket: !st.useTicket }); },
+          buyOff: tBought >= TK.cap || TK.price > HELD,
+          buyText: tBought >= TK.cap ? L('최대 구매 완료', 'All bought') : L('1장 구매 · ', 'Buy 1 · ') + fmt(TK.price) + ' ₽',
+          buy: function () { if (tBought >= TK.cap) return; var o = {}; o[TK.b] = tBought + 1; o[TK.h] = tHeld + 1; put(o); }
+        },
+        plateCls: plateOwed ? 'chip warn' : 'chip',
+        plateState: plateOwed ? L('측판 1장 차액 필요', '1 side plate owes difference') : L('모두 적용됨', 'All applied'),
+        plateDone: !plateOwed, plateAction: plateOwed ? L('차액 내고 적용 · ', 'Pay & apply · ') + fmt(PLATE_FEE) + ' ₽' : L('모두 적용됨', 'All applied'),
+        payPlate: function () { put({ platePaid: true }); },
+        showOverlay: !!overlay, p: overlay || popup('success'), charge: askRisk(false), instant: askRisk(true), askMyth: askMyth,
+        isEnhance: st.tab !== 'ins' && st.tab !== 'help' && !(st.tab === 'myth' && !mythDone), isInsurance: st.tab === 'ins', isHelp: st.tab === 'help',
+        isMystery: st.tab === 'myth' && !mythDone,
+        baseRows: baseRows, afterRows: afterRows, panelCls: even ? 'panelA' : 'panelB',
+        replay: function () { put({}, true); }
+      };
+    };
+
+    return { langs: langs, screens: [build('weapon'), build('armor')] };
+  }
+}
+</script>
