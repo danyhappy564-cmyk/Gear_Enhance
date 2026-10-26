@@ -21,6 +21,10 @@ button{font-family:inherit}
 .tab.on .tsub{color:#cdb88c}
 .tab.mail-ready{background:#241722;color:#ffd878;border-left:3px solid #ff6ad5;animation:mailGlow 2.4s ease-in-out infinite}
 .tab.mail-ready .tsub{color:#ffd878}
+/* A difference to pay or a released policy: the same breathing glow in gold (user 2026-10-26). */
+.tab.due-ready{background:#221d12;color:#f3e3bf;border-left:3px solid #d9b36c;animation:dueGlow 2.4s ease-in-out infinite}
+.tab.due-ready .tsub{color:#f0cf8c}
+@keyframes dueGlow{0%,100%{box-shadow:inset 0 0 16px #d9b36c22,0 0 8px #d9b36c22}50%{box-shadow:inset 0 0 24px #ffd87833,0 0 14px #d9b36c55}}
 @keyframes mailGlow{0%,100%{box-shadow:inset 0 0 16px #ff6ad522,0 0 8px #ff6ad522}50%{box-shadow:inset 0 0 24px #ffd87833,0 0 14px #ff6ad555}}
 .demo-bar{display:flex;align-items:center;flex-wrap:wrap;gap:8px;padding:10px 12px;border:1px dashed #3a4148;background:#101316;font-size:11px;color:#9aa1a8}
 .demo-bar .mini{font-size:11px;min-height:30px;padding:0 9px}
@@ -42,7 +46,7 @@ button{font-family:inherit}
 .policy-note{margin-top:6px;font-size:11px;color:#ffb26b}
 .policy-mail{border-color:#6b4760;background:#1a1119}
 .policy-rule{margin-top:6px}
-@media (prefers-reduced-motion:reduce){.tab.mail-ready{animation:none;box-shadow:inset 0 0 18px #ff6ad533}}
+@media (prefers-reduced-motion:reduce){.tab.mail-ready{animation:none;box-shadow:inset 0 0 18px #ff6ad533}.tab.due-ready{animation:none;box-shadow:inset 0 0 18px #d9b36c33}}
 .mid{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;display:flex;flex-direction:column;gap:10px;scrollbar-width:thin;scrollbar-color:#3a4148 transparent}
 .mid > *{flex-shrink:0}
 .tab:disabled{cursor:not-allowed;color:#5d646b}
@@ -907,12 +911,19 @@ class Component extends DCLogic {
       tabDefs.splice(4, 0, { id: 'myth', mark: mythDone ? '✦' : '◈', color: mythLocked ? '#5d646b' : MYTH,
         label: mythDone ? L('신화', 'Mythic') : '???',
         sub: mythLocked ? L('★★★ 이후 열림', 'Opens after ★★★') : mythDone ? (W ? L('데미지·관통 0/5', 'Dmg · pen 0/5') : L('추가 부위 2곳 · 0/5', '+2 zones · 0/5')) : '50 / 50', off: mythLocked });
+      // Policies waiting on a payment, shared by both windows (mockup registry).
+      var prestigeDue = demo.stage >= 6 ? 0 : demo.items.filter(function (r) { return r.prestige && Math.round(r.value * prestigeRate) > r.prestige.paid; }).length;
+      var raidWaiting = demo.items.filter(function (r) { return r.raid && (!r.raid.active || raidFee(r, r.raid.tier) > r.raid.paid); }).length;
       var tabs = tabDefs.map(function (t) {
         var ins = t.id === 'ins';
-        return Object.assign({}, t, { cls: (t.id === st.tab ? 'tab on' : 'tab') + (t.id === 'prestige' && demo.mail.length ? ' mail-ready' : ''), off: !!t.off, on: t.id === st.tab,
+        // Something waiting on the player lights the tab: mail to collect (pink), a difference to pay or
+        // a released policy to renew (gold).
+        var glow = t.id === 'prestige' ? (demo.mail.length ? ' mail-ready' : prestigeDue ? ' due-ready' : '') : ins && raidWaiting ? ' due-ready' : '';
+        return Object.assign({}, t, { cls: (t.id === st.tab ? 'tab on' : 'tab') + glow, off: !!t.off, on: t.id === st.tab,
           pick: t.off ? function () {} : set(Object.assign({ tab: t.id }, clear), true),
           ring: ins && own ? own.color : 'transparent', color: ins && own ? own.color : t.color,
-          sub: ins ? (own ? own.name + ' ' + own.chance : L('미가입', 'None')) : t.sub });
+          sub: ins ? (raidWaiting ? L('다시 가입 ', 'Renew ') + raidWaiting + L('개', '') : own ? own.name + ' ' + own.chance : L('미가입', 'None'))
+            : t.id === 'prestige' && !demo.mail.length && prestigeDue ? L('보험 · 차액 ', 'Ins. · due ') + prestigeDue + L('개', '') : t.sub });
       });
 
       // Weapons and armor both turn high risk from the +6 attempt.
