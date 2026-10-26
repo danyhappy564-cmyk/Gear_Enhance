@@ -19,6 +19,30 @@ button{font-family:inherit}
 .tlabel{display:block;font-size:14px;font-weight:700}
 .tsub{display:block;font-size:11px;color:#9aa1a8;margin-top:2px}
 .tab.on .tsub{color:#cdb88c}
+.tab.mail-ready{background:#241722;color:#ffd878;border-left:3px solid #ff6ad5;animation:mailGlow 2.4s ease-in-out infinite}
+.tab.mail-ready .tsub{color:#ffd878}
+@keyframes mailGlow{0%,100%{box-shadow:inset 0 0 16px #ff6ad522,0 0 8px #ff6ad522}50%{box-shadow:inset 0 0 24px #ffd87833,0 0 14px #ff6ad555}}
+.demo-bar{display:flex;align-items:center;flex-wrap:wrap;gap:8px;padding:10px 12px;border:1px dashed #3a4148;background:#101316;font-size:11px;color:#9aa1a8}
+.demo-bar .mini{font-size:11px;min-height:30px;padding:0 9px}
+.mini.on{border-color:#d9b36c;background:#2a2416;color:#f3e3bf}
+.policy-box{padding:12px 14px;border:1px solid #2a3037;background:#13171b;font-size:12px;line-height:1.65;color:#b9b3a6}
+.policy-title{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin:0 0 8px;font-size:13px;font-weight:700;color:#d6d0c3}
+.policy-intro{border-color:#6b5836;background:#171410;color:#d6cdb8}
+.policy-intro strong{display:block;margin-bottom:4px;font-size:15px;color:#f3e3bf}
+.policy-list-head,.policy-row{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr) minmax(0,.8fr) 132px;gap:10px;align-items:center}
+.policy-list-head{padding:5px 0 7px;font-size:11px;color:#9aa1a8;border-bottom:1px solid #2a3037}
+.policy-row{padding:10px 0;border-bottom:1px solid #22282e;font-size:12px}
+.policy-row:last-child{border-bottom:0}
+.policy-row .num{font-size:17px;color:#e6e2d8}
+.policy-row small{display:block;font-size:11px;line-height:1.5;color:#9aa1a8;overflow-wrap:anywhere}
+.policy-row .mini{font-size:11px;padding:0 6px;width:100%}
+.policy-payment{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.policy-payment .num{font-size:25px;font-weight:700;color:#f3e3bf}
+.policy-payment small{display:block;color:#9aa1a8;font-size:11px}
+.policy-note{margin-top:6px;font-size:11px;color:#ffb26b}
+.policy-mail{border-color:#6b4760;background:#1a1119}
+.policy-rule{margin-top:6px}
+@media (prefers-reduced-motion:reduce){.tab.mail-ready{animation:none;box-shadow:inset 0 0 18px #ff6ad533}}
 .mid{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;display:flex;flex-direction:column;gap:10px;scrollbar-width:thin;scrollbar-color:#3a4148 transparent}
 .mid > *{flex-shrink:0}
 .tab:disabled{cursor:not-allowed;color:#5d646b}
@@ -185,7 +209,12 @@ button{font-family:inherit}
 @media (prefers-reduced-motion: reduce){.dropA,.dropB,.panelA,.panelB,.glowA .snext,.glowB .snext,.fillA,.fillB,.pop,.pop.shake,.ptitle.glow,.peff,.gauge,.piece,.fxflash,.fxrays,.fxring,.fxspark i,.pop.mythic,.ptitle.mythic,.fxstar,.pop.mythlite,.ptitle.mythlite{animation:none}.fxflash,.fxring,.fxspark{display:none}}
 </style>
 </helmet>
-<div style="width: 1240px; height: 2140px; box-sizing: border-box; padding: 24px; background: #07090b; font-family: 'Noto Sans KR', 'Malgun Gothic', sans-serif; color: #e6e2d8; display: flex; flex-direction: column; gap: 40px">
+<div style="width: 1240px; height: 2240px; box-sizing: border-box; padding: 24px; background: #07090b; font-family: 'Noto Sans KR', 'Malgun Gothic', sans-serif; color: #e6e2d8; display: flex; flex-direction: column; gap: 40px">
+<div class="demo-bar" role="group" aria-label="{{demoAria}}">
+  <strong style="color:#d9b36c">{{demoLabel}}</strong>
+  <sc-for list="{{demoModes}}" as="m" hint-placeholder-count="5"><button type="button" class="{{m.cls}}" aria-pressed="{{m.on}}" onClick="{{m.pick}}">{{m.label}}</button></sc-for>
+  <span>{{demoHint}}</span>
+</div>
 <sc-for list="{{screens}}" as="S" hint-placeholder-count="2">
 <div style="display: flex; flex-direction: column; gap: 12px">
 <div style="font-size: 16px; font-weight: 700; color: #9aa1a8">{{S.caption}}</div>
@@ -257,8 +286,8 @@ button{font-family:inherit}
 
     <nav aria-label="{{S.T.menuAria}}" style="width: 148px; flex: none; border-right: 1px solid #2a3037; background: #0d1013; display: flex; flex-direction: column">
       <div style="height: 56px; display: flex; align-items: center; justify-content: center; border-bottom: 1px solid #2a3037; font-size: 13px; font-weight: 700; color: #9aa1a8; letter-spacing: 2px">{{S.T.list}}</div>
-      <sc-for list="{{S.tabs}}" as="t" hint-placeholder-count="6">
-        <button type="button" class="{{t.cls}}" onClick="{{t.pick}}" disabled="{{t.off}}" style="box-shadow: inset 0 0 0 2px {{t.ring}}">
+      <sc-for list="{{S.tabs}}" as="t" hint-placeholder-count="8">
+        <button type="button" class="{{t.cls}}" onClick="{{t.pick}}" disabled="{{t.off}}" aria-pressed="{{t.on}}" style="box-shadow: inset 0 0 0 2px {{t.ring}}">
           <span class="tmark" style="color: {{t.color}}">{{t.mark}}</span>
           <span><span class="tlabel">{{t.label}}</span><span class="tsub">{{t.sub}}</span></span>
         </button>
@@ -498,6 +527,20 @@ button{font-family:inherit}
                 </button>
               </sc-for>
             </div>
+            <section class="policy-box" aria-label="{{S.T.registered}}">
+              <h3 class="policy-title"><span>{{S.T.registered}} <span class="num" style="color:#d9b36c">{{S.raidCount}}</span></span><span style="font-size:11px;color:#9aa1a8">{{S.T.raidListHint}}</span></h3>
+              <div class="policy-list-head"><span>{{S.T.gearTier}}</span><span>{{S.T.enrolledValue}}</span><span>{{S.T.difference}}</span><span>{{S.T.stateRenew}}</span></div>
+              <sc-if value="{{S.raidEmpty}}" hint-placeholder-val="{{false}}"><p>{{S.T.emptyRegistered}}</p></sc-if>
+              <sc-for list="{{S.raidRows}}" as="r" hint-placeholder-count="3">
+                <div class="policy-row">
+                  <div><b>{{r.name}}</b><small style="color:{{r.color}}">{{r.grade}}</small><small>{{r.reason}}</small></div>
+                  <div><span class="num">{{r.value}}</span><small>{{r.current}}</small></div>
+                  <div><span class="num" style="color:{{r.color}}">{{r.delta}}</span><small>{{r.payment}}</small></div>
+                  <div><small style="color:{{r.color}};margin-bottom:5px">{{r.status}}</small><button type="button" class="mini" disabled="{{r.off}}" onClick="{{r.renew}}">{{r.action}}</button></div>
+                </div>
+              </sc-for>
+              <div class="policy-note">{{S.T.raidRenewNote}}</div>
+            </section>
             <div style="padding: 10px 14px 12px; border: 1px solid #2a3037; background: #13171b">
               <div style="display: flex; align-items: baseline; font-size: 13px"><span style="font-weight: 700; color: #d6d0c3">{{S.T.returning}}</span><span style="margin-left: auto; font-size: 12px; color: #9aa1a8">{{S.T.returningSub}}</span></div>
               <sc-if value="{{S.noReturns}}" hint-placeholder-val="{{false}}"><div style="padding-top: 8px; font-size: 13px; color: #9aa1a8">{{S.noReturnsText}}</div></sc-if>
@@ -517,6 +560,62 @@ button{font-family:inherit}
             <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 10px; margin-top: auto; flex: none">
               <button type="button" class="btn sec">{{S.T.close}}</button>
               <button type="button" class="{{S.tierCls}}" disabled="{{S.tierOff}}" onClick="{{S.buy}}">{{S.tierAction}}</button>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{S.isPrestige}}" hint-placeholder-val="{{false}}">
+          <div style="display:flex;flex-direction:column;gap:10px;flex:1;min-height:0">
+            <div class="mid">
+              <div style="display: flex; align-items: center; gap: 12px; flex: none">
+                <div style="flex: 1; height: 1px; background: #2a3037"></div>
+                <div style="padding: 3px 16px; border: 1px solid #6b5836; font-size: 13px; font-weight: 700; color: #f0cf8c">{{S.T.prestige}}</div>
+                <div style="flex: 1; height: 1px; background: #2a3037"></div>
+              </div>
+              <div class="policy-box policy-intro">{{S.T.prestigeIntro}}<div class="policy-note">{{S.T.prestigeLoss}}</div></div>
+              <sc-if value="{{S.pi.isMax}}" hint-placeholder-val="{{false}}"><div class="chip warn" role="status" style="padding:12px 14px">{{S.T.prestigeMax}}</div></sc-if>
+              <sc-if value="{{S.pi.hasMail}}" hint-placeholder-val="{{false}}">
+                <section class="policy-box policy-mail" aria-label="{{S.T.mailTitle}}">
+                  <h3 class="policy-title"><span>{{S.T.mailTitle}} · {{S.pi.mailCount}}</span><span class="num" style="color:#ffd878">{{S.pi.mailStage}}</span></h3>
+                  <div>{{S.T.mailIntro}}</div>
+                  <sc-for list="{{S.pi.mail}}" as="r" hint-placeholder-count="2"><div class="srow"><span>{{r.name}}<small style="display:block;color:#9aa1a8;font-size:11px">{{r.detail}}</small></span><span class="sval num" style="color:#ffd878">×1</span></div></sc-for>
+                  <button type="button" class="mini" style="width:100%;margin-top:10px;border-color:#8a3f79;color:#ffd878" onClick="{{S.pi.receive}}">{{S.T.receiveMail}}</button>
+                  <div class="policy-note">{{S.T.returnEnds}}</div>
+                </section>
+              </sc-if>
+              <div class="policy-box" style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+                <div><span style="color:#9aa1a8">{{S.T.currentGear}} · {{S.name}}</span><div style="font-size:21px;font-weight:700;color:{{S.pi.color}};margin-top:4px">{{S.pi.status}}</div><small>{{S.pi.coverage}}</small></div>
+                <div><span style="color:#9aa1a8">{{S.T.value}}</span><div class="num" style="font-size:30px;font-weight:700;color:#f3e3bf">{{S.pi.value}}</div><small>{{S.pi.valueHint}}</small></div>
+              </div>
+              <div class="policy-box">
+                <div class="policy-payment">
+                  <div><small>{{S.T.alreadyPaid}}</small><div class="num">{{S.pi.paid}}</div><small>{{S.T.cumulative}}</small></div>
+                  <div><small>{{S.T.newPremium}}</small><div class="num">{{S.pi.premium}}</div><small>{{S.pi.rateLabel}}</small></div>
+                  <div><small>{{S.T.payDifference}}</small><div class="num" style="color:#d9b36c">{{S.pi.delta}}</div><small>{{S.pi.calculation}}</small></div>
+                </div>
+                <div style="border-top:1px solid #2a3037;padding-top:7px;margin-top:8px;font-size:11px">{{S.T.differenceFormula}}</div>
+              </div>
+              <section class="policy-box" aria-label="{{S.T.registered}}">
+                <h3 class="policy-title"><span>{{S.T.registered}} <span class="num" style="color:#d9b36c">{{S.pi.count}}</span></span><span style="font-size:11px;color:#9aa1a8">{{S.T.prestigeListHint}}</span></h3>
+                <div class="policy-list-head"><span>{{S.T.gearTier}}</span><span>{{S.T.coveredValue}}</span><span>{{S.T.difference}}</span><span>{{S.T.stateRenew}}</span></div>
+                <sc-if value="{{S.pi.empty}}" hint-placeholder-val="{{true}}"><p>{{S.T.emptyRegistered}}</p></sc-if>
+                <sc-for list="{{S.pi.rows}}" as="r" hint-placeholder-count="3">
+                  <div class="policy-row">
+                    <div><b>{{r.name}}</b><small>{{r.grade}}</small><small style="color:{{r.color}}">{{r.coverage}}</small></div>
+                    <div><span class="num">{{r.value}}</span><small>{{r.current}}</small></div>
+                    <div><span class="num" style="color:{{r.color}}">{{r.delta}}</span><small>{{r.payment}}</small></div>
+                    <div><small style="color:{{r.color}};margin-bottom:5px">{{r.status}}</small><button type="button" class="mini" disabled="{{r.off}}" onClick="{{r.renew}}">{{r.action}}</button></div>
+                  </div>
+                </sc-for>
+              </section>
+              <section class="policy-box" aria-label="{{S.T.registrationRules}}">
+                <h3 class="policy-title">{{S.T.registrationRules}}</h3>
+                <div>{{S.T.prestigeKeep}}</div><div class="policy-rule">{{S.T.noRefund}}</div><div class="policy-rule">{{S.T.unpaidCoverage}}</div><div class="policy-rule">{{S.T.prestigeMaxRule}}</div><div class="policy-rule" style="color:#d9b36c">{{S.T.returnEnds}}</div>
+              </section>
+              <div role="status" aria-live="polite" style="font-size:12px;color:#8fd694">{{S.pi.notice}}</div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 2fr;gap:10px;flex:none">
+              <button type="button" class="btn sec">{{S.T.close}}</button><button type="button" class="{{S.pi.actionCls}}" disabled="{{S.pi.off}}" onClick="{{S.pi.register}}">{{S.pi.action}}</button>
             </div>
           </div>
         </sc-if>
@@ -550,11 +649,19 @@ button{font-family:inherit}
     </div>
   </div>
 
-  <aside aria-label="{{S.T.status}}" class="{{S.panelCls}}" style="width: 268px; flex: none; border: 1px solid #353c44; background: #111417">
+  <aside aria-label="{{S.sideTitle}}" class="{{S.panelCls}}" style="width: 268px; flex: none; border: 1px solid #353c44; background: #111417">
     <div style="height: 56px; display: flex; align-items: center; padding: 0 12px 0 16px; border-bottom: 1px solid #2a3037; background: #15191d">
-      <span style="font-size: 15px; font-weight: 700; color: #f3e3bf">{{S.T.status}}</span>
+      <span style="font-size: 15px; font-weight: 700; color: #f3e3bf">{{S.sideTitle}}</span>
       <button type="button" class="mini" onClick="{{S.replay}}" aria-label="{{S.T.replayAria}}" style="margin-left: auto"><svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M13.5 8A5.5 5.5 0 1 1 11.9 4.1"></path><path d="M12.5 1.5v3.2H9.3"></path></svg></button>
     </div>
+    <sc-if value="{{S.isPrestige}}" hint-placeholder-val="{{false}}">
+      <div style="padding:14px 16px 18px;font-size:12px;color:#b9b3a6">
+        <h3 class="policy-title">{{S.T.preserveTitle}}</h3>
+        <sc-for list="{{S.pi.preserved}}" as="r" hint-placeholder-count="5"><div class="srow"><span class="slabel">{{r.label}}</span><span class="sval" style="font-size:13px;color:{{r.color}}">{{r.value}}</span></div></sc-for>
+        <div style="padding-top:20px;margin-top:16px;border-top:1px solid #2a3037"><h3 class="policy-title">{{S.T.prestigeProgress}}</h3><div class="num" style="font-size:34px;color:#d9b36c">{{S.pi.progress}}</div><div class="policy-note">{{S.pi.progressNote}}</div></div>
+      </div>
+    </sc-if>
+    <sc-if value="{{S.showGearStats}}" hint-placeholder-val="{{true}}">
     <div style="padding: 14px 16px 4px">
       <div style="display: flex; align-items: baseline; gap: 8px"><span style="font-size: 13px; font-weight: 700; color: #9aa1a8">{{S.T.original}}</span><span style="font-size: 15px; font-weight: 700">{{S.name}}</span></div>
       <sc-for list="{{S.baseRows}}" as="r" hint-placeholder-count="6">
@@ -567,6 +674,7 @@ button{font-family:inherit}
         <div class="{{r.cls}}" style="animation-delay: {{r.delay}}ms"><span class="slabel">{{r.label}}</span><span class="sval num">{{r.val}}</span><sc-if value="{{r.has}}" hint-placeholder-val="{{false}}"><span class="sarrow">→</span><span class="snext num">{{r.next}}</span></sc-if></div>
       </sc-for>
     </div>
+    </sc-if>
   </aside>
 
 </div>
@@ -574,7 +682,7 @@ button{font-family:inherit}
 </sc-for>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"lockMyth":{"editor":"boolean","default":false,"section":"목업 상태 (??? 잠금 보기)"},"tagRoubles":{"editor":"int","default":5000,"min":0,"max":1000000,"step":1000,"unit":"₽","section":"재료 루블 (확정)"},"gpuRoubles":{"editor":"int","default":100000,"min":0,"max":5000000,"step":10000,"unit":"₽","section":"재료 루블 (확정)"},"btcRoubles":{"editor":"int","default":300000,"min":0,"max":5000000,"step":10000,"unit":"₽","section":"재료 루블 (확정)"},"$preview":{"width":1240,"height":2140}}'>
+<script type="text/x-dc" data-dc-script data-props='{"lockMyth":{"editor":"boolean","default":false,"section":"목업 상태 (??? 잠금 보기)"},"tagRoubles":{"editor":"int","default":5000,"min":0,"max":1000000,"step":1000,"unit":"₽","section":"재료 루블 (확정)"},"gpuRoubles":{"editor":"int","default":100000,"min":0,"max":5000000,"step":10000,"unit":"₽","section":"재료 루블 (확정)"},"btcRoubles":{"editor":"int","default":300000,"min":0,"max":5000000,"step":10000,"unit":"₽","section":"재료 루블 (확정)"},"$preview":{"width":1240,"height":2240}}'>
 class Component extends DCLogic {
   componentWillUnmount() { var t = this._t || {}; Object.keys(t).forEach(function (k) { clearTimeout(t[k]); }); }
   renderVals() {
@@ -591,9 +699,7 @@ class Component extends DCLogic {
     var props = this.props;
     self._t = self._t || {};
 
-    var auto = 'en';
-    try { auto = /^ko/i.test((navigator.languages && navigator.languages[0]) || navigator.language || '') ? 'ko' : 'en'; } catch (e) {}
-    var lang = all.lang || auto;
+    var lang = all.lang || 'ko';
     var K = lang === 'ko';
     var L = function (ko, en) { return K ? ko : en; };
     var setLang = function (code) { return function () { self._s.lang = code; save(); self.setState({ lang: code }); }; };
@@ -652,6 +758,24 @@ class Component extends DCLogic {
       costAria: L('비용', 'Cost'), cost: L('강화비', 'Cost'), matRub: L('재료 루블', 'Materials'), total: L('합계', 'Total'), held: L('보유', 'Owned'),
       instant: L('즉시 강화', 'Instant'), plates: L('방탄판 4장', '4 plates'), spent: L('소모', 'Spent'),
       insurance: L('강화 보험', 'Enhancement insurance'), nowIns: L('지금 가입', 'Current'), value: L('강화 가치', 'Enhanced value'),
+      prestige: L('프레스티지 보험', 'Prestige insurance'),
+      prestigeIntro: L('프레스티지를 달성해 다음 단계로 넘어갈 때만, 등록한 장비가 우편으로 돌아옵니다.', 'Registered gear returns by mail only when you achieve prestige and advance to the next stage.'),
+      prestigeLoss: L('레이드에서 죽거나 잃어버린 장비는 돌려주지 않습니다.', 'Gear lost on death or in a raid is not returned.'),
+      prestigeMax: L('최대 프레스티지(6)에서는 다음 단계가 없어 보험이 작동하지 않습니다', 'At maximum prestige (6), there is no next stage, so this insurance does not work.'),
+      registered: L('등록된 장비', 'Registered gear'), gearTier: L('장비 · 등급', 'Gear · tier'), enrolledValue: L('가입 당시 가치', 'Value at enrollment'), coveredValue: L('마지막 납부 가치', 'Last paid value'),
+      difference: L('차액', 'Difference'), stateRenew: L('상태 / 갱신', 'Status / renew'), emptyRegistered: L('등록된 장비가 없습니다.', 'No registered gear.'),
+      raidListHint: L('풀린 장비도 표시 · 수치는 예시', 'Released policies included · example values'), prestigeListHint: L('장비별 차액만 납부', 'Pay only the difference per item'),
+      raidRenewNote: L('강화 성공·더 비싼 방탄판 교체 시 풀림. 재가입료 = 새 보험료 − 이전 납부액 (최소 0 ₽).', 'A successful upgrade or a more expensive plate releases the policy. Re-enrollment = new fee − prior payment (minimum 0 ₽).'),
+      currentGear: L('지금 장비', 'Current gear'), alreadyPaid: L('이미 낸 금액', 'Already paid'), cumulative: L('누적 납부 기준', 'Cumulative payment'), newPremium: L('현재 가치 보험료', 'Fee at current value'),
+      payDifference: L('지금 낼 차액', 'Difference due'), differenceFormula: L('차액 = 현재 보험료 − 이미 낸 금액 (최소 0 ₽)', 'Difference = current fee − amount paid (minimum 0 ₽)'),
+      registrationRules: L('등록 · 반환 규칙', 'Registration · return rules'),
+      prestigeKeep: L('추가 강화·방탄판 교체에도 등록 유지. 가치가 오르면 차액만 냅니다.', 'Registration survives upgrades and plate swaps. Pay only the difference when value rises.'),
+      noRefund: L('가치가 내려가면 추가 납부 0 ₽. 이미 낸 금액은 환불하지 않습니다.', 'If value falls, the extra fee is 0 ₽. Prior payments are not refunded.'),
+      unpaidCoverage: L('차액을 안 낸 장비는 마지막으로 낸 가치까지 보장합니다.', 'Without paying the difference, coverage is capped at the last paid value.'),
+      prestigeMaxRule: L('최대 프레스티지(6)에서는 다음 단계가 없어 작동하지 않습니다. 레이드에서 잃은 장비는 강화 보험이 맡습니다.', 'It does not work at maximum prestige (6): there is no next stage. Gear lost in raids is covered by the enhancement insurance.'),
+      returnEnds: L('반환되면 등록·납부 기록은 끝납니다. 다음 반환을 받으려면 다시 등록하세요.', 'Return ends the registration and payment record. Register again for the next return.'),
+      mailTitle: L('반환 우편 도착', 'Return mail arrived'), mailIntro: L('프레스티지 03으로 넘어오기 전에 등록한 장비입니다. 받으면 창고로 들어옵니다.', 'Gear registered before advancing to prestige 03. Collecting puts it in your stash.'),
+      receiveMail: L('첨부 장비 모두 받기 · 목업', 'Collect all attachments · mockup'), preserveTitle: L('반환 시 보존', 'Preserved on return'), prestigeProgress: L('프레스티지 진행', 'Prestige progress'),
       insNote: L('레이드에서 잃으면 확률만큼 강화된 채 우편으로 돌아옵니다. 돌아오는 시간: 일반 1일 · 고급 12시간 · 프리미엄 즉시. 한 번 쓰면 소모됩니다.', 'If lost in a raid, it comes back enhanced by mail at this chance. Return time: Basic 1 day · Advanced 12 h · Premium instant. Used up once it pays out.'),
       help: L('도움말', 'Help'), status: L('장비 상태', 'Gear stats'), original: L('원본', 'Base'), after: L('강화 후', 'Enhanced'),
       replayAria: L('애니메이션 다시 보기', 'Replay animation'),
@@ -663,6 +787,71 @@ class Component extends DCLogic {
       mysteryNote: L('성공률 올리기·즉시 강화는 쓸 수 없습니다. ??? 파괴 방지권(장비당 1장)을 쓰면 실패해도 장비가 남습니다. 성공하면 신화 단계가 열립니다.', 'No boosts or instant. The ??? ticket (one per gear) keeps the gear on a failure. Success unlocks the Mythic stage.'),
       costLabel: L('비용', 'Cost'), mythCost: '8,000,000 ₽ · LEDX 1', challenge: L('도전하기', 'Challenge')
     };
+
+    // Mockup-only shared policies: both gear windows see the same registry and mail.
+    var prestigeRate = 0.10;
+    var cash = function (n) { return fmt(n) + ' ₽'; };
+    var raidFee = function (item, id) {
+      var base = item.id === 'weapon' ? 540926 : item.id === 'armor' ? 241142 : 430000;
+      var fees = item.id === 'weapon' ? { basic: 27047, adv: 81139, prem: 162278 }
+        : item.id === 'armor' ? { basic: 12058, adv: 36172, prem: 72343 } : { basic: 21500, adv: 64500, prem: 129000 };
+      return Math.round(item.value * fees[id] / base);
+    };
+    // Fresh fixtures for the five preview states; never connected to the game.
+    var makeDemo = function (mode) {
+      var items = [{ id: 'weapon', value: 540926 }, { id: 'armor', value: 241142 }, { id: 'm4', value: 430000 }];
+      items.forEach(function (r) {
+        r.prestige = mode === 'registered' || mode === 'delta' ? { value: r.value, paid: Math.round(r.value * prestigeRate) } : null;
+        r.raid = mode !== 'unregistered' && !(mode === 'mail' && r.id === 'm4') ? { value: r.value, paid: raidFee(r, 'adv'), tier: 'adv', active: true } : null;
+        if (mode === 'delta') {
+          r.value += r.id === 'weapon' ? 100000 : r.id === 'armor' ? 60000 : -40000;
+          if (r.id !== 'm4') { r.raid.active = false; r.raid.reason = r.id === 'weapon' ? 'upgrade' : 'plate'; }
+        }
+      });
+      return { mode: mode, stage: mode === 'max' ? 6 : mode === 'mail' ? 3 : 2, items: items, mail: mode === 'mail' ? ['m4'] : [], notice: '' };
+    };
+    if (!self._s.insuranceDemo) { self._s.insuranceDemo = makeDemo('unregistered'); save(); }
+    var demo = self._s.insuranceDemo;
+    var updateDemo = function (change) {
+      var fresh = JSON.parse(JSON.stringify(self._s.insuranceDemo));
+      change(fresh); self._s.insuranceDemo = fresh; save(); self.setState({ insuranceDemo: fresh });
+    };
+    var itemName = function (r) { return r.id === 'weapon' ? 'Daewoo K2' : r.id === 'armor' ? L('Gen4 완전형', 'Gen4 Full') : 'M4A1'; };
+    var itemGrade = function (r) { return r.id === 'm4' ? L('★★ · 초월 I', '★★ · Transcend I') : r.id === 'weapon' ? L('★ · 반동 +4', '★ · Recoil +4') : L('★ · 내구성 +6', '★ · Durability +6'); };
+    // Registration pays the positive difference; a fall in value never refunds money.
+    var registerPrestige = function (id) {
+      updateDemo(function (d) {
+        if (d.stage >= 6 || d.mail.indexOf(id) >= 0) return;
+        var r = d.items.filter(function (x) { return x.id === id; })[0];
+        var old = r.prestige, premium = Math.round(r.value * prestigeRate);
+        if (old && premium <= old.paid) return;
+        r.prestige = { value: Math.max(old ? old.value : 0, r.value), paid: Math.max(old ? old.paid : 0, premium) };
+        d.notice = old ? 'renewed' : 'registered';
+      });
+    };
+    var renewRaid = function (id, selected) {
+      updateDemo(function (d) {
+        var r = d.items.filter(function (x) { return x.id === id; })[0];
+        var old = r.raid, chosenTier = selected || (old && old.tier) || 'adv';
+        r.raid = { tier: chosenTier, value: r.value, paid: Math.max(old ? old.paid : 0, raidFee(r, chosenTier)), active: true };
+      });
+    };
+    var changeGearValue = function (id, amount, reason) {
+      updateDemo(function (d) {
+        var r = d.items.filter(function (x) { return x.id === id; })[0];
+        r.value += amount;
+        if (r.raid) { r.raid.active = false; r.raid.reason = reason; }
+      });
+    };
+    var receiveMail = function () { updateDemo(function (d) { d.mail = []; d.notice = 'received'; }); };
+    var demoModes = [
+      ['unregistered', L('미등록', 'Unregistered')], ['registered', L('등록됨', 'Registered')], ['delta', L('강화 후 차액', 'After upgrade · difference')],
+      ['mail', L('반환 대기', 'Return pending')], ['max', L('최대 프레스티지(6)', 'Maximum prestige (6)')]
+    ].map(function (m) { return { label: m[1], on: demo.mode === m[0], cls: demo.mode === m[0] ? 'mini on' : 'mini', pick: function () {
+      stopAll(); self._tok = (self._tok || 0) + 1;
+      ['weapon', 'armor'].forEach(function (g) { clearTimeout(self._t[g]); self._s[g] = Object.assign({}, self._s[g] || {}, { phase: null, pending: null, owned: null }); });
+      self._s.insuranceDemo = makeDemo(m[0]); save(); self.setState(Object.assign({}, self._s));
+    } }; });
 
     var build = function (g) {
       var W = g === 'weapon';
@@ -679,6 +868,7 @@ class Component extends DCLogic {
       var set = function (patch, replay) { return function () { put(patch, replay); }; };
       var clear = { pDestroy: false, pDrop: false };
       var NAME = W ? 'Daewoo K2' : L('Gen4 완전형', 'Gen4 Full');
+      var currentItem = demo.items.filter(function (r) { return r.id === g; })[0];
       // ???: weapons only, opens after ★★★; a 50/50 success turns it into the Mythic stage.
       var mythLocked = !!props.lockMyth;
       // Armor Mythic: two random body zones it does not cover yet become covered (helmets: head zones).
@@ -700,7 +890,10 @@ class Component extends DCLogic {
       var TIERS = W
         ? { basic: tier('일반', 'Basic', '20%', '27,047 ₽', OK, 1, T1), adv: tier('고급', 'Advanced', '55%', '81,139 ₽', '#7fb2ff', 2, T2), prem: tier('프리미엄', 'Premium', '99%', '162,278 ₽', '#ffc46b', 3, T3) }
         : { basic: tier('일반', 'Basic', '20%', '12,058 ₽', OK, 1, T1), adv: tier('고급', 'Advanced', '55%', '36,172 ₽', '#7fb2ff', 2, T2), prem: tier('프리미엄', 'Premium', '99%', '72,343 ₽', '#ffc46b', 3, T3) };
-      var own = st.owned ? TIERS[st.owned] : null;
+      Object.keys(TIERS).forEach(function (id) { TIERS[id].fee = cash(raidFee(currentItem, id)); });
+      var raidPolicy = currentItem.raid;
+      var ownId = raidPolicy && raidPolicy.active ? raidPolicy.tier : null;
+      var own = ownId ? TIERS[ownId] : null;
 
       var tabDefs = [
         { id: 'normal', mark: '+', color: GOLD, label: L('일반 강화', 'Enhance'), sub: L('항목별 +10', 'Each to +10') },
@@ -708,6 +901,7 @@ class Component extends DCLogic {
         { id: 'star3', mark: '★★★', color: RED, label: L('★★★성', '★★★ Star'), sub: L('진화 · 효과 ×3', 'Evolve · ×3') },
         { id: 'trans', mark: '◆', color: TEAL, label: L('초월', 'Transcend'), sub: L('2성 · 3성 트랙', '2★ · 3★ tracks') },
         { id: 'ins', mark: 'P', color: '#ffc46b', label: L('보험', 'Insurance'), sub: '' },
+        { id: 'prestige', mark: 'P+', color: GOLD, label: L('프레스티지', 'Prestige'), sub: demo.mail.length ? L('보험 · 반환 ', 'Ins. · ') + demo.mail.length + L('개', ' to collect') : demo.stage >= 6 ? L('보험 · 최대 단계', 'Ins. · max stage') : demo.items.some(function (r) { return !!r.prestige; }) ? L('보험 · 등록 ', 'Ins. · ') + demo.items.filter(function (r) { return !!r.prestige; }).length + L('', ' registered') : L('보험 · 미등록', 'Ins. · none') },
         { id: 'help', mark: '?', color: MUTED, label: L('도움말', 'Help'), sub: L('규칙 요약', 'Rules') }
       ];
       tabDefs.splice(4, 0, { id: 'myth', mark: mythDone ? '✦' : '◈', color: mythLocked ? '#5d646b' : MYTH,
@@ -715,7 +909,7 @@ class Component extends DCLogic {
         sub: mythLocked ? L('★★★ 이후 열림', 'Opens after ★★★') : mythDone ? (W ? L('데미지·관통 0/5', 'Dmg · pen 0/5') : L('추가 부위 2곳 · 0/5', '+2 zones · 0/5')) : '50 / 50', off: mythLocked });
       var tabs = tabDefs.map(function (t) {
         var ins = t.id === 'ins';
-        return Object.assign({}, t, { cls: t.id === st.tab ? 'tab on' : 'tab', off: !!t.off,
+        return Object.assign({}, t, { cls: (t.id === st.tab ? 'tab on' : 'tab') + (t.id === 'prestige' && demo.mail.length ? ' mail-ready' : ''), off: !!t.off, on: t.id === st.tab,
           pick: t.off ? function () {} : set(Object.assign({ tab: t.id }, clear), true),
           ring: ins && own ? own.color : 'transparent', color: ins && own ? own.color : t.color,
           sub: ins ? (own ? own.name + ' ' + own.chance : L('미가입', 'None')) : t.sub });
@@ -747,7 +941,7 @@ class Component extends DCLogic {
         ];
       };
 
-      if (st.tab === 'normal' || st.tab === 'ins' || st.tab === 'help') {
+      if (st.tab === 'normal' || st.tab === 'ins' || st.tab === 'prestige' || st.tab === 'help') {
         v.cards = ITEMS.map(function (i) { return card(i.name, '+' + i.lv, i.sub, i.id === sel.id, set(Object.assign({ item: i.id }, clear), true)); });
         v.effects = [sel.eff];
         chance = sel.chance || 0; base = sel.base || 0; maxed = !!sel.maxed; risky = !!sel.risky; fees = sel.fees || [0, 0];
@@ -1086,6 +1280,7 @@ class Component extends DCLogic {
             // The Mythic tab opens only then, not while the gauge fills.
             play(RESULT_SND[pending.kind], function () {
               if (token !== self._tok) return;
+              if (['success', 'evo2', 'evo3', 'trans', 'myth', 'mythUp'].indexOf(pending.kind) >= 0) changeGearValue(g, W ? 100000 : 60000, 'upgrade');
               put(Object.assign({ phase: 'result', chargeStarted: false }, pending.kind === 'myth' ? { mythDone: true, mythZones: pending.zones || null } : {}, pending.ticketKey ? (function () { var o = {}; o[pending.ticketKey] = pending.left; return o; })() : {}, pending.kind === 'evo2' ? { t2h: 0 } : {}));
             });
           }, ms);
@@ -1122,7 +1317,10 @@ class Component extends DCLogic {
         if (instantOff) return;
         var r = roll(true), token = self._tok = (self._tok || 0) + 1;
         stopAll();
-        play(RESULT_SND[r.kind], function () { if (token === self._tok) put({ phase: 'result', pending: r }); });
+        play(RESULT_SND[r.kind], function () { if (token === self._tok) {
+          if (['success', 'trans', 'mythUp'].indexOf(r.kind) >= 0) changeGearValue(g, W ? 100000 : 60000, 'upgrade');
+          put({ phase: 'result', pending: r });
+        } });
       };
       var overlay = null;
       if (st.phase === 'charging') overlay = popup('charging', { kicker: kicker, title: evoTab ? L('진화 진행 중…', 'Evolving…') : st.tab === 'trans' ? L('초월 진행 중…', 'Transcending…') : mystery ? L('??? 진행 중…', '??? in progress…') : st.tab === 'myth' ? L('신화 강화 중…', 'Mythic upgrade…') : L('강화 진행 중…', 'Enhancing…'),
@@ -1145,13 +1343,66 @@ class Component extends DCLogic {
 
       var tiers = ['basic', 'adv', 'prem'].map(function (id) {
         var r = TIERS[id];
-        return Object.assign({ id: id }, r, { cls: id === st.tier ? 'tier on' : 'tier', pick: set({ tier: id }, false), badge: st.owned === id ? L('가입 중', 'Active') : '',
+        return Object.assign({ id: id }, r, { cls: id === st.tier ? 'tier on' : 'tier', pick: set({ tier: id }, false), badge: ownId === id ? L('가입 중', 'Active') : '',
           returnText: L('잃었을 때 강화 유지 반환', 'Returned enhanced if lost'), feeLabel: L('보험료', 'Fee'), timeLabel: L('돌아오는 시간', 'Return time') });
       });
       var chosen = TIERS[st.tier];
       var tierOff = !!own && own.rank >= chosen.rank;
+      var raidDue = Math.max(0, raidFee(currentItem, st.tier) - (raidPolicy ? raidPolicy.paid : 0));
       var tierAction = tierOff ? (own.rank === chosen.rank ? chosen.name + L(' 가입 중', ' active') : L('더 높은 등급 가입 중', 'Higher tier active'))
-        : own ? L(chosen.name + '으로 변경 · ', 'Switch to ' + chosen.name + ' · ') + chosen.fee : L(chosen.name + ' 가입 · ', 'Buy ' + chosen.name + ' · ') + chosen.fee;
+        : own ? L(chosen.name + '으로 변경 · ', 'Switch to ' + chosen.name + ' · ') + cash(raidDue)
+        : chosen.name + (raidPolicy ? L(' 다시 가입 · ', ' re-enroll · ') : L(' 가입 · ', ' enroll · ')) + cash(raidDue);
+
+      var raidRows = demo.items.filter(function (r) { return !!r.raid; }).map(function (r) {
+        var p = r.raid, due = Math.max(0, raidFee(r, p.tier) - p.paid), invalid = !p.active;
+        var color = invalid ? ORANGE : OK;
+        return { name: itemName(r), grade: itemGrade(r) + ' · ' + TIERS[p.tier].name, color: color,
+          value: cash(p.value), current: L('현재 ', 'Now ') + cash(r.value), delta: cash(due),
+          payment: L('이전 납부 ', 'Paid ') + cash(p.paid),
+          reason: invalid ? (p.reason === 'plate' ? L('더 비싼 방탄판으로 교체', 'More expensive plate fitted') : L('강화 성공으로 풀림', 'Released after successful upgrade')) : r.value < p.value ? L('가치 하락 · 환불 없음', 'Value fell · no refund') : '',
+          status: invalid ? L('풀림 · 다시 가입', 'Released · re-enroll') : L('가입 중', 'Active'),
+          off: !invalid && due === 0, action: !invalid && due === 0 ? L('가입 중', 'Active') : L('차액 내고 갱신', 'Pay difference & renew'),
+          renew: function () { renewRaid(r.id); }
+        };
+      });
+      var policy = currentItem.prestige;
+      var piPremium = Math.round(currentItem.value * prestigeRate), piPaid = policy ? policy.paid : 0;
+      var piDue = Math.max(0, piPremium - piPaid), piMax = demo.stage >= 6;
+      var itemInMail = demo.mail.indexOf(g) >= 0;
+      var piOff = piMax || itemInMail || (!!policy && piDue === 0);
+      var prestigeRows = demo.items.filter(function (r) { return !!r.prestige; }).map(function (r) {
+        var p = r.prestige, due = Math.max(0, Math.round(r.value * prestigeRate) - p.paid);
+        return { name: itemName(r), grade: itemGrade(r), color: due ? ORANGE : OK,
+          value: cash(p.value), current: L('현재 ', 'Now ') + cash(r.value), delta: cash(due), payment: L('이미 납부 ', 'Paid ') + cash(p.paid),
+          coverage: due ? L('마지막으로 낸 가치까지 보장', 'Covered up to last paid value') : r.value < p.value ? L('가치 하락 · 환불 없음', 'Value fell · no refund') : L('현재 가치 보장', 'Current value covered'),
+          status: due ? L('등록 유지 · 차액 대기', 'Registered · difference due') : L('등록됨', 'Registered'),
+          off: piMax || due === 0, action: due ? L('차액 내고 갱신', 'Pay difference & renew') : L('납부 완료', 'Paid'), renew: function () { registerPrestige(r.id); }
+        };
+      });
+      var pi = {
+        isMax: piMax, hasMail: demo.mail.length > 0, mailCount: demo.mail.length,
+        mailStage: L('프레스티지 02 → 03', 'Prestige 02 → 03'),
+        mail: demo.mail.map(function (id) { var r = demo.items.filter(function (x) { return x.id === id; })[0]; return { name: itemName(r), detail: itemGrade(r) + (id === 'armor' ? L(' · 방탄판 4장 보존', ' · 4 plates kept') : L(' · 조준경·소음기·탄창 보존', ' · scope, suppressor, magazine kept')) }; }),
+        receive: receiveMail, count: prestigeRows.length, empty: prestigeRows.length === 0, rows: prestigeRows,
+        color: piMax ? MUTED : piDue && policy ? ORANGE : policy ? OK : GOLD,
+        status: piMax ? L('작동 불가 · 최대 단계', 'Unavailable · maximum stage') : policy ? (piDue ? L('등록 유지 · 차액 발생', 'Registered · difference due') : L('등록됨 · 납부 완료', 'Registered · paid')) : L('미등록', 'Unregistered'),
+        coverage: piMax ? L('다음 프레스티지 단계가 없습니다.', 'There is no next prestige stage.') : policy && piDue ? T.unpaidCoverage : itemInMail ? L('우편 수령 후 다시 등록하세요.', 'Collect the mail, then register again.') : policy ? L('추가 강화해도 등록은 유지됩니다.', 'Registration stays after further upgrades.') : L('다음 프레스티지 반환을 받으려면 등록하세요.', 'Register for a return at the next prestige.'),
+        value: cash(currentItem.value), valueHint: policy ? L('마지막 납부 가치 ', 'Last paid value ') + cash(policy.value) : L('장비·강화·부착물 포함', 'Gear, upgrades and attachments included'),
+        paid: cash(piPaid), premium: piMax ? '—' : cash(piPremium), delta: piMax ? '—' : cash(piDue), rateLabel: L('장비 가치 × 10% · F12 설정', 'Gear value × 10% · F12 setting'), calculation: piMax ? L('다음 단계 없음', 'No next stage') : fmt(piPremium) + ' − ' + fmt(piPaid) + L(' · 최소 0', ' · min 0'),
+        off: piOff, actionCls: piOff ? 'btn dis' : 'btn act',
+        action: piMax ? L('최대 단계 · 등록 불가', 'Maximum stage · unavailable') : itemInMail ? L('반환 수령 후 다시 등록', 'Collect return before re-registering') : policy && !piDue ? L('등록됨 · 추가 납부 없음', 'Registered · nothing due') : (policy ? L('차액 내고 갱신 · ', 'Pay difference & renew · ') : L('등록 · ', 'Register · ')) + cash(piDue),
+        register: function () { registerPrestige(g); },
+        notice: demo.notice === 'received' ? L('반환 장비를 받았습니다. 등록·납부 기록은 끝났으며 다음 반환에는 새 보험료가 필요합니다.', 'Returns collected. Registration and payments have ended; a new premium is required for the next return.') : demo.notice === 'registered' ? L('등록했습니다 · 목업 예시', 'Registered · mockup example') : demo.notice === 'renewed' ? L('차액만 납부했습니다 · 목업 예시', 'Difference paid · mockup example') : '',
+        preserved: [
+          { label: L('강화 기록', 'Upgrade record'), value: L('그대로 보존', 'Kept'), color: OK },
+          { label: L('★ 진화', '★ Evolution'), value: '★', color: GOLD },
+          { label: L('초월 · 신화', 'Transcend · mythic'), value: L('달성 기록 보존', 'Earned progress kept'), color: MYTH },
+          { label: L('부착물', 'Attachments'), value: W ? L('함께 반환', 'Returned together') : '—', color: OK },
+          { label: L('방탄판', 'Armor plates'), value: W ? '—' : L('4장 함께 반환', '4 returned together'), color: OK }
+        ],
+        progress: piMax ? L('06 · 최대', '06 · MAX') : demo.stage === 3 ? '03 → 04' : '02 → 03',
+        progressNote: piMax ? L('다음 단계 없음 · 작동 불가', 'No next stage · unavailable') : L('다음 단계로 넘어갈 때 1회 반환', 'One return on advancing to the next stage')
+      };
 
       var helpDefs = [
         [L('일반 강화', 'Enhance'), L('항목마다 +10까지 따로 올립니다.\n성공률 75%에서 단계마다 5%p씩 내려갑니다.\n+5까지는 실패해도 비용만 나갑니다.', 'Each item goes up to +10 on its own.\nThe chance starts at 75% and drops 5%p per level.\nUp to +5, a failure only costs money.')],
@@ -1209,11 +1460,12 @@ class Component extends DCLogic {
         caption: W ? L('무기 · Daewoo K2로 강화 창을 열었을 때', 'Weapon · window opened on a Daewoo K2') : L('방어구 · Gen4 완전형으로 강화 창을 열었을 때', 'Armor · window opened on a Gen4 Full'),
         name: NAME, kind: W ? '5.56x45 NATO' : L('방어구 · 방탄판 4장', 'Armor · 4 plates'), isWeapon: W, isArmor: !W,
         tabs: tabs, v: v, mats: mats, tiers: tiers, tierAction: tierAction, help: help,
-        tierOff: tierOff, tierCls: tierOff ? 'btn dis' : 'btn act', buy: function () { put({ owned: st.tier }); },
-        insNow: own ? own.name + L(' · 반환 ', ' · returns ') + own.chance + ' · ' + own.time : L('미가입', 'None'), insNowColor: own ? own.color : '#c4c0b6',
-        insValue: W ? '540,926 ₽' : '241,142 ₽',
+        tierOff: tierOff, tierCls: tierOff ? 'btn dis' : 'btn act', buy: function () { if (!tierOff) renewRaid(g, st.tier); },
+        insNow: own ? own.name + L(' · 반환 ', ' · returns ') + own.chance + ' · ' + own.time : raidPolicy ? L('풀림 · 다시 가입', 'Released · re-enroll') : L('미가입', 'None'), insNowColor: own ? own.color : raidPolicy ? ORANGE : '#c4c0b6',
+        insValue: cash(currentItem.value), raidRows: raidRows, raidCount: raidRows.length, raidEmpty: raidRows.length === 0, pi: pi,
+        sideTitle: st.tab === 'prestige' ? T.prestige : T.status, showGearStats: st.tab !== 'prestige',
         // Example queue: insured gear lost in earlier raids, shown until its mail arrives.
-        pendingReturns: st.owned === 'prem' ? [] : W ? [
+        pendingReturns: ownId === 'prem' ? [] : W ? [
           { name: 'M4A1 ★★', tier: L('고급', 'Advanced'), color: '#7fb2ff', left: L('7시간 12분 남음', '7 h 12 min left'), pct: 40 },
           { name: 'AK-74N ★ +18', tier: L('일반', 'Basic'), color: OK, left: L('18시간 3분 남음', '18 h 3 min left'), pct: 25 }
         ] : [
@@ -1223,7 +1475,7 @@ class Component extends DCLogic {
         mk: useTicket ? { label: L('실패 · ★★★ 유지', 'Fail · ★★★ kept'), color: OK, border: '#3d7a4e', bg: '#122017' }
           : { label: T.destroyed, color: '#ff8a7e', border: '#7a3530', bg: '#1f1312' },
         // Premium mails the gear back right after the raid: nothing waits in the list for it.
-        noReturns: st.owned === 'prem', noReturnsText: L('없음 · 프리미엄은 잃으면 레이드 직후 바로 우편으로 돌아옵니다(기다리는 시간 없음)', 'None · Premium mails lost gear back right after the raid (no wait)'),
+        noReturns: ownId === 'prem', noReturnsText: L('없음 · 프리미엄은 잃으면 레이드 직후 바로 우편으로 돌아옵니다(기다리는 시간 없음)', 'None · Premium mails lost gear back right after the raid (no wait)'),
         tk: {
           id: g + '-ticket', title: mystery ? L('??? 파괴 방지권 · 장비당 1장', '??? destruction ticket · one per gear') : L('파괴 방지권', 'Destruction ticket') + ' · ' + TK.star,
           state: L('보유 ', 'Held ') + tHeld + L('장 · 구매 ', ' · bought ') + tBought + ' / ' + TK.cap + (tBought >= TK.cap ? L(' (더 못 삼)', ' (no more)') : '') + (st.tab === 'star3' ? L(' · ★★용은 못 씀', ' · ★★ tickets do not count') : ''),
@@ -1237,16 +1489,18 @@ class Component extends DCLogic {
         plateCls: plateOwed ? 'chip warn' : 'chip',
         plateState: plateOwed ? L('측판 1장 차액 필요', '1 side plate owes difference') : L('모두 적용됨', 'All applied'),
         plateDone: !plateOwed, plateAction: plateOwed ? L('차액 내고 적용 · ', 'Pay & apply · ') + fmt(PLATE_FEE) + ' ₽' : L('모두 적용됨', 'All applied'),
-        payPlate: function () { put({ platePaid: true }); },
+        payPlate: function () { if (!st.platePaid) changeGearValue(g, 60000, 'plate'); put({ platePaid: true }); },
         showOverlay: !!overlay, p: overlay || popup('success'), charge: askRisk(false), instant: askRisk(true), askMyth: askMyth,
-        isEnhance: st.tab !== 'ins' && st.tab !== 'help' && !(st.tab === 'myth' && !mythDone), isInsurance: st.tab === 'ins', isHelp: st.tab === 'help',
+        isEnhance: st.tab !== 'ins' && st.tab !== 'prestige' && st.tab !== 'help' && !(st.tab === 'myth' && !mythDone), isInsurance: st.tab === 'ins', isPrestige: st.tab === 'prestige', isHelp: st.tab === 'help',
         isMystery: st.tab === 'myth' && !mythDone,
         baseRows: baseRows, afterRows: afterRows, panelCls: even ? 'panelA' : 'panelB',
         replay: function () { put({}, true); }
       };
     };
 
-    return { langs: langs, screens: [build('weapon'), build('armor')] };
+    return { langs: langs, screens: [build('weapon'), build('armor')], demoModes: demoModes,
+      demoLabel: L('목업 전용 · 상태', 'MOCKUP ONLY · State'), demoAria: L('목업 전용 상태 전환', 'Mockup-only state selector'),
+      demoHint: L('두 화면에 적용 · 게임 연동 없음 · 다시 누르면 예시 초기화', 'Both windows · no game connection · click again to reset examples') };
   }
 }
 </script>
