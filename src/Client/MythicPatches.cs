@@ -28,6 +28,8 @@ internal static class MythicPatches
     private static bool reported;
     // Worn armor slots whose mythic level reduces damage: the highest one counts, never a sum.
     private static readonly string[] ArmorSlots = { "ArmorVest", "TacticalVest", "Headwear", "FaceCover", "Eyewear" };
+    // ArmorSlots from this index on are head gear (half the reduction).
+    private const int HeadSlots = 2;
 
     internal static List<string> Install(Harmony harmony)
     {
@@ -197,16 +199,19 @@ internal static class MythicPatches
             if (GameBridge.Get(player, "IsYourPlayer") is not true) return;
             var equipment = GameBridge.Get(GameBridge.Get(player, "Inventory"), "Equipment");
             if (equipment == null) return;
-            var level = -1;
-            foreach (var slot in wornSlots)
+            // ApplyDamage(EBodyPart bodyPart, …). User 2026-10-26: body armor 10 % a level with head hits
+            // at half; helmets, masks and eyewear 5 % a level on every hit. The best worn piece counts.
+            var headHit = __args[0]?.ToString() == "Head";
+            var percent = 0.0;
+            for (var index = 0; index < wornSlots.Length; index++)
             {
-                var worn = GameBridge.Get(getSlot.Invoke(equipment, new[] { slot }), "ContainedItem");
-                if (worn != null) level = Math.Max(level, Registry.MythicLevel(CloneLinks.EffectId(worn) ?? ""));
+                var worn = GameBridge.Get(getSlot.Invoke(equipment, new[] { wornSlots[index] }), "ContainedItem");
+                if (worn == null) continue;
+                var level = Registry.MythicLevel(CloneLinks.EffectId(worn) ?? "");
+                if (level > 0) percent = Math.Max(percent, MythicEffects.ArmorPercent(level, Registry.MythicTuning, headHit || index >= HeadSlots));
             }
-            if (level <= 0) return;
-            // ApplyDamage(EBodyPart bodyPart, …): head hits get half the reduction.
-            var head = __args[0]?.ToString() == "Head";
-            damage *= (float)Math.Max(0, 1 - MythicEffects.ArmorPercent(level, Registry.MythicTuning, head) / 100);
+            if (percent <= 0) return;
+            damage *= (float)Math.Max(0, 1 - percent / 100);
         }
         catch (Exception ex) { Report(ex); }
     }

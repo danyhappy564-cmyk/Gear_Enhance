@@ -129,9 +129,16 @@ public sealed class MythicHooksTests : IDisposable
             var args = Call("Taken", target ?? health, new object[] { part ?? FakePart.Chest, damage, new FakeDamage { DamageType = type } }, damage);
             return (float)args[2]!;
         }
-        Assert.Equal(60f, Hit(512), 3);   // bullet: -40% at level 4 (10% a level)
-        Assert.Equal(60f, Hit(4), 3);     // explosion
-        Assert.Equal(80f, Hit(512, 100, null, FakePart.Head), 3);   // head: half, -20%
+        // Helmet (head gear): 5% a level on every hit, -20% at level 4.
+        Assert.Equal(80f, Hit(512), 3);   // bullet
+        Assert.Equal(80f, Hit(4), 3);     // explosion
+        Assert.Equal(80f, Hit(512, 100, null, FakePart.Head), 3);
+        // Body armor: 10% a level, half on head hits; the best worn piece counts.
+        Mythic("vest", 4);
+        equipment.Worn["ArmorVest"] = new TestItem("vest");
+        Assert.Equal(60f, Hit(512), 3);
+        Assert.Equal(80f, Hit(512, 100, null, FakePart.Head), 3);
+        equipment.Worn.Remove("ArmorVest");
         Assert.Equal(100f, Hit(2));       // fall
         Assert.Equal(100f, Hit(16384));   // light bleeding
         var bot = new FakeHealth { Player = new FakePlayer { IsYourPlayer = false, Inventory = new FakeInventory { Equipment = equipment } } };

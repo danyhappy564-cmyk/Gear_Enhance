@@ -28,6 +28,8 @@ internal sealed class ArmorStats
     internal float TemplateMax = float.NaN;
     internal float Speed = float.NaN, Turn = float.NaN, Ergonomics = float.NaN;
     internal List<ArmorCondition> Parts;
+    // Helmets, masks and visors (head colliders): the mythic damage reduction is half (5 % a level).
+    internal bool HeadGear;
 }
 
 internal struct ArmorCondition
@@ -101,7 +103,7 @@ internal static class StatSheet
         }
         string Loss(GearLevels at) => Number(100 - at.ArmorDurability, "0.#") + "%";
         string Blunt(GearLevels at) => Number(100 - TranscendEffects.Blunt(at.Third, Math.Max(1, raw.ArmorClass), transcend), "0.#") + "%";
-        string Taken(GearLevels at) => Number(100 - MythicEffects.ArmorPercent(at.Mythic, mythic), "0.#") + "%";
+        string Taken(GearLevels at) => Number(100 - MythicEffects.ArmorPercent(at.Mythic, mythic, raw.HeadGear), "0.#") + "%";
         string Penalty(float value, GearLevels at, string unit, string format) =>
             float.IsNaN(value) || float.IsInfinity(value) ? "—" : Number(value < 0 && at.Mobility > 0 ? EnhanceEffects.Reduce(value, at.Mobility) : value, format) + unit;
         var plain = new GearLevels { Mythic = -1 };

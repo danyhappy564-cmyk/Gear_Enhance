@@ -38,6 +38,8 @@ public sealed partial class Plugin
         internal string Kicker = "", Title = "", Line = "", EffectLabel, EffectNow, EffectNext, Cost, Note;
         // A second effect row: a mythic weapon raises bullet damage and penetration separately.
         internal string EffectLabel2, EffectNow2, EffectNext2;
+        // Mythic guns: the ammo penalty cut (user 2026-10-26: show it as its own row).
+        internal string EffectLabel3, EffectNow3, EffectNext3;
         internal Color Tint = Gold, NoteColor = Muted, EffectColor = Blue;
         internal bool Shatter, Glow, LateGlow, Mythic, MythicLite;
     }
@@ -146,6 +148,8 @@ public sealed partial class Plugin
                         var perLevel = Loc.L($"단계당 +{MythicTuned.WeaponPercentPerLevel:0.#}%", $"+{MythicTuned.WeaponPercentPerLevel:0.#}% per level");
                         (result.EffectLabel, result.EffectNow, result.EffectNext) = (Loc.L("탄 데미지", "Bullet damage"), "???", perLevel);
                         (result.EffectLabel2, result.EffectNow2, result.EffectNext2) = (Loc.L("관통력", "Penetration"), "???", perLevel);
+                        (result.EffectLabel3, result.EffectNow3, result.EffectNext3) = (Loc.L("탄 불이익 감소", "Ammo penalties cut"), "???",
+                            Loc.L($"단계당 -{MythicEffects.AmmoPenaltyCut(1):0.#}%", $"-{MythicEffects.AmmoPenaltyCut(1):0.#}% per level"));
                         result.Note = Loc.L($"신화 1단계부터 이 총에 든 탄의 불이익이 단계당 {MythicEffects.AmmoPenaltyCut(1):0.#}%씩 줄어듭니다",
                             $"From Mythic 1 the rounds in this gun lose {MythicEffects.AmmoPenaltyCut(1):0.#}% of their penalties per level"); result.NoteColor = Soft;
                     }
@@ -178,7 +182,9 @@ public sealed partial class Plugin
                     if (weapon)
                     {
                         (result.EffectLabel2, result.EffectNow2, result.EffectNext2) = (Loc.L("관통력", "Penetration"), result.EffectNow, result.EffectNext);
-                        result.Note = AmmoPenaltyNote(receipt.Level); result.NoteColor = Soft;
+                        (result.EffectLabel3, result.EffectNow3, result.EffectNext3) = (Loc.L("탄 불이익 감소", "Ammo penalties cut"),
+                            $"{MythicEffects.AmmoPenaltyCut(from):0.#}%", $"{MythicEffects.AmmoPenaltyCut(receipt.Level):0.#}%");
+                        result.Note = AmmoPenaltyNote(); result.NoteColor = Soft;
                     }
                 }
                 else Fallback(result, receipt, attempt, Loc.L("신화", "Mythic"), from);
@@ -308,13 +314,12 @@ public sealed partial class Plugin
     }
 
     // The rounds' bad values a mythic gun takes away, named (user 2026-10-26: say what changed).
-    private static string AmmoPenaltyNote(int level) => Loc.L(
-        $"이 총에 든 탄의 불이익 {MythicEffects.AmmoPenaltyCut(level):0.#}% 감소 · 명중률 −, 반동 +, 내구도 소모 +, 과열 +, 고장 확률",
-        $"Rounds in this gun lose {MythicEffects.AmmoPenaltyCut(level):0.#}% of their penalties · accuracy −, recoil +, wear +, heat +, malfunction chance");
+    private static string AmmoPenaltyNote() => Loc.L("줄어드는 탄 값: 명중률 −, 반동 +, 내구도 소모 +, 과열 +, 고장 확률 · 장전한 탄은 '탄 비교' 탭에서",
+        "Ammo values cut: accuracy −, recoil +, wear +, heat +, malfunction chance · loaded rounds in the 'Ammo' tab");
 
     private (string, string, string) MythicEffect(int from, int to) => weapon
         ? (Loc.L("탄 데미지", "Bullet damage"), $"+{MythicEffects.WeaponPercent(from, MythicTuned):0.#}%", $"+{MythicEffects.WeaponPercent(to, MythicTuned):0.#}%")
-        : (Loc.L("받는 피해 감소", "Damage taken reduction"), $"{MythicEffects.ArmorPercent(from, MythicTuned):0.#}%", $"{MythicEffects.ArmorPercent(to, MythicTuned):0.#}%");
+        : (Loc.L("받는 피해 감소", "Damage taken reduction"), $"{MythicEffects.ArmorPercent(from, MythicTuned, headGear):0.#}%", $"{MythicEffects.ArmorPercent(to, MythicTuned, headGear):0.#}%");
 
     // ---- drawing ------------------------------------------------------------------------
 
@@ -386,6 +391,12 @@ public sealed partial class Plugin
         {
             var rowHeight = EffectRowHeight(current.EffectLabel2, current.EffectNow2, current.EffectNext2);
             DrawEffectRow(new Rect(x + 32, top - 4, 556, rowHeight), current.EffectLabel2, current.EffectNow2, current.EffectNext2, current.EffectColor, elapsed);
+            top += rowHeight + 8;
+        }
+        if (current.EffectLabel3 != null)
+        {
+            var rowHeight = EffectRowHeight(current.EffectLabel3, current.EffectNow3, current.EffectNext3);
+            DrawEffectRow(new Rect(x + 32, top - 4, 556, rowHeight), current.EffectLabel3, current.EffectNow3, current.EffectNext3, current.EffectColor, elapsed);
             top += rowHeight + 8;
         }
         if (popup == PopupKind.Charging)
@@ -520,6 +531,7 @@ public sealed partial class Plugin
         if (current.Shatter) height += 122;
         if (current.EffectLabel != null) height += EffectRowHeight(current.EffectLabel, current.EffectNow, current.EffectNext) + 12;
         if (current.EffectLabel2 != null) height += EffectRowHeight(current.EffectLabel2, current.EffectNow2, current.EffectNext2) + 8;
+        if (current.EffectLabel3 != null) height += EffectRowHeight(current.EffectLabel3, current.EffectNow3, current.EffectNext3) + 8;
         if (popup == PopupKind.Charging) height += 32;
         if (current.Cost != null || current.Note != null) height += 12 + (current.Cost != null ? 24 : 0) + (current.Note != null ? 24 : 0);
         height += popup == PopupKind.Charging ? 10 : popup == PopupKind.RiskConfirm ? 4 + 46 + 10 + 40 + 26 : 4 + 46 + 26;

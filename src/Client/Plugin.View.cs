@@ -567,7 +567,10 @@ public sealed partial class Plugin
                     $" · damage & penetration +{tuning.WeaponPercentPerLevel:0.#}% per level · ammo penalties -{MythicEffects.AmmoPenaltyCut(1):0.#}% per level");
                 var zones = new List<string>();
                 foreach (var zone in StatPatches.Registry.MythicZones(id)) zones.Add(MythicText.ZoneName(zone));
-                return head + Loc.L($" · 받는 피해 단계당 -{tuning.ArmorPercentPerLevel:0.#}%(머리 절반)", $" · damage taken -{tuning.ArmorPercentPerLevel:0.#}% per level (half on the head)")
+                // Body armor: 10 % a level, half on head hits. Helmets and masks: half on every hit.
+                var perLevel = MythicEffects.ArmorPercent(1, tuning, headGear);
+                return head + (headGear ? Loc.L($" · 받는 피해 단계당 -{perLevel:0.#}%(머리 방어구)", $" · damage taken -{perLevel:0.#}% per level (head gear)")
+                        : Loc.L($" · 받는 피해 단계당 -{perLevel:0.#}%(머리에 맞으면 절반)", $" · damage taken -{perLevel:0.#}% per level (half on head hits)"))
                     + (zones.Count > 0 ? Loc.L(" · 추가 보호 부위 ", " · extra zones ") + string.Join(" · ", zones) : "");
             }
             default: return levels;

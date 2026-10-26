@@ -182,9 +182,9 @@ public sealed partial class Plugin
                     level >= MythicRules.MaxLevel ? Loc.L("최대", "Max") : $"{MythicEffects.AmmoPenaltyCut(next):0.#}%",
                     MythicEffects.AmmoPenaltyCut(level), MythicEffects.AmmoPenaltyCut(next), 100));
             else
-                rows.Add((Loc.L("피격 피해 감소", "Damage taken reduction"), $"{MythicEffects.ArmorPercent(level, tuning):0.#}%",
-                    level >= MythicRules.MaxLevel ? Loc.L("최대", "Max") : $"{MythicEffects.ArmorPercent(next, tuning):0.#}%", MythicEffects.ArmorPercent(level, tuning), MythicEffects.ArmorPercent(next, tuning),
-                    MythicEffects.ArmorPercent(MythicRules.MaxLevel, tuning)));
+                rows.Add((Loc.L("피격 피해 감소", "Damage taken reduction"), $"{MythicEffects.ArmorPercent(level, tuning, headGear):0.#}%",
+                    level >= MythicRules.MaxLevel ? Loc.L("최대", "Max") : $"{MythicEffects.ArmorPercent(next, tuning, headGear):0.#}%", MythicEffects.ArmorPercent(level, tuning, headGear), MythicEffects.ArmorPercent(next, tuning, headGear),
+                    MythicEffects.ArmorPercent(MythicRules.MaxLevel, tuning, headGear)));
             chip = level >= MythicRules.MaxLevel ? StageText.Of(level, MythicRules.MaxLevel) : StageText.Of(level, MythicRules.MaxLevel) + " → " + StageText.Of(next, MythicRules.MaxLevel);
         }
         var height = 34 + rows.Count * 36;

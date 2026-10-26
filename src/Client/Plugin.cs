@@ -36,7 +36,7 @@ public sealed partial class Plugin : BaseUnityPlugin
     private string itemId, itemName;
     private EnhancePath selectedPath;
     private EnhanceQuote quote, preview;
-    private bool visible, busy, destructionConfirmed, uncertain, weapon, firstQuote;
+    private bool visible, busy, destructionConfirmed, uncertain, weapon, headGear, firstQuote;
     private bool protectDestruction, protectDowngrade;
     private int generation, syncGeneration;
     private string message = "";
@@ -350,6 +350,9 @@ public sealed partial class Plugin : BaseUnityPlugin
             uiContext = context; selectedItem = item;
             itemId = GameBridge.Get(item, "Id")?.ToString() ?? throw Loc.Invalid("아이템 ID가 없습니다.", "No item ID.");
             weapon = GameBridge.IsWeapon(item);
+            // Helmets, masks and visors show (and get) half the mythic damage reduction.
+            try { headGear = !weapon && ArmorStatus.Read(item).HeadGear; }
+            catch (Exception ex) { headGear = false; Logger.LogWarning("머리 방어구 판정 실패: " + ex.GetBaseException().Message); }
             tab = UiTab.Enhance; skipRiskConfirm = false; midScroll = Vector2.zero;
             selectedPath = StatPatches.Registry.Find(itemId)?.Path ?? (weapon ? EnhancePath.Recoil : EnhancePath.ArmorDurability);
             itemName = GameBridge.Get(item, "ShortName")?.ToString() ?? itemId;

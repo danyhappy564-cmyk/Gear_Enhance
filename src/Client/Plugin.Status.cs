@@ -61,7 +61,8 @@ public sealed partial class Plugin
         {
             // Changing rows: the current value dims, the new one glows once (mockup glowA: 12 px blue at 0.72 s).
             var glow = UiMotion.ValueGlow(Motion, Reduced);
-            Label(x + 120, y + 2, StatusWidth - 222, 26, row.Now, new GUIStyle(number) { fontSize = 17 }, Muted);
+            // 70 px up to the arrow: "92.1%" was cut at 46 px (user 2026-10-26).
+            Label(x + StatusWidth - 174, y + 2, 70, 26, row.Now, new GUIStyle(number) { fontSize = 17 }, Muted);
             Label(x + StatusWidth - 100, y + 2, 14, 26, "→", tinyRight);
             var next = new Rect(x + StatusWidth - 84, y + 2, 68, 26);
             var style = new GUIStyle(number) { fontSize = 17 };
@@ -216,7 +217,7 @@ internal static class ArmorStatus
                     var hasZones = false;
                     if (GameBridge.Get(component, "ArmorColliders") is IEnumerable colliders)
                         foreach (var collider in colliders)
-                            if (collider != null) { zones.Add("soft:" + collider); hasZones = true; }
+                            if (collider != null) { zones.Add("soft:" + collider); hasZones = true; result.HeadGear |= MythicText.HeadZone(collider.ToString()); }
                     var hasPlates = false;
                     var getPlates = component.GetType().GetMethod("GetArmorPlateColliders", Type.EmptyTypes);
                     if (getPlates?.Invoke(component, null) is IEnumerable collidersPlate)

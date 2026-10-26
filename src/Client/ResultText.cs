@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 
 namespace GearEnhance;
@@ -101,4 +102,7 @@ internal static class MythicText
         "Jaw" => Loc.L("턱", "Jaw"),
         _ => zone ?? ""
     };
+
+    // A collider of the head (helmets, masks, visors): the mythic damage reduction is half there.
+    internal static bool HeadZone(string zone) => zone == "HeadCommon" || Array.IndexOf(MythicRules.HeadZones, zone) >= 0;
 }
