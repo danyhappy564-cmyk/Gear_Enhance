@@ -220,6 +220,242 @@ public sealed class InsuranceTests
     }
 
     [Fact]
+    public void Renewing_after_each_upgrade_credits_all_previous_insurance_payments()
+    {
+        var rig = new Rig();
+        rig.Upgrade(2);
+        var first = rig.Quote(EnhanceAction.Insure, InsuranceTier.Advanced);
+        rig.Pay(first);
+        rig.Upgrade(1);
+        Assert.True(rig.State.Receipts[^1].InsuranceLapsed);
+        var second = rig.Quote(EnhanceAction.Insure, InsuranceTier.Advanced);
+        Assert.True(second.InsuranceLapsed);
+        Assert.Equal(first.Cost, second.PreviousInsurancePaid);
+        var fullSecond = EnhanceRules.InsuranceFee(second.InsuredValue, InsuranceTier.Advanced, Rig.Sure);
+        Assert.Equal(fullSecond - first.Cost, second.Cost);
+        var before = rig.Pmc.Inventory!.Items!.Single(i => i.Template == RubleTpl).Upd!.StackObjectsCount;
+        rig.Pay(second);
+        Assert.Equal(before - second.Cost, rig.Pmc.Inventory.Items.Single(i => i.Template == RubleTpl).Upd!.StackObjectsCount);
+        Assert.Equal(fullSecond, rig.State.InsurancePayments[Vest.ToString()].Paid);
+        Assert.False(rig.State.Receipts[^1].InsuranceLapsed);
+        Assert.False(rig.Quote(EnhanceAction.Insure, InsuranceTier.Advanced).InsuranceLapsed);
+        rig.Upgrade(1);
+        var third = rig.Quote(EnhanceAction.Insure, InsuranceTier.Advanced);
+        var fullThird = EnhanceRules.InsuranceFee(third.InsuredValue, InsuranceTier.Advanced, Rig.Sure);
+        Assert.Equal(fullThird - fullSecond, third.Cost);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void Raising_the_insurance_tier_charges_only_the_difference(bool lapseFirst)
+    {
+        var rig = new Rig();
+        rig.Upgrade(2);
+        var first = rig.Quote(EnhanceAction.Insure, InsuranceTier.Basic);
+        rig.Pay(first);
+        if (lapseFirst) rig.Upgrade(1);
+        var higher = rig.Quote(EnhanceAction.Insure, InsuranceTier.Premium);
+        Assert.Equal(EnhanceRules.InsuranceFee(higher.InsuredValue, InsuranceTier.Premium, Rig.Sure) - first.Cost, higher.Cost);
+        rig.Pay(higher);
+        Assert.Equal(InsuranceTier.Premium, rig.State.Coverage[Vest.ToString()].Tier);
+    }
+
+    [Fact]
+    public void Cheaper_renewal_is_free_and_keeps_the_unused_credit()
+    {
+        var rig = new Rig();
+        rig.Upgrade(2);
+        var first = rig.Quote(EnhanceAction.Insure, InsuranceTier.Premium);
+        rig.Pay(first);
+        rig.Upgrade(1);
+        var lower = rig.Quote(EnhanceAction.Insure, InsuranceTier.Basic);
+        Assert.Equal(0, lower.Cost);
+        var before = rig.Pmc.Inventory!.Items!.Single(i => i.Template == RubleTpl).Upd!.StackObjectsCount;
+        rig.Pay(lower);
+        Assert.Equal(before, rig.Pmc.Inventory.Items.Single(i => i.Template == RubleTpl).Upd!.StackObjectsCount);
+        var higher = rig.Quote(EnhanceAction.Insure, InsuranceTier.Premium);
+        Assert.Equal(EnhanceRules.InsuranceFee(higher.InsuredValue, InsuranceTier.Premium, Rig.Sure) - first.Cost, higher.Cost);
+    }
+
+    [Fact]
+    public void Paid_plate_difference_keeps_the_insurance_credit()
+    {
+        var rig = new Rig();
+        rig.Upgrade(3);
+        var first = rig.Quote(EnhanceAction.Insure, InsuranceTier.Advanced);
+        rig.Pay(first);
+        rig.SwapPlate();
+        rig.Pay(rig.Quote(EnhanceAction.RegisterInserts));
+        Assert.False(rig.State.Coverage.ContainsKey(Vest.ToString()));
+        Assert.True(rig.State.Receipts[^1].InsuranceLapsed);
+        var renewal = rig.Quote(EnhanceAction.Insure, InsuranceTier.Advanced);
+        Assert.Equal(EnhanceRules.InsuranceFee(renewal.InsuredValue, InsuranceTier.Advanced, Rig.Sure) - first.Cost, renewal.Cost);
+    }
+
+    [Fact]
+    public void Old_profiles_credit_the_saved_policy_payment_and_default_missing_fields()
+    {
+        var rig = new Rig();
+        var old = Json.Deserialize<EnhanceState>("""
+            {"Tracks":{"333333333333333333333333":{"ArmorDurability":2}},"Coverage":{"333333333333333333333333":{"Tier":2,"ReturnPercent":55,"Paid":1234}}}
+            """)!;
+        Assert.Empty(old.InsurancePayments);
+        rig.Backend.Saved.ExtensionData = new() { ["rfGearEnhance"] = old };
+        rig.Upgrade(1);
+        var quote = rig.Quote(EnhanceAction.Insure, InsuranceTier.Advanced);
+        Assert.Equal(1234, quote.PreviousInsurancePaid);
+        Assert.Equal(5057, quote.Cost);
+        Assert.True(quote.InsuranceLapsed);
+        Assert.False(Json.Deserialize<EnhanceReceipt>("{}")!.InsuranceLapsed);
+    }
+
+    [Fact]
+    public void Lapsed_insurance_credit_survives_a_profile_save_and_reload()
+    {
+        var rig = new Rig();
+        rig.Upgrade(2);
+        var first = rig.Quote(EnhanceAction.Insure, InsuranceTier.Advanced);
+        rig.Pay(first);
+        rig.Upgrade(1);
+        rig.Backend.Saved = Json.Deserialize<SptProfile>(Json.Serialize(rig.Backend.Saved)!)!;
+        var restarted = new EnhanceService(rig.Backend, Json);
+        var renewal = restarted.Quote(Session, Vest.ToString(), Rig.Sure, null, null, EnhanceAction.Insure, null, InsuranceTier.Advanced);
+        Assert.Equal(first.Cost, renewal.PreviousInsurancePaid);
+        Assert.True(renewal.InsuranceLapsed);
+        Assert.Equal(EnhanceRules.InsuranceFee(renewal.InsuredValue, InsuranceTier.Advanced, Rig.Sure) - first.Cost, renewal.Cost);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    public void Raid_return_consumes_credit_before_immediate_or_delayed_mail(double hours)
+    {
+        var rig = new Rig();
+        rig.Upgrade(2);
+        var settings = Rig.Sure;
+        settings.PremiumInsuranceReturnHours = hours;
+        rig.Pay(rig.Service.Quote(Session, Vest.ToString(), settings, null, null, EnhanceAction.Insure, null, InsuranceTier.Premium));
+        var capture = rig.Service.BeginRaidEnd(Session)!;
+        rig.Lose();
+        Assert.Equal((1, 0), rig.Service.CompleteRaidEnd(Session, capture, null));
+        Assert.False(rig.State.InsurancePayments.ContainsKey(Vest.ToString()));
+        if (hours > 0)
+        {
+            Assert.Empty(rig.Backend.Mailed);
+            rig.State.Returns.Single().DueUnixSeconds = DateTimeOffset.UtcNow.ToUnixTimeSeconds() - 1;
+            rig.Service.Snapshot(Session);
+        }
+        var mailed = Assert.Single(rig.Backend.Mailed);
+        var returned = mailed.Single(i => i.Template == VestTpl);
+        returned.ParentId = Stash.ToString(); returned.SlotId = "hideout";
+        rig.Pmc.Inventory!.Items!.AddRange(mailed);
+        var fresh = rig.Service.Quote(Session, returned.Id.ToString(), Rig.Sure, null, null, EnhanceAction.Insure, null, InsuranceTier.Premium);
+        Assert.Equal(0, fresh.PreviousInsurancePaid);
+        Assert.False(fresh.InsuranceLapsed);
+        Assert.Equal(EnhanceRules.InsuranceFee(fresh.InsuredValue, InsuranceTier.Premium, Rig.Sure), fresh.Cost);
+    }
+
+    [Fact]
+    public void Payment_credit_belongs_only_to_the_same_gear()
+    {
+        var rig = new Rig();
+        rig.Upgrade(2);
+        rig.Pay(rig.Quote(EnhanceAction.Insure, InsuranceTier.Premium));
+        rig.Pmc.Inventory!.Items!.Add(new Item { Id = Pocket, Template = VestTpl, ParentId = Stash.ToString(), SlotId = "hideout",
+            Upd = new() { Repairable = new() { Durability = 50, MaxDurability = 50 } } });
+        rig.State.Tracks[Pocket.ToString()] = new() { [EnhancePath.ArmorDurability] = 2 };
+        var other = rig.Service.Quote(Session, Pocket.ToString(), Rig.Sure, null, null, EnhanceAction.Insure, null, InsuranceTier.Premium);
+        Assert.Equal(0, other.PreviousInsurancePaid);
+        Assert.Equal(EnhanceRules.InsuranceFee(other.InsuredValue, InsuranceTier.Premium, Rig.Sure), other.Cost);
+    }
+
+    [Fact]
+    public void A_changed_payment_record_invalidates_an_old_insurance_quote()
+    {
+        var rig = new Rig();
+        rig.Upgrade(2);
+        var quote = rig.Quote(EnhanceAction.Insure, InsuranceTier.Premium);
+        rig.State.InsurancePayments[Vest.ToString()] = new() { Paid = 1 };
+        Assert.Throws<InvalidOperationException>(() => rig.Pay(quote));
+        Assert.Empty(rig.State.Coverage);
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void Paying_a_plate_difference_lapses_insurance_even_when_the_upgrade_fails(bool success)
+    {
+        var rig = new Rig();
+        rig.Upgrade(2);
+        var first = rig.Quote(EnhanceAction.Insure, InsuranceTier.Advanced);
+        rig.Pay(first);
+        rig.SwapPlate();
+        var settings = new EnhanceSettings { AlwaysSucceed = success, SuccessPercent = 0, FailureMode = FailureMode.KeepItem };
+        var attempt = rig.Service.Quote(Session, Vest.ToString(), settings, EnhancePath.ArmorDurability);
+        Assert.True(attempt.InsertSurcharge > 0);
+        rig.Pay(attempt);
+        Assert.Equal(success, rig.State.Receipts[^1].Success);
+        Assert.True(rig.State.Receipts[^1].InsuranceLapsed);
+        Assert.Equal(first.Cost, rig.Quote(EnhanceAction.Insure, InsuranceTier.Advanced).PreviousInsurancePaid);
+    }
+
+    [Fact]
+    public void Failure_without_a_plate_difference_keeps_insurance_and_reports_no_lapse()
+    {
+        var rig = new Rig();
+        rig.Upgrade(2);
+        rig.Pay(rig.Quote(EnhanceAction.Insure, InsuranceTier.Advanced));
+        var settings = new EnhanceSettings { SuccessPercent = 0, FailureMode = FailureMode.KeepItem };
+        rig.Pay(rig.Service.Quote(Session, Vest.ToString(), settings, EnhancePath.ArmorDurability));
+        Assert.False(rig.State.Receipts[^1].Success);
+        Assert.False(rig.State.Receipts[^1].InsuranceLapsed);
+        Assert.Equal(InsuranceTier.Advanced, rig.State.Coverage[Vest.ToString()].Tier);
+    }
+
+    [Fact]
+    public void Free_plate_registration_keeps_insurance_and_reports_no_lapse()
+    {
+        var rig = new Rig();
+        rig.Upgrade(2);
+        rig.Pay(rig.Quote(EnhanceAction.Insure, InsuranceTier.Advanced));
+        rig.Pmc.Inventory!.Items!.Single(i => i.Id == Spare).Template = CheapPlateTpl;
+        rig.SwapPlate();
+        var registration = rig.Quote(EnhanceAction.RegisterInserts);
+        Assert.True(registration.CanRegister);
+        Assert.Equal(0, registration.Cost);
+        rig.Pay(registration);
+        Assert.False(rig.State.Receipts[^1].InsuranceLapsed);
+        Assert.Equal(InsuranceTier.Advanced, rig.State.Coverage[Vest.ToString()].Tier);
+    }
+
+    [Fact]
+    public void Non_raid_mail_id_changes_keep_the_payment_credit()
+    {
+        var rig = new Rig();
+        rig.Upgrade(2);
+        var first = rig.Quote(EnhanceAction.Insure, InsuranceTier.Advanced);
+        rig.Pay(first);
+        rig.Upgrade(1);
+        rig.Backend.SendReturn(Session, rig.Lose(), "flea expiry");
+        var returned = rig.Backend.Mailed.Single().Single(i => i.Template == VestTpl).Id.ToString();
+        Assert.False(rig.State.InsurancePayments.ContainsKey(Vest.ToString()));
+        Assert.Equal(first.Cost, rig.State.InsurancePayments[returned].Paid);
+        Assert.True(rig.State.InsurancePayments[returned].Lapsed);
+    }
+
+    [Fact]
+    public void An_uninsured_upgrade_never_reports_lapsed_insurance()
+    {
+        var rig = new Rig();
+        rig.Upgrade(2);
+        Assert.All(rig.State.Receipts, receipt => Assert.False(receipt.InsuranceLapsed));
+        var quote = rig.Quote(EnhanceAction.Insure, InsuranceTier.Basic);
+        Assert.Equal(0, quote.PreviousInsurancePaid);
+        Assert.False(quote.InsuranceLapsed);
+    }
+
+    [Fact]
     public void Insurance_fee_follows_enhancement_value_and_tier()
     {
         var rig = new Rig();
@@ -292,6 +528,7 @@ public sealed class InsuranceTests
         Assert.Equal((0, 1), rig.Service.CompleteRaidEnd(Session, capture!, null));
         Assert.Empty(rig.Backend.Mailed);
         Assert.False(rig.State.Tracks.ContainsKey(Vest.ToString()));
+        Assert.False(rig.State.InsurancePayments.ContainsKey(Vest.ToString()));
         Assert.Contains(Vest.ToString(), rig.State.Forfeited);
         Assert.Equal(2, rig.Backend.Saved.InsuranceList.Single().Items!.Count);
         // The trader's return mail gets new ids; neither records nor receipts move to them.

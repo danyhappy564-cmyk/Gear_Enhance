@@ -38,6 +38,7 @@ public class EnhanceRecords
     // and ids whose enhancement was forfeited in a raid (traders return them as +0).
     public Dictionary<string, InsertRecord> Inserts { get; set; } = new();
     public Dictionary<string, InsuranceCoverage> Coverage { get; set; } = new();
+    public Dictionary<string, InsurancePayment> InsurancePayments { get; set; } = new();
     public HashSet<string> Forfeited { get; set; } = new();
     // 1.3.0: transcendence per gear, and max durability added to armor items by it.
     public Dictionary<string, TranscendRecord> Transcend { get; set; } = new();
@@ -79,6 +80,13 @@ public sealed class InsuranceCoverage
     public int Paid { get; set; }
     // Fixed when bought like the chance. Coverage bought before 1.4.0 has 0: returned at once.
     public double ReturnHours { get; set; }
+}
+
+// Kept when coverage lapses; consumed when the gear is lost in a raid.
+public sealed class InsurancePayment
+{
+    public int Paid { get; set; }
+    public bool Lapsed { get; set; }
 }
 
 // Recorded gear that entered a raid: slot trees cloned before SPT rewrites the inventory.
@@ -136,10 +144,11 @@ public sealed partial class EnhanceService(SptEnhanceBackend backend, JsonUtil s
                 state.EvolvedItems.Remove(key);
                 state.ThirdStarItems.Remove(key);
             }
-            foreach (var key in state.Inserts.Keys.Concat(state.Coverage.Keys).Where(k => !owned.Contains(k)).Distinct().ToArray())
+            foreach (var key in state.Inserts.Keys.Concat(state.Coverage.Keys).Concat(state.InsurancePayments.Keys).Where(k => !owned.Contains(k)).Distinct().ToArray())
             {
                 state.Inserts.Remove(key);
                 state.Coverage.Remove(key);
+                state.InsurancePayments.Remove(key);
             }
             foreach (var record in state.Inserts.Values) record.Ids.RemoveWhere(id => !owned.Contains(id));
             state.Forfeited.RemoveWhere(id => !owned.Contains(id));
@@ -248,6 +257,8 @@ public sealed partial class EnhanceService(SptEnhanceBackend backend, JsonUtil s
             var coverage = state.Coverage.GetValueOrDefault(itemId);
             quote.CurrentInsurance = coverage?.Tier ?? InsuranceTier.None;
             quote.CurrentInsurancePercent = coverage?.ReturnPercent ?? 0;
+            quote.PreviousInsurancePaid = InsurancePaid(state, itemId);
+            quote.InsuranceLapsed = state.InsurancePayments.GetValueOrDefault(itemId)?.Lapsed == true;
             var transcend = state.Transcend.GetValueOrDefault(itemId);
             quote.InsertSurcharge = legacy ? 0 : EnhanceRules.InsertSurcharge(Owed(state, itemId, parts, partsPrice, paidParts), tracks, stars, settings,
                 transcend?.Second ?? 0, transcend?.Third ?? 0);
@@ -287,12 +298,13 @@ public sealed partial class EnhanceService(SptEnhanceBackend backend, JsonUtil s
             CurrentStars = stars, NextStars = stars, AttachedItems = Tree(profile, itemId).Count - 1,
             PartsPrice = partsPrice, InsertedParts = parts.Count, UnregisteredParts = unregistered, RegistrationFee = registration,
             InsuranceTier = tier, CurrentInsurance = coverage?.Tier ?? InsuranceTier.None, CurrentInsurancePercent = coverage?.ReturnPercent ?? 0,
+            PreviousInsurancePaid = InsurancePaid(state, itemId), InsuranceLapsed = state.InsurancePayments.GetValueOrDefault(itemId)?.Lapsed == true,
             InsuredValue = value, TranscendSecond = transcend?.Second ?? 0, TranscendThird = transcend?.Third ?? 0,
             DurabilityPending = weapon ? 0 : SyncGrants(profile, state, itemId, settings.Transcend, null)
         };
         foreach (var option in new[] { InsuranceTier.Basic, InsuranceTier.Advanced, InsuranceTier.Premium })
         {
-            quote.InsuranceFees[(int)option] = EnhanceRules.InsuranceFee(value, option, settings);
+            quote.InsuranceFees[(int)option] = Math.Max(0, EnhanceRules.InsuranceFee(value, option, settings) - quote.PreviousInsurancePaid);
             quote.InsuranceChances[(int)option] = settings.ReturnPercent(option);
         }
         // Both actions report it: the insurance · plates window loads the insurance quote and
@@ -310,6 +322,18 @@ public sealed partial class EnhanceService(SptEnhanceBackend backend, JsonUtil s
         pending[session] = new(quote, Fingerprint(Tree(profile, itemId)), StateFingerprint(state, itemId), stars, settings.PriceBasis,
             settings.Transcend);
         return quote;
+    }
+
+    // Old profiles have only Coverage.Paid; no migration or client-supplied credit is needed.
+    private static int InsurancePaid(EnhanceState state, string id) => Math.Max(0,
+        Math.Max(state.InsurancePayments.GetValueOrDefault(id)?.Paid ?? 0, state.Coverage.GetValueOrDefault(id)?.Paid ?? 0));
+
+    private static bool LapseInsurance(EnhanceState state, string id)
+    {
+        var paid = InsurancePaid(state, id);
+        if (!state.Coverage.Remove(id)) return false;
+        state.InsurancePayments[id] = new InsurancePayment { Paid = paid, Lapsed = true };
+        return true;
     }
 
     // Plates, soft inserts and visors in the gear's slots (not loose items in its pockets).
@@ -376,6 +400,7 @@ public sealed partial class EnhanceService(SptEnhanceBackend backend, JsonUtil s
         state.ThirdStarItems.Remove(id);
         state.Inserts.Remove(id);
         state.Coverage.Remove(id);
+        state.InsurancePayments.Remove(id);
         state.Transcend.Remove(id);
         state.Mythic.Remove(id);
         state.Tickets.Remove(id);
@@ -469,6 +494,8 @@ public sealed partial class EnhanceService(SptEnhanceBackend backend, JsonUtil s
                 throw Loc.Invalid("장비 상태가 바뀌었습니다. 견적을 다시 불러와 주세요.", "The gear changed. Reload the quote.");
             if (quote.Action == EnhanceAction.Insure && !quote.CanBuyInsurance || quote.Action == EnhanceAction.RegisterInserts && !quote.CanRegister)
                 throw Loc.Invalid("지금은 이 강화 보험·방탄판 등록을 할 수 없습니다. 견적을 다시 불러와 주세요.", "This insurance or plate registration is not available now. Reload the quote.");
+            if (quote.Action == EnhanceAction.Insure && InsurancePaid(state, quote.ItemId) != quote.PreviousInsurancePaid)
+                throw Loc.Invalid("보험 납부 기록이 바뀌었습니다. 견적을 다시 불러와 주세요.", "The insurance payment record changed. Reload the quote.");
             if (quote.CanDestroy && !confirmDestruction)
                 throw Loc.Invalid("장비와 부착물 파괴 안내를 확인해 주세요.", "Confirm the gear and attachment destruction notice.");
             var purse = Money(profile).ToList();
@@ -523,9 +550,13 @@ public sealed partial class EnhanceService(SptEnhanceBackend backend, JsonUtil s
                 }
             }
             else if (quote.Action == EnhanceAction.Insure)
+            {
+                var paid = (int)Math.Min(int.MaxValue, (long)InsurancePaid(state, quote.ItemId) + quote.Cost);
+                state.InsurancePayments[quote.ItemId] = new InsurancePayment { Paid = paid };
                 state.Coverage[quote.ItemId] = new InsuranceCoverage { Tier = quote.InsuranceTier,
-                    ReturnPercent = quote.InsuranceChances[(int)quote.InsuranceTier], Paid = quote.Cost,
+                    ReturnPercent = quote.InsuranceChances[(int)quote.InsuranceTier], Paid = paid,
                     ReturnHours = quote.InsuranceHours[(int)quote.InsuranceTier] };
+            }
             else if (quote.Action == EnhanceAction.RegisterInserts) { }
             else if (quote.Action == EnhanceAction.Mystery && success)
             {
@@ -584,7 +615,7 @@ public sealed partial class EnhanceService(SptEnhanceBackend backend, JsonUtil s
             if (!weapon && failureMode != FailureMode.Destroy)
                 SyncGrants(profile, state, quote.ItemId, saved.Tuning, changedItems);
             if (quote.Action != EnhanceAction.Insure && (success && quote.Action != EnhanceAction.RegisterInserts && !bookkeeping || quote.InsertSurcharge > 0))
-                state.Coverage.Remove(quote.ItemId);
+                receipt.InsuranceLapsed = LapseInsurance(state, quote.ItemId);
             var after = state.Mythic.GetValueOrDefault(quote.ItemId);
             receipt.QuoteId = quoteId; receipt.ItemId = quote.ItemId; receipt.Success = success;
             receipt.Level = success ? quote.NextLevel : failureMode == FailureMode.Downgrade ? Math.Max(0, quote.CurrentLevel - 1) : quote.CurrentLevel;
@@ -630,6 +661,7 @@ public sealed partial class EnhanceService(SptEnhanceBackend backend, JsonUtil s
                     state.Inserts[next] = new InsertRecord { Ids = inserts.Ids.Select(id => map.GetValueOrDefault(id, id)).ToHashSet(),
                         PaidTemplates = inserts.PaidTemplates };
                 if (state.Coverage.Remove(old, out var coverage)) state.Coverage[next] = coverage;
+                if (state.InsurancePayments.Remove(old, out var insurancePayment)) state.InsurancePayments[next] = insurancePayment;
                 if (state.Transcend.Remove(old, out var transcend)) state.Transcend[next] = transcend;
                 if (state.Mythic.Remove(old, out var mythic)) state.Mythic[next] = mythic;
                 if (state.Tickets.Remove(old, out var tickets)) state.Tickets[next] = tickets;
@@ -685,6 +717,7 @@ public sealed partial class EnhanceService(SptEnhanceBackend backend, JsonUtil s
             {
                 if (owned.Contains(root) || handled.Contains(root) || !Recorded(state, root)) continue;
                 state.Coverage.Remove(root, out var coverage);
+                state.InsurancePayments.Remove(root);
                 // At-death state from the client when it carried the gear, else the pre-raid copy.
                 var tree = after?.Any(i => i.Id.ToString() == root) == true ? Clone(SlotTree(after, root)) : Clone(before);
                 tree = tree.Where(i => !owned.Contains(i.Id.ToString())).ToList();

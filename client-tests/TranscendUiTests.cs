@@ -79,6 +79,7 @@ public sealed class TranscendUiTests : IDisposable
     [InlineData("Plugin.TabUpgrade.cs")]
     [InlineData("Plugin.TabInfo.cs")]
     [InlineData("Plugin.Popups.cs")]
+    [InlineData("Plugin.Insurance.cs")]
     [InlineData("Plugin.Status.cs")]
     [InlineData("StatSheet.cs")]
     public void Window_text_has_an_english_pair(string file)

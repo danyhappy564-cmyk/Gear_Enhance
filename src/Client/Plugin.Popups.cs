@@ -36,6 +36,7 @@ public sealed partial class Plugin
     private sealed class Look
     {
         internal string Kicker = "", Title = "", Line = "", EffectLabel, EffectNow, EffectNext, Cost, Note;
+        internal string InsuranceNotice;
         // A second effect row: a mythic weapon raises bullet damage and penetration separately.
         internal string EffectLabel2, EffectNow2, EffectNext2;
         // Mythic guns: the ammo penalty cut (user 2026-10-26: show it as its own row).
@@ -122,7 +123,7 @@ public sealed partial class Plugin
 
     private Look Describe(EnhanceReceipt receipt, EnhanceQuote attempt)
     {
-        var result = new Look();
+        var result = new Look { InsuranceNotice = InsuranceText.Notice(receipt) };
         var gear = itemName ?? Loc.L("장비", "Gear");
         var spent = new List<string> { $"{receipt.Paid:N0} ₽" };
         foreach (var material in attempt?.Materials ?? Array.Empty<TranscendMaterial>())
@@ -134,6 +135,11 @@ public sealed partial class Plugin
         var destroyedLine = Loc.L($"{gear}와 부착물·탄창이 사라졌습니다", $"{gear}, its attachments and magazines are gone");
         switch (receipt.Action)
         {
+            case EnhanceAction.RegisterInserts:
+                result.Kicker = Loc.L("방탄판", "Plates");
+                result.Title = Loc.L("끼운 방탄판 적용 완료", "Inserted plates applied");
+                result.Line = Loc.L("현재 강화에 맞게 방탄판을 적용했습니다", "Plates now match the current enhancement");
+                break;
             case EnhanceAction.Mystery:
                 result.Kicker = "???";
                 if (receipt.Success)
@@ -380,6 +386,11 @@ public sealed partial class Plugin
         }
         top += titleSize + 20;
         Label(x + 32, top, 556, 24, current.Line, popLine); top += 36;
+        if (current.InsuranceNotice != null)
+        {
+            Label(x + 32, top, 556, 24, current.InsuranceNotice, popLine, Caution);
+            top += 36;
+        }
         if (current.Shatter) { DrawShatter(new Rect(x + 175, top, 270, 110), elapsed); top += 122; }
         if (current.EffectLabel != null)
         {
@@ -528,6 +539,7 @@ public sealed partial class Plugin
         var height = 27f + 28;
         if (current.Mythic || current.MythicLite) height += (current.Mythic ? 46 : 30) + 16;
         height += (current.Mythic ? 44 : current.MythicLite ? 36 : 34) + 20 + 36;
+        if (current.InsuranceNotice != null) height += 36;
         if (current.Shatter) height += 122;
         if (current.EffectLabel != null) height += EffectRowHeight(current.EffectLabel, current.EffectNow, current.EffectNext) + 12;
         if (current.EffectLabel2 != null) height += EffectRowHeight(current.EffectLabel2, current.EffectNow2, current.EffectNext2) + 8;

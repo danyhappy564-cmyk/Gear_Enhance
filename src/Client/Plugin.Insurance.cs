@@ -2,13 +2,34 @@ using System;
 
 namespace GearEnhance;
 
+// Server-confirmed insurance notices and credit labels, formatted when the quote changes.
+internal static class InsuranceText
+{
+    internal static string Lapsed => Loc.L("보험이 풀렸습니다. 다시 가입하세요", "Insurance has lapsed. Please insure again.");
+    internal static string Notice(EnhanceQuote view) => view?.InsuranceLapsed == true && view.CurrentInsurance == InsuranceTier.None ? Lapsed : "";
+    internal static string Notice(EnhanceReceipt receipt) => receipt?.InsuranceLapsed == true ? Lapsed : null;
+    internal static string Credit(EnhanceQuote view) => view?.PreviousInsurancePaid > 0
+        ? Loc.L($"이전 납부 {view.PreviousInsurancePaid:N0} ₽ 차감", $"Previous payment {view.PreviousInsurancePaid:N0} ₽ credited") : "";
+}
+
 // Enhancement insurance and plate registration (1.2.0); drawn by the insurance tab (1.4.0).
 public sealed partial class Plugin
 {
     private InsuranceTier insuranceTier = InsuranceTier.Advanced;
     private EnhanceQuote insuranceQuote;
     private string insuranceMessage = "";
+    private EnhanceQuote insuranceTextQuote;
+    private bool insuranceTextEnglish;
+    private string insuranceHeaderNotice = "", insuranceCreditText = "";
     private static readonly InsuranceTier[] Tiers = { InsuranceTier.Basic, InsuranceTier.Advanced, InsuranceTier.Premium };
+
+    private void UpdateInsuranceText(EnhanceQuote view)
+    {
+        if (ReferenceEquals(insuranceTextQuote, view) && insuranceTextEnglish == Loc.English) return;
+        insuranceTextQuote = view; insuranceTextEnglish = Loc.English;
+        insuranceHeaderNotice = InsuranceText.Notice(view);
+        insuranceCreditText = InsuranceText.Credit(view);
+    }
 
     private void SelectInsuranceTier(InsuranceTier tier)
     {
@@ -68,7 +89,8 @@ public sealed partial class Plugin
             if (tab == UiTab.Insurance) LoadInsuranceQuote(changed); else LoadQuote(changed);
             return;
         }
-        RunManaged(registration, Loc.L("끼운 방탄판 적용 완료", "Inserted plates applied"), false);
+        RunManaged(registration, Loc.L("끼운 방탄판 적용 완료", "Inserted plates applied"),
+            registration.CurrentInsurance != InsuranceTier.None && registration.InsertSurcharge > 0);
     }
 
     private void PlayInsured()

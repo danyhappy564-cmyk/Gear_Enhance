@@ -128,6 +128,28 @@ public sealed class MythicTests
         }
     }
 
+    [Theory]
+    [InlineData(EnhanceAction.Evolve)]
+    [InlineData(EnhanceAction.EvolveThird)]
+    [InlineData(EnhanceAction.Mystery)]
+    [InlineData(EnhanceAction.Mythic)]
+    public void Successful_value_raising_actions_report_lapsed_insurance_and_credit_the_old_payment(EnhanceAction action)
+    {
+        var rig = new Rig(stars: action == EnhanceAction.Evolve ? 1 : action == EnhanceAction.EvolveThird ? 2 : 3);
+        rig.Settings.AlwaysSucceed = true;
+        if (action == EnhanceAction.Mythic) rig.Mystery();
+        var insure = rig.Service.Quote(Session, Vest.ToString(), rig.Settings, null, null, EnhanceAction.Insure, null, InsuranceTier.Advanced);
+        rig.Pay(insure);
+        var result = rig.Pay(rig.Quote(action));
+        Assert.True(result.Success);
+        Assert.True(result.InsuranceLapsed);
+        Assert.False(rig.State.Coverage.ContainsKey(Vest.ToString()));
+        var renewal = rig.Service.Quote(Session, Vest.ToString(), rig.Settings, null, null, EnhanceAction.Insure, null, InsuranceTier.Advanced);
+        Assert.Equal(insure.Cost, renewal.PreviousInsurancePaid);
+        Assert.True(renewal.InsuranceLapsed);
+        Assert.Equal(Math.Max(0, EnhanceRules.InsuranceFee(renewal.InsuredValue, InsuranceTier.Advanced, rig.Settings) - insure.Cost), renewal.Cost);
+    }
+
     [Fact]
     public void Mystery_needs_three_stars_costs_eight_million_and_a_ledx_and_takes_no_extras()
     {

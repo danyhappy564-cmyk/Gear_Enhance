@@ -212,6 +212,8 @@ public sealed class EnhanceQuote
     public InsuranceTier InsuranceTier { get; set; }
     public InsuranceTier CurrentInsurance { get; set; }
     public double CurrentInsurancePercent { get; set; }
+    public int PreviousInsurancePaid { get; set; }
+    public bool InsuranceLapsed { get; set; }
     public long InsuredValue { get; set; }
     // Indexed by InsuranceTier; [0] is unused.
     public int[] InsuranceFees { get; set; } = new int[4];
@@ -274,6 +276,7 @@ public sealed class EnhanceReceipt
     public EnhanceAction Action { get; set; }
     public InsuranceTier InsuranceTier { get; set; }
     public TranscendTrack Transcend { get; set; }
+    public bool InsuranceLapsed { get; set; }
     // Pity of that track after the attempt (0 after a success).
     public double Pity { get; set; }
     // 1.4.0

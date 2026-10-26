@@ -9,6 +9,7 @@ namespace GearEnhance;
 public sealed partial class Plugin
 {
     private GUIStyle insuranceNoteStyle, insuranceNoteSource;
+    private GUIStyle insuranceCreditStyle, insuranceCreditSource;
     private readonly GUIContent insuranceNoteContent = new GUIContent();
 
     private void DrawMysteryTab()
@@ -67,8 +68,19 @@ public sealed partial class Plugin
         midWidth = scrolls ? BodyWidth - 16 : BodyWidth;
         midScroll = GUI.BeginScrollView(view, midScroll, new Rect(0, 0, midWidth, Math.Max(midHeight, view.height)));
         var shown = insuranceQuote;
+        UpdateInsuranceText(shown);
+        if (!ReferenceEquals(insuranceCreditSource, small))
+        {
+            insuranceCreditSource = small;
+            insuranceCreditStyle = new GUIStyle(small) { fontSize = 11, wordWrap = true };
+        }
         SectionTitle(0, Loc.L("강화 보험", "Enhancement insurance"), Hex(0x3a4148), Heading);
         var y = 34f;
+        if (insuranceHeaderNotice.Length > 0)
+        {
+            Label(2, y, midWidth - 4, 24, insuranceHeaderNotice, bodyBold, Caution);
+            y += 28;
+        }
         var half = (midWidth - 10) / 2;
         var current = new Rect(0, y, half, 72);
         Box(current, Section, Line);
@@ -83,8 +95,8 @@ public sealed partial class Plugin
         Label(value.x + 16, y + 28, half - 32, 36, shown == null ? "—" : $"{shown.InsuredValue:N0} ₽", new GUIStyle(numberBig) { fontSize = 28 }, Text);
         y += 82;
         var width = (midWidth - 20) / 3;
-        for (var index = 0; index < Tiers.Length; index++) DrawTier(new Rect(index * (width + 10), y, width, 176), Tiers[index], shown);
-        y += 186;
+        for (var index = 0; index < Tiers.Length; index++) DrawTier(new Rect(index * (width + 10), y, width, 210), Tiers[index], shown);
+        y += 220;
         y = DrawReturning(y);
         if (!weapon) y = DrawPlateSection(y + 10, shown);
         var note = Loc.L("레이드에서 잃으면 확률만큼 강화된 채 우편으로 돌아옵니다. 한 번 쓰면 소모되고, 강화에 성공하거나 더 비싼 방탄판 차액을 내면 다시 가입해야 합니다. 상인 보험은 강화를 지켜 주지 않습니다(돌아와도 +0).",
@@ -134,8 +146,9 @@ public sealed partial class Plugin
         Label(rect.x + 16, rect.y + 54, rect.width - 32, 44, $"{view?.InsuranceChances[(int)tier] ?? 0:0.##}%", new GUIStyle(numberBig) { fontSize = 38 }, color);
         Label(rect.x + 16, rect.y + 100, rect.width - 32, 16, Loc.L("보험료", "Fee"), small);
         Label(rect.x + 16, rect.y + 116, rect.width - 32, 24, view == null ? "—" : $"{view.InsuranceFees[(int)tier]:N0} ₽", new GUIStyle(bodyBold) { fontSize = 18 }, Text);
-        Label(rect.x + 16, rect.y + 140, rect.width - 32, 16, Loc.L("돌아오는 시간", "Return time"), small);
-        Label(rect.x + 16, rect.y + 154, rect.width - 32, 20, ReturnDelay(view?.InsuranceHours[(int)tier] ?? 0), new GUIStyle(bodyBold) { fontSize = 15 }, color);
+        Label(rect.x + 16, rect.y + 140, rect.width - 32, 30, insuranceCreditText, insuranceCreditStyle, Caution);
+        Label(rect.x + 16, rect.y + 174, rect.width - 32, 16, Loc.L("돌아오는 시간", "Return time"), small);
+        Label(rect.x + 16, rect.y + 188, rect.width - 32, 20, ReturnDelay(view?.InsuranceHours[(int)tier] ?? 0), new GUIStyle(bodyBold) { fontSize = 15 }, color);
     }
 
     private static string ReturnDelay(double hours) => hours <= 0 ? Loc.L("즉시", "Instant")
@@ -228,10 +241,10 @@ public sealed partial class Plugin
             "Plates in the armor share its enhancement.\nPlates worth no more than those paid for apply for free; only a pricier plate needs the difference paid once.")),
         (Loc.L("★★ / ★★★ 진화", "★★ / ★★★ evolution"), Loc.L("모든 항목이 +10이면 도전합니다.\n성공률 30% / 10%, 실패하면 장비가 파괴됩니다.\n성공하면 강화 효과 ×2 / ×3.\n파괴 방지권: 쓰면 시도할 때마다(성공·실패 관계없이) 1장 소모, 실패해도 장비가 남습니다. ★★용과 ★★★용은 따로이고, ★★ 성공 뒤 남은 ★★용은 사라집니다. 장비마다 ★★용 최대 3장(1장 100만 ₽), ★★★용 최대 2장(1장 270만 ₽)만 살 수 있고, 다 사면 더 살 수 없습니다.",
             "Open when every item is +10.\n30% / 10% chance; a failure destroys the item.\nSuccess multiplies the effects ×2 / ×3.\nDestruction ticket: one is spent on every attempt it is used for (success or failure); on failure the item stays. ★★ and ★★★ tickets are separate, and ★★ tickets left after the ★★ success are gone. Per item you can buy at most 3 for ★★ (1,000,000 ₽ each) and 2 for ★★★ (2,700,000 ₽ each), never more.")),
-        (Loc.L("초월", "Transcendence"), Loc.L("★★ 이상 장비의 추가 트랙(각 5단계)입니다.\n파괴는 없고, 실패할수록 다음 성공률이 오릅니다(최대 +30%p).\n→4·→5는 실패 시 1단계 하락합니다.",
-            "Extra tracks (5 levels each) for ★★ gear and up.\nNo destruction; each failure raises the next chance (up to +30%p).\n→4 and →5 drop one level on failure.")),
-        (Loc.L("??? / 신화", "??? / Mythic"), Loc.L("★★★ 장비에만 ??? 칸이 열립니다. 50% 성공 / 50% 파괴, 도전 비용은 8,000,000 ₽ + LEDX 1개입니다.\n??? 파괴 방지권: 장비당 1장만(추가 구매 불가), 1장 5,000,000 ₽. 쓰면 그 시도에 1장 소모되고, 실패해도 ★★★ 장비가 그대로 남습니다(성공률은 그대로 50%).\n성공하면 별 대신 ✦ 신화 표시가 붙고 신화 단계(0~5)가 열립니다. 성공률 40·30·20·15·10%, 실패할 때마다 +3%p(최대 +30%p). 비용은 500만 ₽에서 단계마다 ×1.1 + LEDX 1개. →4·→5는 실패 시 1단계 하락합니다.\n무기: 탄 데미지·관통력 단계당 +2% (최대 10%). 이 총으로 쏠 때만 적용됩니다.\n방어구·헬멧: 아직 못 막는 부위 중 무작위 2곳을 더 막고, 신화 단계마다 받는 피해 -2% (최대 10%).\n추가 부위는 한 곳씩 다시 뽑을 수 있습니다: 200만 ₽ + 그래픽 카드 1개, 다시 뽑을 때마다 ×1.5.",
-            "The ??? slot opens only on ★★★ gear. 50% success / 50% destroyed; a try costs 8,000,000 ₽ + 1 LEDX.\n??? ticket: one per gear, ever, 5,000,000 ₽. Using it spends it on that try; a failure then keeps the ★★★ gear (the chance stays 50%).\nSuccess swaps the stars for a ✦ Mythic mark and opens Mythic levels 0-5: 40·30·20·15·10%, +3%p per failure (up to +30%p), 5,000,000 ₽ ×1.1 per level + 1 LEDX. →4 and →5 drop one level on failure.\nWeapons: bullet damage and penetration +2% per level (max 10%), only when fired from this gun.\nArmor and helmets: two random zones they did not cover become covered, then damage taken -2% per level (max 10%).\nEach extra zone can be rerolled: 2,000,000 ₽ + 1 graphics card, ×1.5 per reroll.")),
+        (Loc.L("초월", "Transcendence"), Loc.L("★★ 이상 장비의 추가 트랙(각 5단계)입니다.\n파괴는 없고, 실패할수록 다음 성공률이 오릅니다(최대 +30%p).\n→4·→5는 실패 시 1단계 하락합니다. 하락 방지권은 →4 시도에만 쓸 수 있습니다.",
+            "Extra tracks (5 levels each) for ★★ gear and up.\nNo destruction; each failure raises the next chance (up to +30%p).\n→4 and →5 drop one level on failure. Drop protection is for the →4 attempt only.")),
+        (Loc.L("??? / 신화", "??? / Mythic"), Loc.L("★★★ 장비에만 ??? 칸이 열립니다. 50% 성공 / 50% 파괴, 도전 비용은 8,000,000 ₽ + LEDX 1개입니다.\n??? 파괴 방지권: 장비당 1장만(추가 구매 불가), 1장 5,000,000 ₽. 쓰면 그 시도에 1장 소모되고, 실패해도 ★★★ 장비가 그대로 남습니다(성공률은 그대로 50%).\n성공하면 별 대신 ✦ 신화 표시가 붙고 신화 단계(0~5)가 열립니다. 성공률 40·30·20·15·10%, 실패할 때마다 +3%p(최대 +30%p). 비용은 500만 ₽에서 단계마다 ×1.1 + LEDX 1개. →3·→4·→5는 실패 시 1단계 하락하고, 하락 방지권은 →3 시도에만 쓸 수 있습니다.\n무기: 탄 데미지·관통력 단계당 +3% (최대 15%), 이 총에 든 탄의 불이익(명중률 −·반동 +·내구도 소모 +·과열 +·고장 확률) 단계당 16% 감소(최대 80%). 이 총으로 쏠 때만 적용됩니다.\n방탄복: 아직 못 막는 부위 중 무작위 2곳을 더 막고, 신화 단계마다 받는 피해 -10% (최대 50%, 머리에 맞으면 절반). 헬멧·마스크: 단계마다 -5% (최대 25%).\n추가 부위는 한 곳씩 다시 뽑을 수 있습니다: 200만 ₽ + 그래픽 카드 1개, 다시 뽑을 때마다 ×1.5.",
+            "The ??? slot opens only on ★★★ gear. 50% success / 50% destroyed; a try costs 8,000,000 ₽ + 1 LEDX.\n??? ticket: one per gear, ever, 5,000,000 ₽. Using it spends it on that try; a failure then keeps the ★★★ gear (the chance stays 50%).\nSuccess swaps the stars for a ✦ Mythic mark and opens Mythic levels 0-5: 40·30·20·15·10%, +3%p per failure (up to +30%p), 5,000,000 ₽ ×1.1 per level + 1 LEDX. →3, →4 and →5 drop one level on failure; drop protection is for the →3 attempt only.\nWeapons: bullet damage and penetration +3% per level (max 15%), and the rounds in this gun lose 16% of their penalties (accuracy −, recoil +, wear +, heat +, malfunction chance) per level (max 80%), only when fired from this gun.\nBody armor: two random zones it did not cover become covered, then damage taken -10% per level (max 50%, half on head hits). Helmets and masks: -5% per level (max 25%).\nEach extra zone can be rerolled: 2,000,000 ₽ + 1 graphics card, ×1.5 per reroll.")),
         (Loc.L("강화 보험", "Enhancement insurance"), Loc.L("레이드에서 잃었을 때 확률만큼 강화된 채 우편으로 돌아옵니다.\n일반 20% · 1일 뒤 / 고급 55% · 12시간 뒤 / 프리미엄 99% · 즉시.\n한 번 쓰면 소모되고, 강화하면 다시 가입해야 합니다.",
             "If lost in a raid, the gear comes back enhanced by mail at the tier chance.\nBasic 20% · after 1 day / Advanced 55% · after 12 h / Premium 99% · instant.\nUsed up once it pays out; enhancing again needs a new policy."))
     };

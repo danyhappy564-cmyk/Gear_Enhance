@@ -159,6 +159,21 @@ public sealed class TranscendTests
     }
 
     [Fact]
+    public void Successful_transcendence_lapses_insurance_and_keeps_the_paid_credit()
+    {
+        var rig = new Rig();
+        var insure = rig.Manage(EnhanceAction.Insure, InsuranceTier.Advanced);
+        rig.Pay(insure);
+        rig.Pay(rig.Quote(TranscendTrack.Second));
+        Assert.True(rig.State.Receipts[^1].InsuranceLapsed);
+        Assert.False(rig.State.Coverage.ContainsKey(Vest.ToString()));
+        var renewal = rig.Manage(EnhanceAction.Insure, InsuranceTier.Advanced);
+        Assert.True(renewal.InsuranceLapsed);
+        Assert.Equal(insure.Cost, renewal.PreviousInsurancePaid);
+        Assert.Equal(Math.Max(0, EnhanceRules.InsuranceFee(renewal.InsuredValue, InsuranceTier.Advanced, rig.Settings) - insure.Cost), renewal.Cost);
+    }
+
+    [Fact]
     public void Rules_match_the_design_tables()
     {
         var tuning = new TranscendTuning();
