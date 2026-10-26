@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace GearEnhance;
 
-internal enum UiTab { Enhance, Star2, Star3, Transcend, Mythic, Insurance, Help }
+internal enum UiTab { Enhance, Star2, Star3, Transcend, Mythic, Insurance, Prestige, Help }
 
 // 1.4.0 tab state and the quote → attempt → result flow of every tab.
 public sealed partial class Plugin
@@ -35,7 +35,14 @@ public sealed partial class Plugin
     private struct TabEntry
     {
         public UiTab Tab; public string Mark, Label, Sub; public Color Color, Ring; public bool Open;
+        // Something waits on the player (mockup .mail-ready / .due-ready): mail to collect, or a payment.
+        public TabGlow Glow;
     }
+
+    private enum TabGlow { None, Mail, Due }
+
+    // Insurance and prestige tabs: no roll, the managed quote is the whole tab.
+    private bool ManagedTab => tab == UiTab.Insurance || tab == UiTab.Prestige;
 
     private IEnumerable<TabEntry> TabEntries()
     {
@@ -57,9 +64,20 @@ public sealed partial class Plugin
             Sub = stars < 3 ? Loc.L("★★★ 이후 열림", "Opens after ★★★") : mythic < 0 ? "50 / 50"
                 : weapon ? Loc.L($"데미지·관통 {mythic}/5", $"Dmg · pen {mythic}/5")
                 : Loc.L($"추가 부위 {StatPatches.Registry.MythicZones(id).Length}곳 · {mythic}/5", $"+{StatPatches.Registry.MythicZones(id).Length} zones · {mythic}/5") };
+        var renew = RenewCount();
         yield return new TabEntry { Tab = UiTab.Insurance, Mark = "P", Color = tier == InsuranceTier.None ? Hex(0xffc46b) : TierColor(tier), Open = true,
-            Label = Loc.L("보험", "Insurance"), Ring = tier == InsuranceTier.None ? Color.clear : TierColor(tier),
-            Sub = tier == InsuranceTier.None ? Loc.L("미가입", "None") : Loc.TierName(tier) + $" {StatPatches.Registry.CoveragePercent(id):0.##}%" };
+            Label = Loc.L("보험", "Insurance"), Ring = tier == InsuranceTier.None ? Color.clear : TierColor(tier), Glow = renew > 0 ? TabGlow.Due : TabGlow.None,
+            Sub = renew > 0 ? Loc.L($"다시 가입 {renew}개", $"Renew {renew}")
+                : tier == InsuranceTier.None ? Loc.L("미가입", "None") : Loc.TierName(tier) + $" {StatPatches.Registry.CoveragePercent(id):0.##}%" };
+        var policies = StatPatches.Registry.Policies;
+        var mail = policies.PrestigeReturns?.Length ?? 0;
+        var registered = policies.Prestige?.Length ?? 0;
+        var due = PrestigeDueCount();
+        yield return new TabEntry { Tab = UiTab.Prestige, Mark = "P+", Color = Gold, Open = true, Label = Loc.L("프레스티지", "Prestige"),
+            Glow = mail > 0 ? TabGlow.Mail : due > 0 ? TabGlow.Due : TabGlow.None,
+            Sub = mail > 0 ? Loc.L($"보험 · 반환 {mail}개", $"Ins. · {mail} to collect") : PrestigeAtMax ? Loc.L("보험 · 최대 단계", "Ins. · max stage")
+                : due > 0 ? Loc.L($"보험 · 차액 {due}개", $"Ins. · due {due}")
+                : registered > 0 ? Loc.L($"보험 · 등록 {registered}", $"Ins. · {registered} registered") : Loc.L("보험 · 미등록", "Ins. · none") };
         yield return new TabEntry { Tab = UiTab.Help, Mark = "?", Color = Muted, Open = true, Label = Loc.L("도움말", "Help"), Sub = Loc.L("규칙 요약", "Rules") };
     }
 
@@ -86,7 +104,7 @@ public sealed partial class Plugin
 
     private void RefreshTab()
     {
-        if (tab == UiTab.Insurance) LoadInsuranceQuote(null);
+        if (ManagedTab) LoadInsuranceQuote(null);
         else if (tab == UiTab.Help) { quote = preview = null; message = ""; }
         else RefreshQuote();
     }
@@ -98,6 +116,7 @@ public sealed partial class Plugin
         UiTab.Transcend => EnhanceAction.Transcend,
         UiTab.Mythic => MythicLevel < 0 ? EnhanceAction.Mystery : EnhanceAction.Mythic,
         UiTab.Insurance => EnhanceAction.Insure,
+        UiTab.Prestige => EnhanceAction.PrestigeInsure,
         _ => EnhanceAction.Upgrade
     };
     private bool Evolving => tab == UiTab.Star2 || tab == UiTab.Star3;
@@ -133,12 +152,14 @@ public sealed partial class Plugin
         }
     }
 
-    private object QuoteBody(EnhanceAction action, bool instant = false, int ticketStars = 0, int slot = 0) => new
+    // `target`/`tier`: a renewal from the insurance lists may name another gear and its own tier.
+    private object QuoteBody(EnhanceAction action, bool instant = false, int ticketStars = 0, int slot = 0, string target = null,
+        InsuranceTier? tier = null) => new
     {
-        ProtocolVersion = EnhanceProtocol.Version, ItemId = itemId, Path = selectedPath, Settings = Settings(),
+        ProtocolVersion = EnhanceProtocol.Version, ItemId = target ?? itemId, Path = target == null ? selectedPath : default, Settings = Settings(),
         Protection = new EnhanceProtection { Destruction = protectDestruction, Downgrade = protectDowngrade },
         Boost = action == EnhanceAction.Mystery ? Array.Empty<BoostChoice>() : BoostRequest(), Action = action,
-        Track = action == EnhanceAction.Transcend ? transcendTrack : TranscendTrack.None, Tier = insuranceTier,
+        Track = action == EnhanceAction.Transcend ? transcendTrack : TranscendTrack.None, Tier = tier ?? insuranceTier,
         Instant = instant, UseTicket = useTicket && (action == EnhanceAction.Evolve || action == EnhanceAction.EvolveThird || action == EnhanceAction.Mystery),
         TicketStars = ticketStars, Slot = slot
     };
@@ -155,7 +176,7 @@ public sealed partial class Plugin
     private async void LoadQuote(string resultMessage, bool quiet = false)
     {
         if (busy || uncertain || itemId == null) return;
-        if (tab == UiTab.Insurance) { LoadInsuranceQuote(resultMessage); return; }
+        if (ManagedTab) { LoadInsuranceQuote(resultMessage); return; }
         busy = true; quote = null; boostQuiet = quiet;
         if (!quiet)
         {
@@ -463,7 +484,7 @@ public sealed partial class Plugin
             StatPatches.Registry.ApplyReceipt(receipt, GameBridge.ProfileId(session));
             result = done + Loc.L($" · {receipt.Paid:N0} ₽ 소모", $" · spent {receipt.Paid:N0} ₽");
             // The game's own "insured" sound, as in the trader insurance screen.
-            if (view.Action == EnhanceAction.Insure) main.Enqueue(PlayInsured);
+            if (view.Action == EnhanceAction.Insure || view.Action == EnhanceAction.PrestigeInsure) main.Enqueue(PlayInsured);
             if (showResult) ShowResult(receipt, view);
             await SyncEffects(session);
             main.Enqueue(ItemMarkers.RefreshAll);
@@ -478,7 +499,7 @@ public sealed partial class Plugin
         {
             busy = false;
             var text = result;
-            if (text != null) main.Enqueue(() => { if (tab == UiTab.Insurance) LoadInsuranceQuote(text); else LoadQuote(text); });
+            if (text != null) main.Enqueue(() => { if (ManagedTab) LoadInsuranceQuote(text); else LoadQuote(text); });
         }
     }
 }

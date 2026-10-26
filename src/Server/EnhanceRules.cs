@@ -81,6 +81,13 @@ public static class EnhanceRules
         return (int)fee;
     }
 
+    // Prestige insurance: value × F12 percent. Also used by the state sync, so it never throws.
+    public static int PrestigeFee(long value, EnhanceSettings settings)
+    {
+        var fee = Math.Ceiling(Math.Max(0, value) * settings.PrestigeInsuranceFeePercent / 100);
+        return !double.IsFinite(fee) ? 0 : (int)Math.Min(int.MaxValue, fee);
+    }
+
     public static bool Succeeds(double percent, double draw)
     {
         if (!double.IsFinite(percent) || percent < 0 || percent > 100

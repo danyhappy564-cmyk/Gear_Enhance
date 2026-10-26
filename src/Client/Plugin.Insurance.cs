@@ -44,6 +44,7 @@ public sealed partial class Plugin
         busy = true; insuranceQuote = null;
         insuranceMessage = result ?? Loc.L("보험 견적을 불러오는 중입니다…", "Loading insurance quote…");
         var current = generation;
+        var action = tab == UiTab.Prestige ? EnhanceAction.PrestigeInsure : EnhanceAction.Insure;
         try
         {
             await GameBridge.Flush(session);
@@ -51,10 +52,12 @@ public sealed partial class Plugin
             if (!weapon) await ApplyInserts(session);
             if (StatPatches.Registry.TotalLevel(itemId) == 0)
             {
-                insuranceMessage = result ?? Loc.L("강화된 장비만 강화 보험에 가입할 수 있습니다.", "Only enhanced gear can be insured.");
+                insuranceMessage = result ?? (action == EnhanceAction.PrestigeInsure
+                    ? Loc.L("강화된 장비만 프레스티지 보험에 등록할 수 있습니다.", "Only enhanced gear can be registered for prestige insurance.")
+                    : Loc.L("강화된 장비만 강화 보험에 가입할 수 있습니다.", "Only enhanced gear can be insured."));
                 return;
             }
-            var response = await GameBridge.WithTimeout(GameBridge.Query<EnhanceQuote>("/rf/gear-enhance/quote", QuoteBody(EnhanceAction.Insure)));
+            var response = await GameBridge.WithTimeout(GameBridge.Query<EnhanceQuote>("/rf/gear-enhance/quote", QuoteBody(action)));
             if (current != generation) return;
             insuranceQuote = response; insuranceMessage = result ?? "";
         }
@@ -86,11 +89,61 @@ public sealed partial class Plugin
         {
             var changed = Loc.L($"등록비가 {registration.Cost:N0} ₽로 바뀌었습니다. 확인하고 다시 눌러 주세요.",
                 $"The registration fee changed to {registration.Cost:N0} ₽. Check it and press again.");
-            if (tab == UiTab.Insurance) LoadInsuranceQuote(changed); else LoadQuote(changed);
+            if (ManagedTab) LoadInsuranceQuote(changed); else LoadQuote(changed);
             return;
         }
         RunManaged(registration, Loc.L("끼운 방탄판 적용 완료", "Inserted plates applied"),
             registration.CurrentInsurance != InsuranceTier.None && registration.InsertSurcharge > 0);
+    }
+
+    // Lapsed enhancement insurance in the stash, and prestige registrations owing a difference.
+    private static int RenewCount()
+    {
+        var count = 0;
+        foreach (var link in StatPatches.Registry.Policies.Insurance ?? Array.Empty<InsuranceLink>()) if (link?.Lapsed == true) count++;
+        return count;
+    }
+
+    private static PrestigeState Prestige => new PrestigeState(StatPatches.Registry.Policies);
+    private static bool PrestigeAtMax => Prestige.AtMax;
+    private static int PrestigeDueCount()
+    {
+        if (PrestigeAtMax) return 0;
+        var count = 0;
+        foreach (var link in StatPatches.Registry.Policies.Prestige ?? Array.Empty<PrestigeLink>()) if (link != null && link.Fee > link.Paid) count++;
+        return count;
+    }
+
+    // A renewal from the insurance or prestige list: quote that gear (it may not be the one in the
+    // window) and pay only if the cost is still the one the row showed.
+    private async void RenewFrom(string target, EnhanceAction action, InsuranceTier tier, int shown)
+    {
+        if (busy || uncertain || popup != PopupKind.None || string.IsNullOrEmpty(target)) return;
+        busy = true;
+        EnhanceQuote renewal = null;
+        try
+        {
+            await GameBridge.Flush(session);
+            renewal = await GameBridge.WithTimeout(GameBridge.Query<EnhanceQuote>("/rf/gear-enhance/quote",
+                QuoteBody(action, target: target, tier: tier)));
+        }
+        catch (Exception ex) { insuranceMessage = ex.GetBaseException().Message; Logger.LogWarning(ex); }
+        finally { busy = false; }
+        // The pending server quote is now the renewal; the shown quote must be reloaded either way.
+        quote = insuranceQuote = null;
+        if (renewal == null) { RefreshTab(); return; }
+        var can = action == EnhanceAction.PrestigeInsure ? renewal.CanBuyPrestige : renewal.CanBuyInsurance;
+        if (!can || renewal.Cost != shown)
+        {
+            // The list rows come from the state sync: refresh them, or the same mismatch repeats.
+            try { await SyncEffects(session); }
+            catch (Exception ex) { Logger.LogWarning(ex); }
+            LoadInsuranceQuote(can ? Loc.L($"금액이 {renewal.Cost:N0} ₽로 바뀌었습니다. 확인하고 다시 눌러 주세요.", $"The amount changed to {renewal.Cost:N0} ₽. Check it and press again.")
+                : Loc.L("지금은 갱신할 수 없습니다. 목록을 확인해 주세요.", "It cannot be renewed now. Check the list."));
+            return;
+        }
+        RunManaged(renewal, action == EnhanceAction.PrestigeInsure ? Loc.L("프레스티지 보험 갱신 완료", "Prestige insurance renewed")
+            : Loc.L($"{Loc.TierName(tier)} 강화 보험 다시 가입", $"{Loc.TierName(tier)} insurance renewed"), false);
     }
 
     private void PlayInsured()

@@ -36,7 +36,7 @@ public sealed class MailReturnTests
     private static readonly MongoId ScopeTpl = new("777777777777777777777777");
     private static readonly JsonUtil Json = new([new SptJsonConverterRegistrator()]);
 
-    private sealed class Backend(SptProfile saved) : SptEnhanceBackend(null!, null!, null!, null!, null!, null!)
+    private sealed class Backend(SptProfile saved) : SptEnhanceBackend(null!, null!, null!, null!, null!, null!, null!)
     {
         public override SptProfile Profile(MongoId session) => session == Session ? saved : null!;
         public override bool Eligible(MongoId template) => true;

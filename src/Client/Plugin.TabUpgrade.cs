@@ -280,7 +280,7 @@ public sealed partial class Plugin
     }
 
     // ??? has its own tab; star evolution, enhancement, transcendence and mythic take materials.
-    private bool BoostRowsVisible => tab != UiTab.Insurance && tab != UiTab.Help;
+    private bool BoostRowsVisible => tab != UiTab.Insurance && tab != UiTab.Prestige && tab != UiTab.Help;
 
     private void DrawMaterialRow(Rect rect, BoostMaterial kind, bool usable, bool full, BoostTuning tuning)
     {

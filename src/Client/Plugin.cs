@@ -24,7 +24,7 @@ public sealed partial class Plugin : BaseUnityPlugin
     private DevSetting<float> chance, chanceLoss, destructionChance, completionBonus, percent, growth;
     private DevSetting<float> destructionProtectionPrice, downgradeProtectionPrice;
     private DevSetting<float> evolutionChance, evolutionPrice, thirdStarChance, thirdStarBonus;
-    private DevSetting<float> basicReturn, advancedReturn, premiumReturn, basicFee, advancedFee, premiumFee;
+    private DevSetting<float> basicReturn, advancedReturn, premiumReturn, basicFee, advancedFee, premiumFee, prestigeFee;
     private ConfigEntry<UiLanguage> language;
     private readonly DeveloperOptions developerOptions = new DeveloperOptions();
     private DevSetting<int> maxLevel, minimum;
@@ -130,6 +130,7 @@ public sealed partial class Plugin : BaseUnityPlugin
         basicFee = BindDeveloper("12. 강화 보험", "일반 보험료 (강화 가치 대비 %)", 5f, new ConfigDescription("강화 가치 = 지금 단계·스타까지 강화하는 데 드는 기본 비용 합계(방어구는 등록한 방탄판 가격 포함). 최소 비용 이상.", new AcceptableValueRange<float>(0, 1000)));
         advancedFee = BindDeveloper("12. 강화 보험", "고급 보험료 (강화 가치 대비 %)", 15f, new ConfigDescription("강화 가치 = 지금 단계·스타까지 강화하는 데 드는 기본 비용 합계(방어구는 등록한 방탄판 가격 포함). 최소 비용 이상.", new AcceptableValueRange<float>(0, 1000)));
         premiumFee = BindDeveloper("12. 강화 보험", "프리미엄 보험료 (강화 가치 대비 %)", 30f, new ConfigDescription("강화 가치 = 지금 단계·스타까지 강화하는 데 드는 기본 비용 합계(방어구는 등록한 방탄판 가격 포함). 최소 비용 이상.", new AcceptableValueRange<float>(0, 1000)));
+        prestigeFee = BindDeveloper("12. 강화 보험", "프레스티지 보험료 (강화 가치 대비 %)", 10f, new ConfigDescription("프레스티지를 달성해 다음 단계로 넘어갈 때만 등록한 장비를 우편으로 돌려줍니다. 가치가 오르면 차액만 냅니다. 최대 프레스티지에서는 등록할 수 없습니다.", new AcceptableValueRange<float>(0, 1000)));
         BindTranscend();
         BindMythic();
         // Migrate the previous shipped default once; preserve custom developer odds.
@@ -340,6 +341,7 @@ public sealed partial class Plugin : BaseUnityPlugin
         BasicInsuranceReturnPercent = basicReturn.Value, AdvancedInsuranceReturnPercent = advancedReturn.Value,
         PremiumInsuranceReturnPercent = premiumReturn.Value, BasicInsuranceFeePercent = basicFee.Value,
         AdvancedInsuranceFeePercent = advancedFee.Value, PremiumInsuranceFeePercent = premiumFee.Value,
+        PrestigeInsuranceFeePercent = prestigeFee.Value,
         BasicInsuranceReturnHours = basicHours.Value, AdvancedInsuranceReturnHours = advancedHours.Value, PremiumInsuranceReturnHours = premiumHours.Value,
         InstantFee = instantFee.Value, SecondTicketMax = secondTickets.Value, SecondTicketPrice = secondTicketPrice.Value,
         ThirdTicketMax = thirdTickets.Value, ThirdTicketPrice = thirdTicketPrice.Value,

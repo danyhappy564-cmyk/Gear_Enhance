@@ -47,7 +47,7 @@ public sealed class TranscendTests
         public bool AutomaticGun = true;
         public readonly List<List<Item>> Mailed = new();
         private readonly InventoryHelper native = new(null!, null!, null!, null!, null!, null!, null!, null!);
-        public Backend() : base(null!, null!, null!, null!, null!, null!) { }
+        public Backend() : base(null!, null!, null!, null!, null!, null!, null!) { }
         public override double Draw() => DrawValue;
         public override SptProfile Profile(MongoId session) => session == Session ? Saved : null!;
         public override IEnumerable<(MongoId Session, SptProfile Profile)> Profiles() => [(Session, Saved)];
@@ -228,7 +228,7 @@ public sealed class TranscendTests
         Assert.Throws<ArgumentException>(() => new EnhanceSettings { Transcend = new() { HorizontalRecoilPerLevel = 17 } }.Validate());
         Assert.Throws<ArgumentException>(() => new EnhanceSettings { Transcend = null! }.Validate());
         new EnhanceSettings().Validate();
-        Assert.Equal(11, EnhanceProtocol.Version);
+        Assert.Equal(12, EnhanceProtocol.Version);
     }
 
     [Fact]

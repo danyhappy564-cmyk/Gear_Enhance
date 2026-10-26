@@ -37,7 +37,7 @@ public sealed class MythicTests
         public double DrawValue;
         public readonly List<List<Item>> Mailed = new();
         private readonly InventoryHelper native = new(null!, null!, null!, null!, null!, null!, null!, null!);
-        public Backend() : base(null!, null!, null!, null!, null!, null!) { }
+        public Backend() : base(null!, null!, null!, null!, null!, null!, null!) { }
         public override double Draw() => Draws.Count > 0 ? Draws.Dequeue() : DrawValue;
         public override SptProfile Profile(MongoId session) => session == Session ? Saved : null!;
         public override bool Eligible(MongoId template) => template == VestTpl || template == PlateTpl || template == GunTpl;

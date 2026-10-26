@@ -40,4 +40,16 @@ public sealed class InsuranceTextTests : IDisposable
         Assert.Equal("", InsuranceText.Credit(new EnhanceQuote()));
         Assert.Equal("", InsuranceText.Credit(null!));
     }
+
+    [Fact]
+    public void Prestige_stage_stops_at_the_last_stage_and_ignores_a_missing_count()
+    {
+        Assert.False(new PrestigeState(5, 6).AtMax);
+        Assert.Equal("05 → 06", new PrestigeState(5, 6).Progress);
+        Assert.True(new PrestigeState(6, 6).AtMax);
+        Assert.Equal("06 · 최대", new PrestigeState(6, 6).Progress);
+        // An older server sends no stage count: never shown as the last stage.
+        Assert.False(new PrestigeState(new EnhanceSnapshot { PrestigeLevel = 3 }).AtMax);
+        Assert.Equal("00 → 01", new PrestigeState(null).Progress);
+    }
 }

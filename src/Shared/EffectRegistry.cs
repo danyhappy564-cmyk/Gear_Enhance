@@ -22,6 +22,8 @@ public sealed class EffectRegistry
     private volatile Dictionary<string, (int Level, string[] Zones)> mythic = new Dictionary<string, (int, string[])>();
     private volatile ReturnLink[] returns = Array.Empty<ReturnLink>();
     private volatile MythicTuning mythicTuning = new MythicTuning();
+    // 1.4.0 insurance lists and prestige stage, read only by the window (the whole last snapshot).
+    private volatile EnhanceSnapshot policies = new EnhanceSnapshot();
     private int version;
     public string ProfileId { get; private set; } = "";
     // Bumped on every change; per-weapon caches compare it instead of re-reading ids.
@@ -36,6 +38,7 @@ public sealed class EffectRegistry
     public int MythicLevel(string id) => mythic.TryGetValue(id, out var held) ? held.Level : -1;
     public string[] MythicZones(string id) => mythic.TryGetValue(id, out var held) ? held.Zones : Array.Empty<string>();
     public ReturnLink[] Returns => returns;
+    public EnhanceSnapshot Policies => policies;
     public void ConfigureMythic(MythicTuning value)
     {
         value.Validate();
@@ -51,6 +54,7 @@ public sealed class EffectRegistry
         coverage = new Dictionary<string, (InsuranceTier, double)>();
         mythic = new Dictionary<string, (int, string[])>();
         returns = Array.Empty<ReturnLink>();
+        policies = new EnhanceSnapshot();
         ProfileId = "";
         Interlocked.Increment(ref version);
     }
@@ -102,7 +106,7 @@ public sealed class EffectRegistry
             if (!string.IsNullOrEmpty(link?.ItemId) && link!.Level >= 0)
                 mythical[link.ItemId] = (MythicRules.Clamp(link.Level), link.Zones ?? Array.Empty<string>());
         records = next; inserts = links; transcend = levels; grants = added; coverage = insured; mythic = mythical;
-        returns = snapshot.Returns ?? Array.Empty<ReturnLink>(); ProfileId = expectedProfile;
+        returns = snapshot.Returns ?? Array.Empty<ReturnLink>(); policies = snapshot; ProfileId = expectedProfile;
         Interlocked.Increment(ref version);
     }
     public EnhanceRecord? Find(string id, EnhancePath path) =>

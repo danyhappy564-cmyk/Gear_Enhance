@@ -33,7 +33,7 @@ public sealed class EnhanceTests
         public override double Draw() => DrawValue ?? base.Draw();
         // These are SPT's real removal methods, not a copied payment/deletion algorithm.
         private readonly InventoryHelper native = new(null!, null!, null!, null!, null!, null!, null!, null!);
-        public MemoryBackend(SptProfile saved) : base(null!, null!, null!, null!, null!, null!) => Saved = saved;
+        public MemoryBackend(SptProfile saved) : base(null!, null!, null!, null!, null!, null!, null!) => Saved = saved;
         public override SptProfile Profile(MongoId session) => session == Session ? Saved : null!;
         public override bool Eligible(MongoId template) => IsEligible;
         public double TemplateDurability { get; set; }

@@ -51,6 +51,14 @@ public sealed class MailReturnLoader(EnhanceService service, ISptLogger<MailRetu
             logger.Error("Gear Enhance: 강화 보험 레이드 종료 연결 실패. 잃은 강화 장비는 강화 보험으로 돌아오지 않습니다. "
                 + "Enhancement insurance raid-end hook failed; lost enhanced gear will not be returned by it.", ex);
         }
+        PrestigePatch.Service = service;
+        PrestigePatch.Logger = logger;
+        try { new PrestigePatch().Enable(); }
+        catch (Exception ex)
+        {
+            logger.Error("Gear Enhance: 프레스티지 보험 연결 실패. 프레스티지를 달성해도 등록한 장비가 돌아오지 않습니다. "
+                + "Prestige insurance hook failed; registered gear will not be returned at prestige.", ex);
+        }
         GameStartPatch.Service = service;
         try { new GameStartPatch().Enable(); }
         catch (Exception ex)

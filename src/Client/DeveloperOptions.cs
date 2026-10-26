@@ -170,6 +170,9 @@ internal static class ConfigText
         ["일반 보험료 (강화 가치 대비 %)"] = "Basic insurance fee (% of value)",
         ["고급 보험료 (강화 가치 대비 %)"] = "Advanced insurance fee (% of value)",
         ["프리미엄 보험료 (강화 가치 대비 %)"] = "Premium insurance fee (% of value)",
+        ["프레스티지 보험료 (강화 가치 대비 %)"] = "Prestige insurance fee (% of value)",
+        ["프레스티지를 달성해 다음 단계로 넘어갈 때만 등록한 장비를 우편으로 돌려줍니다. 가치가 오르면 차액만 냅니다. 최대 프레스티지에서는 등록할 수 없습니다."]
+            = "Registered gear is mailed back only when you achieve prestige and advance to the next stage. When its value rises only the difference is paid. It cannot be registered at the maximum prestige.",
         ["강화 가치 = 지금 단계·스타까지 강화하는 데 드는 기본 비용 합계(방어구는 등록한 방탄판 가격 포함). 최소 비용 이상."]
             = "Enhancement value = the base cost of reaching the current levels and stars (armor includes its registered plates). At least the minimum cost.",
 

@@ -14,6 +14,7 @@ public sealed partial class Plugin
 
     private void DrawStatusPanel()
     {
+        if (tab == UiTab.Prestige) { DrawPrestigeSide(); return; }
         var ammo = weapon && ammoTab;
         var rows = ammo ? null : StatRows();
         var (offset, alpha) = UiMotion.Panel(Motion, Reduced);

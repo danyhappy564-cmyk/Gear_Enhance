@@ -8,13 +8,13 @@ public enum FailureMode { KeepItem, ZeroDurability, Destroy, Downgrade }
 public enum EnhancePath { Recoil, Ergonomics, Precision, ArmorDurability, Mobility }
 // Appended only: receipts store the number. 1.4.0 adds ???, the mythic track, evolution
 // destruction tickets and the armor mythic zone reroll.
-public enum EnhanceAction { Upgrade, Evolve, EvolveThird, Insure, RegisterInserts, Transcend, Mystery, Mythic, BuyTicket, Reroll }
+public enum EnhanceAction { Upgrade, Evolve, EvolveThird, Insure, RegisterInserts, Transcend, Mystery, Mythic, BuyTicket, Reroll, PrestigeInsure }
 // Enhancement insurance (1.2.0): bought in the enhancement window, separate from traders.
 public enum InsuranceTier { None, Basic, Advanced, Premium }
 
 public static class EnhanceProtocol
 {
-    public const int Version = 11;
+    public const int Version = 12;
     public const string ModVersion = "1.4.0";
     public static void Validate(int version)
     {
@@ -56,6 +56,8 @@ public sealed class EnhanceSettings
     public double BasicInsuranceReturnHours { get; set; } = 24;
     public double AdvancedInsuranceReturnHours { get; set; } = 12;
     public double PremiumInsuranceReturnHours { get; set; }
+    // 1.4.0 prestige insurance: fee as % of the gear's enhancement value; only the rise is paid again.
+    public double PrestigeInsuranceFeePercent { get; set; } = 10;
     // 1.4.0: skip the charge gauge for a flat fee (enhancement, transcendence, mythic).
     public int InstantFee { get; set; } = 50000;
     // 1.4.0 star evolution destruction tickets: lifetime purchases per gear and price of one.
@@ -104,6 +106,7 @@ public sealed class EnhanceSettings
             || !Finite(BasicInsuranceFeePercent) || BasicInsuranceFeePercent < 0 || BasicInsuranceFeePercent > 1000
             || !Finite(AdvancedInsuranceFeePercent) || AdvancedInsuranceFeePercent < 0 || AdvancedInsuranceFeePercent > 1000
             || !Finite(PremiumInsuranceFeePercent) || PremiumInsuranceFeePercent < 0 || PremiumInsuranceFeePercent > 1000
+            || !Finite(PrestigeInsuranceFeePercent) || PrestigeInsuranceFeePercent < 0 || PrestigeInsuranceFeePercent > 1000
             || !Hours(BasicInsuranceReturnHours) || !Hours(AdvancedInsuranceReturnHours) || !Hours(PremiumInsuranceReturnHours)
             || InstantFee < 0 || InstantFee > 100000000
             || SecondTicketMax < 0 || SecondTicketMax > 10 || ThirdTicketMax < 0 || ThirdTicketMax > 10
@@ -254,6 +257,15 @@ public sealed class EnhanceQuote
     public int Slot { get; set; }
     // F12 quick switch: required and chance materials are not taken (the server skips them).
     public bool FreeMaterials { get; set; }
+    // 1.4.0 prestige insurance of the gear: paid so far, the value that paid covers, the fee at
+    // the current value, and the prestige stage (Max = the last stage; nothing to advance to).
+    public bool PrestigeRegistered { get; set; }
+    public bool CanBuyPrestige { get; set; }
+    public int PrestigePaid { get; set; }
+    public long PrestigeValue { get; set; }
+    public int PrestigeFee { get; set; }
+    public int PrestigeLevel { get; set; }
+    public int PrestigeMax { get; set; }
 }
 
 public sealed class EnhanceReceipt
@@ -315,6 +327,13 @@ public sealed class EnhanceSnapshot
     // 1.4.0: mythic gear, and insured gear still waiting to be mailed back.
     public MythicLink[] Mythic { get; set; } = Array.Empty<MythicLink>();
     public ReturnLink[] Returns { get; set; } = Array.Empty<ReturnLink>();
+    // 1.4.0 prestige insurance: registered gear, gear mailed back by the last prestige and not
+    // collected yet, and the stage. Insurance: enhancement insurance per gear, lapsed ones included.
+    public PrestigeLink[] Prestige { get; set; } = Array.Empty<PrestigeLink>();
+    public PrestigeReturnLink[] PrestigeReturns { get; set; } = Array.Empty<PrestigeReturnLink>();
+    public int PrestigeLevel { get; set; }
+    public int PrestigeMax { get; set; }
+    public InsuranceLink[] Insurance { get; set; } = Array.Empty<InsuranceLink>();
     // 1.4.0: shown once (records restored after a hand edit, developer sandbox rolled back).
     public string Notice { get; set; } = "";
 }
@@ -336,6 +355,49 @@ public sealed class ReturnLink
     public InsuranceTier Tier { get; set; }
     public long StartUnixSeconds { get; set; }
     public long DueUnixSeconds { get; set; }
+}
+
+public sealed class PrestigeLink
+{
+    public string ItemId { get; set; } = "";
+    public string Template { get; set; } = "";
+    public bool IsWeapon { get; set; }
+    public int Stars { get; set; }
+    public int MythicLevel { get; set; } = -1;
+    public int Paid { get; set; }
+    // Value covered by Paid, and the fee at today's value (Fee > Paid: a difference is due).
+    public long Value { get; set; }
+    public long CurrentValue { get; set; }
+    public int Fee { get; set; }
+}
+
+// Enhancement insurance of a gear for the insurance tab's list. Lapsed: released by an upgrade or a
+// plate difference (Tier is the one it had, None before 1.4.0); only gear in the stash is listed then.
+public sealed class InsuranceLink
+{
+    public string ItemId { get; set; } = "";
+    public string Template { get; set; } = "";
+    public bool IsWeapon { get; set; }
+    public int Stars { get; set; }
+    public int MythicLevel { get; set; } = -1;
+    public InsuranceTier Tier { get; set; }
+    public double Percent { get; set; }
+    public int Paid { get; set; }
+    public long CurrentValue { get; set; }
+    // Fee of Tier at the current value (0 when it has no tier); the renewal costs Fee − Paid.
+    public int Fee { get; set; }
+    public bool Lapsed { get; set; }
+}
+
+public sealed class PrestigeReturnLink
+{
+    public string ItemId { get; set; } = "";
+    public string Template { get; set; } = "";
+    public bool IsWeapon { get; set; }
+    public int Stars { get; set; }
+    public int MythicLevel { get; set; } = -1;
+    // The stage the prestige advanced to.
+    public int Level { get; set; }
 }
 
 public sealed class CoverageLink

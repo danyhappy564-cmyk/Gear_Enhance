@@ -396,6 +396,7 @@ public sealed partial class Plugin
         switch (tab)
         {
             case UiTab.Insurance: DrawInsuranceTab(); break;
+            case UiTab.Prestige: DrawPrestigeTab(); break;
             case UiTab.Help: DrawHelpTab(); break;
             case UiTab.Mythic when MythicLevel < 0: DrawMysteryTab(); break;
             default: DrawUpgradeTab(); break;
@@ -418,17 +419,41 @@ public sealed partial class Plugin
             var selected = entry.Tab == tab;
             var open = entry.Open && itemId != null;
             GUI.enabled = open && !busy && popup == PopupKind.None && !uncertain;
-            if (selected) Fill(rect, Hex(0x2a2416));
+            var glow = open ? entry.Glow : TabGlow.None;
+            if (glow != TabGlow.None) DrawTabGlow(rect, glow);
+            else if (selected) Fill(rect, Hex(0x2a2416));
             else if (GUI.enabled && rect.Contains(Event.current.mousePosition)) Fill(rect, Hex(0x171b20));
             if (entry.Ring.a > 0) Outline(new Rect(rect.x + 1, rect.y + 1, rect.width - 2, rect.height - 2), entry.Ring, 2);
             Fill(new Rect(rect.x, rect.yMax - 1, rect.width, 1), Hex(0x22282e));
             if (UiButton(rect, GUIContent.none, card)) { var picked = entry.Tab; main.Enqueue(() => SelectTab(picked)); }
             GUI.enabled = true;
             Label(rect.x + 8, rect.y, 34, rect.height, entry.Mark, tabMark, open ? entry.Color : Locked0);
-            Label(rect.x + 46, rect.y + 11, rect.width - 50, 18, entry.Label, tabLabel, !open ? Locked0 : selected ? LightGold : Hex(0xc9c4b8));
-            Label(rect.x + 46, rect.y + 31, rect.width - 50, 16, entry.Sub, tabSub, !open ? Locked0 : selected ? Hex(0xcdb88c) : Muted);
+            Label(rect.x + 46, rect.y + 11, rect.width - 50, 18, entry.Label, tabLabel, !open ? Locked0
+                : glow == TabGlow.Mail ? MythGold : glow == TabGlow.Due || selected ? LightGold : Hex(0xc9c4b8));
+            Label(rect.x + 46, rect.y + 31, rect.width - 50, 16, entry.Sub, tabSub, !open ? Locked0
+                : glow == TabGlow.Mail ? MythGold : glow == TabGlow.Due ? Hex(0xf0cf8c) : selected ? Hex(0xcdb88c) : Muted);
             y += 58;
         }
+    }
+
+    // Mockup .tab.mail-ready (pink) / .due-ready (gold): tinted fill, 3 px left border and an inset
+    // glow breathing over 2.4 s (steady under reduced motion).
+    private void DrawTabGlow(Rect rect, TabGlow glow)
+    {
+        var accent = glow == TabGlow.Mail ? Myth : Gold;
+        Fill(rect, glow == TabGlow.Mail ? Hex(0x241722) : Hex(0x221d12));
+        var pulse = Reduced ? 0.5f : (1 - Mathf.Cos((float)(Clock % 2.4 / 2.4) * Mathf.PI * 2)) / 2;
+        // inset 0 0 16→24px: alpha .13→.2, fading inward.
+        var depth = 16 + 8 * pulse;
+        for (var step = 0; step < 8; step++)
+        {
+            var inset = step * depth / 8;
+            var fade = (1 - step / 8f) * (1 - step / 8f);
+            var color = Color.Lerp(accent, MythGold, pulse * 0.6f);
+            color.a = (0.13f + 0.07f * pulse) * fade * 0.55f;
+            Outline(new Rect(rect.x + inset, rect.y + inset, rect.width - inset * 2, rect.height - inset * 2), color, depth / 8);
+        }
+        Fill(new Rect(rect.x, rect.y, 3, rect.height), accent);
     }
 
     private void DrawHeader()

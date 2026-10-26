@@ -11,6 +11,7 @@ using SPTarkov.Server.Core.Models.Enums;
 using SPTarkov.Server.Core.Servers;
 using SPTarkov.Server.Core.Services.Commerce;
 using SPTarkov.Server.Core.Services.Ragfair;
+using SPTarkov.Server.Core.Models.Spt.Tables;
 
 namespace GearEnhance;
 
@@ -18,7 +19,7 @@ namespace GearEnhance;
 // can be exercised on real SPT profile models without launching the game.
 [Injectable]
 public class SptEnhanceBackend(SaveServer saves, ItemHelper items, InventoryHelper inventory,
-    HandbookHelper handbook, RagfairPriceService flea, MailSendService mail)
+    HandbookHelper handbook, RagfairPriceService flea, MailSendService mail, TemplateTable tables)
 {
     public virtual double Draw() => RandomNumberGenerator.GetInt32(int.MaxValue) / (double)int.MaxValue;
     public virtual SptProfile Profile(MongoId session) => saves.GetProfile(session);
@@ -60,6 +61,13 @@ public class SptEnhanceBackend(SaveServer saves, ItemHelper items, InventoryHelp
     // Enhancement insurance return. The mail hook moves the records to the new ids.
     public virtual void SendReturn(MongoId session, List<Item> tree, string text) =>
         mail.SendSystemMessageToPlayer(session, text, tree);
+
+    // Prestige insurance return; kept as long as SPT keeps its own prestige transfer mail (a year).
+    public virtual void SendPrestigeReturn(MongoId session, List<Item> tree, string text) =>
+        mail.SendSystemMessageToPlayer(session, text, tree, 31536000L);
+
+    // Number of prestige stages (6 with ContentBackportPrestiges); the last one has no next.
+    public virtual int PrestigeMax() => tables?.Prestige?.Elements?.Count ?? 0;
 
     public virtual (double Price, string Source) Price(MongoId template, PriceBasis basis)
     {
