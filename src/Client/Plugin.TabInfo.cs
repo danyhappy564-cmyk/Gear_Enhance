@@ -112,7 +112,7 @@ public sealed partial class Plugin
             insuranceNoteStyle.normal.textColor = Soft;
         }
         insuranceNoteContent.text = note;
-        var noteHeight = insuranceNoteStyle.CalcHeight(insuranceNoteContent, midWidth - 34) + 26;
+        var noteHeight = insuranceNoteStyle.CalcHeight(insuranceNoteContent, midWidth - 34) + 36;
         Box(new Rect(0, y + 10, midWidth, noteHeight), Section, Line);
         Label(17, y + 23, midWidth - 34, noteHeight - 26, note, insuranceNoteStyle);
         y += 10 + noteHeight;

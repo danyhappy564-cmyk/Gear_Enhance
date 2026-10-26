@@ -61,7 +61,8 @@ public sealed partial class Plugin
     private float TextHeight(GUIStyle style, string text, float width)
     {
         policyContent.text = text;
-        return style.CalcHeight(policyContent, width);
+        // CalcHeight is a few px short with the bundled fonts (descenders were cut in game).
+        return style.CalcHeight(policyContent, width) + 6;
     }
 
     // A wrapped paragraph at (x, y); returns its height.
