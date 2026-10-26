@@ -1,18 +1,3 @@
-### IMPORTANT NOTICE / DISCLAIMER
-
-- **Original Author:** R_F
-- **Original Repository:** danyhappy564-cmyk/Gear_Enhance
-- **Original Link:** https://github.com/danyhappy564-cmyk/Gear_Enhance
-- **License:** MIT
-
-1. **Reflection & Take-Downs:** I deeply reflect on the ECOT incident. As an AI-assisted "vibe coder," I will immediately delete files if the original authors ask.
-2. **No Re-Distribution:** These ported builds are unverified, temporary fixes. Please do NOT re-upload or share them anywhere else.
-3. **Do Not Pester Original Authors:** Never report bugs or pester original modders regarding issues from my unofficial ports.
-4. **Full Credit & Respect:** I will always credit original creators on GitHub and prioritize their decisions above all else.
-5. **Support Original Creators:** Instead of using my ports, please visit the original authors' Forge pages to leave kind words or tips.
-
----
-
 ## 변경 이력
 
 - 2026-10-26 13:50 — 1.4.0 개발 중(프레스티지 보험·탭 빛남, 게임 확인 전): ① 강화 창에 '프레스티지' 탭을 넣었습니다. 강화한 장비를 등록하면(보험료 = 장비 가치 × 10%, F12 설정) 프레스티지를 달성해 다음 단계로 넘어갈 때만 강화·★·초월·신화·부착물·방탄판이 그대로인 채 시스템 우편으로 돌아옵니다. 레이드에서 죽거나 잃은 장비는 돌려주지 않고, 최대 프레스티지(6)에서는 등록할 수 없습니다. ② 추가 강화·방탄판 교체에도 등록은 유지되고, 가치가 오르면 차액만 냅니다(내려가도 환불 없음). 차액을 안 내면 마지막으로 낸 때의 강화 단계로 돌아옵니다. 돌아오면 등록이 끝나므로 다음 프레스티지에 받으려면 다시 등록해야 합니다. SPT 기본 이전으로 고른 장비는 한 번만 오고 강화는 이어집니다. 개발자 옵션을 연 동안 한 등록은 넘어가지 않습니다. ③ 받을 반환 우편이 있으면 프레스티지 탭이 분홍으로, 차액이 생기면 금색으로 숨 쉬듯 빛납니다. 보험 탭은 강화 성공·방탄판 차액으로 풀린 장비가 있으면 금색으로 빛나고 '다시 가입 N개'가 보입니다. ④ 보험·프레스티지 탭에 '등록된 장비' 목록을 넣어, 창을 연 장비가 아니어도 그 줄에서 차액을 내고 갱신할 수 있습니다. 프레스티지 탭 오른쪽은 '반환 시 보존·프레스티지 진행'만 보입니다. ⑤ 도움말에 프레스티지 보험을 추가했습니다. 통신 버전이 12로 올라 클라이언트와 서버를 같이 바꿔야 합니다.
