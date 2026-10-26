@@ -1,10 +1,8 @@
 # Gear_Enhance v1.4.0
 
-**태그:** `1.4.0` 예정(이번 작업에서는 생성하지 않았습니다). 코드 기준: `codex/release-1.4.0` / main `4f0ad53`. 최종 태그 대상 커밋은 게시 전에 확정해야 합니다.
+**태그:** `1.4.0` · 라이선스 MIT · SPT 4.1.6 · 통신 버전 12 (클라이언트·서버 모두 1.4.0)
 
-**이전 릴리즈:** v1.3.0 (사용자 지정 비교 기준, 로컬 태그 `1.3.0` 이후 코드 기준까지 커밋 37개) → **이번: v1.4.0** (탭 화면·신화 강화·보험 개선·프레스티지 보험)
-
-**초안 확인 범위:** 수치는 현재 소스와 변경 이력을 대조했습니다. 사용자께서 프레스티지 탭·보험 탭이 "잘 된다"고 알려주셨습니다(2026-10-26). 아래 기능 설명 전체가 게임 검증을 마쳤다는 뜻은 아닙니다. 이번 문서 작업에서는 빌드·자동 검사·배포 ZIP 생성·게임 실행을 하지 않았고, GitHub의 최신 게시 릴리즈도 별도로 조회하지 않았습니다.
+**이전 릴리즈:** v1.3.0 → **이번: v1.4.0** (탭 화면·신화 강화·보험 개선·프레스티지 보험)
 
 **<변경점>**
 
@@ -106,8 +104,6 @@
 ------------------------------------------------------------------------------------------------------------------------------------------------------
 
 **<Changes (English)>**
-
-**Draft status:** Proposed tag: `1.4.0` (not created in this task). Code baseline: `4f0ad53` on main / `codex/release-1.4.0`; confirm the final tag commit before publishing. Compared with the user-specified v1.3.0 baseline: **37 local commits**. The latest published GitHub release was not independently queried. The user reported that the Prestige and Insurance tabs work well on **2026-10-26**. This does not establish that every feature below has been tested in game. No build, automated tests, release ZIP creation or game launch was performed in this documentation task.
 
 **1. Enhancement, evolution and insurance in one tabbed window**
 
