@@ -3,7 +3,7 @@
 - **Original Author:** R_F
 - **Original Repository:** danyhappy564-cmyk/Gear_Enhance
 - **Original Link:** https://github.com/danyhappy564-cmyk/Gear_Enhance
-- **License:** MIT
+- **License:** All rights reserved — personal use only, no redistribution or modification ([LICENSE](LICENSE))
 
 1. **Reflection & Take-Downs:** I deeply reflect on the ECOT incident. As an AI-assisted "vibe coder," I will immediately delete files if the original authors ask.
 2. **No Re-Distribution:** These ported builds are unverified, temporary fixes. Please do NOT re-upload or share them anywhere else.
@@ -266,7 +266,7 @@ F12에서 **자세한 로그 남기기**를 체크한 동안만 음원 설정·�
 
 강화 중 소리는 Unity 오디오 재생 시계에 예약하고 게이지도 같은 시계를 사용합니다. 결과 연출과 결과음은 서버 영수증 확인 뒤에만 발생합니다. 서버가 늦으면 충전음이 끝난 뒤 가득 찬 게이지로 기다립니다. 전용 소리 연결 실패 시 게임 기본음으로 대체하고 강화 결과에는 영향을 주지 않습니다. 창을 닫거나 플러그인이 종료되면 자체 소리를 정리합니다. 아이콘·배경·스타일·타입 조회는 캐시하며 조각 연출에 새 텍스처나 GUI 좌표 회전을 사용하지 않습니다.
 
-음원은 사용자 제공 자료이고 코드의 MIT 라이선스와 별개입니다. 원본 파일명·해시·변환 정보는 [음원 기록](assets/audio/README.md)에 있습니다.
+음원은 사용자 제공 자료입니다. 원본 파일명·해시·변환 정보는 [음원 기록](assets/audio/README.md)에 있습니다.
 
 자세한 로그를 켜고 창을 닫으면 LogOutput.log에 Repaint CPU 평균·최대 시간을 한 번 기록합니다. 게임 전체 FPS나 GPU 시간은 아닙니다.
 
@@ -402,3 +402,8 @@ dotnet test client-tests/GearEnhance.ClientTests.csproj -c Release -p:SptRoot="E
 ## 참고
 
 - [Klamist/RepairSkillExtension](https://github.com/Klamist/RepairSkillExtension): 수리·서버 아이템 변경 경로 조사에 참고했습니다. 설치 의존성이 아니며 그 모드의 수리 이벤트를 교체하지 않습니다.
+
+## 라이선스
+
+무단 배포·수정을 금지합니다. 자세한 내용은 [LICENSE](LICENSE)를 보세요.
+글꼴(Noto Sans KR · Rajdhani)은 제3자 무료 공개 글꼴로, 함께 들어 있는 SIL Open Font License를 따릅니다.

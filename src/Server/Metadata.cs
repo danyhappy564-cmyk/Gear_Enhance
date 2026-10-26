@@ -13,6 +13,6 @@ public record Metadata : IModMetadata
     public List<string>? Incompatibilities { get; init; }
     public Dictionary<string, SemanticVersioning.Range>? ModDependencies { get; init; }
     public string? Url { get; init; } = "https://github.com/danyhappy564-cmyk/Gear_Enhance";
-    public string License { get; init; } = "MIT";
+    public string License { get; init; } = "All rights reserved";
     public bool HasPrepatcher { get; init; }
 }
