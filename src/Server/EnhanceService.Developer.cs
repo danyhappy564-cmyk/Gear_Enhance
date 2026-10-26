@@ -14,6 +14,12 @@ public sealed partial class EnhanceService
     private void Sandbox(MongoId session, PmcData profile, EnhanceState state, EnhanceSettings settings, List<Item> changed)
     {
         var sandbox = state.Sandbox;
+        // The save password: what was enhanced since the options opened stays, and nothing new is copied.
+        if (settings.Developer && settings.DeveloperSave)
+        {
+            if (sandbox != null) KeepSandbox(state);
+            return;
+        }
         if (sandbox != null && (!settings.Developer || sandbox.LaunchId != settings.LaunchId))
             EndSandbox(session, profile, state, changed);
         if (settings.Developer && state.Sandbox == null)
@@ -38,6 +44,14 @@ public sealed partial class EnhanceService
             EndSandbox(session, profile, state, new List<Item>());
             return true;
         }
+    }
+
+    // Save password: drop the copy without putting it back.
+    private void KeepSandbox(EnhanceState state)
+    {
+        state.Sandbox = null;
+        state.Notice = "Gear Enhance: 저장 비밀번호로 개발자 옵션 동안의 강화를 저장했습니다. "
+            + "The save password kept what was enhanced while the developer options were on.";
     }
 
     private void EndSandbox(MongoId session, PmcData profile, EnhanceState state, List<Item> changed)

@@ -493,7 +493,7 @@ public sealed partial class Plugin
         if (tab == UiTab.Transcend || tab == UiTab.Mythic)
         {
             OptionToggle(new Rect(0, y, midWidth, 44), protectDowngrade, usable && view?.DowngradeProtectionAvailable == true,
-                Loc.L("하락 방지", "Drop guard") + (view?.DowngradeProtectionAvailable == true ? "" : Loc.L(" · →4·→5 시도에서만", " · →4 and →5 only")),
+                Loc.L("하락 방지", "Drop guard") + (view?.DowngradeProtectionAvailable == true ? "" : tab == UiTab.Transcend ? Loc.L(" · →4 시도에서만", " · →4 only") : Loc.L(" · →3 시도에서만", " · →3 only")),
                 view?.DowngradeProtectionAvailable == true ? $"+{view.DowngradeProtectionFee:N0}" : "—", on => SetProtection(false, on));
             return y + 44;
         }

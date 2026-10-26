@@ -71,8 +71,8 @@ public sealed partial class Plugin
         mythicLedx = BindDeveloper(MythicSection, "신화 LEDX (개)", 1, new ConfigDescription("신화 강화 한 번에 필요한 LEDX 수입니다.", new AcceptableValueRange<int>(0, 10)));
         mythicMaterials = BindDeveloper(MythicSection, "신화 재료 요구", true, "끄면 ???·신화·다시 뽑기에 LEDX·그래픽 카드 없이 루블만 냅니다.");
         mythicProtection = BindDeveloper(MythicSection, "신화 하락 방지 비용 (기본 비용 대비 %)", 100f, new ConfigDescription(
-            "→4·→5 시도에만 씁니다. 실패하면 1단계 하락하며, 방지하면 이 비율만큼 더 냅니다.", new AcceptableValueRange<float>(0, 1000)));
-        mythicWeapon = BindDeveloper(MythicSection, "신화 무기 탄 데미지·관통 / 단계 (%)", 2f, new ConfigDescription(
+            "→3 시도에만 씁니다. →3·→4·→5는 실패하면 1단계 하락하고, →4·→5는 방지할 수 없습니다. 방지하면 이 비율만큼 더 냅니다.", new AcceptableValueRange<float>(0, 1000)));
+        mythicWeapon = BindDeveloper(MythicSection, "신화 무기 탄 데미지·관통 / 단계 (%)", 3f, new ConfigDescription(
             "그 총으로 쏜 탄에만 붙습니다. 스타 배율을 받지 않습니다.", new AcceptableValueRange<float>(0, 10)));
         mythicArmor = BindDeveloper(MythicSection, "신화 방어구 받는 피해 감소 / 단계 (%)", 10f, new ConfigDescription(
             "신화 방어구·헬멧을 입은 플레이어가 받는 피해를 줄입니다. 머리에 맞으면 절반만 줄입니다.", new AcceptableValueRange<float>(0, 10)));

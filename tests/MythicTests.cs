@@ -196,7 +196,7 @@ public sealed class MythicTests
         Assert.Equal((0, 1, 40d), (first.CurrentLevel, first.NextLevel, first.SuccessPercent));
         Assert.Equal(5000000, first.Cost);
         Assert.Equal(FailureMode.KeepItem, first.FailureMode);
-        Assert.Equal((0d, 2d, 10d), (first.CurrentEffect, first.NextEffect, first.EffectCap));
+        Assert.Equal((0d, 3d, 15d), (first.CurrentEffect, first.NextEffect, first.EffectCap));
         Assert.True(first.BoostAvailable); Assert.True(first.InstantAvailable);
         // Two failures add 3%p each.
         rig.Backend.DrawValue = 0.99;
@@ -219,8 +219,9 @@ public sealed class MythicTests
         Assert.Equal([5000000, 5500000, 6050000, 6655000], costs);
         Assert.Equal((3, 4, 15d), (drop.CurrentLevel, drop.NextLevel, drop.SuccessPercent));
         Assert.Equal(FailureMode.Downgrade, drop.FailureMode);
-        Assert.True(drop.DowngradeProtectionAvailable);
-        Assert.Equal(6655000, drop.DowngradeProtectionFee);
+        // User 2026-10-26: →3 drops and can be protected; →4 and →5 drop with no protection.
+        Assert.False(drop.DowngradeProtectionAvailable);
+        Assert.Equal(0, drop.DowngradeProtectionFee);
         rig.Backend.DrawValue = 0.99;
         var dropped = rig.Pay(drop);
         Assert.Equal(2, dropped.MythicLevel);
@@ -234,7 +235,7 @@ public sealed class MythicTests
     public void Mythic_last_level_costs_seven_million_three_hundred_twenty_thousand_five_hundred()
     {
         Assert.Equal([5000000, 5500000, 6050000, 6655000, 7320500], Enumerable.Range(0, 5).Select(l => MythicRules.Cost(l, new MythicTuning())));
-        Assert.Equal(10, MythicEffects.WeaponPercent(5, new MythicTuning()));
+        Assert.Equal(15, MythicEffects.WeaponPercent(5, new MythicTuning()));   // 3 % a level (user 2026-10-26)
         // Armor (user 2026-10-26): 10 % a level, 50 % at V, half on the head.
         Assert.Equal(50, MythicEffects.ArmorPercent(9, new MythicTuning()));
         Assert.Equal(25, MythicEffects.ArmorPercent(5, new MythicTuning(), head: true));
@@ -246,16 +247,19 @@ public sealed class MythicTests
     {
         var rig = new Rig();
         rig.Mystery(Gun);
-        rig.State.Mythic[Gun.ToString()].Level = 4;
+        rig.State.Mythic[Gun.ToString()].Level = 2;
         var quote = rig.Quote(EnhanceAction.Mythic, Gun, new QuoteOptions { Instant = true,
             Boost = [new BoostChoice { Kind = BoostMaterial.Bitcoin, Count = 2 }] }, protect: true);
-        Assert.Equal(20, quote.SuccessPercent);
+        Assert.Equal(30, quote.SuccessPercent);
         Assert.True(quote.Protection.Downgrade);
-        Assert.Equal(7320500 * 2 + 600000 + 50000, quote.Cost);
+        Assert.Equal(6050000 * 2 + 600000 + 50000, quote.Cost);
         rig.Backend.DrawValue = 0.99;
         var receipt = rig.Pay(quote);
         Assert.True(receipt.DowngradePrevented); Assert.True(receipt.Instant);
-        Assert.Equal(4, receipt.MythicLevel);
+        Assert.Equal(2, receipt.MythicLevel);
+        // →4 cannot be protected: the switch is dropped from the quote.
+        rig.State.Mythic[Gun.ToString()].Level = 3;
+        Assert.False(rig.Quote(EnhanceAction.Mythic, Gun, protect: true).Protection.Downgrade);
         Assert.Throws<InvalidOperationException>(() => { rig.State.Mythic[Gun.ToString()].Level = 5; rig.Quote(EnhanceAction.Mythic, Gun); });
     }
 
@@ -497,6 +501,35 @@ public sealed class MythicTests
         Assert.False(Evolved()); Assert.Null(rig.State.Sandbox);
         // Records from before the sandbox survive it untouched.
         Assert.Equal(10, rig.State.Tracks[Gun.ToString()][EnhancePath.Recoil]);
+    }
+
+    [Fact]
+    public void Developer_save_password_keeps_what_was_enhanced_and_copies_nothing()
+    {
+        // User 2026-10-26: with the save password the developer options do not roll back.
+        var rig = new Rig(stars: 1);
+        bool Evolved() => rig.State.EvolvedItems.Contains(Gun.ToString());
+        // Any request carries the settings; a refused quote (already evolved) still reads them first.
+        void Request() { try { rig.Quote(EnhanceAction.Evolve, Gun); } catch (InvalidOperationException) { } }
+        rig.Settings = new EnhanceSettings { Developer = true, LaunchId = "a", AlwaysSucceed = true };
+        rig.Pay(rig.Quote(EnhanceAction.Evolve, Gun));
+        Assert.NotNull(rig.State.Sandbox);
+        // Typed in while the sandbox is open: it is dropped, the evolution stays.
+        rig.Settings = new EnhanceSettings { Developer = true, DeveloperSave = true, LaunchId = "a", AlwaysSucceed = true };
+        Request();
+        Assert.Null(rig.State.Sandbox); Assert.True(Evolved());
+        Assert.Contains("저장했습니다", rig.Service.Snapshot(Session).Notice);
+        // Locking or a new launch afterwards has nothing to roll back.
+        Assert.False(rig.Service.GameStarted(Session));
+        rig.Settings = new EnhanceSettings();
+        Request();
+        Assert.True(Evolved());
+        // The state route carries it too.
+        rig.Settings = new EnhanceSettings { Developer = true, LaunchId = "b" };
+        Request();
+        Assert.NotNull(rig.State.Sandbox);
+        rig.Service.Snapshot(Session, true, "b", save: true);
+        Assert.Null(rig.State.Sandbox);
     }
 
     [Fact]

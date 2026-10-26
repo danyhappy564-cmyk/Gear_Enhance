@@ -388,14 +388,15 @@ public sealed partial class EnhanceService(SptEnhanceBackend backend, JsonUtil s
     }
 
     // `developer`/`launch` come from 1.4.0 clients: a locked or other launch ends the sandbox.
-    public EnhanceSnapshot Snapshot(MongoId session, bool? developer = null, string? launch = null)
+    public EnhanceSnapshot Snapshot(MongoId session, bool? developer = null, string? launch = null, bool save = false)
     {
         lock (sync)
         {
             var profile = GetPmc(session);
             var state = State(session);
             DeliverDue(session, state);
-            if (developer != null && state.Sandbox != null && (developer == false || state.Sandbox.LaunchId != (launch ?? "")))
+            if (developer == true && save && state.Sandbox != null) KeepSandbox(state);
+            else if (developer != null && state.Sandbox != null && (developer == false || state.Sandbox.LaunchId != (launch ?? "")))
                 EndSandbox(session, profile, state, new List<Item>());
             var notice = state.Notice ?? "";
             state.Notice = null;

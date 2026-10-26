@@ -23,7 +23,7 @@ public sealed class MythicTuning
     public double DowngradeProtectionPercent { get; set; } = 100;
     // Weapon: bullet damage and penetration per level. Armor: damage taken reduction per level
     // (user 2026-10-26: 10 % a level, 50 % at V; hits to the head get half, MythicRules.HeadShare).
-    public double WeaponPercentPerLevel { get; set; } = 2;
+    public double WeaponPercentPerLevel { get; set; } = 3;
     public double ArmorPercentPerLevel { get; set; } = 10;
     public int ExtraZones { get; set; } = 2;
     public int RerollCost { get; set; } = 2000000;
@@ -48,8 +48,9 @@ public sealed class MythicTuning
 public static class MythicRules
 {
     public const int MaxLevel = 5;
-    // Attempts at this level or higher drop one level on failure unless protected.
-    public const int DropFrom = 4;
+    // Attempts at this level or higher drop one level on failure (user 2026-10-26: from →3). Only
+    // attempts up to ProtectUpTo can be protected; →4 and →5 are a straight gamble.
+    public const int DropFrom = 3, ProtectUpTo = 3;
     public const string Ledx = "5c0530ee86f774697952d952";
     // TicketStars value of the ??? destruction ticket (2 and 3 are the star evolutions).
     public const int MysteryTicket = 4;
@@ -109,11 +110,13 @@ public static class MythicRules
 
 public static class MythicEffects
 {
-    // Damage and penetration bonus of a mythic weapon, percent (2 × 5 = 10 by default). No star multiplier.
+    // Damage and penetration bonus of a mythic weapon, percent (3 × 5 = 15 by default). No star multiplier.
     public static double WeaponPercent(int level, MythicTuning tuning) => MythicRules.Clamp(level) * tuning.WeaponPercentPerLevel;
     // Share of a round's bad values (accuracy −, recoil +, burn +, heat +, misfire and malfunction
-    // chances) a mythic weapon takes away, percent: 20 a level, all of it at V (user 2026-10-26).
-    public static double AmmoPenaltyCut(int level) => MythicRules.Clamp(level) * 100.0 / MythicRules.MaxLevel;
+    // chances) a mythic weapon takes away, percent.
+    public static double AmmoPenaltyCut(int level) => MythicRules.Clamp(level) * AmmoPenaltyPerLevel;
+    // User 2026-10-26: 16 a level, 80 at V (all of it was too strong).
+    public const double AmmoPenaltyPerLevel = 16;
     // Damage taken reduction of mythic armor, percent (10 × 5 = 50 by default; half on the head).
     public static double ArmorPercent(int level, MythicTuning tuning, bool head = false) =>
         MythicRules.Clamp(level) * tuning.ArmorPercentPerLevel * (head ? MythicRules.HeadShare : 1);

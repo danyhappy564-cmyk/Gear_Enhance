@@ -135,7 +135,7 @@ internal static class ConfigText
         ["초월 단계별 비용 배수"] = "Transcendence cost multiplier per level",
         ["단계가 오를수록 비용에 곱하는 배수입니다."] = "Multiplied into the cost for each level already held.",
         ["초월 하락 방지 비용 (기본 비용 대비 %)"] = "Transcendence downgrade protection (% of base cost)",
-        ["4·5단계 시도에만 씁니다. 추가 비용 = 이번 초월 기본 비용 × 이 값/100(단계 제곱 없음). 100이면 하락 방지를 켰을 때 비용이 2배."]
+        ["→4 시도에만 씁니다(→5는 방지 불가). 추가 비용 = 이번 초월 기본 비용 × 이 값/100(단계 제곱 없음). 100이면 하락 방지를 켰을 때 비용이 2배."]
             = "Level 4 and 5 attempts only. Extra fee = this attempt's base cost × this/100 (no level squared). At 100, protection doubles the cost.",
         ["초월 재료 요구"] = "Require transcendence materials",
         ["끄면 재료 없이 루블만 냅니다. 재료는 성공·실패와 관계없이 소모됩니다."]
@@ -174,6 +174,9 @@ internal static class ConfigText
             = "Enhancement value = the base cost of reaching the current levels and stars (armor includes its registered plates). At least the minimum cost.",
 
         ["개발자 옵션 비밀번호"] = "Developer options password",
+        ["개발자 저장 비밀번호"] = "Developer save password",
+        ["개발자 옵션을 연 상태에서 이 비밀번호를 넣으면 그동안 한 강화가 되돌아가지 않고 저장됩니다. 비우면 다시 잠그거나 게임을 다시 켤 때 되돌아갑니다."]
+            = "With the developer options open, this password keeps what you enhance instead of rolling it back. Leave it empty to roll back on lock or on the next launch.",
         ["비밀번호를 넣으면 확률·비용·항상 성공·실패·능력치·보호·진화·보험 밸런스 설정이 표시되고 적용됩니다. 잠겨 있으면 기본 밸런스로 강화합니다(바꿔 둔 값은 지우지 않음). 입력 후 F12 창을 닫았다 다시 열면 표시됩니다. 열어 둔 동안 한 강화는 잠그거나 게임을 다시 켜면(Alt+F4 포함) 열기 전 기록으로 되돌아갑니다(쓴 루블·재료와 파괴된 장비는 돌아오지 않음)."]
             = "Enter the password to show and apply the chance, cost, always-succeed, failure, stat, protection, evolution and insurance balance settings. While locked, enhancing uses the default balance (changed values are kept, not deleted). Close and reopen F12 after entering it. What is enhanced while it is open goes back to the records from before it opened when you lock it or start the game again (Alt+F4 included); spent roubles, materials and destroyed gear do not come back.",
         ["강화 메뉴 사용"] = "Enable the Enhance gear menu",
@@ -313,7 +316,7 @@ internal static class ConfigText
         ["신화 재료 요구"] = "Require mythic materials",
         ["끄면 ???·신화·다시 뽑기에 LEDX·그래픽 카드 없이 루블만 냅니다."] = "Off: ???, mythic attempts and rerolls cost roubles only, no LEDX or graphics card.",
         ["신화 하락 방지 비용 (기본 비용 대비 %)"] = "Mythic downgrade protection (% of base cost)",
-        ["→4·→5 시도에만 씁니다. 실패하면 1단계 하락하며, 방지하면 이 비율만큼 더 냅니다."] = "Only for →4 and →5 attempts, which drop one level on failure. Protection costs this share extra.",
+        ["→3 시도에만 씁니다. →3·→4·→5는 실패하면 1단계 하락하고, →4·→5는 방지할 수 없습니다. 방지하면 이 비율만큼 더 냅니다."] = "Only for the →3 attempt. →3, →4 and →5 drop one level on failure; →4 and →5 cannot be protected. Protection costs this share extra.",
         ["신화 무기 탄 데미지·관통 / 단계 (%)"] = "Mythic weapon damage · penetration per level (%)",
         ["그 총으로 쏜 탄에만 붙습니다. 스타 배율을 받지 않습니다."] = "Only bullets fired from that gun. No star multiplier.",
         ["신화 방어구 받는 피해 감소 / 단계 (%)"] = "Mythic armor damage taken reduction per level (%)",

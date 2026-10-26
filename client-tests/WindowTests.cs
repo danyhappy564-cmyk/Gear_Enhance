@@ -92,7 +92,7 @@ public sealed class WindowTests : IDisposable
         var after = mythic; after.Third = 1; after.Mythic = 1;
         rows = StatSheet.Weapon(raw, mythic, after, tuning, new MythicTuning());
         Assert.Equal("795", rows[4].Next);
-        Assert.Equal("102%", rows[6].Next); Assert.Equal("102%", rows[7].Next);
+        Assert.Equal("103%", rows[6].Next); Assert.Equal("103%", rows[7].Next);
         Assert.Null(rows[0].Next);
     }
 

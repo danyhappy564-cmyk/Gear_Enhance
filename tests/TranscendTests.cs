@@ -307,13 +307,16 @@ public sealed class TranscendTests
         Assert.Throws<ArgumentException>(() => new TranscendTuning { DowngradeProtectionPercent = 1001 }.Validate());
         var rig = new Rig();
         rig.Settings = new EnhanceSettings { Transcend = new TranscendTuning { DowngradeProtectionPercent = 40 } };
-        rig.State.Transcend[Vest.ToString()] = new TranscendRecord { Second = 4 };
+        rig.State.Transcend[Vest.ToString()] = new TranscendRecord { Second = 3 };
         var quote = rig.Quote(TranscendTrack.Second);
         Assert.Equal((long)Math.Ceiling(quote.BaseCost * 0.4), quote.DowngradeProtectionFee);
         // The client draws effects with the same shared function the quote uses.
         var tuning = rig.Settings.Transcend;
-        Assert.Equal(TranscendEffects.Display(quote.TranscendKind, 4, tuning).Main, quote.CurrentEffect);
-        Assert.Equal(TranscendEffects.Display(quote.TranscendKind, 5, tuning).Main, quote.NextEffect);
+        Assert.Equal(TranscendEffects.Display(quote.TranscendKind, 3, tuning).Main, quote.CurrentEffect);
+        Assert.Equal(TranscendEffects.Display(quote.TranscendKind, 4, tuning).Main, quote.NextEffect);
+        // User 2026-10-26: →5 drops on failure but cannot be protected.
+        rig.State.Transcend[Vest.ToString()] = new TranscendRecord { Second = 4 };
+        Assert.Equal(0, rig.Quote(TranscendTrack.Second).DowngradeProtectionFee);
         Assert.Equal((25d, 0d, 2), TranscendEffects.Display(TranscendKind.ArmorClass, 5, tuning));
         Assert.Equal((30d, 24d), (TranscendEffects.Display(TranscendKind.Reliability, 3, tuning).Main, TranscendEffects.Display(TranscendKind.Reliability, 3, tuning).Secondary));
     }

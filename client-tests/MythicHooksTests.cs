@@ -74,7 +74,7 @@ public sealed class MythicHooksTests : IDisposable
         Mythic("gun", 3);
         var shot = new FakeShot();
         Call("Bullet", shot, "pmc", new TestItem("gun"));
-        Assert.Equal(53f, shot.Damage, 3); Assert.Equal(31.8f, shot.PenetrationPower, 3);
+        Assert.Equal(54.5f, shot.Damage, 3); Assert.Equal(32.7f, shot.PenetrationPower, 3);   // 3 % a level
         // A bot firing the same gun, another gun, and a mythic gun still at level 0.
         var bot = new FakeShot();
         Call("Bullet", bot, "bot", new TestItem("gun"));

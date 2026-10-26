@@ -74,7 +74,8 @@ public static class TranscendRules
 {
     public const int MaxLevel = 5;
     // Attempts at this level or higher drop one level on failure unless protected.
-    public const int DropFrom = 4;
+    // User 2026-10-26: only the →4 attempt can be protected; →5 is a straight gamble.
+    public const int DropFrom = 4, ProtectUpTo = 4;
 
     public static int StarsNeeded(TranscendTrack track) => track == TranscendTrack.Third ? 3 : 2;
     public static bool Valid(TranscendTrack track) => track == TranscendTrack.Second || track == TranscendTrack.Third;

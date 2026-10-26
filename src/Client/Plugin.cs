@@ -17,9 +17,9 @@ public sealed partial class Plugin : BaseUnityPlugin
     private bool patched;
     private ConfigEntry<bool> menuEnabled, soundsEnabled, providedSounds, detailedLogging;
     private ConfigEntry<float> soundVolume;
-    private ConfigEntry<string> developerPassword;
+    private ConfigEntry<string> developerPassword, developerSavePassword;
     // Developer balance settings: saved values apply only while the password unlocks them.
-    private bool developerUnlocked;
+    private bool developerUnlocked, developerSave;
     private DevSetting<bool> always, highRiskEnabled, freeRoubles, freeMaterials;
     private DevSetting<float> chance, chanceLoss, destructionChance, completionBonus, percent, growth;
     private DevSetting<float> destructionProtectionPrice, downgradeProtectionPrice;
@@ -83,6 +83,10 @@ public sealed partial class Plugin : BaseUnityPlugin
             "비밀번호를 넣으면 확률·비용·항상 성공·실패·능력치·보호·진화·보험 밸런스 설정이 표시되고 적용됩니다. 잠겨 있으면 기본 밸런스로 강화합니다(바꿔 둔 값은 지우지 않음). 입력 후 F12 창을 닫았다 다시 열면 표시됩니다. 열어 둔 동안 한 강화는 잠그거나 게임을 다시 켜면(Alt+F4 포함) 열기 전 기록으로 되돌아갑니다(쓴 루블·재료와 파괴된 장비는 돌아오지 않음).");
         developerUnlocked = DeveloperLock.Matches(developerPassword.Value);
         ((ConfigurationManagerAttributes)developerPassword.Description.Tags[0]).CustomDrawer = DrawPassword;
+        developerSavePassword = BindGeneral(DeveloperOptions.DeveloperSection, "개발자 저장 비밀번호", "",
+            "개발자 옵션을 연 상태에서 이 비밀번호를 넣으면 그동안 한 강화가 되돌아가지 않고 저장됩니다. 비우면 다시 잠그거나 게임을 다시 켤 때 되돌아갑니다.");
+        developerSave = SaveMatches(developerSavePassword.Value);
+        ((ConfigurationManagerAttributes)developerSavePassword.Description.Tags[0]).CustomDrawer = DrawSavePassword;
         developerOptions.SetVisible(developerUnlocked);
         // User: the three switches people reach for first, in their own group above the balance.
         freeRoubles = BindDeveloper(DeveloperOptions.QuickSection, "모든 강화 루블 필요 없음", false,
@@ -164,6 +168,12 @@ public sealed partial class Plugin : BaseUnityPlugin
             if (mythicArmor.Entry.Value == 2f) mythicArmor.Entry.Value = 10f;
             balanceVersion.Value = 5;
         }
+        // 1.4.0: mythic weapon damage and penetration 2 % → 3 % a level (user 2026-10-26).
+        if (balanceVersion.Value < 6)
+        {
+            if (mythicWeapon.Entry.Value == 2f) mythicWeapon.Entry.Value = 3f;
+            balanceVersion.Value = 6;
+        }
         PrepareFeedback();
         LogDetailed($"강화 효과음 설정: 사용={soundsEnabled.Value}, 전용={providedSounds.Value}, 음량={soundVolume.Value:0.##}%, 준비={feedbackAudio != null}, 충전={attemptDuration:0.000}초");
         StatPatches.Registry.Configure(Tuning());
@@ -179,6 +189,16 @@ public sealed partial class Plugin : BaseUnityPlugin
             {
                 ApplyLanguage();
                 ItemMarkers.RefreshAll();
+                return;
+            }
+            if (ReferenceEquals(args.ChangedSetting, developerSavePassword))
+            {
+                var save = SaveMatches(developerSavePassword.Value);
+                if (save == developerSave) return;
+                developerSave = save;
+                Logger.LogInfo(save ? "Gear Enhance: 저장 비밀번호 확인 (개발자 옵션 동안의 강화도 저장)" : "Gear Enhance: 저장 비밀번호 해제");
+                // The next request carries it: a sandbox open now is kept instead of rolled back.
+                syncWanted = true;
                 return;
             }
             if (ReferenceEquals(args.ChangedSetting, developerPassword))
@@ -275,6 +295,15 @@ public sealed partial class Plugin : BaseUnityPlugin
         if (typed != current) entry.BoxedValue = typed;
         GUILayout.Label(developerUnlocked ? Loc.L("열림", "Unlocked") : Loc.L("잠김", "Locked"), GUILayout.Width(70));
     }
+    private void DrawSavePassword(ConfigEntryBase entry)
+    {
+        var current = entry.BoxedValue as string ?? "";
+        var typed = GUILayout.PasswordField(current, '*', GUILayout.ExpandWidth(true));
+        if (typed != current) entry.BoxedValue = typed;
+        GUILayout.Label(developerSave ? Loc.L("저장", "Saving") : Loc.L("꺼짐", "Off"), GUILayout.Width(70));
+    }
+    // PBKDF2 is slow on purpose: only a value of the password's length (xxxx-xxxx-xxxx-xxxx) is checked.
+    private static bool SaveMatches(string value) => value != null && value.Trim().Length == 19 && DeveloperLock.MatchesSave(value);
     private DevSetting<T> BindDeveloper<T>(string section, string key, T defaultValue, string description) =>
         BindDeveloper(section, key, defaultValue, new ConfigDescription(description));
     private DevSetting<T> BindDeveloper<T>(string section, string key, T defaultValue, ConfigDescription description) =>
@@ -315,7 +344,7 @@ public sealed partial class Plugin : BaseUnityPlugin
         InstantFee = instantFee.Value, SecondTicketMax = secondTickets.Value, SecondTicketPrice = secondTicketPrice.Value,
         ThirdTicketMax = thirdTickets.Value, ThirdTicketPrice = thirdTicketPrice.Value,
         MysteryTicketMax = mysteryTickets.Value, MysteryTicketPrice = mysteryTicketPrice.Value,
-        Developer = developerUnlocked, LaunchId = LaunchId, FreeRoubles = freeRoubles.Value, FreeMaterials = freeMaterials.Value,
+        Developer = developerUnlocked, DeveloperSave = developerUnlocked && developerSave, LaunchId = LaunchId, FreeRoubles = freeRoubles.Value, FreeMaterials = freeMaterials.Value,
         Transcend = TranscendTuning(), Boost = BoostTuning(), Mythic = MythicTuning()
     };
     private void ConfigureTranscend()
@@ -382,7 +411,7 @@ public sealed partial class Plugin : BaseUnityPlugin
         try
         {
             var snapshot = await GameBridge.WithTimeout(GameBridge.Query<EnhanceSnapshot>("/rf/gear-enhance/state",
-                new { ProtocolVersion = EnhanceProtocol.Version, Developer = developerUnlocked, LaunchId }));
+                new { ProtocolVersion = EnhanceProtocol.Version, Developer = developerUnlocked, DeveloperSave = developerUnlocked && developerSave, LaunchId }));
             // Records restored after a hand edit, or the developer sandbox rolled back.
             if (!string.IsNullOrEmpty(snapshot?.Notice)) { var notice = snapshot.Notice; main.Enqueue(() => Notify(notice)); Logger.LogWarning(notice); }
             if (request != syncGeneration || expected != GameBridge.ProfileId(activeSession)) return false;

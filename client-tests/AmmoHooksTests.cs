@@ -82,29 +82,30 @@ public sealed class AmmoHooksTests : IDisposable
 
     // Reversing the harmful sign or changing the multiplier's neutral point breaks these rows.
     [Theory]
-    [InlineData(0, -12, 0)] [InlineData(0, 0, 0)] [InlineData(0, 15, 15)]
-    [InlineData(1, 12, 0)] [InlineData(1, 0, 0)] [InlineData(1, -15, -15)]
+    // A mythic V gun takes 80 % of a bad value away (16 % a level, user 2026-10-26); good values stay.
+    [InlineData(0, -12, -2)] [InlineData(0, 0, 0)] [InlineData(0, 15, 15)]
+    [InlineData(1, 12, 2)] [InlineData(1, 0, 0)] [InlineData(1, -15, -15)]
     [InlineData(1, int.MinValue, int.MinValue)] [InlineData(0, int.MaxValue, int.MaxValue)]
     public void Only_bad_accuracy_and_recoil_are_neutralized(int kind, int value, int expected) =>
         Assert.Equal(expected, Int(In(gun), value, kind));
 
     [Theory]
-    [InlineData(2, 1.4f, 1f)] [InlineData(2, 0.7f, 0.7f)] [InlineData(2, 1f, 1f)]
-    [InlineData(3, 1.4f, 1f)] [InlineData(3, 0.7f, 0.7f)] [InlineData(3, 1f, 1f)]
-    [InlineData(4, 0.2f, 0f)] [InlineData(4, 0f, 0f)] [InlineData(4, -0.2f, -0.2f)]
-    [InlineData(5, 0.2f, 0f)] [InlineData(5, 0f, 0f)] [InlineData(5, -0.2f, -0.2f)]
-    [InlineData(6, 0.2f, 0f)] [InlineData(6, 0f, 0f)] [InlineData(6, -0.2f, -0.2f)]
-    [InlineData(7, 1.2f, 1f)] [InlineData(7, 0.8f, 0.8f)] [InlineData(7, 1f, 1f)]
+    [InlineData(2, 1.4f, 1.08f)] [InlineData(2, 0.7f, 0.7f)] [InlineData(2, 1f, 1f)]
+    [InlineData(3, 1.4f, 1.08f)] [InlineData(3, 0.7f, 0.7f)] [InlineData(3, 1f, 1f)]
+    [InlineData(4, 0.2f, 0.04f)] [InlineData(4, 0f, 0f)] [InlineData(4, -0.2f, -0.2f)]
+    [InlineData(5, 0.2f, 0.04f)] [InlineData(5, 0f, 0f)] [InlineData(5, -0.2f, -0.2f)]
+    [InlineData(6, 0.2f, 0.04f)] [InlineData(6, 0f, 0f)] [InlineData(6, -0.2f, -0.2f)]
+    [InlineData(7, 1.2f, 1.04f)] [InlineData(7, 0.8f, 0.8f)] [InlineData(7, 1f, 1f)]
     public void Burn_heat_and_actual_shot_spread_use_one_and_chances_use_zero(int kind, float value, float expected) =>
-        Assert.Equal(expected, Float(In(gun), value, kind));
+        Assert.Equal(expected, Float(In(gun), value, kind), 4);
 
     [Fact]
     public void Chamber_and_inserted_magazine_work_but_stash_loose_magazines_and_other_guns_do_not()
     {
-        Assert.Equal(0, Int(In(gun), 10, 1));
+        Assert.Equal(2, Int(In(gun), 10, 1));
         var magazine = In(gun);
         var ammo = In(magazine, true);
-        Assert.Equal(0, Int(ammo, 10, 1));
+        Assert.Equal(2, Int(ammo, 10, 1));
         // Moving the magazine does not change the round's address: the ancestor cache must notice.
         magazine.CurrentAddress = new(new Grid(equipment));
         Assert.Equal(10, Int(ammo, 10, 1));
@@ -118,11 +119,11 @@ public sealed class AmmoHooksTests : IDisposable
     public void Same_round_moved_out_or_gun_picked_up_by_a_bot_loses_the_effect_immediately()
     {
         var ammo = In(gun);
-        Assert.Equal(0, Int(ammo, 10, 1));
+        Assert.Equal(2, Int(ammo, 10, 1));
         ammo.CurrentAddress = null;
         Assert.Equal(10, Int(ammo, 10, 1));
         ammo.CurrentAddress = new(new Slot(gun));
-        Assert.Equal(0, Int(ammo, 10, 1));
+        Assert.Equal(2, Int(ammo, 10, 1));
         gun.Owner!.RootItem = new object();
         Assert.Equal(10, Int(ammo, 10, 1));
     }
@@ -131,12 +132,12 @@ public sealed class AmmoHooksTests : IDisposable
     public void Registry_changes_revoke_and_restore_level_five_without_stale_cache()
     {
         var ammo = In(gun);
-        Assert.Equal(0, Int(ammo, 10, 1));
+        Assert.Equal(2, Int(ammo, 10, 1));
         // 20 % of a bad value a level (user 2026-10-26): recoil +10 is +2 at IV, +0 at V.
-        Load(4); Assert.Equal(2, Int(ammo, 10, 1));
+        Load(4); Assert.Equal(4, Int(ammo, 10, 1));
         Load(1); Assert.Equal(8, Int(ammo, 10, 1));
         Load(0); Assert.Equal(10, Int(ammo, 10, 1));
-        Load(5); Assert.Equal(0, Int(ammo, 10, 1));
+        Load(5); Assert.Equal(2, Int(ammo, 10, 1));
         StatPatches.Registry.Clear(); Assert.Equal(10, Int(ammo, 10, 1));
     }
 
@@ -152,7 +153,7 @@ public sealed class AmmoHooksTests : IDisposable
     {
         Assert.Equal(1.2f, Call("WeaponFactor", 1.2f, gun));
         gun.Chambers = new object[] { new LoadedSlot(In(gun)) };
-        Assert.Equal(1f, Call("WeaponFactor", 1.2f, gun));
+        Assert.Equal(1.04f, (float)Call("WeaponFactor", 1.2f, gun), 4);
         Assert.Equal(0.8f, Call("WeaponFactor", 0.8f, gun));
     }
 
@@ -166,7 +167,7 @@ public sealed class AmmoHooksTests : IDisposable
         linkType.GetField("Id", BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(link, "gun");
         var links = typeof(CloneLinks).GetField("links", BindingFlags.Static | BindingFlags.NonPublic)!.GetValue(null)!;
         links.GetType().GetMethod("Add")!.Invoke(links, new[] { copy, link });
-        Assert.Equal(0, Int(In(copy), 12, 1));
+        Assert.Equal(2, Int(In(copy), 12, 1));
     }
 
     private static object Begin(Controller controller, Item ammo)
@@ -183,14 +184,14 @@ public sealed class AmmoHooksTests : IDisposable
         var state = Begin(new(gun, new("pmc")), ammo);
         try
         {
-            Assert.Equal(0, Int(ammo, 12, 1));
-            Assert.Equal(1f, Call("TemplateFloat", ammo.Template, 1.4f, 2));
+            Assert.Equal(2, Int(ammo, 12, 1));
+            Assert.Equal(1.08f, (float)Call("TemplateFloat", ammo.Template, 1.4f, 2), 4);
             Assert.Equal(1.4f, Call("TemplateFloat", new object(), 1.4f, 2));
             var nested = Begin(new(gun, new("bot")), ammo);
             Assert.Equal(12, Int(ammo, 12, 1));
             var failure = new InvalidOperationException("shot failed");
             Assert.Same(failure, Call("EndShot", failure, nested));
-            Assert.Equal(0, Int(ammo, 12, 1));
+            Assert.Equal(2, Int(ammo, 12, 1));
         }
         finally { Call("EndShot", null, state); }
         Assert.Equal(12, Int(ammo, 12, 1));
@@ -224,14 +225,14 @@ public sealed class AmmoHooksTests : IDisposable
             var source = new[] { new CodeInstruction(OpCodes.Ldarg_0), new CodeInstruction(OpCodes.Callvirt, getter), new CodeInstruction(OpCodes.Ret) };
             var ammo = new ReadRound { CurrentAddress = new(new Slot(gun)) };
             var read = Emit(source, typeof(ReadRound));
-            Assert.Equal(0, read(ammo));
+            Assert.Equal(2, read(ammo));
             ammo.CurrentAddress = null;
             Assert.Equal(12, read(ammo));
             var raw = new ReadTemplate(); ammo.Template = raw;
             var templateRead = Emit(new[] { new CodeInstruction(OpCodes.Ldarg_0), new CodeInstruction(OpCodes.Ldfld, field), new CodeInstruction(OpCodes.Ret) }, typeof(ReadTemplate));
             Assert.Equal(12, templateRead(raw));
             var state = Begin(new(gun, new("pmc")), ammo);
-            try { Assert.Equal(0, templateRead(raw)); Assert.Equal(12, templateRead(new ReadTemplate())); }
+            try { Assert.Equal(2, templateRead(raw)); Assert.Equal(12, templateRead(new ReadTemplate())); }
             finally { Call("EndShot", null, state); }
             Assert.Equal(12, raw.Recoil);
         }
@@ -260,7 +261,7 @@ public sealed class AmmoHooksTests : IDisposable
             var readRecoil = Emit(recoilSource, ammoType, ammoType.GetProperty("ammoRec")!.GetMethod);
             var factorSource = loadTemplate.Concat(new[] { new CodeInstruction(OpCodes.Callvirt, factor), new CodeInstruction(OpCodes.Ret) });
             var readFactor = Emit<float>(factorSource, ammoType, ammoType.GetProperty("AmmoFactor")!.GetMethod);
-            Assert.Equal(0, readRecoil(ammo)); Assert.Equal(1f, readFactor(ammo));
+            Assert.Equal(2, readRecoil(ammo)); Assert.Equal(1.04f, readFactor(ammo), 4);
             raw.ammoAccr = 25; Assert.Equal(0.8f, readFactor(ammo));
             ammo.CurrentAddress = null;
             Assert.Equal(12, readRecoil(ammo));
@@ -317,7 +318,7 @@ public sealed class AmmoHooksTests : IDisposable
         var sum = 0;
         for (var i = 0; i < 1000; i++) sum += read(ammo, 10, 1);
         var allocated = GC.GetAllocatedBytesForCurrentThread() - before;
-        Assert.Equal(0, sum); Assert.Equal(0, allocated);
+        Assert.Equal(2000, sum); Assert.Equal(0, allocated);
     }
 
     [Fact]
@@ -333,7 +334,7 @@ public sealed class AmmoHooksTests : IDisposable
         var sum = 0;
         for (var i = 0; i < 1000; i++) sum += read(ammo, 12, 1);
         var allocated = GC.GetAllocatedBytesForCurrentThread() - before;
-        Assert.Equal(0, sum); Assert.Equal(0, allocated);
+        Assert.Equal(2000, sum); Assert.Equal(0, allocated);
         CurrentWorld = new(new("bot") { Inventory = new(new object()) });
         Assert.Equal(12, read(ammo, 12, 1));
     }
@@ -360,6 +361,6 @@ public sealed class AmmoHooksTests : IDisposable
         var sum = 0;
         foreach (var round in ammo) sum += shoot(controller, round);
         var allocated = GC.GetAllocatedBytesForCurrentThread() - before;
-        Assert.Equal(0, sum); Assert.Equal(0, allocated);
+        Assert.Equal(2000, sum); Assert.Equal(0, allocated);
     }
 }

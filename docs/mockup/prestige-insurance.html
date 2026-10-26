@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gear Enhance — 프레스티지 보험 목업</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet">
+<style>
+:root{color-scheme:dark;--bg:#07090b;--panel:#111417;--box:#13171b;--line:#2a3037;--muted:#9aa1a8;--text:#e6e2d8;--gold:#d9b36c;--myth:#ff6ad5;--teal:#4fd1c5;--blue:#5fa8ff;--green:#8fd694;--loss:#ff8a7e}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:13px/1.6 'Noto Sans KR','Malgun Gothic',sans-serif}button{font:inherit;color:inherit;cursor:pointer;border-radius:0}button:disabled{cursor:not-allowed}button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}h1,h2,h3,p{margin:0}h2{font-size:16px}h3{font-size:13px}svg{display:block}.num{font-family:'Rajdhani','Noto Sans KR',sans-serif;font-variant-numeric:tabular-nums;font-weight:700}.muted{color:var(--muted)}.gold{color:var(--gold)}.myth{color:var(--myth)}.teal{color:var(--teal)}.blue{color:var(--blue)}.green{color:var(--green)}.loss{color:var(--loss)}.small{font-size:11px}.push{margin-left:auto}.flex{display:flex;align-items:center;gap:8px}.space{justify-content:space-between}[hidden]{display:none!important}
+.canvas{width:1240px;margin:0 auto;padding:24px}.preview{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;gap:12px}.preview h1{font-size:16px;color:#c9c4b8}.eyebrow{font-size:11px;letter-spacing:1.5px;color:var(--muted);margin-bottom:2px}.prototype{padding:3px 9px;border:1px solid #3a4148;color:#b9b3a6;font-size:11px}.scenario{display:flex;align-items:center;gap:12px;margin-bottom:16px}.segments{display:flex;border:1px solid #333a42;background:#101316}.segments button{border:0;border-right:1px solid var(--line);padding:7px 13px;color:var(--muted);background:transparent;font-size:12px;white-space:nowrap;min-height:34px}.segments button:last-child{border-right:0}.segments button:hover{background:#1b2025;color:var(--text)}.segments button[aria-pressed=true]{background:#2a2416;color:#f3e3bf}.scenario-note{font-size:11px;color:var(--muted)}
+.layout{display:flex;align-items:flex-start;gap:16px}.window{display:flex;position:relative;width:908px;height:980px;border:1px solid #353c44;background:var(--panel);flex:none}.nav{width:148px;flex:none;background:#0d1013;border-right:1px solid var(--line);display:flex;flex-direction:column}.nav-head{height:56px;display:flex;align-items:center;justify-content:center;border-bottom:1px solid var(--line);font-size:13px;font-weight:700;letter-spacing:2px;color:var(--muted)}.tab{all:unset;box-sizing:border-box;display:flex;align-items:center;gap:10px;width:100%;min-height:58px;padding:8px 12px;border-bottom:1px solid #22282e;color:#c9c4b8;cursor:pointer}.tab:hover{background:#171b20}.tab:focus-visible{outline:2px solid var(--gold);outline-offset:-2px}.tab.on{background:#2a2416;color:#f3e3bf;box-shadow:inset 3px 0 var(--gold)}.tab:disabled{cursor:default;color:#626a72}.tab:disabled .mark{opacity:.6}.mark{width:34px;flex:none;text-align:center;font-size:13px;font-weight:700}.tlabel{display:block;font-size:14px;font-weight:700}.tsub{display:block;font-size:11px;color:var(--muted);margin-top:2px}.tab.on .tsub{color:#cdb88c}.tab.prestige .tlabel{font-size:12px;white-space:nowrap}.nav-foot{margin-top:auto;padding:14px 12px;color:#717b84;font-size:10px;line-height:1.8;border-top:1px solid var(--line)}
+.main{flex:1;min-width:0;display:flex;flex-direction:column}.header{height:56px;flex:none;display:flex;align-items:center;gap:8px;padding:0 12px 0 20px;border-bottom:1px solid var(--line);background:#15191d}.brand{font-size:26px;letter-spacing:1px;color:#f3e3bf}.version{font-size:14px;color:var(--muted);padding-top:4px}.mini{display:inline-flex;align-items:center;justify-content:center;min-height:32px;padding:0 10px;border:1px solid #333a42;background:#1b2025;color:var(--text);font-size:12px}.mini:hover:not(:disabled){background:#252b32}.mini:disabled{color:#737e87;background:#15191d;border-color:var(--line)}.header .lang{border:1px solid #333a42;background:#2a2416;padding:5px 11px;color:#f3e3bf;font-size:12px;font-weight:700}.content{flex:1;min-height:0;padding:14px 20px 16px;display:flex;flex-direction:column;gap:10px}.hero{display:flex;align-items:center;height:100px;flex:none;border:1px solid var(--line);background:#0e1114}.hero-art{width:285px;display:flex;align-items:center;justify-content:center;flex:none}.hero-copy{border-left:1px solid #353c44;padding-left:20px}.hero-name{font-size:24px;font-weight:700;line-height:1.25}.hero-tier{font-size:24px;letter-spacing:2px;line-height:1.5}.hero-tier span{font-size:16px;letter-spacing:0;margin-left:10px}.hero-sub{font-size:11px;color:#b9b3a6}.pane{flex:1;min-height:0;display:flex;flex-direction:column;gap:10px}.mid{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;display:flex;flex-direction:column;gap:10px;scrollbar-width:thin;scrollbar-color:#3a4148 transparent}.mid>*{flex-shrink:0}.section-title{display:flex;align-items:center;gap:12px;height:29px}.section-title:before,.section-title:after{content:'';height:1px;background:var(--line);flex:1}.section-title h2{padding:3px 16px;border:1px solid #3a4148;font-size:13px;color:#d6d0c3}.intro{border:1px solid #3b5f8a;background:#121a24;padding:10px 14px}.intro strong{font-size:14px;color:#cfe4ff;display:block;margin-bottom:3px}.intro p{font-size:12px;color:#b9c5d3;line-height:1.7}.intro .separate{font-size:11px;color:var(--muted);margin-top:3px}.two-cards{display:grid;grid-template-columns:1fr 1fr;gap:10px}.card{padding:11px 16px;border:1px solid var(--line);background:var(--box)}.card .label{font-size:12px;color:var(--muted)}.card .value{font-size:29px;line-height:1.3;margin-top:3px}.card .state-value{font-size:21px;font-weight:700;margin-top:4px}.badge{display:inline-flex;align-items:center;border:1px solid #61355a;color:var(--myth);background:#231521;padding:1px 6px;font-size:10px;white-space:nowrap}.badge.teal{border-color:#2e615d;background:#102724;color:var(--teal)}.badge.gold{border-color:#6b5836;background:#241e12;color:var(--gold)}.badge.green{border-color:#38553d;background:#142019;color:var(--green)}.payment{display:grid;grid-template-columns:1fr 1fr 1.2fr;border:1px solid var(--line);background:var(--box)}.payment-cell{padding:10px 14px}.payment-cell+.payment-cell{border-left:1px solid var(--line)}.payment-cell:last-child{background:#211d14}.payment .label{font-size:11px;color:var(--muted)}.payment .amount{font-size:24px;line-height:1.4}.payment .hint{font-size:10px;color:#b8a789}.formula{display:flex;align-items:center;justify-content:space-between;gap:6px;padding:0 1px;font-size:11px;color:var(--muted)}.rules{border:1px solid var(--line);background:var(--box);padding:10px 14px}.rule-line{display:flex;gap:8px;margin-top:5px;font-size:12px;color:#b9b3a6}.rule-line .bullet{width:12px;flex:none;color:var(--gold)}.policy{border-top:1px solid var(--line);margin-top:9px;padding-top:9px;display:flex;align-items:center;justify-content:space-between;gap:8px}.policy .segments button{font-size:11px;min-height:30px;padding:4px 9px}.policy-caption{font-size:11px;color:var(--muted);margin-top:4px}.registered{border:1px solid var(--line);background:var(--box);padding:10px 14px 2px}.registered h3{color:#d6d0c3}.list-head{display:grid;grid-template-columns:1fr 114px 101px 113px;gap:8px;font-size:10px;color:var(--muted);padding-top:9px}.list-head span:not(:first-child){text-align:right}.item-row{display:grid;grid-template-columns:1fr 114px 101px 113px;align-items:center;gap:8px;min-height:58px;border-top:1px solid #22282e;margin-top:4px}.item-name{font-size:12px;font-weight:700;white-space:nowrap}.item-name .badge{margin-left:5px}.item-sub{font-size:10px;color:var(--muted);margin-top:2px}.item-money{text-align:right;font-size:17px;line-height:1.2}.item-money small{display:block;font-family:'Noto Sans KR',sans-serif;font-size:10px;font-weight:400;color:var(--muted);margin-top:3px}.item-row .mini{font-size:11px;padding:0 8px}.footer{display:grid;grid-template-columns:1fr 2fr;gap:10px;flex:none;margin-top:auto}.btn{display:flex;align-items:center;justify-content:center;min-height:48px;font-size:15px;font-weight:700;text-align:center;border:0}.btn.sec{border:1px solid #333a42;background:#1b2025}.btn.sec:hover{background:#222830}.btn.act{background:var(--gold);color:#1a1408}.btn.act:hover{background:#e6c47f}.btn:disabled{background:#1e2226;border:1px solid var(--line);color:#8e999f}.btn.num{font-size:21px}.btn .ko{font:700 15px 'Noto Sans KR',sans-serif;margin-right:10px}
+.status{width:268px;flex:none;border:1px solid #353c44;background:var(--panel)}.status-head{height:56px;display:flex;align-items:center;padding:0 16px;border-bottom:1px solid var(--line);background:#15191d;font-size:15px;font-weight:700;color:#f3e3bf}.status-body{padding:14px 16px 16px}.srow{display:flex;align-items:baseline;gap:6px;padding:7px 0;border-bottom:1px solid #22282e;font-size:12px}.srow .val{margin-left:auto;font-size:18px}.status-label{font-size:12px;color:var(--muted);font-weight:700}.status-section{margin-top:20px}.track{display:flex;align-items:center;gap:8px;padding:9px 0;border-bottom:1px solid #22282e;font-size:12px}.track .num{font-size:17px;margin-left:auto}.status-note{margin-top:14px;padding:10px 12px;border:1px solid #38553d;background:#142019;color:#b6d6bc;font-size:11px;line-height:1.8}.status-note.blue-note{border-color:#3b5f8a;background:#121a24;color:#b9cde5}.next{border-top:1px solid var(--line);margin-top:16px;padding-top:13px}.next .num{font-size:25px;color:var(--gold)}.legend{margin-top:14px;font-size:10px;color:#7d8794}.footnote{display:flex;justify-content:space-between;gap:12px;padding-top:12px;color:#7d8794;font-size:11px}.notice{font-size:11px;min-height:18px;color:var(--green)}
+.mail-banner{padding:14px 16px;border:1px solid #38553d;background:#142019;display:flex;align-items:center;gap:14px}.mail-icon{font-size:26px;color:var(--green)}.mail-banner h3{font-size:17px;color:#c5e7cb}.mail-card{border:1px solid var(--line);background:var(--box)}.mail-header{padding:15px 18px;border-bottom:1px solid var(--line);background:#15191d}.mail-header h3{font-size:16px;color:#f3e3bf;margin:7px 0}.mail-text{padding:17px 18px;color:#c9c4b8;font-size:13px;line-height:1.9}.attachments{padding:0 18px 16px}.attachment{display:flex;align-items:center;gap:13px;padding:12px 0;border-bottom:1px solid var(--line)}.attach-icon{width:54px;height:44px;display:flex;align-items:center;justify-content:center;border:1px solid #44313f;background:#1a1019;flex:none}.attach-icon.vest{border-color:#354841;background:#11201b}.attachment h3{font-size:13px}.attachment p{font-size:11px;color:var(--muted);margin-top:3px}.attachments>.mini{width:100%;min-height:40px;margin-top:14px;border-color:#38553d;color:var(--green)}.mail-policy{border:1px solid var(--line);background:var(--box);padding:12px 14px}.mail-policy .policy{border:0;margin:0;padding:0}.mail-policy p{font-size:12px;color:#c9c4b8;margin-top:8px}.tier-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.tier{padding:16px;border:1px solid var(--line);background:var(--box)}.tier .chance{font-size:40px;line-height:1.3}.comparison{font-size:12px;padding:14px 16px;border:1px solid var(--line);background:var(--box);color:#b9b3a6}.closed{width:908px;height:980px;display:flex;align-items:center;justify-content:center;border:1px solid #353c44;background:#0d1013}.closed-inner{text-align:center;border:1px solid var(--line);padding:28px 40px;background:var(--box)}.closed .btn{margin-top:18px;width:280px}noscript{display:block;padding:12px;border:1px solid var(--loss);color:var(--loss)}
+@media(max-width:1240px){.canvas{margin:0}}@media(prefers-reduced-motion:no-preference){.intro,.mail-banner{animation:appear .18s ease-out}@keyframes appear{from{opacity:.6;transform:translateY(3px)}to{opacity:1;transform:none}}}@media print{.canvas{padding:0}.scenario,.footnote{display:none}.window{height:auto;min-height:980px}.mid{overflow:visible}.layout{break-inside:avoid}}
+</style>
+</head>
+<body>
+<nav aria-label="목업 페이지" style="display:flex;gap:8px;padding:12px 24px;background:#07090b;border-bottom:1px solid #22282e"><a href="index.html" style="padding:8px 14px;border:1px solid #333a42;color:#9aa1a8;background:#15191d;text-decoration:none;font:700 13px 'Noto Sans KR','Malgun Gothic',sans-serif">강화 창</a><a href="popups.html" style="padding:8px 14px;border:1px solid #333a42;color:#9aa1a8;background:#15191d;text-decoration:none;font:700 13px 'Noto Sans KR','Malgun Gothic',sans-serif">결과 팝업 모음</a><a href="stash.html" style="padding:8px 14px;border:1px solid #333a42;color:#9aa1a8;background:#15191d;text-decoration:none;font:700 13px 'Noto Sans KR','Malgun Gothic',sans-serif">창고 표시</a><a href="prestige-insurance.html" style="padding:8px 14px;border:1px solid #d9b36c;color:#f3e3bf;background:#2a2416;text-decoration:none;font:700 13px 'Noto Sans KR','Malgun Gothic',sans-serif">프레스티지 보험</a></nav>
+<svg width="0" height="0" aria-hidden="true" style="position:absolute"><defs>
+<symbol id="rifle" viewBox="0 0 300 110"><rect x="8" y="42" width="62" height="20" fill="#4a5158"/><rect x="8" y="38" width="14" height="30" fill="#3d434a"/><rect x="70" y="34" width="118" height="28" fill="#59616a"/><rect x="106" y="22" width="44" height="12" fill="#4a5158"/><rect x="188" y="38" width="72" height="20" fill="#4f565e"/><rect x="260" y="45" width="36" height="6" fill="#3d434a"/><path d="M118 62h24l6 40h-22zM88 62h16l-4 30h-14z" fill="#3d434a"/></symbol>
+<symbol id="vest" viewBox="0 0 120 120"><path d="M30 8h18v16h24V8h18v22l12 12v70H18V42l12-12z" fill="#4f565e"/><rect x="36" y="42" width="48" height="40" fill="#59616a"/><rect x="24" y="90" width="72" height="16" fill="#3d434a"/></symbol>
+</defs></svg>
+<div class="canvas">
+  <div class="preview"><div><div class="eyebrow num">GEAR ENHANCE / PRESTIGE INSURANCE</div><h1>프레스티지 보험 · 제안 목업</h1></div><span class="prototype">예시 화면 · 게임 연동 없음</span></div>
+  <div class="scenario"><span class="muted small">상태 보기</span><div class="segments" role="group" aria-label="목업 상태 전환"><button type="button" data-mode="unregistered" aria-pressed="false">미등록</button><button type="button" data-mode="registered" aria-pressed="false">등록됨 · 차액 0</button><button type="button" data-mode="delta" aria-pressed="true">강화 후 차액 발생</button><button type="button" data-mode="mail" aria-pressed="false">프레스티지 직후 · 우편 도착</button></div><span class="scenario-note">버튼으로 화면을 비교하세요</span></div>
+  <noscript>상태 전환과 등록 예시를 보려면 브라우저에서 JavaScript를 켜 주세요.</noscript>
+  <div class="layout">
+    <div class="window" id="gear-window">
+      <nav class="nav" aria-label="강화 메뉴">
+        <div class="nav-head">목록</div>
+        <button class="tab" type="button" disabled title="이번 목업의 표시용 메뉴입니다"><span class="mark gold">+</span><span><span class="tlabel">일반 강화</span><span class="tsub">항목별 +10</span></span></button>
+        <button class="tab" type="button" disabled><span class="mark" style="color:#c591ff">★★</span><span><span class="tlabel">★★성</span><span class="tsub">진화 · 효과 ×2</span></span></button>
+        <button class="tab" type="button" disabled><span class="mark loss">★★★</span><span><span class="tlabel">★★★성</span><span class="tsub">진화 · 효과 ×3</span></span></button>
+        <button class="tab" type="button" disabled><span class="mark teal">◆</span><span><span class="tlabel">초월</span><span class="tsub">2성 · 3성 트랙</span></span></button>
+        <button class="tab" type="button" disabled><span class="mark myth">✦</span><span><span class="tlabel">신화</span><span class="tsub">데미지·관통 5/5</span></span></button>
+        <button class="tab" type="button" id="insurance-tab" aria-pressed="false"><span class="mark" style="color:#ffc46b">P</span><span><span class="tlabel">보험</span><span class="tsub">레이드 분실</span></span></button>
+        <button class="tab prestige on" type="button" id="prestige-tab" aria-pressed="true"><span class="mark gold">P+</span><span><span class="tlabel">프레스티지 보험</span><span class="tsub">초기화 후 반환</span></span></button>
+        <button class="tab" type="button" disabled><span class="mark muted">?</span><span><span class="tlabel">도움말</span><span class="tsub">규칙 요약</span></span></button>
+        <div class="nav-foot">목업에서 보험 두 탭만<br>전환할 수 있습니다.</div>
+      </nav>
+      <main class="main">
+        <header class="header"><span class="brand num">GEAR Enhance</span><span class="version num">v1.4.0</span><span class="push"></span><span class="lang" lang="ko">KO</span><button class="mini" type="button" id="reset">새로고침</button><button class="mini" type="button" data-close aria-label="강화 창 닫기">✕</button></header>
+        <div class="content">
+          <section class="hero" aria-label="선택한 장비"><div class="hero-art"><svg width="250" height="88" aria-hidden="true"><use href="#rifle"/></svg></div><div class="hero-copy"><div class="hero-name">K2 <span class="muted" style="font-size:12px;font-weight:400">돌격소총</span></div><div class="hero-tier gold">★★★<span class="myth">✦ 신화 V</span></div><div class="hero-sub">초월 II · 강화 기록 / 부착물 포함</div></div></section>
+          <section class="pane" id="prestige-pane" aria-label="프레스티지 보험">
+            <div class="mid" id="registration-view">
+              <div class="section-title"><h2>프레스티지 보험</h2></div>
+              <div class="intro"><strong>초기화되어도, 다음 프레스티지에 다시 만납니다.</strong><p>등록한 강화 장비가 다음 프레스티지 시작 때 우편으로 돌아옵니다.<br>강화 · ★ · 초월 · 신화 기록 그대로, 부착물 · 방탄판까지 함께 반환됩니다.</p><div class="separate">레이드 분실에 대비하는 일반 강화 보험과 별개입니다.</div></div>
+              <div class="two-cards"><div class="card"><div class="flex space"><span class="label">지금 장비 · K2</span><span class="badge">신화 V</span></div><div class="state-value gold" id="coverage-state">등록 유지 · 차액 발생</div><div class="small muted" id="coverage-sub">추가 강화해도 등록은 풀리지 않습니다.</div></div><div class="card"><div class="label">장비 가치 <span class="muted">(강화 가치)</span></div><div class="value num" id="current-value">14,345,670 ₽</div><div class="small muted" id="value-change">등록 가치 12,345,670 ₽ → 현재 가치</div></div></div>
+              <div><div class="payment"><div class="payment-cell"><div class="label">이미 낸 금액</div><div class="amount num" id="paid">1,234,567 ₽</div><div class="hint">누적 납부 기준</div></div><div class="payment-cell"><div class="label">지금 가치 기준 보험료</div><div class="amount num" id="premium">1,434,567 ₽</div><div class="hint">강화 가치 × 10%</div></div><div class="payment-cell"><div class="label">차액만 추가 납부</div><div class="amount num gold" id="difference">200,000 ₽</div><div class="hint" id="difference-hint">1,434,567 − 1,234,567</div></div></div><div class="formula"><span>차액 = 현재 보험료 − 이미 낸 금액 <span class="gold">(최소 0 ₽)</span></span><span>예시 10% · F12 설정</span></div></div>
+              <section class="rules" aria-label="보험 규칙"><div class="flex space"><h3>등록 · 반환 규칙</h3><span class="badge gold">제안안</span></div><div class="rule-line"><span class="bullet">✓</span><span>방탄판 교체 · 추가 강화에도 <b class="green">등록 유지</b>. 가치가 오르면 다음에 차액만.</span></div><div class="rule-line"><span class="bullet">✓</span><span>가치가 내려가면 추가 납부 <b class="green num">0 ₽</b>. 이미 낸 금액은 환불하지 않습니다.</span></div><div class="rule-line"><span class="bullet loss">!</span><span>레이드에서 장비를 잃으면 <b class="loss">등록도 소멸</b>. 분실 반환은 일반 강화 보험 영역입니다.</span></div><div class="rule-line"><span class="bullet">↗</span><span>프레스티지 1회에 장비당 <b>한 번만 반환</b>됩니다.</span></div><div class="policy"><span class="small">반환 이후 <span class="muted">· 두 안 비교</span></span><div class="segments" role="group" aria-label="반환 이후 등록 정책"><button type="button" data-policy="keep" aria-pressed="true">계속 유지</button><button type="button" data-policy="renew" aria-pressed="false">반환되면 다시 등록</button></div></div><div class="policy-caption" id="policy-note">제안 A · 등록과 납부 기록을 다음 단계에도 유지합니다.</div></section>
+              <section class="registered" aria-label="등록된 장비 목록"><div class="flex space"><h3>등록된 장비 <span class="num gold" id="registered-count">3</span></h3><span class="small muted">장비별로 차액만 갱신</span></div><div class="list-head"><span>장비 · 단계</span><span>등록 가치</span><span>추가 납부</span><span>상태 / 갱신</span></div><div id="registered-list"></div></section>
+              <div class="notice" id="notice" role="status" aria-live="polite"></div>
+            </div>
+            <div class="mid" id="mail-view" hidden>
+              <div class="section-title"><h2>프레스티지 보험 · 우편 도착</h2></div>
+              <div class="mail-banner"><span class="mail-icon" aria-hidden="true">✉</span><div><h3>프레스티지 3, 장비가 돌아왔습니다.</h3><p class="small muted">차액 정산을 마친 장비 3개가 반환된 예시입니다.</p></div><span class="badge green push">우편 도착</span></div>
+              <article class="mail-card" aria-label="반환 우편 미리보기"><header class="mail-header"><div class="flex space small muted"><span>보낸 사람 <b style="color:#c9c4b8">Gear Enhance</b></span><span>방금 도착 · 예시</span></div><h3>Gear Enhance — 프레스티지 보험 반환</h3><div class="small muted">받는 사람 · 새 프레스티지 프로필</div></header><div class="mail-text">새 프레스티지의 시작을 응원합니다.<br>등록하신 강화 장비를 돌려드립니다.<br><span class="green">강화 · ★ · 초월 · 신화 기록과 부착물 · 방탄판을 보존했습니다.</span></div><div class="attachments"><div class="flex space"><h3>첨부 장비 <span class="num gold">3</span></h3><span class="small muted" id="mail-status">수령 대기 · 각 1개</span></div><div class="attachment"><div class="attach-icon"><svg width="48" height="27" aria-hidden="true"><use href="#rifle"/></svg></div><div><h3>K2 <span class="badge">신화 V</span></h3><p>★★★ · 초월 II · 조준경 / 소음기 / 탄창 포함</p></div><span class="num push myth">×1</span></div><div class="attachment"><div class="attach-icon vest"><svg width="35" height="35" aria-hidden="true"><use href="#vest"/></svg></div><div><h3>Gen4 방탄복 <span class="badge gold">★★★</span></h3><p>방탄판 4개 포함 · 교체한 방탄판 그대로</p></div><span class="num push gold">×1</span></div><div class="attachment"><div class="attach-icon"><svg width="48" height="27" aria-hidden="true"><use href="#rifle"/></svg></div><div><h3>M4A1 <span class="badge teal">초월 I</span></h3><p>★★ · 강화 기록 / 부착물 포함</p></div><span class="num push teal">×1</span></div><button class="mini" id="receive" type="button">첨부 장비 모두 받기 · 목업</button></div></article>
+              <section class="mail-policy" aria-label="반환 후 정책 비교"><div class="policy"><h3>반환 이후 · 두 안 비교</h3><div class="segments" role="group" aria-label="우편 반환 이후 등록 정책"><button type="button" data-policy="keep" aria-pressed="true">계속 유지</button><button type="button" data-policy="renew" aria-pressed="false">반환되면 다시 등록</button></div></div><p id="mail-policy-note">등록 유지 · 납부 기록 이월. 다음 프레스티지에도 차액만 정산합니다.</p></section><div class="comparison">이번 프레스티지 반환은 완료되었습니다. 우편 수령 여부와 관계없이 같은 장비가 중복 발송되지 않는 제안입니다.</div>
+            </div>
+            <div class="footer"><button class="btn sec" type="button" data-close>닫기</button><button class="btn act num" type="button" id="register"><span class="ko">등록</span>· 200,000 ₽</button></div>
+          </section>
+          <section class="pane" id="insurance-pane" aria-label="일반 강화 보험 비교" hidden><div class="mid"><div class="section-title"><h2>강화 보험</h2></div><div class="two-cards"><div class="card"><div class="label">지금 가입</div><div class="state-value muted">미가입</div></div><div class="card"><div class="label">강화 가치 · 비교용 예시</div><div class="value num" id="general-value">14,345,670 ₽</div></div></div><div class="tier-grid"><div class="tier"><h3 class="green">일반</h3><p class="small muted">분실 시 반환 확률</p><div class="chance num green">20%</div><p class="small muted">반환 대기</p><b>1일 뒤</b></div><div class="tier"><h3 class="blue">고급</h3><p class="small muted">분실 시 반환 확률</p><div class="chance num blue">55%</div><p class="small muted">반환 대기</p><b>12시간 뒤</b></div><div class="tier"><h3 class="gold">프리미엄</h3><p class="small muted">분실 시 반환 확률</p><div class="chance num gold">99%</div><p class="small muted">반환 대기</p><b>즉시</b></div></div><div class="comparison">일반 강화 보험은 <b class="blue">레이드 분실</b>을 보장합니다.<br>한 번 쓰면 소모되고, 추가 강화하면 다시 가입해야 합니다.<br>프레스티지 초기화 반환은 별도 탭에서 등록합니다.</div><div class="intro"><strong>프레스티지 보험과 함께 비교해 보세요.</strong><p>왼쪽 ‘프레스티지 보험’을 누르면 초기화 반환 제안으로 돌아갑니다.</p></div></div><div class="footer"><button class="btn sec" type="button" data-close>닫기</button><button class="btn act" type="button" id="back-prestige">프레스티지 보험 보기</button></div></section>
+        </div>
+      </main>
+    </div>
+    <div class="closed" id="closed-view" hidden><div class="closed-inner"><h2>강화 창을 닫았습니다.</h2><p class="small muted">목업의 예시 상태는 유지됩니다.</p><button class="btn act" type="button" id="reopen">목업 다시 열기</button></div></div>
+    <aside class="status" aria-label="장비 상태"><div class="status-head">프레스티지 보험 <span class="badge push">신화 V</span></div><div class="status-body"><div><div class="status-label">반환 시 보존</div><div class="track"><span>★ 진화</span><span class="num gold">★★★</span></div><div class="track"><span>초월</span><span class="num teal">II</span></div><div class="track"><span>신화</span><span class="num myth">V</span></div><div class="track"><span>부착물 · 방탄판</span><span class="push green small">함께 반환</span></div></div><div class="status-note" id="side-note">추가 강화 후에도 등록 유지.<br>오른 만큼 차액만 정산합니다.</div><div class="next"><div class="small muted">프레스티지 진행</div><div class="num" id="prestige-stage">02 <span class="muted">→</span> 03</div><div class="small muted" id="side-policy">반환 후에도 등록 유지 · 제안 A</div></div><div class="legend">수치·장비·우편은 모두 예시입니다.</div></div></aside>
+  </div>
+  <div class="footnote"><span>보험료 10% · 가격 하락 시 환불 없음 · 반환 정책은 검토용 제안입니다.</span><span class="num">LOCAL HTML MOCKUP / 2026.10.26</span></div>
+</div>
+<script>
+(() => {
+  'use strict';
+  const $ = id => document.getElementById(id);
+  const money = value => value.toLocaleString('ko-KR') + ' ₽';
+  const rate = 0.10;
+  let mode = 'delta', policy = 'keep', activeTab = 'prestige', received = false;
+  let items = [];
+  // 상태 전환마다 독립된 예시 장비를 구성합니다. 저장·게임 호출은 없습니다.
+  function loadScenario(next) {
+    mode = next; received = false;
+    const isDelta = next === 'delta' || next === 'mail';
+    items = [
+      {id:'k2',name:'K2',badge:'신화 V',tone:'',detail:'★★★ · 초월 II · 부착물 포함',value:isDelta ? 14345670 : 12345670,registeredValue:next === 'mail' ? 14345670 : 12345670,paid:next === 'unregistered' ? 0 : next === 'mail' ? 1434567 : 1234567,insured:next !== 'unregistered'},
+      {id:'gen4',name:'Gen4 방탄복',badge:'★★★',tone:'gold',detail:'방탄판 교체 · 등록 유지',value:2800000,registeredValue:next === 'mail' ? 2800000 : 2400000,paid:next === 'mail' ? 280000 : 240000,insured:true},
+      {id:'m4',name:'M4A1',badge:'초월 I',tone:'teal',detail:'가치 하락 · 추가 납부 0 ₽',value:1480000,registeredValue:1680000,paid:168000,insured:true}
+    ];
+    $('notice').textContent = '';
+    setTab('prestige');
+    openWindow();
+    render();
+  }
+  const premium = item => Math.round(item.value * rate);
+  const difference = item => Math.max(0, premium(item) - item.paid);
+  // 현재 장비 카드·목록·우편·정책 안내를 같은 예시 상태로 맞춥니다.
+  function render() {
+    const k2 = items[0], diff = difference(k2), mail = mode === 'mail';
+    document.querySelectorAll('[data-mode]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.mode === mode)));
+    document.querySelectorAll('[data-policy]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.policy === policy)));
+    $('registration-view').hidden = mail;
+    $('mail-view').hidden = !mail;
+    $('coverage-state').textContent = !k2.insured ? '미등록' : diff > 0 ? '등록 유지 · 차액 발생' : '등록됨 · 차액 0';
+    $('coverage-state').className = 'state-value ' + (!k2.insured ? 'muted' : diff > 0 ? 'gold' : 'green');
+    $('coverage-sub').textContent = !k2.insured ? '첫 보험료를 내면 초기화 반환 대상이 됩니다.' : diff > 0 ? '추가 강화해도 등록은 풀리지 않습니다.' : '지금 가치 기준으로 추가 납부가 없습니다.';
+    $('current-value').textContent = money(k2.value);
+    $('general-value').textContent = money(k2.value);
+    $('value-change').textContent = !k2.insured ? '아직 등록된 가치가 없습니다.' : '등록 가치 ' + money(k2.registeredValue) + (diff > 0 ? ' → 현재 가치' : ' · 등록 유지');
+    $('paid').textContent = money(k2.paid);
+    $('premium').textContent = money(premium(k2));
+    $('difference').textContent = money(diff);
+    $('difference-hint').textContent = !k2.insured ? '첫 등록 · 보험료 전액' : diff > 0 ? premium(k2).toLocaleString('ko-KR') + ' − ' + k2.paid.toLocaleString('ko-KR') : '현재 가치에서 추가 납부 없음';
+    const registered = items.filter(item => item.insured);
+    $('registered-count').textContent = String(registered.length);
+    $('registered-list').innerHTML = registered.map(item => {
+      const due = difference(item);
+      return '<div class="item-row"><div><div class="item-name">' + item.name + '<span class="badge ' + item.tone + '">' + item.badge + '</span></div><div class="item-sub">' + item.detail + '</div></div><div class="item-money num">' + money(item.registeredValue) + '</div><div class="item-money num ' + (due ? 'gold' : 'green') + '">' + money(due) + '<small>' + (due ? '가치 상승분만' : '추가 납부 없음') + '</small></div><button class="mini" type="button" data-update="' + item.id + '" ' + (due ? '' : 'disabled') + '>' + (due ? '차액 내고 갱신' : '등록됨') + '</button></div>';
+    }).join('');
+    $('policy-note').textContent = policy === 'keep' ? '제안 A · 등록과 납부 기록을 다음 단계에도 유지합니다.' : '제안 B · 반환 후 등록과 납부 기록을 종료합니다. 다음 반환 전 다시 납부합니다.';
+    $('mail-policy-note').textContent = policy === 'keep' ? '등록 유지 · 납부 기록 이월. 다음 프레스티지에도 차액만 정산합니다.' : '등록 종료 · 납부 기록 초기화. 다음 프레스티지 전 새 보험료로 다시 등록합니다.';
+    $('side-policy').textContent = policy === 'keep' ? '반환 후에도 등록 유지 · 제안 A' : '반환 뒤 다시 등록 · 제안 B';
+    $('prestige-stage').innerHTML = mail ? '03 <span class="small muted">새 프레스티지 시작</span>' : '02 <span class="muted">→</span> 03';
+    $('side-note').className = 'status-note' + (mail ? ' blue-note' : '');
+    $('side-note').textContent = mail ? (policy === 'keep' ? '장비 3개 반환 · 등록은 계속 유지됩니다.' : '장비 3개 반환 · 다음 반환 전 다시 등록하세요.') : !k2.insured ? 'K2는 아직 프레스티지 보험 미등록 상태입니다.' : diff ? '추가 강화 후에도 등록 유지. 오른 만큼 차액만 정산합니다.' : '현재 가치 기준 정산 완료. 다음 프레스티지에 우편으로 돌아옵니다.';
+    const action = $('register');
+    action.disabled = mail || (k2.insured && diff === 0);
+    action.innerHTML = mail ? '<span class="ko">' + (received ? '수령 완료 · 장비 3개' : '우편 도착 · 장비 3개') + '</span>' : k2.insured && diff === 0 ? '<span class="ko">등록됨</span>' : '<span class="ko">' + (k2.insured ? '차액 내고 갱신' : '등록') + '</span>· ' + money(diff);
+    $('receive').disabled = received;
+    $('receive').textContent = received ? '수령 완료 · 예시 장비 3개' : '첨부 장비 모두 받기 · 목업';
+    $('mail-status').textContent = received ? '수령 완료 · 각 1개' : '수령 대기 · 각 1개';
+  }
+  // 납부 예시: 실제 결제 없이 이미 낸 금액과 등록 가치만 갱신합니다.
+  function pay(id) {
+    const item = items.find(entry => entry.id === id);
+    if (!item || mode === 'mail') return;
+    const due = difference(item);
+    if (item.insured && due === 0) return;
+    const wasInsured = item.insured;
+    item.insured = true; item.paid += due; item.registeredValue = item.value;
+    render();
+    $('notice').textContent = item.name + ' · ' + money(due) + (wasInsured ? ' 차액 갱신 예시입니다.' : ' 등록 예시입니다.') + ' 실제 루블은 사용되지 않습니다.';
+  }
+  function setTab(tab) {
+    activeTab = tab;
+    $('prestige-pane').hidden = tab !== 'prestige';
+    $('insurance-pane').hidden = tab !== 'insurance';
+    ['prestige','insurance'].forEach(name => { $(''+name+'-tab').classList.toggle('on', tab === name); $(''+name+'-tab').setAttribute('aria-pressed', String(tab === name)); });
+  }
+  function openWindow() { $('gear-window').hidden = false; $('closed-view').hidden = true; }
+  function closeWindow() { $('gear-window').hidden = true; $('closed-view').hidden = false; $('reopen').focus(); }
+  document.querySelectorAll('[data-mode]').forEach(button => button.addEventListener('click', () => loadScenario(button.dataset.mode)));
+  document.querySelectorAll('[data-policy]').forEach(button => button.addEventListener('click', () => { policy = button.dataset.policy; render(); }));
+  document.querySelectorAll('[data-close]').forEach(button => button.addEventListener('click', closeWindow));
+  $('registered-list').addEventListener('click', event => { const button = event.target.closest('[data-update]'); if (button && !button.disabled) pay(button.dataset.update); });
+  $('register').addEventListener('click', () => pay('k2'));
+  $('receive').addEventListener('click', () => { received = true; render(); });
+  $('prestige-tab').addEventListener('click', () => setTab('prestige'));
+  $('insurance-tab').addEventListener('click', () => setTab('insurance'));
+  $('back-prestige').addEventListener('click', () => setTab('prestige'));
+  $('reset').addEventListener('click', () => loadScenario(mode));
+  $('reopen').addEventListener('click', () => { openWindow(); $(activeTab + '-tab').focus(); });
+  document.addEventListener('keydown', event => { if (event.key === 'Escape' && !$('gear-window').hidden) closeWindow(); });
+  loadScenario('delta');
+})();
+</script>
+</body>
+</html>

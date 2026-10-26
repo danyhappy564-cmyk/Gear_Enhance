@@ -39,6 +39,7 @@ public sealed class StateRequest : IRequestData
     // 1.4.0 developer sandbox (EnhanceSettings.Developer / LaunchId).
     public bool Developer { get; set; }
     public string LaunchId { get; set; } = "";
+    public bool DeveloperSave { get; set; }
 }
 
 public sealed record EnhanceOperation : BaseInteractionRequestData
@@ -70,7 +71,7 @@ public sealed class EnhanceQueries(JsonUtil json, EnhanceService service) : Stat
                 new QuoteOptions { Boost = body.Boost, Instant = body.Instant, UseTicket = body.UseTicket, TicketStars = body.TicketStars, Slot = body.Slot },
                 body.Tier, body.Track); }, json))),
     new RouteAction<StateRequest>("/rf/gear-enhance/state", (_, body, session, _, _) =>
-        ValueTask.FromResult(Reply(() => { EnhanceProtocol.Validate(body.ProtocolVersion); return service.Snapshot(session, body.Developer, body.LaunchId); }, json))),
+        ValueTask.FromResult(Reply(() => { EnhanceProtocol.Validate(body.ProtocolVersion); return service.Snapshot(session, body.Developer, body.LaunchId, body.DeveloperSave); }, json))),
     new RouteAction<ReceiptRequest>("/rf/gear-enhance/receipt", (_, body, session, _, _) =>
         ValueTask.FromResult(Reply(() => { EnhanceProtocol.Validate(body.ProtocolVersion);
             return service.Receipt(session, body.QuoteId)

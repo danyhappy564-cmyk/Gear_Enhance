@@ -70,6 +70,8 @@ public sealed class EnhanceSettings
     // new for every game launch. Not balance: the server copies the records while it is on.
     public bool Developer { get; set; }
     public string LaunchId { get; set; } = "";
+    // The F12 save password matches (user 2026-10-26): nothing is copied, what is enhanced stays.
+    public bool DeveloperSave { get; set; }
     // 1.4.0 F12 quick switches (developer only, user request): no roubles / no materials for anything.
     public bool FreeRoubles { get; set; }
     public bool FreeMaterials { get; set; }
@@ -182,8 +184,8 @@ public sealed class EnhanceQuote
         && (FailureMode == FailureMode.Destroy || DestructionPercent > 0);
     public bool DowngradeProtectionAvailable => SuccessPercent < 100 && FailureMode == FailureMode.Downgrade && DestructionPercent < 100
         && (Action == EnhanceAction.Upgrade && NextLevel >= 6
-            || Action == EnhanceAction.Transcend && NextLevel >= TranscendRules.DropFrom
-            || Action == EnhanceAction.Mythic && NextLevel >= MythicRules.DropFrom);
+            || Action == EnhanceAction.Transcend && NextLevel >= TranscendRules.DropFrom && NextLevel <= TranscendRules.ProtectUpTo
+            || Action == EnhanceAction.Mythic && NextLevel >= MythicRules.DropFrom && NextLevel <= MythicRules.ProtectUpTo);
     public bool CanDestroy => SuccessPercent < 100 && (FailureMode == FailureMode.Destroy || DestructionPercent > 0) && !Protection.Destruction;
     public int AttachedItems { get; set; }
     public long ExpiresUnixSeconds { get; set; }
