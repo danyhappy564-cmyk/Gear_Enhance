@@ -1,0 +1,819 @@
+ko	en	ru	zh	where
+99. 개발자 옵션	99. Developer options	99. Настройки разработчика	99. 开发者选项	src/Client/DeveloperOptions.cs:90
+0. 빠른 설정	0. Quick switches	0. Быстрые переключатели	0. 快捷开关	src/Client/DeveloperOptions.cs:91
+모든 강화 루블 필요 없음	No roubles for anything	-	-	src/Client/DeveloperOptions.cs:92
+강화·진화·초월·신화·방지권·보험·방탄판 차액에 루블을 받지 않습니다. 개발자 옵션을 잠그면 꺼집니다.	Enhancing, evolving, transcending, mythic, tickets, insurance and plate differences cost no roubles. Off while the developer options are locked.	-	-	src/Client/DeveloperOptions.cs:93
+모든 강화 재료 필요 없음	No materials for anything	-	-	src/Client/DeveloperOptions.cs:94
+초월 재료·LEDX·그래픽 카드와 성공률 재료(독택·그래픽 카드·비트코인)를 가져가지 않습니다. 성공률 재료는 없어도 고를 수 있습니다.	Transcendence materials, LEDX, graphics cards and chance materials (dogtags, graphics cards, bitcoin) are not taken; chance materials can be picked without owning them.	-	-	src/Client/DeveloperOptions.cs:95
+확률 100% (항상 성공)	100% chance (always succeed)	-	-	src/Client/DeveloperOptions.cs:96
+강화·진화·초월·신화·??? 가 항상 성공합니다. 비용은 그대로 듭니다(위 두 설정과 따로).	Enhancing, evolving, transcending, mythic and ??? always succeed. Costs still apply (separate from the two above).	-	-	src/Client/DeveloperOptions.cs:97
+1. 기본	1. General	1. Основное	1. 常规	src/Client/DeveloperOptions.cs:98
+2. 확률	2. Chance	2. Шанс	2. 成功率	src/Client/DeveloperOptions.cs:99
+3. 비용	3. Cost	3. Стоимость	3. 费用	src/Client/DeveloperOptions.cs:100
+4. 실패	4. Failure	4. Неудача	4. 失败	src/Client/DeveloperOptions.cs:101
+5. 무기 효과	5. Weapon effects	5. Эффекты оружия	5. 武器效果	src/Client/DeveloperOptions.cs:102
+6. 방어구 효과	6. Armor effects	6. Эффекты брони	6. 护甲效果	src/Client/DeveloperOptions.cs:103
+7. 피드백	7. Feedback	7. Отклик	7. 反馈	src/Client/DeveloperOptions.cs:104
+8. 완성 보너스	8. Completion bonus	8. Бонус завершения	8. 完成奖励	src/Client/DeveloperOptions.cs:105
+9. 강화 보호	9. Protection	9. Защита	9. 强化保护	src/Client/DeveloperOptions.cs:106
+10. 스타 강화 진화	10. Star evolution	10. Звёздная эволюция	10. 星级进化	src/Client/DeveloperOptions.cs:107
+11. 3차 스타 진화	11. 3rd star evolution	11. 3-я звёздная эволюция	11. 第三次星级进化	src/Client/DeveloperOptions.cs:108
+12. 강화 보험	12. Enhancement insurance	12. Страховка улучшений	12. 强化保险	src/Client/DeveloperOptions.cs:109
+13. 초월 강화	13. Transcendence	13. Возвышение	13. 超越强化	src/Client/DeveloperOptions.cs:110
+방탄판 자동 등록	Auto-register plates	Автопривязка пластин	自动登记插板	src/Client/DeveloperOptions.cs:111
+강화된 방어구에 방탄판·내피·바이저를 끼우면 바로 그 방어구 단계를 받습니다(같거나 더 싼 방탄판, 무료). 더 비싼 방탄판은 보험·방탄판 창에서 차액을 내고 등록합니다. 끄면 모두 버튼으로 등록합니다.	Plates, soft inserts and visors put into enhanced armor get its level at once (same or cheaper plates, free). Pricier plates are registered in the insurance · plates window for the price difference. When off, every plate is registered with the button.	Пластины, мягкие вставки и визоры, вставленные в улучшенную броню, сразу получают её уровень (такие же или более дешёвые пластины — бесплатно). Более дорогие пластины привязываются в окне «Страховка · пластины» за доплату. Если выключено, все пластины привязываются кнопкой.	在已强化的护甲中装入插板、软甲内衬或面罩时，立即获得该护甲的强化等级（相同或更便宜的插板免费）。更贵的插板需在“保险 · 插板”窗口支付差价后登记。关闭后所有插板都需用按钮登记。	src/Client/DeveloperOptions.cs:112
+방탄판 차액 배율 (%)	Plate price difference multiplier (%)	-	-	src/Client/DeveloperOptions.cs:114
+더 비싼 방탄판 차액 = 가격 차이 × 가진 단계마다 (그 단계 비용 비율 × 평균 시도 횟수) × 이 값/100. 100이면 처음부터 그 방탄판으로 강화한 평균 비용과 같습니다.	Pricier plate fee = price difference × for each held level (that level's cost ratio × average attempts) × this/100. At 100 it equals the average cost of enhancing with that plate from the start.	-	-	src/Client/DeveloperOptions.cs:115
+2성 초월 성공률 (→1~→5, %)	2-star transcendence chance (→1 to →5, %)	-	-	src/Client/DeveloperOptions.cs:117
+3성 초월 성공률 (→1~→5, %)	3-star transcendence chance (→1 to →5, %)	-	-	src/Client/DeveloperOptions.cs:118
+다섯 숫자를 쉼표로 구분합니다. 형식이 틀리면 기본값을 씁니다.	Five numbers separated by commas. A wrong format uses the defaults.	-	-	src/Client/DeveloperOptions.cs:119
+2성 천장 (실패당 %p)	2-star pity (%p per failure)	-	-	src/Client/DeveloperOptions.cs:120
+3성 천장 (실패당 %p)	3-star pity (%p per failure)	-	-	src/Client/DeveloperOptions.cs:121
+실패할 때마다 그 장비의 다음 2성 초월 성공률에 더합니다. 성공하면 0으로 돌아갑니다.	Each failure adds this to that gear's next 2-star chance. A success resets it to 0.	-	-	src/Client/DeveloperOptions.cs:122
+실패할 때마다 그 장비의 다음 3성 초월 성공률에 더합니다. 성공하면 0으로 돌아갑니다.	Each failure adds this to that gear's next 3-star chance. A success resets it to 0.	-	-	src/Client/DeveloperOptions.cs:124
+천장 최대 (%p)	Pity cap (%p)	-	-	src/Client/DeveloperOptions.cs:126
+쌓이는 천장의 최대치입니다.	The most pity that can build up.	-	-	src/Client/DeveloperOptions.cs:127
+2성 비용 (기준가 대비 %)	2-star cost (% of base price)	-	-	src/Client/DeveloperOptions.cs:128
+3성 비용 (기준가 대비 %)	3-star cost (% of base price)	-	-	src/Client/DeveloperOptions.cs:129
+비용 = 최소 비용과 기준가 × 이 값/100 × 배수^현재단계 중 큰 값. 방어구는 끼운 부품 가격을 더합니다. 최대 1억 루블.	Cost = the larger of the minimum cost and base price × this/100 × multiplier^current level. Armor adds its inserted parts. Max 100,000,000 roubles.	-	-	src/Client/DeveloperOptions.cs:130
+2성 최소 비용 (루블)	2-star minimum cost (roubles)	-	-	src/Client/DeveloperOptions.cs:132
+3성 최소 비용 (루블)	3-star minimum cost (roubles)	-	-	src/Client/DeveloperOptions.cs:133
+한 번 시도의 최소 비용입니다.	Minimum cost of one attempt.	-	-	src/Client/DeveloperOptions.cs:134
+초월 단계별 비용 배수	Transcendence cost multiplier per level	-	-	src/Client/DeveloperOptions.cs:135
+단계가 오를수록 비용에 곱하는 배수입니다.	Multiplied into the cost for each level already held.	-	-	src/Client/DeveloperOptions.cs:136
+초월 하락 방지 비용 (기본 비용 대비 %)	Transcendence downgrade protection (% of base cost)	-	-	src/Client/DeveloperOptions.cs:137
+→4 시도에만 씁니다(→5는 방지 불가). 추가 비용 = 이번 초월 기본 비용 × 이 값/100(단계 제곱 없음). 100이면 하락 방지를 켰을 때 비용이 2배.	Level 4 and 5 attempts only. Extra fee = this attempt's base cost × this/100 (no level squared). At 100, protection doubles the cost.	-	-	src/Client/DeveloperOptions.cs:138
+초월 재료 요구	Require transcendence materials	-	-	src/Client/DeveloperOptions.cs:140
+끄면 재료 없이 루블만 냅니다. 재료는 성공·실패와 관계없이 소모됩니다.	When off, only roubles are paid. Materials are used up on success and failure alike.	-	-	src/Client/DeveloperOptions.cs:141
+수평 반동 감소 / 단계 (%)	Horizontal recoil reduction / level (%)	-	-	src/Client/DeveloperOptions.cs:143
+총기 2성 초월. 뒤로 차는 힘과 좌우로 튀는 각도를 함께 줄입니다. 반동 제어 강화와 합쳐 최대 80%.	Weapon 2-star transcendence. Reduces the backward kick and the left/right kick angle. At most 80% together with the recoil track.	-	-	src/Client/DeveloperOptions.cs:144
+최대 내구도 증가 / 단계 (%)	Max durability bonus / level (%)	-	-	src/Client/DeveloperOptions.cs:146
+방어구 2성 초월. 원래 최대 내구도 기준. 바꾸면 다음 강화·초월·등록 때 다시 맞춰집니다.	Armor 2-star transcendence. Based on the original max durability. A change applies at the next enhancement, transcendence or registration.	-	-	src/Client/DeveloperOptions.cs:147
+발사속도 증가 / 단계 (%)	Fire rate bonus / level (%)	-	-	src/Client/DeveloperOptions.cs:149
+총기 3성 초월(연사·점사 가능 총). 아래 상한과 비교해 작은 값을 더합니다.	Weapon 3-star transcendence (guns with auto or burst). Adds the smaller of this and the limit below.	-	-	src/Client/DeveloperOptions.cs:150
+발사속도 증가 상한 / 단계 (rpm)	Fire rate bonus limit / level (rpm)	-	-	src/Client/DeveloperOptions.cs:152
+단계당 더하는 발사속도의 최대치입니다.	The most fire rate added per level.	-	-	src/Client/DeveloperOptions.cs:153
+고장 확률 감소 / 단계 (%)	Malfunction chance reduction / level (%)	-	-	src/Client/DeveloperOptions.cs:154
+총기 3성 초월(반자동·볼트액션 총).	Weapon 3-star transcendence (semi-auto and bolt-action guns).	-	-	src/Client/DeveloperOptions.cs:155
+과열 증가 감소 / 단계 (%)	Overheat buildup reduction / level (%)	-	-	src/Client/DeveloperOptions.cs:156
+총기 3성 초월(반자동·볼트액션 총). 한 발당 쌓이는 과열을 줄입니다.	Weapon 3-star transcendence (semi-auto and bolt-action guns). Less overheat per shot.	-	-	src/Client/DeveloperOptions.cs:157
+둔탁상 감소 / 단계 (%)	Blunt damage reduction / level (%)	-	-	src/Client/DeveloperOptions.cs:159
+방어구 3성 초월. 막았을 때 몸에 들어오는 피해를 줄입니다. 3단계 +1클, 5단계 +2클(최대 6클).	Armor 3-star transcendence. Less damage gets through when the armor stops a hit. +1 class at level 3, +2 at level 5 (max class 6).	-	-	src/Client/DeveloperOptions.cs:160
+6클 대체 둔탁상 감소 / 클 (%)	Class 6 substitute blunt reduction / class (%)	-	-	src/Client/DeveloperOptions.cs:162
+이미 6클 이상이라 등급을 못 올리는 부품이 1클 대신 받는 둔탁상 감소입니다.	Blunt reduction a part at class 6 or above gets for each class it cannot gain.	-	-	src/Client/DeveloperOptions.cs:163
+일반 보험 반환 확률 (%)	Basic insurance return chance (%)	-	-	src/Client/DeveloperOptions.cs:165
+고급 보험 반환 확률 (%)	Advanced insurance return chance (%)	-	-	src/Client/DeveloperOptions.cs:166
+프리미엄 보험 반환 확률 (%)	Premium insurance return chance (%)	-	-	src/Client/DeveloperOptions.cs:167
+레이드에서 잃은 강화 장비가 강화된 상태로 우편 반환될 확률. 가입할 때의 값으로 고정됩니다.	Chance that enhanced gear lost in a raid is mailed back still enhanced. Locked in when the insurance is bought.	-	-	src/Client/DeveloperOptions.cs:168
+일반 보험료 (강화 가치 대비 %)	Basic insurance fee (% of value)	-	-	src/Client/DeveloperOptions.cs:170
+고급 보험료 (강화 가치 대비 %)	Advanced insurance fee (% of value)	-	-	src/Client/DeveloperOptions.cs:171
+프리미엄 보험료 (강화 가치 대비 %)	Premium insurance fee (% of value)	-	-	src/Client/DeveloperOptions.cs:172
+프레스티지 보험료 (강화 가치 대비 %)	Prestige insurance fee (% of value)	-	-	src/Client/DeveloperOptions.cs:173
+프레스티지를 달성해 다음 단계로 넘어갈 때만 등록한 장비를 우편으로 돌려줍니다. 가치가 오르면 차액만 냅니다. 최대 프레스티지에서는 등록할 수 없습니다.	Registered gear is mailed back only when you achieve prestige and advance to the next stage. When its value rises only the difference is paid. It cannot be registered at the maximum prestige.	-	-	src/Client/DeveloperOptions.cs:174
+강화 가치 = 지금 단계·스타까지 강화하는 데 드는 기본 비용 합계(방어구는 등록한 방탄판 가격 포함). 최소 비용 이상.	Enhancement value = the base cost of reaching the current levels and stars (armor includes its registered plates). At least the minimum cost.	-	-	src/Client/DeveloperOptions.cs:176
+개발자 옵션 비밀번호	Developer options password	Пароль настроек разработчика	开发者选项密码	src/Client/DeveloperOptions.cs:179
+개발자 저장 비밀번호	Developer save password	Пароль сохранения разработчика	开发者保存密码	src/Client/DeveloperOptions.cs:180
+개발자 옵션을 연 상태에서 이 비밀번호를 넣으면 그동안 한 강화가 되돌아가지 않고 저장됩니다. 비우면 다시 잠그거나 게임을 다시 켤 때 되돌아갑니다.	With the developer options open, this password keeps what you enhance instead of rolling it back. Leave it empty to roll back on lock or on the next launch.	Пока настройки разработчика открыты, этот пароль сохраняет ваши улучшения вместо отката. Оставьте пустым, чтобы откатить при блокировке или следующем запуске.	开发者选项开启时输入此密码，期间的强化会被保存而不会回滚。留空则在重新锁定或下次启动游戏时回滚。	src/Client/DeveloperOptions.cs:181
+비밀번호를 넣으면 확률·비용·항상 성공·실패·능력치·보호·진화·보험 밸런스 설정이 표시되고 적용됩니다. 잠겨 있으면 기본 밸런스로 강화합니다(바꿔 둔 값은 지우지 않음). 입력 후 F12 창을 닫았다 다시 열면 표시됩니다. 열어 둔 동안 한 강화는 잠그거나 게임을 다시 켜면(Alt+F4 포함) 열기 전 기록으로 되돌아갑니다(쓴 루블·재료와 파괴된 장비는 돌아오지 않음).	Enter the password to show and apply the chance, cost, always-succeed, failure, stat, protection, evolution and insurance balance settings. While locked, enhancing uses the default balance (changed values are kept, not deleted). Close and reopen F12 after entering it. What is enhanced while it is open goes back to the records from before it opened when you lock it or start the game again (Alt+F4 included); spent roubles, materials and destroyed gear do not come back.	Введите пароль, чтобы показать и применить настройки баланса: шанс, стоимость, всегда успех, неудача, характеристики, защита, эволюция и страховка. Пока заблокировано, улучшение идёт по стандартному балансу (изменённые значения сохраняются). После ввода закройте и снова откройте F12. Всё, что улучшено при открытых настройках, откатывается к прежним записям при блокировке или новом запуске игры (включая Alt+F4); потраченные рубли, материалы и уничтоженное снаряжение не возвращаются.	输入密码后会显示并应用成功率、费用、必定成功、失败、属性、保护、进化和保险的平衡设置。锁定时按默认平衡强化（已修改的值不会被删除）。输入后请关闭并重新打开 F12。开启期间进行的强化在重新锁定或重启游戏（包括 Alt+F4）时会回到开启前的记录；已花费的卢布、材料和被摧毁的装备不会返还。	src/Client/DeveloperOptions.cs:183
+강화 메뉴 사용	Enable the Enhance gear menu	Меню «Улучшить снаряжение»	启用“装备强化”菜单	src/Client/DeveloperOptions.cs:185
+창고의 무기·방어구 우클릭에 장비 강화를 표시합니다. 방탄판·내피는 방어구와 함께 강화되므로 표시하지 않습니다.	Adds "Enhance gear" to the right-click menu of weapons and armor in the stash. Plates and inserts are enhanced with their armor, so they do not get it.	Добавляет «Улучшить снаряжение» в меню ПКМ оружия и брони в схроне. Пластины и вставки улучшаются вместе с бронёй, поэтому у них этого пункта нет.	在仓库中右键武器和护甲时显示“装备强化”。插板和软甲内衬随护甲一起强化，因此不显示。	src/Client/DeveloperOptions.cs:186
+성공률 (%)	Success chance (%)	-	-	src/Client/DeveloperOptions.cs:188
++0에서 +1로 강화할 때 성공률. 이후 현재 단계 × 단계별 감소량만큼 줄어듭니다.	Chance for +0 → +1. It then drops by current level × per-level loss.	-	-	src/Client/DeveloperOptions.cs:189
+단계별 성공률 감소 (%p)	Chance loss per level (%p)	-	-	src/Client/DeveloperOptions.cs:191
+기본: +1 시도 75%, +10 시도 30%. 0이면 같은 확률을 유지합니다.	Default: 75% for +1, 30% for +10. 0 keeps the same chance.	-	-	src/Client/DeveloperOptions.cs:192
+항상 성공 (100%)	Always succeed (100%)	-	-	src/Client/DeveloperOptions.cs:193
+켜면 성공률 설정 대신 100%를 적용합니다. 비용은 소모됩니다.	Uses 100% instead of the chance settings. The cost is still paid.	-	-	src/Client/DeveloperOptions.cs:194
+최대 강화 단계	Max level	-	-	src/Client/DeveloperOptions.cs:195
+각 항목 최대 단계. 효과 곡선·1차 스타 진화 조건도 함께 바뀝니다. 고위험 시작은 선택 항목 +6 시도(+5→+6)로 고정됩니다.	Max level of each track. Also changes the effect curve and the 1st star evolution condition. High risk always starts at the +6 attempt (+5 → +6).	-	-	src/Client/DeveloperOptions.cs:196
+기준 가격	Base price	-	-	src/Client/DeveloperOptions.cs:198
+Handbook = 북밸류, Flea = SPT 플리 기준가. 무기는 본체만, 방어구는 슬롯에 끼운 방탄판·삽입물·바이저 가격을 더합니다.	Handbook = handbook value, Flea = SPT flea price. Weapons count the body only; armor adds the plates, inserts and visors in its slots.	-	-	src/Client/DeveloperOptions.cs:199
+기준 가격 대비 비용 (%)	Cost (% of base price)	-	-	src/Client/DeveloperOptions.cs:201
+0이면 최소 비용만 적용됩니다.	0 uses only the minimum cost.	-	-	src/Client/DeveloperOptions.cs:202
+단계별 비용 배수	Cost multiplier per level	-	-	src/Client/DeveloperOptions.cs:203
+기준가 × 비용 비율 × 배수^현재단계. 최대 1억 루블.	Base price × cost % × multiplier^current level. Max 100,000,000 roubles.	-	-	src/Client/DeveloperOptions.cs:204
+최소 비용 (루블)	Minimum cost (roubles)	-	-	src/Client/DeveloperOptions.cs:205
+창고 안의 잠기지 않은 루블을 사용합니다.	Uses unlocked roubles in the stash.	-	-	src/Client/DeveloperOptions.cs:206
+실패 처리	On failure	-	-	src/Client/DeveloperOptions.cs:207
+일반 구간 실패 처리. KeepItem: 비용만 / ZeroDurability: 현재 내구도 0 / Destroy: 본체·부착물·탄약 삭제 / Downgrade: 선택 항목 -1. 고위험 구간에서는 아래 파괴·하락 규칙이 우선합니다.	Failure outside the high-risk range. KeepItem: fee only / ZeroDurability: current durability 0 / Destroy: delete gear, mods and ammo / Downgrade: selected track -1. In the high-risk range the destruction/downgrade rules below apply instead.	-	-	src/Client/DeveloperOptions.cs:208
+고위험 강화 (무기·방어구)	High risk (weapons and armor)	-	-	src/Client/DeveloperOptions.cs:210
+선택한 항목의 다음 단계가 +6 이상이면(+5→+6부터) 실패 시 파괴 또는 해당 항목 -1. 1.4.0부터 방어구도 같습니다. 다른 항목 단계는 무관합니다.	When the selected track's next level is +6 or more (from +5 → +6), failure destroys the gear or drops that track by 1. From 1.4.0 armor works the same. Other tracks do not matter.	-	-	src/Client/DeveloperOptions.cs:211
+고위험 실패 중 파괴 확률 (%)	Destruction share of high-risk failures (%)	-	-	src/Client/DeveloperOptions.cs:213
+성공 판정과 별도입니다. 고위험 실패 중 이 확률로 본체·부착물·탄약 파괴, 나머지는 선택 항목 -1. 0은 하락만, 100은 파괴만.	Rolled separately from success. This share of high-risk failures destroys the gear, mods and ammo; the rest drop the selected track by 1. 0 = downgrade only, 100 = destruction only.	-	-	src/Client/DeveloperOptions.cs:214
+반동 감소 / 단계 (%)	Recoil reduction / level (%)	-	-	src/Client/DeveloperOptions.cs:216
+반동 감소 상한 (%)	Recoil reduction cap (%)	-	-	src/Client/DeveloperOptions.cs:217
+인체공학 증가 / 단계	Ergonomics bonus / level	-	-	src/Client/DeveloperOptions.cs:218
+인체공학 증가 상한	Ergonomics bonus cap	-	-	src/Client/DeveloperOptions.cs:219
+탄 퍼짐 감소 / 단계 (%)	Dispersion reduction / level (%)	-	-	src/Client/DeveloperOptions.cs:220
+탄 퍼짐 감소 상한 (%)	Dispersion reduction cap (%)	-	-	src/Client/DeveloperOptions.cs:221
+내구도 소모 감소 / 단계 (%)	Durability loss reduction / level (%)	-	-	src/Client/DeveloperOptions.cs:222
+내구도 소모 감소 상한 (%)	Durability loss reduction cap (%)	-	-	src/Client/DeveloperOptions.cs:223
+장비 페널티 완화 / 단계 (%)	Gear penalty relief / level (%)	-	-	src/Client/DeveloperOptions.cs:224
+장비 페널티 완화 상한 (%)	Gear penalty relief cap (%)	-	-	src/Client/DeveloperOptions.cs:225
+최대 효과 기준 = 이 값 × 최대 단계와 효과 상한 중 작은 값. 실제 단계별 증가량은 후반 1→4배 곡선으로 배분됩니다. 기존 장비에도 적용됩니다.	Max effect = the smaller of this value × max level and the effect cap. Per-level gains grow toward later levels (up to 4x). Also applies to existing gear.	-	-	src/Client/DeveloperOptions.cs:226
+진화 보너스 적용 전 상한. 보너스 후 안전 한계는 감소율 80%, 인체공학 추가 50입니다.	Cap before the evolution bonus. After the bonus the safety limits are 80% reduction and +50 ergonomics.	-	-	src/Client/DeveloperOptions.cs:228
+자세한 로그 남기기	Detailed logging	Подробный журнал	详细日志	src/Client/DeveloperOptions.cs:230
+체크한 동안 효과음 설정·재생·대체 경로, 강화 창 UI CPU, 초월 발사속도 실측, 은신처 장비 연결 진단을 LogOutput.log에 남깁니다. 실제 오류·경고는 체크와 관계없이 기록합니다.	While on, writes sound setup/playback/fallback, window UI CPU, measured transcendence fire rate and hideout gear link diagnostics to LogOutput.log. Real errors and warnings are always logged.	Пока включено, пишет в LogOutput.log диагностику звука (настройка, воспроизведение, замена), загрузку ЦП окна, замер скорострельности возвышения и связи снаряжения в убежище. Настоящие ошибки и предупреждения пишутся всегда.	开启时，将音效设置/播放/替代路径、强化窗口界面 CPU、超越射速实测和藏身处装备关联诊断写入 LogOutput.log。真正的错误和警告始终会记录。	src/Client/DeveloperOptions.cs:231
+강화 효과음	Enhancement sounds	Звуки улучшения	强化音效	src/Client/DeveloperOptions.cs:233
+강화 중·결과·버튼·항목·체크박스·창 여닫기에 효과음을 재생합니다. 끄더라도 게이지 시간은 유지합니다.	Plays sounds for charging, results, buttons, tracks, check boxes and opening/closing the window. The gauge time stays the same when off.	Звуки зарядки, результатов, кнопок, веток, флажков и открытия/закрытия окна. Если выключено, время шкалы не меняется.	为蓄力、结果、按钮、项目、复选框和窗口开关播放音效。关闭后蓄力时间不变。	src/Client/DeveloperOptions.cs:234
+전용 강화 음원 사용	Use bundled enhancement sounds	Свои звуки улучшения	使用专用强化音效	src/Client/DeveloperOptions.cs:236
+사용자 제공 음원6개 사용. 끄면 기존 게임 UI 소리를 사용합니다. 전용 음원 오류 시에도 기본음으로 대체합니다.	Uses the 6 bundled sounds. When off, the game's own UI sounds are used. Also falls back to them if the bundled sounds fail.	Использует 6 встроенных звуков. Если выключено — звуки интерфейса игры. При ошибке встроенных звуков тоже используются они.	使用内置的 6 个音效。关闭后使用游戏自带的界面音效。内置音效出错时也会改用游戏音效。	src/Client/DeveloperOptions.cs:237
+전용 음원 음량 (%)	Bundled sound volume (%)	Громкость своих звуков (%)	专用音效音量 (%)	src/Client/DeveloperOptions.cs:239
+게임의 마스터/인터페이스 음량에 추가로 곱합니다. 0이면 전용 음원 무음. 기본 게임음 모드에서는 게임 소리 설정을 사용합니다.	Multiplied on top of the game's master/interface volume. 0 mutes the bundled sounds. Game-sound mode uses the game's sound settings.	Умножается на общую громкость и громкость интерфейса игры. 0 — без своих звуков. В режиме звуков игры действуют её настройки.	在游戏的主音量/界面音量基础上再相乘。0 为静音。使用游戏音效时按游戏的声音设置。	src/Client/DeveloperOptions.cs:240
+전 항목 완성 추가 효과 (%)	2nd star bonus effect (%)	-	-	src/Client/DeveloperOptions.cs:242
+2차 스타 성공 시 기본 강화 효과의2배(+100%). 반동15%→30%, 인체공학+10→+20. 감소율80%/추가인체공학50 상한. 일반 최대 단계만으로 자동 적용되지 않습니다.	On 2nd star success, 2x the base effect (+100%). Recoil 15% → 30%, ergonomics +10 → +20. Capped at 80% reduction / +50 ergonomics. Not applied just by maxing levels.	-	-	src/Client/DeveloperOptions.cs:243
+파괴 방지 비용 계수 (%)	Destruction protection fee (%)	-	-	src/Client/DeveloperOptions.cs:245
+추가 비용 = 기본 강화 비용 × 이 값/100 × 시도 단계². 해당 파괴 위험이 있을 때만 부과합니다.	Extra cost = base cost × this/100 × attempted level². Charged only when destruction is possible.	-	-	src/Client/DeveloperOptions.cs:246
+단계 하락 방지 비용 계수 (%)	Downgrade protection fee (%)	-	-	src/Client/DeveloperOptions.cs:248
+추가 비용 = 기본 강화 비용 × 이 값/100 × 시도 단계². 하락 위험이 있을 때만 부과합니다. 보호비도 성공/실패와 관계없이 소모됩니다.	Extra cost = base cost × this/100 × attempted level². Charged only when a downgrade is possible. Paid on success and failure alike.	-	-	src/Client/DeveloperOptions.cs:249
+진화 성공률 (%)	Evolution chance (%)	-	-	src/Client/DeveloperOptions.cs:251
+1차 스타 전 항목 최대 달성 후 별도 진화 창에서 사용합니다. 실패 시 파괴, 보호 불가.	Used in the separate evolution window after every 1st star track is maxed. Failure destroys the gear; no protection.	-	-	src/Client/DeveloperOptions.cs:252
+진화 기준가 대비 비용 (%)	Evolution cost (% of base price)	-	-	src/Client/DeveloperOptions.cs:254
+진화 비용 = 최소 200만 루블과 본체 기준가 × 이 값/100 중 큰 값. 기본3배, 1회 최대1억 루블.	Evolution cost = the larger of 2,000,000 roubles and base price × this/100. Default 3x, max 100,000,000 roubles per try.	-	-	src/Client/DeveloperOptions.cs:255
+3차 스타 성공률 (%)	3rd star chance (%)	-	-	src/Client/DeveloperOptions.cs:257
+2차 스타 성공 및 전 항목 최대인 장비만 시도. 실패 시 보호 없이 파괴합니다.	Only gear with a 2nd star and every track maxed. Failure destroys it with no protection.	-	-	src/Client/DeveloperOptions.cs:258
+3차 스타 총 추가 효과 (%)	3rd star total bonus (%)	-	-	src/Client/DeveloperOptions.cs:260
+3차 스타 성공 시 기본 강화 효과의3배(+200%). 2차 배율에 중첩하지 않습니다. 반동15%→45%, 인체공학+10→+30. 감소율80%/추가인체공학50 상한, 빨간색 ★★★.	On 3rd star success, 3x the base effect (+200%). Does not stack with the 2nd star. Recoil 15% → 45%, ergonomics +10 → +30. Capped at 80% reduction / +50 ergonomics, red ★★★.	-	-	src/Client/DeveloperOptions.cs:261
+연출 줄이기	Reduce motion	Меньше анимации	减少动画	src/Client/DeveloperOptions.cs:264
+켜면 상태창 떨어짐·막대 채움·창 흔들림·신화 섬광·빛 고리·불꽃을 끄고 바로 보여 줍니다.	Turns off the stat drop-in, bar fills, shake, mythic flash, rings and sparks; everything shows at once.	Отключает выпадение характеристик, заполнение шкал, тряску, мифическую вспышку, кольца и искры — всё показывается сразу.	关闭属性面板掉落、进度条填充、窗口震动、神话闪光、光环和火花，直接显示结果。	src/Client/DeveloperOptions.cs:265
+창고 신화 칸 반짝임	Stash mythic shimmer	Мерцание мифических ячеек	仓库神话格子闪烁	src/Client/DeveloperOptions.cs:266
+창고에서 신화 장비 칸 테두리가 분홍↔금빛으로 반짝입니다. 끄면 고정된 분홍 테두리만 보입니다.	Mythic gear cells in the stash shimmer pink and gold. Off: a steady pink border.	Ячейки мифического снаряжения в схроне мерцают розовым и золотым. Если выключено — ровная розовая рамка.	仓库中神话装备格子的边框在粉色和金色间闪烁。关闭后为固定的粉色边框。	src/Client/DeveloperOptions.cs:267
+파괴 확인 창	Destruction prompt	Подтверждение разрушения	损毁确认窗口	src/Client/DeveloperOptions.cs:268
+파괴될 수 있는 시도(파괴 방지 없는 +6 이상, 스타 진화) 전에 한 번 더 묻습니다. ??? 는 이 설정과 관계없이 항상 묻습니다.	Asks once more before an attempt that can destroy the gear (unguarded +6 and up, star evolution). ??? always asks.	Ещё раз спрашивает перед попыткой, которая может уничтожить снаряжение (+6 и выше без защиты, звёздная эволюция). ??? спрашивает всегда.	在可能损毁装备的尝试（无保护的 +6 及以上、星级进化）前再确认一次。??? 无论此设置如何始终会确认。	src/Client/DeveloperOptions.cs:269
+14. 성공률 재료	14. Chance materials	14. Материалы шанса	14. 成功率材料	src/Client/DeveloperOptions.cs:270
+15. 즉시 강화 · 파괴 방지권	15. Instant · destruction tickets	15. Мгновенно · талоны защиты	15. 即时强化 · 防损毁券	src/Client/DeveloperOptions.cs:271
+16. ??? · 신화	16. ??? · Mythic	16. ??? · Миф	16. ??? · 神话	src/Client/DeveloperOptions.cs:272
+일반 보험 돌아오는 시간 (시간)	Basic insurance return delay (hours)	-	-	src/Client/DeveloperOptions.cs:273
+고급 보험 돌아오는 시간 (시간)	Advanced insurance return delay (hours)	-	-	src/Client/DeveloperOptions.cs:274
+프리미엄 보험 돌아오는 시간 (시간)	Premium insurance return delay (hours)	-	-	src/Client/DeveloperOptions.cs:275
+레이드에서 잃은 장비가 강화 보험으로 돌아올 때 우편이 오기까지의 실제 시간입니다. 0이면 즉시. 가입할 때 값으로 고정됩니다.	Real hours until gear lost in a raid and returned by enhancement insurance arrives by mail. 0 = at once. Fixed when the insurance is bought.	-	-	src/Client/DeveloperOptions.cs:276
+재료 1개가 더하는 성공률입니다. 2종까지 고를 수 있고 성공률은 100%를 넘지 않습니다.	Chance one item adds. Up to two kinds per attempt; the chance never exceeds 100%.	-	-	src/Client/DeveloperOptions.cs:277
+이 재료로 올릴 수 있는 최대 성공률입니다. 최대 개수 = 최대 ÷ 개당.	Most chance this material can add. Max count = max ÷ per item.	-	-	src/Client/DeveloperOptions.cs:278
+재료 1개마다 함께 내는 루블입니다. 재료와 루블은 성공·실패와 관계없이 소모됩니다.	Roubles paid with each item. Items and roubles are spent on success or failure.	-	-	src/Client/DeveloperOptions.cs:279
+독택 개당 성공률 (%p)	Dogtag chance per item (%p)	-	-	src/Client/DeveloperOptions.cs:280
+독택 최대 (%p)	Dogtag max (%p)	-	-	src/Client/DeveloperOptions.cs:281
+독택 개당 비용 (루블)	Dogtag cost per item (roubles)	-	-	src/Client/DeveloperOptions.cs:282
+그래픽 카드 개당 성공률 (%p)	Graphics card chance per item (%p)	-	-	src/Client/DeveloperOptions.cs:283
+그래픽 카드 최대 (%p)	Graphics card max (%p)	-	-	src/Client/DeveloperOptions.cs:284
+그래픽 카드 개당 비용 (루블)	Graphics card cost per item (roubles)	-	-	src/Client/DeveloperOptions.cs:285
+비트코인 개당 성공률 (%p)	Bitcoin chance per item (%p)	-	-	src/Client/DeveloperOptions.cs:286
+비트코인 최대 (%p)	Bitcoin max (%p)	-	-	src/Client/DeveloperOptions.cs:287
+비트코인 개당 비용 (루블)	Bitcoin cost per item (roubles)	-	-	src/Client/DeveloperOptions.cs:288
+한 번에 쓸 재료 종류 (최대)	Material kinds per attempt (max)	-	-	src/Client/DeveloperOptions.cs:289
+한 시도에 고를 수 있는 재료 종류 수입니다. ??? 에는 재료를 쓸 수 없습니다.	How many material kinds one attempt can use. ??? takes no materials.	-	-	src/Client/DeveloperOptions.cs:290
+즉시 강화 비용 (루블)	Instant fee (roubles)	-	-	src/Client/DeveloperOptions.cs:291
+충전 게이지 없이 바로 결과를 봅니다. 일반 강화·초월·신화에만 있고 스타 진화·??? 에는 없습니다.	Skip the charge gauge and see the result at once. Enhancement, transcendence and mythic only; not star evolution or ???.	-	-	src/Client/DeveloperOptions.cs:292
+장비 하나가 평생 살 수 있는 장수입니다. 다 사면 더 살 수 없습니다.	Tickets one gear can ever buy. None more once they are all bought.	-	-	src/Client/DeveloperOptions.cs:293
+방지권 1장 가격입니다. 쓰면 진화 시도마다 1장 소모, 실패해도 장비가 남습니다.	Price of one ticket. Using it spends one per evolution attempt; a failure keeps the gear.	-	-	src/Client/DeveloperOptions.cs:294
+★★ 진화 방지권 최대 (장)	★★ evolution tickets (max)	-	-	src/Client/DeveloperOptions.cs:295
+★★ 진화 방지권 가격 (루블)	★★ evolution ticket price (roubles)	-	-	src/Client/DeveloperOptions.cs:296
+★★★ 진화 방지권 최대 (장)	★★★ evolution tickets (max)	-	-	src/Client/DeveloperOptions.cs:297
+★★★ 진화 방지권 가격 (루블)	★★★ evolution ticket price (roubles)	-	-	src/Client/DeveloperOptions.cs:298
+??? 방지권 최대 (장)	??? tickets (max)	-	-	src/Client/DeveloperOptions.cs:299
+??? 방지권 가격 (루블)	??? ticket price (roubles)	-	-	src/Client/DeveloperOptions.cs:300
+★★★ 장비 하나가 평생 살 수 있는 ??? 파괴 방지권 장수입니다. 기본 1장(추가 구매 불가).	??? destruction tickets one ★★★ gear can ever buy. Default 1 (no more after it).	-	-	src/Client/DeveloperOptions.cs:301
+??? 파괴 방지권 1장 가격입니다. 쓰면 그 ??? 시도에 1장 소모, 실패해도 ★★★ 장비가 그대로 남습니다.	Price of one ??? ticket. Using it spends it on that ??? try; a failure keeps the ★★★ gear.	-	-	src/Client/DeveloperOptions.cs:302
+??? 성공 확률 (%)	??? success chance (%)	-	-	src/Client/DeveloperOptions.cs:303
+★★★ 장비만 도전합니다. 실패하면 장비·부착물·기록이 파괴됩니다(??? 방지권을 쓰면 유지). 재료·즉시 강화는 쓸 수 없습니다.	★★★ gear only. Failure destroys the gear, its attachments and records (kept with the ??? ticket). No materials or instant.	-	-	src/Client/DeveloperOptions.cs:304
+??? 비용 (루블)	??? cost (roubles)	-	-	src/Client/DeveloperOptions.cs:305
+??? 한 번 도전 비용입니다.	Cost of one ??? attempt.	-	-	src/Client/DeveloperOptions.cs:306
+??? LEDX (개)	??? LEDX (items)	-	-	src/Client/DeveloperOptions.cs:307
+??? 한 번에 필요한 LEDX 수입니다.	LEDX needed for one ??? attempt.	-	-	src/Client/DeveloperOptions.cs:308
+신화 성공률 (→1~→5, %)	Mythic chance (→1 to →5, %)	-	-	src/Client/DeveloperOptions.cs:309
+신화 천장 (실패당 %p)	Mythic pity (%p per failure)	-	-	src/Client/DeveloperOptions.cs:310
+실패할 때마다 그 장비의 다음 신화 성공률에 더합니다. 성공하면 0으로 돌아갑니다.	Added to that gear's next mythic chance after every failure. Resets to 0 on success.	-	-	src/Client/DeveloperOptions.cs:311
+신화 천장 최대 (%p)	Mythic pity max (%p)	-	-	src/Client/DeveloperOptions.cs:312
+신화 기본 비용 (루블)	Mythic base cost (roubles)	-	-	src/Client/DeveloperOptions.cs:313
+→1 시도 비용입니다. 단계마다 아래 배수를 곱합니다.	Cost of the →1 attempt. Each level multiplies it by the factor below.	-	-	src/Client/DeveloperOptions.cs:314
+신화 단계별 비용 배수	Mythic cost multiplier per level	-	-	src/Client/DeveloperOptions.cs:315
+기본 1.1: 500만 → 550만 → 605만 → 665.5만 → 732.05만.	Default 1.1: 5,000,000 → 5,500,000 → 6,050,000 → 6,655,000 → 7,320,500.	-	-	src/Client/DeveloperOptions.cs:316
+신화 LEDX (개)	Mythic LEDX (items)	-	-	src/Client/DeveloperOptions.cs:317
+신화 강화 한 번에 필요한 LEDX 수입니다.	LEDX needed for one mythic attempt.	-	-	src/Client/DeveloperOptions.cs:318
+신화 재료 요구	Require mythic materials	-	-	src/Client/DeveloperOptions.cs:319
+끄면 ???·신화·다시 뽑기에 LEDX·그래픽 카드 없이 루블만 냅니다.	Off: ???, mythic attempts and rerolls cost roubles only, no LEDX or graphics card.	-	-	src/Client/DeveloperOptions.cs:320
+신화 하락 방지 비용 (기본 비용 대비 %)	Mythic downgrade protection (% of base cost)	-	-	src/Client/DeveloperOptions.cs:321
+→3 시도에만 씁니다. →3·→4·→5는 실패하면 1단계 하락하고, →4·→5는 방지할 수 없습니다. 방지하면 이 비율만큼 더 냅니다.	Only for the →3 attempt. →3, →4 and →5 drop one level on failure; →4 and →5 cannot be protected. Protection costs this share extra.	-	-	src/Client/DeveloperOptions.cs:322
+신화 무기 탄 데미지·관통 / 단계 (%)	Mythic weapon damage · penetration per level (%)	-	-	src/Client/DeveloperOptions.cs:323
+그 총으로 쏜 탄에만 붙습니다. 스타 배율을 받지 않습니다.	Only bullets fired from that gun. No star multiplier.	-	-	src/Client/DeveloperOptions.cs:324
+신화 방어구 받는 피해 감소 / 단계 (%)	Mythic armor damage taken reduction per level (%)	-	-	src/Client/DeveloperOptions.cs:325
+신화 방어구·헬멧을 입은 플레이어가 받는 피해를 줄입니다. 머리에 맞으면 절반만 줄입니다.	Reduces the damage the player wearing mythic armor or a mythic helmet takes. Hits to the head are reduced by half as much.	-	-	src/Client/DeveloperOptions.cs:326
+신화 방어구 추가 부위 (곳)	Mythic armor extra zones	-	-	src/Client/DeveloperOptions.cs:327
+??? 성공 때 아직 못 막는 부위 중 무작위로 더 막는 곳의 수입니다.	Zones the gear does not protect yet that a ??? success adds at random.	-	-	src/Client/DeveloperOptions.cs:328
+다시 뽑기 기본 비용 (루블)	Reroll base cost (roubles)	-	-	src/Client/DeveloperOptions.cs:329
+추가 부위 한 곳을 다시 뽑는 첫 비용입니다. 그 장비에서 뽑을 때마다 아래 배수를 곱합니다.	First cost to reroll one added zone. Every reroll on that gear multiplies it by the factor below.	-	-	src/Client/DeveloperOptions.cs:330
+다시 뽑기 비용 배수	Reroll cost multiplier	-	-	src/Client/DeveloperOptions.cs:331
+기본 1.5: 200만 → 300만 → 450만 → 675만.	Default 1.5: 2,000,000 → 3,000,000 → 4,500,000 → 6,750,000.	-	-	src/Client/DeveloperOptions.cs:332
+다시 뽑기 그래픽 카드 (개)	Reroll graphics cards (items)	-	-	src/Client/DeveloperOptions.cs:333
+다시 뽑기 한 번에 필요한 그래픽 카드 수입니다.	Graphics cards needed for one reroll.	-	-	src/Client/DeveloperOptions.cs:334
+장비 강화	Enhance gear	Улучшить снаряжение	装备强化	src/Client/GameBridge.cs:142
+기존 인벤토리 작업의 응답 시간이 초과됐습니다.	Pending inventory actions timed out.	Ожидающие действия инвентаря не ответили вовремя.	等待中的物品栏操作超时。	src/Client/GameBridge.cs:153
+기존 인벤토리 작업을 완료하지 못했습니다.	Pending inventory actions failed.	Не удалось завершить ожидающие действия инвентаря.	等待中的物品栏操作未能完成。	src/Client/GameBridge.cs:156
+서버 응답을 읽을 수 없습니다.	Cannot read the server response.	Не удалось прочитать ответ сервера.	无法读取服务器响应。	src/Client/GameBridge.cs:215
+서버 응답 시간이 초과됐습니다.	The server response timed out.	Сервер не ответил вовремя.	服务器响应超时。	src/Client/GameBridge.cs:223
+장비 상태	Gear stats	Характеристики	装备属性	src/Client/Plugin.AmmoPanel.cs:32
+탄 비교	Ammo	Патроны	弹药对比	src/Client/Plugin.AmmoPanel.cs:32
+장전 탄	Loaded	Заряжено	已装填	src/Client/Plugin.AmmoPanel.cs:47
+없음	None	Нет	无	src/Client/Plugin.AmmoPanel.cs:48
+원래	Base	База	原始	src/Client/Plugin.AmmoPanel.cs:52
+지금 {0}	Now {0}	Сейчас {0}	当前 {0}	src/Client/Plugin.AmmoPanel.cs:53
+지금	Now	Сейчас	当前	src/Client/Plugin.AmmoPanel.cs:53
+다음 {0}	Next {0}	Далее {0}	下一级 {0}	src/Client/Plugin.AmmoPanel.cs:54
+총에 장전된 탄이 없습니다.\n약실이나 탄창에 탄을 넣으면 비교해 보여 줍니다.	No round is loaded.\nPut rounds in the chamber or magazine to compare.	Патрон не заряжен.\nВставьте патроны в патронник или магазин для сравнения.	枪内没有装填弹药。\n在枪膛或弹匣中装入弹药后即可对比。	src/Client/Plugin.AmmoPanel.cs:58
+신화 무기만 탄이 바뀝니다(??? 성공 후).	Only a mythic gun changes its rounds (after ???).	Патроны меняет только мифическое оружие (после ???).	只有神话武器会改变弹药（??? 成功后）。	src/Client/Plugin.AmmoPanel.cs:78
+이 총에 든 탄·이 총으로 쏘는 탄에만 적용 · 창고의 같은 탄은 그대로	Only rounds in or fired from this gun · the same rounds elsewhere stay	Только патроны в этом оружии и выпущенные из него · такие же патроны в других местах не меняются	仅对此枪内及由此枪射出的子弹生效 · 仓库中相同弹药不变	src/Client/Plugin.AmmoPanel.cs:79
+탄 데미지	Damage	Урон	伤害	src/Client/Plugin.AmmoPanel.cs:121
+관통력	Penetration	Пробитие	穿透力	src/Client/Plugin.AmmoPanel.cs:121
+명중률	Accuracy	Точность	精度	src/Client/Plugin.AmmoPanel.cs:130
+반동	Recoil	Отдача	后坐力	src/Client/Plugin.AmmoPanel.cs:130
+내구도 소모	Wear	Износ	耐久消耗	src/Client/Plugin.AmmoPanel.cs:131
+과열	Heat	Нагрев	过热	src/Client/Plugin.AmmoPanel.cs:131
+불발 확률	Misfire	Осечка	哑火率	src/Client/Plugin.AmmoPanel.cs:132
+고장(불발)	Malf. misfire	Неиспр. осечка	故障(哑火)	src/Client/Plugin.AmmoPanel.cs:132
+고장(급탄)	Malf. feed	Неиспр. подача	故障(供弹)	src/Client/Plugin.AmmoPanel.cs:133
+불이익	Penalties	Штрафы	负面效果	src/Client/Plugin.AmmoPanel.cs:150
+결과 미확정: 재시도하지 말고 게임 종료 후 재접속하여 장비·루블을 확인해 주세요.	Result unknown: do not retry. Close the game, reconnect and check your gear and roubles.	Результат неизвестен: не повторяйте. Закройте игру, переподключитесь и проверьте снаряжение и рубли.	结果未确定：请勿重试。请退出游戏后重新连接，检查装备和卢布。	src/Client/Plugin.cs:61
+설정이 바뀌었습니다. 견적을 다시 불러와 주세요.	Settings changed. Reload the quote.	Настройки изменились. Обновите расчёт.	设置已更改。请重新获取报价。	src/Client/Plugin.cs:267
+열림	Unlocked	Открыто	已解锁	src/Client/Plugin.cs:297
+잠김	Locked	Закрыто	已锁定	src/Client/Plugin.cs:297
+저장	Saving	Сохранение	保存	src/Client/Plugin.cs:304
+꺼짐	Off	Выкл.	关闭	src/Client/Plugin.cs:304
+PMC 세션이 없습니다.	No PMC session.	Нет сессии ЧВК.	没有 PMC 会话。	src/Client/Plugin.cs:380
+아이템 ID가 없습니다.	No item ID.	Нет ID предмета.	没有物品 ID。	src/Client/Plugin.cs:382
+본체·부착물·탄창·탄약이 함께 파괴됩니다.	Gear, attachments, magazines and ammo are destroyed together.	Снаряжение, обвес, магазины и патроны уничтожаются вместе.	本体、配件、弹匣和弹药将一同损毁。	src/Client/Plugin.cs:507
+본체·부품의 현재 내구도 0 · 최대 내구도 유지	Gear and parts drop to 0 durability · max durability kept	Прочность снаряжения и деталей падает до 0 · макс. прочность сохраняется	本体和部件当前耐久降为 0 · 最大耐久保留	src/Client/Plugin.cs:508
+선택 항목의 강화 단계 -1 · 다른 항목과 장비 유지	Selected track -1 · other tracks and gear kept	Выбранная ветка −1 · остальные ветки и снаряжение сохраняются	所选项目强化等级 -1 · 其他项目和装备保留	src/Client/Plugin.cs:509
+비용만 소모 · 장비와 기존 강화 단계 유지	Fee only · gear and levels kept	Только плата · снаряжение и уровни сохраняются	仅消耗费用 · 装备和已有强化等级保留	src/Client/Plugin.cs:510
+일반 강화	Enhance	Улучшение	普通强化	src/Client/Plugin.Flow.cs:53
+항목별 +10	Each to +10	Каждая до +10	每项至 +10	src/Client/Plugin.Flow.cs:53
+★★성	★★ Star	★★	★★星	src/Client/Plugin.Flow.cs:54
+진화 완료	Evolved	Пройдена	进化完成	src/Client/Plugin.Flow.cs:55
+진화 · 효과 ×2	Evolve · ×2	Эволюция · ×2	进化 · 效果 ×2	src/Client/Plugin.Flow.cs:55
+★★★성	★★★ Star	★★★	★★★星	src/Client/Plugin.Flow.cs:56
+진화 · 효과 ×3	Evolve · ×3	Эволюция · ×3	进化 · 效果 ×3	src/Client/Plugin.Flow.cs:57
+초월	Transcend	Возвышение	超越	src/Client/Plugin.Flow.cs:58
+★★ 이후 열림	Opens after ★★	Откроется после ★★	★★ 后解锁	src/Client/Plugin.Flow.cs:59
+2성 {0}/5 · 3성 {1}/5	2★ {0}/5 · 3★ {1}/5	2★ {0}/5 · 3★ {1}/5	2星 {0}/5 · 3星 {1}/5	src/Client/Plugin.Flow.cs:60
+신화	Mythic	Миф	神话	src/Client/Plugin.Flow.cs:63
+★★★ 이후 열림	Opens after ★★★	Откроется после ★★★	★★★ 后解锁	src/Client/Plugin.Flow.cs:64
+데미지·관통 {0}/5	Dmg · pen {0}/5	Урон · проб. {0}/5	伤害·穿透 {0}/5	src/Client/Plugin.Flow.cs:65
+추가 부위 {0}곳 · {1}/5	+{0} zones · {1}/5	+{0} зоны · {1}/5	追加部位 {0} 处 · {1}/5	src/Client/Plugin.Flow.cs:66
+보험	Insurance	Страховка	保险	src/Client/Plugin.Flow.cs:69
+다시 가입 {0}개	Renew {0}	Продлить {0}	重新投保 {0} 件	src/Client/Plugin.Flow.cs:70
+미가입	None	Нет	未投保	src/Client/Plugin.Flow.cs:71
+프레스티지	Prestige	Престиж	声望	src/Client/Plugin.Flow.cs:76
+보험 · 반환 {0}개	Ins. · {0} to collect	Страх. · забрать {0}	保险 · 待领取 {0} 件	src/Client/Plugin.Flow.cs:78
+보험 · 최대 단계	Ins. · max stage	Страх. · макс. этап	保险 · 最高阶段	src/Client/Plugin.Flow.cs:78
+보험 · 차액 {0}개	Ins. · due {0}	Страх. · доплата {0}	保险 · 差价 {0} 件	src/Client/Plugin.Flow.cs:79
+보험 · 등록 {0}	Ins. · {0} registered	Страх. · привязано {0}	保险 · 已登记 {0}	src/Client/Plugin.Flow.cs:80
+보험 · 미등록	Ins. · none	Страх. · нет	保险 · 未登记	src/Client/Plugin.Flow.cs:80
+도움말	Help	Справка	帮助	src/Client/Plugin.Flow.cs:81
+규칙 요약	Rules	Правила	规则摘要	src/Client/Plugin.Flow.cs:81
+이 항목은 최대 단계입니다. 다른 항목을 선택해 주세요.	This track is at the maximum level. Choose another track.	Эта ветка на максимальном уровне. Выберите другую.	此项目已达最高等级。请选择其他项目。	src/Client/Plugin.Flow.cs:137
+ 진화를 마쳤습니다.	 evolution complete.	 эволюция завершена.	 进化已完成。	src/Client/Plugin.Flow.cs:140
+★★ 진화를 먼저 마쳐 주세요.	Finish the ★★ evolution first.	Сначала завершите эволюцию ★★.	请先完成 ★★ 进化。	src/Client/Plugin.Flow.cs:141
+모든 항목을 +{0}까지 강화하면 도전할 수 있습니다.	Max every track to +{0} to try.	Улучшите все ветки до +{0}, чтобы попробовать.	将所有项目强化至 +{0} 后即可挑战。	src/Client/Plugin.Flow.cs:143
+이 초월은 아직 잠겨 있습니다.	This transcendence is still locked.	Это возвышение пока закрыто.	此超越尚未解锁。	src/Client/Plugin.Flow.cs:145
+이 초월은 최대 단계입니다. 다른 트랙을 골라 주세요.	This track is at the maximum level. Choose the other one.	Эта ветка на максимальном уровне. Выберите другую.	此超越已达最高等级。请选择另一条路线。	src/Client/Plugin.Flow.cs:147
+★★★ 진화 후 열립니다.	Opens after ★★★.	Откроется после ★★★.	★★★ 进化后解锁。	src/Client/Plugin.Flow.cs:149
+최대 신화 단계입니다.	Maximum mythic level.	Максимальный мифический уровень.	已达最高神话等级。	src/Client/Plugin.Flow.cs:150
+견적을 불러오는 중입니다…	Loading quote…	Загрузка расчёта…	正在获取报价…	src/Client/Plugin.Flow.cs:184
+강화 기록을 동기화하지 못했습니다. 서버 모드 버전과 연결을 확인하고 다시 불러와 주세요.	Could not sync enhancement records. Check the server mod version and connection, then reload.	Не удалось синхронизировать записи улучшений. Проверьте версию серверного мода и соединение, затем обновите.	无法同步强化记录。请检查服务器模组版本和连接后重新获取。	src/Client/Plugin.Flow.cs:194
+견적 유효 시간이 얼마 남지 않아 새로 불러왔습니다. 비용을 확인하고 다시 눌러 주세요.	The quote was about to expire, so it was reloaded. Check the cost and press again.	Срок расчёта почти истёк, он обновлён. Проверьте стоимость и нажмите снова.	报价即将过期，已重新获取。请确认费用后再按一次。	src/Client/Plugin.Flow.cs:326
+즉시 강화 준비 중…	Preparing instant…	Подготовка мгновенного…	正在准备即时强化…	src/Client/Plugin.Flow.cs:351
+비용이나 확률이 바뀌었습니다. 확인하고 다시 눌러 주세요.	The cost or chance changed. Check it and press again.	Стоимость или шанс изменились. Проверьте и нажмите снова.	费用或成功率已变化。请确认后再按一次。	src/Client/Plugin.Flow.cs:364
+강화 준비 중 설정이나 화면이 바뀌었습니다. 견적을 다시 불러와 주세요.	Settings or screen changed while preparing. Reload the quote.	Настройки или экран изменились во время подготовки. Обновите расчёт.	准备期间设置或界面发生变化。请重新获取报价。	src/Client/Plugin.Flow.cs:378
+강화 준비가 취소됐습니다. 견적을 다시 불러와 주세요.	Preparation was cancelled. Reload the quote.	Подготовка отменена. Обновите расчёт.	准备已取消。请重新获取报价。	src/Client/Plugin.Flow.cs:381
+강화 결과를 확인하는 중입니다…	Checking the result…	Проверка результата…	正在确认结果…	src/Client/Plugin.Flow.cs:382
+강화가 거절됐습니다. 서버 오류 안내를 확인하고 견적을 다시 불러와 주세요.	The enhancement was rejected. Check the server error notice and reload the quote.	Улучшение отклонено. Посмотрите сообщение об ошибке сервера и обновите расчёт.	强化被拒绝。请查看服务器错误提示并重新获取报价。	src/Client/Plugin.Flow.cs:388
+\n아직 강화를 전송하지 않았습니다.	\nThe enhancement was not sent yet.	\nУлучшение ещё не отправлено.	\n强化尚未发送。	src/Client/Plugin.Flow.cs:406
+방지권 가격이 {0:N0} ₽로 바뀌었습니다. 확인하고 다시 눌러 주세요.	The ticket price changed to {0:N0} ₽. Check it and press again.	Цена талона изменилась на {0:N0} ₽. Проверьте и нажмите снова.	防损毁券价格已变为 {0:N0} ₽。请确认后再按一次。	src/Client/Plugin.Flow.cs:437
+파괴 방지권 1장 구매	Bought one destruction ticket	Куплен 1 талон защиты	已购买 1 张防损毁券	src/Client/Plugin.Flow.cs:440
+서버가 거절했습니다. 서버 오류 안내를 확인해 주세요.	The server rejected it. Check the server error notice.	Сервер отклонил запрос. Посмотрите сообщение об ошибке сервера.	服务器拒绝了请求。请查看服务器错误提示。	src/Client/Plugin.Flow.cs:479
+ · {0:N0} ₽ 소모	 · spent {0:N0} ₽	 · потрачено {0:N0} ₽	 · 消耗 {0:N0} ₽	src/Client/Plugin.Flow.cs:485
+더 비싼 방탄판 {0}개는 차액을 내야 강화 효과를 받습니다. 강화 창 → 보험·방탄판 → 차액 내고 적용	{0} pricier plate(s) need the price difference paid before they share the enhancement. Enhance window → Insurance · plates → Pay difference	Более дорогим пластинам ({0}) нужна доплата, чтобы получить улучшение. Окно улучшения → Страховка · пластины → Доплатить	{0} 块更贵的插板需支付差价才能获得强化效果。强化窗口 → 保险 · 插板 → 支付差价并应用	src/Client/Plugin.Inserts.cs:133
+강화된 방어구에 끼운 방탄판 {0}개가 아직 적용되지 않았습니다. 강화 창 → 보험·방탄판 → 방탄판 적용	{0} plate(s) in enhanced armor are not applied yet. Enhance window → Insurance · plates → Apply plates	Пластины в улучшенной броне ({0}) ещё не применены. Окно улучшения → Страховка · пластины → Применить пластины	装在已强化护甲中的 {0} 块插板尚未应用。强化窗口 → 保险 · 插板 → 应用插板	src/Client/Plugin.Inserts.cs:135
+보험이 풀렸습니다. 다시 가입하세요	Insurance has lapsed. Please insure again.	Страховка истекла. Оформите заново.	保险已失效。请重新投保。	src/Client/Plugin.Insurance.cs:8
+이전 납부 {0:N0} ₽ 차감	Previous payment {0:N0} ₽ credited	Учтён прошлый платёж {0:N0} ₽	已抵扣之前支付的 {0:N0} ₽	src/Client/Plugin.Insurance.cs:12
+보험 견적을 불러오는 중입니다…	Loading insurance quote…	Загрузка расчёта страховки…	正在获取保险报价…	src/Client/Plugin.Insurance.cs:45
+강화된 장비만 프레스티지 보험에 등록할 수 있습니다.	Only enhanced gear can be registered for prestige insurance.	В страховку престижа можно привязать только улучшенное снаряжение.	只有已强化的装备才能登记声望保险。	src/Client/Plugin.Insurance.cs:56
+강화된 장비만 강화 보험에 가입할 수 있습니다.	Only enhanced gear can be insured.	Застраховать можно только улучшенное снаряжение.	只有已强化的装备才能投保强化保险。	src/Client/Plugin.Insurance.cs:57
+등록비가 {0:N0} ₽로 바뀌었습니다. 확인하고 다시 눌러 주세요.	The registration fee changed to {0:N0} ₽. Check it and press again.	Плата за привязку изменилась на {0:N0} ₽. Проверьте и нажмите снова.	登记费已变为 {0:N0} ₽。请确认后再按一次。	src/Client/Plugin.Insurance.cs:90
+끼운 방탄판 적용 완료	Inserted plates applied	Вставленные пластины применены	已应用装入的插板	src/Client/Plugin.Insurance.cs:95
+금액이 {0:N0} ₽로 바뀌었습니다. 확인하고 다시 눌러 주세요.	The amount changed to {0:N0} ₽. Check it and press again.	Сумма изменилась на {0:N0} ₽. Проверьте и нажмите снова.	金额已变为 {0:N0} ₽。请确认后再按一次。	src/Client/Plugin.Insurance.cs:141
+지금은 갱신할 수 없습니다. 목록을 확인해 주세요.	It cannot be renewed now. Check the list.	Сейчас продлить нельзя. Проверьте список.	现在无法续保。请查看列表。	src/Client/Plugin.Insurance.cs:142
+프레스티지 보험 갱신 완료	Prestige insurance renewed	Страховка престижа продлена	声望保险已续保	src/Client/Plugin.Insurance.cs:145
+{0} 강화 보험 다시 가입	{0} insurance renewed	Страховка {0} продлена	已重新投保 {0} 强化保险	src/Client/Plugin.Insurance.cs:146
+부위 다시 뽑기 완료	Zone rerolled	Зона перевыбрана	部位已重新抽取	src/Client/Plugin.Popups.cs:84
+장비	Gear	Предмет	装备	src/Client/Plugin.Popups.cs:127
+즉시 강화	Instant	Мгновенно	即时强化	src/Client/Plugin.Popups.cs:133
+{0}와 부착물·탄창이 사라졌습니다	{0}, its attachments and magazines are gone	{0}, его обвес и магазины исчезли	{0} 及其配件、弹匣已消失	src/Client/Plugin.Popups.cs:135
+방탄판	Plates	Пластины	插板	src/Client/Plugin.Popups.cs:139
+현재 강화에 맞게 방탄판을 적용했습니다	Plates now match the current enhancement	Пластины приведены к текущему улучшению	已按当前强化应用插板	src/Client/Plugin.Popups.cs:141
+신화 달성	Mythic reached	Миф достигнут	达成神话	src/Client/Plugin.Popups.cs:147
+신화 단계가 열렸습니다	The Mythic stage is open	Мифический этап открыт	神话阶段已解锁	src/Client/Plugin.Popups.cs:150
+추가 보호 부위: 	Extra zones: 	Доп. зоны: 	追加防护部位：	src/Client/Plugin.Popups.cs:151
+단계당 +{0:0.#}%	+{0:0.#}% per level	+{0:0.#}% за уровень	每级 +{0:0.#}%	src/Client/Plugin.Popups.cs:154
+탄 불이익 감소	Ammo penalties cut	Штрафы патронов меньше	弹药负面效果减少	src/Client/Plugin.Popups.cs:157
+단계당 -{0:0.#}%	-{0:0.#}% per level	-{0:0.#}% за уровень	每级 -{0:0.#}%	src/Client/Plugin.Popups.cs:158
+신화 1단계부터 이 총에 든 탄의 불이익이 단계당 {0:0.#}%씩 줄어듭니다	From Mythic 1 the rounds in this gun lose {0:0.#}% of their penalties per level	С Мифа 1 штрафы патронов в этом оружии уменьшаются на {0:0.#}% за уровень	从神话 1 级起，此枪内弹药的负面效果每级减少 {0:0.#}%	src/Client/Plugin.Popups.cs:159
+보호 부위	Protected zones	Защищённые зоны	防护部位	src/Client/Plugin.Popups.cs:162
+기존	Before	Было	原有	src/Client/Plugin.Popups.cs:163
++{0}곳	+{0}	+{0}	+{0} 处	src/Client/Plugin.Popups.cs:163
+??? 실패 · 파괴 방지권 사용	??? failed · ticket used	??? неудача · талон использован	??? 失败 · 已使用防损毁券	src/Client/Plugin.Popups.cs:167
+{0} ★★★ 그대로 남았습니다	{0} stays ★★★	{0} остаётся ★★★	{0} 保持 ★★★	src/Client/Plugin.Popups.cs:168
+??? 파괴 방지권 1장을 썼습니다 · 장비당 1장이라 더 살 수 없습니다	The ??? ticket was used · one per gear, no more to buy	Талон ??? использован · один на снаряжение, больше купить нельзя	已使用 1 张 ??? 防损毁券 · 每件装备限 1 张，无法再购买	src/Client/Plugin.Popups.cs:169
+??? 실패 · 장비 파괴	??? failed · destroyed	??? неудача · уничтожено	??? 失败 · 装备损毁	src/Client/Plugin.Popups.cs:174
+{0:0.##}% 판정에서 부서졌습니다	It broke on the roll	Сломалось при броске {0:0.##}%	在 {0:0.##}% 的判定中损毁	src/Client/Plugin.Popups.cs:175
+신화 강화 성공	Mythic level up	Миф повышен	神话强化成功	src/Client/Plugin.Popups.cs:184
+신화  	Mythic  	Миф  	神话 	src/Client/Plugin.Popups.cs:185
+신화 · 추가 보호 부위	Mythic · extra zones	Миф · доп. зоны	神话 · 追加防护部位	src/Client/Plugin.Popups.cs:200
+추가 보호 부위	Extra zone	Доп. зона	追加防护部位	src/Client/Plugin.Popups.cs:203
+초월 성공	Transcended	Возвышено	超越成功	src/Client/Plugin.Popups.cs:211
+둔탁상 감소	Blunt reduction	Меньше запреградного	钝伤减少	src/Client/Plugin.Popups.cs:217
+{0} 진화	{0} evolution	Эволюция {0}	{0} 进化	src/Client/Plugin.Popups.cs:226
+{0} 진화 성공	{0} evolved	{0}: успех	{0} 进化成功	src/Client/Plugin.Popups.cs:229
+모든 항목 효과 ×{0:0.##}	Every effect ×{0:0.##}	Все эффекты ×{0:0.##}	所有项目效果 ×{0:0.##}	src/Client/Plugin.Popups.cs:231
+파괴 방지권 1장 사용 · 남은 {0}장	Used one ticket · {0} left	Использован 1 талон · осталось {0}	使用 1 张防损毁券 · 剩余 {0} 张	src/Client/Plugin.Popups.cs:237
+남은 {0}용 방지권 {1}장은 사라졌습니다	{0} unused {1} ticket(s) are gone	Неиспользованные талоны {0} ({1}) пропали	剩余的 {0} 用防损毁券 {1} 张已消失	src/Client/Plugin.Popups.cs:238
+진화 실패 · 파괴 방지권 사용	Evolution failed · ticket used	Эволюция не удалась · талон использован	进化失败 · 已使用防损毁券	src/Client/Plugin.Popups.cs:243
+{0} 유지 · 단계 그대로	{0} kept · levels unchanged	{0} сохранено · уровни без изменений	保持 {0} · 等级不变	src/Client/Plugin.Popups.cs:244
+파괴 방지권 1장을 썼습니다 · 남은 {0}장	One ticket used · {0} left	Использован 1 талон · осталось {0}	已使用 1 张防损毁券 · 剩余 {0} 张	src/Client/Plugin.Popups.cs:245
+진화 실패 · 장비 파괴	Evolution failed · destroyed	Эволюция не удалась · уничтожено	进化失败 · 装备损毁	src/Client/Plugin.Popups.cs:249
+진화 실패는 파괴 방지권으로만 막을 수 있습니다	Only a destruction ticket protects an evolution	Эволюцию защищает только талон защиты от разрушения	进化失败只能用防损毁券防止	src/Client/Plugin.Popups.cs:250
+ · 고위험	 · high risk	 · высокий риск	 · 高风险	src/Client/Plugin.Popups.cs:256
+기존 단계 복원	Old level restored	Уровень восстановлен	已恢复原等级	src/Client/Plugin.Popups.cs:261
+강화 성공	Enhanced	Улучшено	强化成功	src/Client/Plugin.Popups.cs:261
+강화 실패 · 보호 발동	Failed · guard triggered	Неудача · защита сработала	强化失败 · 保护生效	src/Client/Plugin.Popups.cs:269
+  +{0} 유지	  +{0} kept	  +{0} сохранено	  保持 +{0}	src/Client/Plugin.Popups.cs:270
+파괴 방지가 장비를 지켰습니다	The destroy guard saved the gear	Защита от разрушения спасла снаряжение	防损毁保护保住了装备	src/Client/Plugin.Popups.cs:271
+하락 방지가 단계를 지켰습니다	The drop guard kept the level	Защита от понижения сохранила уровень	防降级保护保住了等级	src/Client/Plugin.Popups.cs:272
+단계 하락	Level dropped	Уровень понижен	等级下降	src/Client/Plugin.Popups.cs:276
+장비 파괴	Gear destroyed	Уничтожено	装备损毁	src/Client/Plugin.Popups.cs:284
+강화 기록과 강화 보험도 함께 사라집니다	Its records and enhancement insurance are gone too	Его записи и страховка улучшений тоже пропали	强化记录和强化保险也一并消失	src/Client/Plugin.Popups.cs:285
+강화 실패	Enhancement failed	Улучшение не удалось	强化失败	src/Client/Plugin.Popups.cs:289
+다음 성공률 +{0:0.##}%p (누적 +{1:0.##}%p)	Next chance +{0:0.##}%p (total +{1:0.##}%p)	Следующий шанс +{0:0.##} п.п. (всего +{1:0.##} п.п.)	下次成功率 +{0:0.##}%p（累计 +{1:0.##}%p）	src/Client/Plugin.Popups.cs:302
+실패 · 하락 방지	Failed · drop guarded	Неудача · без понижения	失败 · 防降级	src/Client/Plugin.Popups.cs:305
+  {0} 유지	  {0} kept	  {0} сохранено	  保持 {0}	src/Client/Plugin.Popups.cs:306
+신화 강화 실패	Mythic attempt failed	Миф не повышен	神话强化失败	src/Client/Plugin.Popups.cs:315
+초월 실패	Transcendence failed	Возвышение не удалось	超越失败	src/Client/Plugin.Popups.cs:315
+줄어드는 탄 값: 명중률 −, 반동 +, 내구도 소모 +, 과열 +, 고장 확률 · 장전한 탄은 '탄 비교' 탭에서	Ammo values cut: accuracy −, recoil +, wear +, heat +, malfunction chance · loaded rounds in the 'Ammo' tab	Ослабляются: точность −, отдача +, износ +, нагрев +, шанс неисправности · заряженные патроны — во вкладке «Патроны»	降低的弹药数值：精度 −、后坐力 +、耐久消耗 +、过热 +、故障率 · 已装填弹药见“弹药对比”页	src/Client/Plugin.Popups.cs:323
+받는 피해 감소	Damage taken reduction	Снижение получаемого урона	受到伤害减少	src/Client/Plugin.Popups.cs:328
+소모 	Spent 	Потрачено 	消耗 	src/Client/Plugin.Popups.cs:423
+신화 	Mythic 	Миф 	神话 	src/Client/Plugin.Popups.cs:489
+진행 중…	In progress…	Идёт…	进行中…	src/Client/Plugin.Popups.cs:495
+판정 중…	Rolling…	Бросок…	判定中…	src/Client/Plugin.Popups.cs:495
+장비가 파괴될 수 있습니다	The gear can be destroyed	Снаряжение может быть уничтожено	装备可能会损毁	src/Client/Plugin.Popups.cs:505
+이번 시도 파괴 확률 {0:0.##}% · 본체와 부착물 {1}개(탄약 포함)	Destruction chance this try {0:0.##}% · gear and {1} attachment(s) incl. ammo	Шанс разрушения в этой попытке {0:0.##}% · снаряжение и обвес: {1} (с патронами)	本次损毁概率 {0:0.##}% · 本体和配件 {1} 个（含弹药）	src/Client/Plugin.Popups.cs:506
+ · 즉시 강화	 · instant	 · мгновенно	 · 即时强化	src/Client/Plugin.Popups.cs:507
+{0:0.##}% 확률로 성공 · 실패해도 파괴 방지권으로 ★★★ 장비가 남습니다.	{0:0.##}% to succeed · on a failure the ticket keeps the ★★★ gear.	Успех с шансом {0:0.##}% · при неудаче талон сохранит снаряжение ★★★.	成功率 {0:0.##}% · 即使失败，防损毁券也会保住 ★★★ 装备。	src/Client/Plugin.Popups.cs:516
+{0:0.##}/{1:0.##} 확률로 무기가 성공하거나 부서집니다.	At {0:0.##}/{1:0.##} the weapon succeeds or breaks.	С шансом {0:0.##}/{1:0.##} оружие станет лучше или сломается.	武器将以 {0:0.##}/{1:0.##} 的概率成功或损毁。	src/Client/Plugin.Popups.cs:517
+{0:0.##}/{1:0.##} 확률로 방어구가 성공하거나 부서집니다.	At {0:0.##}/{1:0.##} the armor succeeds or breaks.	С шансом {0:0.##}/{1:0.##} броня станет лучше или сломается.	护甲将以 {0:0.##}/{1:0.##} 的概率成功或损毁。	src/Client/Plugin.Popups.cs:518
+ · ??? 방지권 1장	 · 1 ??? ticket	 · 1 талон ???	 · ??? 防损毁券 1 张	src/Client/Plugin.Popups.cs:520
+진행하시겠습니까?	Proceed?	Продолжить?	确定要继续吗？	src/Client/Plugin.Popups.cs:521
+부위 다시 뽑기	Reroll a zone	Перевыбрать зону	重新抽取部位	src/Client/Plugin.Popups.cs:528
+ → 남은 {0}곳 중 무작위	 → one of {0} at random	 → одна из {0} случайно	 → 从剩余 {0} 处中随机	src/Client/Plugin.Popups.cs:529
+되돌릴 수 없습니다. 다음 다시 뽑기는 ×1.5	Cannot be undone. The next reroll costs ×1.5	Отменить нельзя. Следующий перевыбор ×1,5	无法撤销。下次重新抽取费用 ×1.5	src/Client/Plugin.Popups.cs:531
+확인	OK	ОК	确定	src/Client/Plugin.Popups.cs:559
+이 창을 닫을 때까지 다시 묻지 않기	Don't ask again until this window closes	Не спрашивать, пока окно открыто	关闭此窗口前不再询问	src/Client/Plugin.Popups.cs:569
+취소	Cancel	Отмена	取消	src/Client/Plugin.Popups.cs:572
+진행	Proceed	Продолжить	继续	src/Client/Plugin.Popups.cs:573
+★★ 진화	★★ evolution	Эволюция ★★	★★ 进化	src/Client/Plugin.Popups.cs:685
+★★★ 진화	★★★ evolution	Эволюция ★★★	★★★ 进化	src/Client/Plugin.Popups.cs:686
+원본	Base	База	原始	src/Client/Plugin.Status.cs:37
+강화 후	Enhanced	Улучшено	强化后	src/Client/Plugin.Status.cs:43
+✦ 신화	✦ Mythic	✦ Миф	✦ 神话	src/Client/Plugin.Status.cs:44
+★★★ 장비만 도전할 수 있는 마지막 단계입니다.	The final step, open only to ★★★ gear.	Последний шаг, доступный только снаряжению ★★★.	仅 ★★★ 装备可挑战的最终阶段。	src/Client/Plugin.TabInfo.cs:24
+성공	Success	Успех	成功	src/Client/Plugin.TabInfo.cs:28
+실패 · ★★★ 유지	Fail · ★★★ kept	Неудача · ★★★ цел	失败 · 保持 ★★★	src/Client/Plugin.TabInfo.cs:34
+파괴	Destroyed	Уничтожено	损毁	src/Client/Plugin.TabInfo.cs:34
+추가로 막을 수 있는 부위 {0}곳 · 성공하면 무작위 {1}곳	{0} zone(s) it can still cover · success adds {1} at random	Можно прикрыть ещё зон: {0} · успех добавит {1} случайно	还可追加防护 {0} 处 · 成功后随机追加 {1} 处	src/Client/Plugin.TabInfo.cs:37
+성공률 올리기·즉시 강화는 쓸 수 없습니다. ??? 파괴 방지권(장비당 1장)을 쓰면 실패해도 장비가 남습니다. 성공하면 신화 단계가 열립니다.	No boosts or instant. The ??? ticket (one per gear) keeps the gear on a failure. Success unlocks the Mythic stage.	Без бонусов шанса и мгновенного. Талон ??? (один на снаряжение) сохранит снаряжение при неудаче. Успех открывает мифический этап.	无法使用成功率加成或即时强化。使用 ??? 防损毁券（每件装备 1 张）即使失败装备也会保留。成功后解锁神话阶段。	src/Client/Plugin.TabInfo.cs:39
+비용 	Cost 	Стоимость 	费用 	src/Client/Plugin.TabInfo.cs:42
+ (보유 {0:N0})	 (own {0:N0})	 (есть {0:N0})	 （持有 {0:N0}）	src/Client/Plugin.TabInfo.cs:43
+닫기	Close	Закрыть	关闭	src/Client/Plugin.TabInfo.cs:52
+처리 중…	Working…	Обработка…	处理中…	src/Client/Plugin.TabInfo.cs:55
+견적 다시 불러오기	Reload quote	Обновить расчёт	重新获取报价	src/Client/Plugin.TabInfo.cs:55
+루블·LEDX 부족	Not enough roubles or LEDX	Не хватает рублей или LEDX	卢布或 LEDX 不足	src/Client/Plugin.TabInfo.cs:56
+도전하기	Challenge	Испытать	挑战	src/Client/Plugin.TabInfo.cs:56
+강화 보험	Enhancement insurance	Страховка улучшений	强化保险	src/Client/Plugin.TabInfo.cs:77
+지금 가입	Current	Сейчас	当前投保	src/Client/Plugin.TabInfo.cs:87
+ · 반환 {0:0.##}%	 · return {0:0.##}%	 · возврат {0:0.##}%	 · 返还 {0:0.##}%	src/Client/Plugin.TabInfo.cs:90
+강화 가치	Enhanced value	Ценность улучшения	强化价值	src/Client/Plugin.TabInfo.cs:94
+풀린 장비도 표시	Released policies included	Показывать и снятые	也显示已失效的	src/Client/Plugin.TabInfo.cs:100
+현재 가치	Current value	Текущая ценность	当前价值	src/Client/Plugin.TabInfo.cs:100
+강화 성공·더 비싼 방탄판 교체 시 풀림. 재가입료 = 새 보험료 − 이전 납부액 (최소 0 ₽).	A successful upgrade or a more expensive plate releases the policy. Re-enrollment = new fee − prior payment (minimum 0 ₽).	Успешное улучшение или более дорогая пластина снимают полис. Повторно = новый взнос − прошлый платёж (мин. 0 ₽).	强化成功或换上更贵的插板时保险失效。重新投保费 = 新保费 − 之前已付金额（最低 0 ₽）。	src/Client/Plugin.TabInfo.cs:101
+레이드에서 잃으면 확률만큼 강화된 채 우편으로 돌아옵니다. 한 번 쓰면 소모되고, 강화에 성공하거나 더 비싼 방탄판 차액을 내면 다시 가입해야 합니다. 상인 보험은 강화를 지켜 주지 않습니다(돌아와도 +0).	If lost in a raid, it comes back enhanced by mail at this chance. Used up once it pays out; a successful upgrade or a paid plate difference needs a new policy. Trader insurance does not keep enhancements (returns +0).	Если потерять в рейде, с этим шансом вернётся по почте улучшенным. Расходуется после выплаты; после успешного улучшения или доплаты за пластину нужен новый полис. Страховка торговцев улучшения не сохраняет (возврат +0).	在战局中丢失时，按此概率以强化状态通过邮件返还。使用一次即消耗；强化成功或支付插板差价后需重新投保。商人保险不会保留强化（返还为 +0）。	src/Client/Plugin.TabInfo.cs:105
+견적 확인 중…	Checking quote…	Проверка расчёта…	正在确认报价…	src/Client/Plugin.TabInfo.cs:127
+{0} 보험 가입 · {1:N0} ₽	Buy {0} · {1:N0} ₽	Оформить {0} · {1:N0} ₽	投保 {0} · {1:N0} ₽	src/Client/Plugin.TabInfo.cs:128
+방탄판 차액을 먼저 내 주세요	Pay the plate difference first	Сначала доплатите за пластины	请先支付插板差价	src/Client/Plugin.TabInfo.cs:129
+이미 같은 등급 이상 가입됨	Already insured at this tier or higher	Уже застраховано на этом уровне или выше	已投保同等级或更高等级	src/Client/Plugin.TabInfo.cs:130
+{0} 강화 보험 가입 완료	{0} insurance purchased	Страховка {0} оформлена	已投保 {0} 强化保险	src/Client/Plugin.TabInfo.cs:132
+가입됨	Owned	Оформлено	已投保	src/Client/Plugin.TabInfo.cs:147
+강화된 채 반환	Returned enhanced	Вернётся улучшенным	强化状态返还	src/Client/Plugin.TabInfo.cs:148
+보험료	Fee	Взнос	保费	src/Client/Plugin.TabInfo.cs:150
+돌아오는 시간	Return time	Время возврата	返还时间	src/Client/Plugin.TabInfo.cs:153
+즉시	Instant	Сразу	即时	src/Client/Plugin.TabInfo.cs:157
+{0:0}일 뒤	After {0:0} day(s)	Через {0:0} дн.	{0:0} 天后	src/Client/Plugin.TabInfo.cs:158
+{0:0.#}시간 뒤	After {0:0.#} h	Через {0:0.#} ч	{0:0.#} 小时后	src/Client/Plugin.TabInfo.cs:158
+돌아오는 중	On the way back	В пути	返还中	src/Client/Plugin.TabInfo.cs:167
+레이드에서 잃은 강화 장비 · 우편 도착까지	Enhanced gear lost in raids · until the mail arrives	Улучшенное снаряжение, потерянное в рейдах · до прихода почты	在战局中丢失的强化装备 · 距邮件到达	src/Client/Plugin.TabInfo.cs:168
+없음 · 프리미엄은 잃으면 레이드 직후 바로 우편으로 돌아옵니다(기다리는 시간 없음)	None · Premium mails lost gear back right after the raid (no wait)	Нет · Премиум возвращает потерянное по почте сразу после рейда (без ожидания)	无 · 尊享保险在战局结束后立即通过邮件返还（无需等待）	src/Client/Plugin.TabInfo.cs:173
+도착 처리 중	Arriving	Прибывает	到达处理中	src/Client/Plugin.TabInfo.cs:190
+{0}시간 {1}분 남음	{0} h {1} min left	Осталось {0} ч {1} мин	剩余 {0} 小时 {1} 分	src/Client/Plugin.TabInfo.cs:190
+끼운 방탄판·내피 {0}개 · 	Inserted plates/inserts: {0} · 	Вставлено пластин/вставок: {0} · 	已装入插板·内衬 {0} 个 · 	src/Client/Plugin.TabInfo.cs:200
+모두 적용됨	All applied	Всё применено	全部已应用	src/Client/Plugin.TabInfo.cs:201
+더 비싼 방탄판 · 차액 {0:N0} ₽ 필요	Pricier plates · {0:N0} ₽ difference due	Более дорогие пластины · доплата {0:N0} ₽	更贵的插板 · 需差价 {0:N0} ₽	src/Client/Plugin.TabInfo.cs:202
+미적용 {0}개	Not applied: {0}	Не применено: {0}	未应用 {0} 个	src/Client/Plugin.TabInfo.cs:203
+ · 최대 내구도 초월 효과가 빠진 부품 {0}개	 · {0} part(s) missing the max durability bonus	 · деталей без бонуса макс. прочности: {0}	 · {0} 个部件缺少最大耐久超越效果	src/Client/Plugin.TabInfo.cs:204
+값을 치른 방탄판 이하라면 끼우는 즉시 무료로 적용됩니다. 더 비싼 방탄판만 차액을 냅니다.	Plates worth no more than those paid for apply for free at once. Only pricier plates pay the difference.	Пластины не дороже оплаченных применяются бесплатно сразу. Доплата только за более дорогие.	不超过已付价值的插板装入后立即免费应用。只有更贵的插板需支付差价。	src/Client/Plugin.TabInfo.cs:205
+최대 내구도 다시 맞추기 · 무료	Restore max durability · free	Вернуть макс. прочность · бесплатно	重新校正最大耐久 · 免费	src/Client/Plugin.TabInfo.cs:209
+차액 내고 적용 · {0:N0} ₽	Pay difference and apply · {0:N0} ₽	Доплатить и применить · {0:N0} ₽	支付差价并应用 · {0:N0} ₽	src/Client/Plugin.TabInfo.cs:211
+방탄판 적용 · 무료	Apply plates · free	Пластины · бесплатно	应用插板 · 免费	src/Client/Plugin.TabInfo.cs:212
+항목마다 +10까지 따로 올립니다.\n성공률 75%에서 단계마다 5%p씩 내려갑니다.\n+5까지는 실패해도 비용만 나갑니다.	Each item goes up to +10 on its own.\nThe chance starts at 75% and drops 5%p per level.\nUp to +5, a failure only costs money.	Каждая ветка поднимается до +10 отдельно.\nШанс начинается с 75% и падает на 5 п.п. за уровень.\nДо +5 неудача стоит только денег.	每个项目分别强化至 +10。\n成功率从 75% 开始，每级降低 5%p。\n+5 以前失败只消耗费用。	src/Client/Plugin.TabInfo.cs:235
+고위험 구간 (+6 시도부터)	High risk (attempts from +6)	Высокий риск (попытки с +6)	高风险区间（从 +6 尝试开始）	src/Client/Plugin.TabInfo.cs:237
+무기·방어구 모두, 실패하면 그중 25%는 파괴, 75%는 1단계 하락입니다.\n파괴 방지·하락 방지로 각각 막을 수 있습니다. 추가 비용은 기본 강화 비용 × 시도 단계² × 파괴 방지 10% / 하락 방지 7% (예: +6 시도 = 기본 비용의 3.6배 / 2.52배).\n파괴될 수 있는 시도(파괴 방지 없이 +6 이상, 스타 진화)는 한 번 더 묻습니다. 창을 닫을 때까지 끌 수 있습니다.	For weapons and armor, a failure destroys the item 25% of the time and drops one level 75% of the time.\nDestroy guard and drop guard block each one. They cost the base cost × attempt level² × 10% (destroy) / 7% (drop), e.g. a +6 attempt adds 3.6× / 2.52× the base cost.\nAn attempt that can destroy the item (unguarded +6 and up, star evolution) asks once more; you can silence it until the window closes.	Для оружия и брони неудача в 25% случаев уничтожает предмет, в 75% — понижает на 1 уровень.\nЗащита от разрушения и от понижения блокируют каждое. Цена: базовая стоимость × уровень попытки² × 10% (разрушение) / 7% (понижение), напр. попытка +6 добавляет 3,6× / 2,52× базовой.\nПопытка, которая может уничтожить предмет (+6 и выше без защиты, звёздная эволюция), требует подтверждения; его можно отключить до закрытия окна.	武器和护甲失败时，25% 损毁，75% 下降 1 级。\n防损毁和防降级可分别阻止。额外费用 = 基础强化费用 × 尝试等级² × 防损毁 10% / 防降级 7%（例：+6 尝试 = 基础费用的 3.6 倍 / 2.52 倍）。\n可能损毁的尝试（无防损毁的 +6 及以上、星级进化）会再确认一次，可在关闭窗口前关闭此提示。	src/Client/Plugin.TabInfo.cs:237
+성공률 올리기	Boost chance	Повысить шанс	提高成功率	src/Client/Plugin.TabInfo.cs:239
+재료를 넣은 개수만큼 성공률이 오릅니다. 재료는 2종까지 고를 수 있습니다.\n독택 개당 +0.1% (최대 5%) · 그래픽 카드 개당 +1% (최대 10%) · 비트코인 개당 +5% (최대 20%).\n재료마다 개당 루블도 함께 냅니다. 재료와 루블은 성공·실패와 관계없이 소모됩니다.	Each piece adds chance. Pick up to 2 kinds.\nDogtag +0.1% each (max 5%) · Graphics card +1% each (max 10%) · Bitcoin +5% each (max 20%).\nEach piece also costs roubles. Materials and roubles are spent on success or failure.	Каждый предмет добавляет шанс. До 2 видов.\nЖетон +0,1% за шт. (макс. 5%) · Видеокарта +1% за шт. (макс. 10%) · Биткоин +5% за шт. (макс. 20%).\nКаждый предмет стоит ещё и рублей. Материалы и рубли тратятся при успехе и неудаче.	按放入的材料数量提高成功率。最多可选 2 种。\n狗牌每个 +0.1%（最多 5%）· 显卡每个 +1%（最多 10%）· 比特币每个 +5%（最多 20%）。\n每个材料还需支付卢布。无论成功或失败，材料和卢布都会消耗。	src/Client/Plugin.TabInfo.cs:239
+충전 게이지 없이 바로 결과를 봅니다.\n한 번에 50,000 ₽가 더 들고, 확률은 같습니다.\n일반 강화·초월·신화에서 쓸 수 있고, ★★·★★★ 진화와 ??? 에는 없습니다.	Skips the charge gauge and shows the result at once.\nCosts 50,000 ₽ more per use; the chance is the same.\nAvailable for enhancing, transcending and mythic attempts, not for ★★ / ★★★ evolution or ???.	Пропускает шкалу зарядки и сразу показывает результат.\nСтоит на 50 000 ₽ больше, шанс тот же.\nДоступно для улучшения, возвышения и мифа, но не для эволюции ★★ / ★★★ и ???.	跳过蓄力进度条，直接查看结果。\n每次多花 50,000 ₽，成功率不变。\n可用于普通强化、超越和神话，不能用于 ★★ / ★★★ 进化和 ???。	src/Client/Plugin.TabInfo.cs:241
+방어구 방탄판	Armor plates	Бронепластины	护甲插板	src/Client/Plugin.TabInfo.cs:243
+방어구에 끼운 방탄판도 방어구 강화를 함께 받습니다.\n값을 치른 방탄판 이하라면 끼우는 즉시 무료로 적용되고, 더 비싼 방탄판만 차액을 한 번 냅니다.	Plates in the armor share its enhancement.\nPlates worth no more than those paid for apply for free; only a pricier plate needs the difference paid once.	Пластины в броне получают её улучшение.\nПластины не дороже оплаченных применяются бесплатно; только за более дорогую нужно один раз доплатить.	装在护甲中的插板也会获得护甲的强化。\n不超过已付价值的插板装入后立即免费应用，只有更贵的插板需支付一次差价。	src/Client/Plugin.TabInfo.cs:243
+★★ / ★★★ 진화	★★ / ★★★ evolution	Эволюция ★★ / ★★★	★★ / ★★★ 进化	src/Client/Plugin.TabInfo.cs:245
+모든 항목이 +10이면 도전합니다.\n성공률 30% / 10%, 실패하면 장비가 파괴됩니다.\n성공하면 강화 효과 ×2 / ×3.\n파괴 방지권: 쓰면 시도할 때마다(성공·실패 관계없이) 1장 소모, 실패해도 장비가 남습니다. ★★용과 ★★★용은 따로이고, ★★ 성공 뒤 남은 ★★용은 사라집니다. 장비마다 ★★용 최대 3장(1장 100만 ₽), ★★★용 최대 2장(1장 270만 ₽)만 살 수 있고, 다 사면 더 살 수 없습니다.	Open when every item is +10.\n30% / 10% chance; a failure destroys the item.\nSuccess multiplies the effects ×2 / ×3.\nDestruction ticket: one is spent on every attempt it is used for (success or failure); on failure the item stays. ★★ and ★★★ tickets are separate, and ★★ tickets left after the ★★ success are gone. Per item you can buy at most 3 for ★★ (1,000,000 ₽ each) and 2 for ★★★ (2,700,000 ₽ each), never more.	Доступна, когда все ветки на +10.\nШанс 30% / 10%; неудача уничтожает предмет.\nУспех умножает эффекты ×2 / ×3.\nТалон защиты: тратится в каждой попытке, где используется (успех или неудача); при неудаче предмет остаётся. Талоны ★★ и ★★★ раздельные; талоны ★★, оставшиеся после успеха ★★, пропадают. На предмет можно купить не более 3 для ★★ (1 000 000 ₽ за шт.) и 2 для ★★★ (2 700 000 ₽ за шт.).	所有项目达到 +10 时可以挑战。\n成功率 30% / 10%，失败则装备损毁。\n成功后强化效果 ×2 / ×3。\n防损毁券：使用时每次尝试（无论成功或失败）消耗 1 张，失败装备也会保留。★★ 用和 ★★★ 用分开，★★ 成功后剩余的 ★★ 用券会消失。每件装备 ★★ 用最多 3 张（每张 100 万 ₽），★★★ 用最多 2 张（每张 270 万 ₽），买完后不能再买。	src/Client/Plugin.TabInfo.cs:245
+★★ 이상 장비의 추가 트랙(각 5단계)입니다.\n파괴는 없고, 실패할수록 다음 성공률이 오릅니다(최대 +30%p).\n→4·→5는 실패 시 1단계 하락합니다. 하락 방지권은 →4 시도에만 쓸 수 있습니다.	Extra tracks (5 levels each) for ★★ gear and up.\nNo destruction; each failure raises the next chance (up to +30%p).\n→4 and →5 drop one level on failure. Drop protection is for the →4 attempt only.	Доп. ветки (по 5 уровней) для снаряжения ★★ и выше.\nБез разрушения; каждая неудача повышает следующий шанс (до +30 п.п.).\n→4 и →5 при неудаче понижают на 1 уровень. Защита от понижения — только для попытки →4.	★★ 及以上装备的追加路线（各 5 级）。\n不会损毁，每次失败都会提高下次成功率（最多 +30%p）。\n→4 和 →5 失败时下降 1 级。防降级券只能用于 →4 尝试。	src/Client/Plugin.TabInfo.cs:247
+??? / 신화	??? / Mythic	??? / Миф	??? / 神话	src/Client/Plugin.TabInfo.cs:249
+★★★ 장비에만 ??? 칸이 열립니다. 50% 성공 / 50% 파괴, 도전 비용은 8,000,000 ₽ + LEDX 1개입니다.\n??? 파괴 방지권: 장비당 1장만(추가 구매 불가), 1장 5,000,000 ₽. 쓰면 그 시도에 1장 소모되고, 실패해도 ★★★ 장비가 그대로 남습니다(성공률은 그대로 50%).\n성공하면 별 대신 ✦ 신화 표시가 붙고 신화 단계(0~5)가 열립니다. 성공률 40·30·20·15·10%, 실패할 때마다 +3%p(최대 +30%p). 비용은 500만 ₽에서 단계마다 ×1.1 + LEDX 1개. →3·→4·→5는 실패 시 1단계 하락하고, 하락 방지권은 →3 시도에만 쓸 수 있습니다.\n무기: 탄 데미지·관통력 단계당 +3% (최대 15%), 이 총에 든 탄의 불이익(명중률 −·반동 +·내구도 소모 +·과열 +·고장 확률) 단계당 16% 감소(최대 80%). 이 총으로 쏠 때만 적용됩니다.\n방탄복: 아직 못 막는 부위 중 무작위 2곳을 더 막고, 신화 단계마다 받는 피해 -10% (최대 50%, 머리에 맞으면 절반). 헬멧·마스크: 단계마다 -5% (최대 25%).\n추가 부위는 한 곳씩 다시 뽑을 수 있습니다: 200만 ₽ + 그래픽 카드 1개, 다시 뽑을 때마다 ×1.5.	The ??? slot opens only on ★★★ gear. 50% success / 50% destroyed; a try costs 8,000,000 ₽ + 1 LEDX.\n??? ticket: one per gear, ever, 5,000,000 ₽. Using it spends it on that try; a failure then keeps the ★★★ gear (the chance stays 50%).\nSuccess swaps the stars for a ✦ Mythic mark and opens Mythic levels 0-5: 40·30·20·15·10%, +3%p per failure (up to +30%p), 5,000,000 ₽ ×1.1 per level + 1 LEDX. →3, →4 and →5 drop one level on failure; drop protection is for the →3 attempt only.\nWeapons: bullet damage and penetration +3% per level (max 15%), and the rounds in this gun lose 16% of their penalties (accuracy −, recoil +, wear +, heat +, malfunction chance) per level (max 80%), only when fired from this gun.\nBody armor: two random zones it did not cover become covered, then damage taken -10% per level (max 50%, half on head hits). Helmets and masks: -5% per level (max 25%).\nEach extra zone can be rerolled: 2,000,000 ₽ + 1 graphics card, ×1.5 per reroll.	Ячейка ??? открывается только у снаряжения ★★★. 50% успех / 50% уничтожение; попытка стоит 8 000 000 ₽ + 1 LEDX.\nТалон ???: один на предмет навсегда, 5 000 000 ₽. Тратится в попытке; при неудаче снаряжение ★★★ остаётся (шанс остаётся 50%).\nУспех заменяет звёзды на знак ✦ Миф и открывает мифические уровни 0–5: 40·30·20·15·10%, +3 п.п. за неудачу (до +30 п.п.), 5 000 000 ₽ ×1,1 за уровень + 1 LEDX. →3, →4 и →5 при неудаче понижают на 1 уровень; защита от понижения — только для →3.\nОружие: урон и пробитие пули +3% за уровень (макс. 15%), штрафы патронов в этом оружии (точность −, отдача +, износ +, нагрев +, шанс неисправности) −16% за уровень (макс. 80%), только при стрельбе из него.\nБронежилет: закрывает 2 случайные незащищённые зоны, затем получаемый урон −10% за уровень (макс. 50%, вдвое меньше при попадании в голову). Шлемы и маски: −5% за уровень (макс. 25%).\nКаждую доп. зону можно перевыбрать: 2 000 000 ₽ + 1 видеокарта, ×1,5 за каждый перевыбор.	只有 ★★★ 装备会开启 ??? 栏。50% 成功 / 50% 损毁，挑战费用为 8,000,000 ₽ + LEDX 1 个。\n??? 防损毁券：每件装备仅限 1 张（不可追加购买），每张 5,000,000 ₽。使用时该次尝试消耗 1 张，即使失败 ★★★ 装备也会保留（成功率仍为 50%）。\n成功后星标变为 ✦ 神话标记，并开启神话等级（0~5）。成功率 40·30·20·15·10%，每次失败 +3%p（最多 +30%p）。费用从 500 万 ₽ 起每级 ×1.1 + LEDX 1 个。→3·→4·→5 失败时下降 1 级，防降级券只能用于 →3 尝试。\n武器：子弹伤害和穿透力每级 +3%（最多 15%），此枪内弹药的负面效果（精度 −·后坐力 +·耐久消耗 +·过热 +·故障率）每级减少 16%（最多 80%）。仅在用此枪射击时生效。\n防弹衣：在尚未防护的部位中随机追加 2 处，每个神话等级受到伤害 -10%（最多 50%，头部命中减半）。头盔·面具：每级 -5%（最多 25%）。\n追加部位可逐个重新抽取：200 万 ₽ + 显卡 1 个，每次重新抽取 ×1.5。	src/Client/Plugin.TabInfo.cs:249
+레이드에서 잃었을 때 확률만큼 강화된 채 우편으로 돌아옵니다.\n일반 20% · 1일 뒤 / 고급 55% · 12시간 뒤 / 프리미엄 99% · 즉시.\n한 번 쓰면 소모되고, 강화하면 다시 가입해야 합니다.	If lost in a raid, the gear comes back enhanced by mail at the tier chance.\nBasic 20% · after 1 day / Advanced 55% · after 12 h / Premium 99% · instant.\nUsed up once it pays out; enhancing again needs a new policy.	Если потерять в рейде, снаряжение вернётся по почте улучшенным с шансом уровня.\nБазовая 20% · через 1 день / Расширенная 55% · через 12 ч / Премиум 99% · сразу.\nРасходуется после выплаты; после нового улучшения нужен новый полис.	在战局中丢失时，按等级概率以强化状态通过邮件返还。\n基础 20% · 1 天后 / 高级 55% · 12 小时后 / 尊享 99% · 即时。\n使用一次即消耗，再次强化后需重新投保。	src/Client/Plugin.TabInfo.cs:251
+프레스티지 보험	Prestige insurance	Страховка престижа	声望保险	src/Client/Plugin.TabInfo.cs:253
+프레스티지를 달성해 다음 단계로 넘어갈 때만, 등록한 강화 장비가 강화된 채 우편으로 돌아옵니다. 레이드에서 죽거나 잃은 장비는 돌려주지 않습니다.\n보험료는 장비 가치 × 10%(F12 설정). 추가 강화·방탄판 교체에도 등록은 유지되고, 가치가 오르면 차액만 냅니다. 차액을 안 내면 마지막으로 낸 가치(그때의 강화 단계)까지만 보장합니다. 가치가 내려가도 환불은 없습니다.\n반환되면 등록이 끝나므로 다음 프레스티지에 받으려면 다시 등록하세요. 최대 프레스티지에서는 다음 단계가 없어 등록할 수 없습니다.	Registered enhanced gear comes back by mail, still enhanced, only when you achieve prestige and advance to the next stage. Gear lost on death or in a raid is not returned.\nThe fee is the gear value × 10% (F12 setting). Registration survives upgrades and plate swaps; when the value rises you pay only the difference. Without it the gear is covered up to the last paid value (its levels at that payment). A lower value is not refunded.\nA return ends the registration, so register again for the next prestige. At the maximum prestige there is no next stage, so it cannot be registered.	Привязанное улучшенное снаряжение вернётся по почте улучшенным, только когда вы получите престиж и перейдёте на следующий этап. Снаряжение, потерянное при смерти или в рейде, не возвращается.\nВзнос — ценность снаряжения × 10% (настройка F12). Привязка сохраняется после улучшений и замены пластин; при росте ценности платится только разница. Без доплаты покрытие ограничено последней оплаченной ценностью (уровни на момент оплаты). При снижении ценности возврата нет.\nВозврат завершает привязку — привяжите снова для следующего престижа. На максимальном престиже следующего этапа нет, привязка невозможна.	只有在达成声望并进入下一阶段时，已登记的强化装备才会以强化状态通过邮件返还。在战局中阵亡或丢失的装备不会返还。\n保费 = 装备价值 × 10%（F12 设置）。追加强化或更换插板后登记仍然保留，价值上升时只需支付差价。不支付差价则只保障到最后一次支付时的价值（当时的强化等级）。价值下降时不退款。\n返还后登记即结束，想在下次声望时领取需重新登记。最高声望没有下一阶段，无法登记。	src/Client/Plugin.TabInfo.cs:253
+접기	Hide	Скрыть	收起	src/Client/Plugin.TabInfo.cs:278
+열기	Show	Показать	展开	src/Client/Plugin.TabInfo.cs:278
+{0:D2} · 최대	{0:D2} · MAX	{0:D2} · МАКС.	{0:D2} · 最高	src/Client/Plugin.TabPrestige.cs:14
+✦ 신화 {0}	✦ Mythic {0}	✦ Миф {0}	✦ 神话 {0}	src/Client/Plugin.TabPrestige.cs:83
+ · 초월 {0}	 · Transcend {0}	 · Возвыш. {0}	 · 超越 {0}	src/Client/Plugin.TabPrestige.cs:86
+반환되면 등록·납부 기록은 끝납니다. 다음 반환을 받으려면 다시 등록하세요.	Return ends the registration and payment record. Register again for the next return.	Возврат завершает привязку и запись платежей. Привяжите снова для следующего возврата.	返还后登记和支付记录即结束。想再次领取请重新登记。	src/Client/Plugin.TabPrestige.cs:92
+차액을 안 낸 장비는 마지막으로 낸 가치까지 보장합니다.	Without paying the difference, coverage is capped at the last paid value.	Без доплаты покрытие ограничено последней оплаченной ценностью.	未支付差价的装备只保障到最后一次支付的价值。	src/Client/Plugin.TabPrestige.cs:94
+프레스티지를 달성해 다음 단계로 넘어갈 때만, 등록한 장비가 우편으로 돌아옵니다.	Registered gear returns by mail only when you achieve prestige and advance to the next stage.	Привязанное снаряжение возвращается по почте, только когда вы получите престиж и перейдёте на следующий этап.	只有在达成声望并进入下一阶段时，已登记的装备才会通过邮件返还。	src/Client/Plugin.TabPrestige.cs:112
+레이드에서 죽거나 잃어버린 장비는 돌려주지 않습니다.	Gear lost on death or in a raid is not returned.	Снаряжение, потерянное при смерти или в рейде, не возвращается.	在战局中阵亡或丢失的装备不会返还。	src/Client/Plugin.TabPrestige.cs:114
+최대 프레스티지({0})에서는 다음 단계가 없어 보험이 작동하지 않습니다	At maximum prestige ({0}), there is no next stage, so this insurance does not work.	На максимальном престиже ({0}) следующего этапа нет, поэтому страховка не работает	最高声望（{0}）没有下一阶段，保险不会生效	src/Client/Plugin.TabPrestige.cs:123
+작동 불가 · 최대 단계	Unavailable · maximum stage	Недоступно · макс. этап	无法生效 · 最高阶段	src/Client/Plugin.TabPrestige.cs:137
+등록 유지 · 차액 발생	Registered · difference due	Привязано · нужна доплата	已登记 · 产生差价	src/Client/Plugin.TabPrestige.cs:138
+등록됨 · 납부 완료	Registered · paid	Привязано · оплачено	已登记 · 已支付	src/Client/Plugin.TabPrestige.cs:138
+미등록	Unregistered	Не привязано	未登记	src/Client/Plugin.TabPrestige.cs:139
+다음 프레스티지 단계가 없습니다.	There is no next prestige stage.	Следующего этапа престижа нет.	没有下一个声望阶段。	src/Client/Plugin.TabPrestige.cs:140
+추가 강화해도 등록은 유지됩니다.	Registration stays after further upgrades.	Привязка сохраняется после новых улучшений.	追加强化后登记仍然保留。	src/Client/Plugin.TabPrestige.cs:142
+다음 프레스티지 반환을 받으려면 등록하세요.	Register for a return at the next prestige.	Привяжите, чтобы получить возврат при следующем престиже.	想在下次声望时领取返还请登记。	src/Client/Plugin.TabPrestige.cs:143
+마지막 납부 가치 	Last paid value 	Посл. оплаченная ценность 	最后支付价值 	src/Client/Plugin.TabPrestige.cs:144
+장비·강화·부착물 포함	Gear, upgrades and attachments included	Снаряжение, улучшения и обвес включены	包括装备、强化和配件	src/Client/Plugin.TabPrestige.cs:144
+지금 장비 · 	Current gear · 	Текущее снаряжение · 	当前装备 · 	src/Client/Plugin.TabPrestige.cs:147
+장비 가치 × {0:0.##}% · F12 설정	Gear value × {0:0.##}% · F12 setting	Ценность снаряжения × {0:0.##}% · настройка F12	装备价值 × {0:0.##}% · F12 设置	src/Client/Plugin.TabPrestige.cs:159
+다음 단계 없음	No next stage	Нет следующего этапа	没有下一阶段	src/Client/Plugin.TabPrestige.cs:160
+ · 최소 0	 · min 0	 · мин. 0	 · 最低 0	src/Client/Plugin.TabPrestige.cs:160
+이미 낸 금액	Already paid	Уже оплачено	已支付金额	src/Client/Plugin.TabPrestige.cs:161
+누적 납부 기준	Cumulative payment	По сумме платежей	按累计支付计算	src/Client/Plugin.TabPrestige.cs:161
+현재 가치 보험료	Fee at current value	Взнос по текущей ценности	按当前价值的保费	src/Client/Plugin.TabPrestige.cs:162
+지금 낼 차액	Difference due	Доплата сейчас	现在需支付的差价	src/Client/Plugin.TabPrestige.cs:163
+차액 = 현재 보험료 − 이미 낸 금액 (최소 0 ₽)	Difference = current fee − amount paid (minimum 0 ₽)	Доплата = текущий взнос − оплаченное (мин. 0 ₽)	差价 = 当前保费 − 已支付金额（最低 0 ₽）	src/Client/Plugin.TabPrestige.cs:165
+장비별 차액만 납부	Pay only the difference per item	Только доплата за каждый предмет	只需按装备支付差价	src/Client/Plugin.TabPrestige.cs:168
+마지막 납부 가치	Last paid value	Посл. оплаченная ценность	最后支付价值	src/Client/Plugin.TabPrestige.cs:168
+추가 강화·방탄판 교체에도 등록 유지. 가치가 오르면 차액만 냅니다.	Registration survives upgrades and plate swaps. Pay only the difference when value rises.	Привязка сохраняется после улучшений и замены пластин. При росте ценности — только разница.	追加强化或更换插板后登记仍然保留。价值上升时只需支付差价。	src/Client/Plugin.TabPrestige.cs:173
+가치가 내려가면 추가 납부 0 ₽. 이미 낸 금액은 환불하지 않습니다.	If value falls, the extra fee is 0 ₽. Prior payments are not refunded.	При снижении ценности доплата 0 ₽. Оплаченное не возвращается.	价值下降时追加费用为 0 ₽。已支付的金额不退款。	src/Client/Plugin.TabPrestige.cs:174
+최대 프레스티지({0})에서는 다음 단계가 없어 작동하지 않습니다. 레이드에서 잃은 장비는 강화 보험이 맡습니다.	It does not work at maximum prestige ({0}): there is no next stage. Gear lost in raids is covered by the enhancement insurance.	Не работает на максимальном престиже ({0}): следующего этапа нет. Снаряжение, потерянное в рейдах, покрывает страховка улучшений.	最高声望（{0}）没有下一阶段，因此不会生效。在战局中丢失的装备由强化保险负责。	src/Client/Plugin.TabPrestige.cs:176
+등록 · 반환 규칙	Registration · return rules	Правила привязки · возврата	登记 · 返还规则	src/Client/Plugin.TabPrestige.cs:183
+최대 단계 · 등록 불가	Maximum stage · unavailable	Макс. этап · недоступно	最高阶段 · 无法登记	src/Client/Plugin.TabPrestige.cs:197
+등록됨 · 추가 납부 없음	Registered · nothing due	Привязано · доплата не нужна	已登记 · 无需追加支付	src/Client/Plugin.TabPrestige.cs:198
+차액 내고 갱신 · 	Pay difference & renew · 	Доплатить и продлить · 	支付差价并更新 · 	src/Client/Plugin.TabPrestige.cs:199
+등록 · 	Register · 	Привязать · 	登记 · 	src/Client/Plugin.TabPrestige.cs:199
+프레스티지 보험 차액 납부	Prestige insurance difference paid	Доплата за страховку престижа внесена	已支付声望保险差价	src/Client/Plugin.TabPrestige.cs:201
+프레스티지 보험 등록	Registered for prestige insurance	Привязано к страховке престижа	已登记声望保险	src/Client/Plugin.TabPrestige.cs:202
+프레스티지 {0:D2}{1} 넘어오기 전에 등록한 장비입니다. 받으면 창고로 들어옵니다.	Gear registered before advancing to prestige {0:D2}. Collecting puts it in your stash.	Снаряжение привязано до перехода на престиж {0:D2}. При получении попадёт в схрон.	这是进入声望 {0:D2} 之前登记的装备。领取后会放入仓库。	src/Client/Plugin.TabPrestige.cs:220
+반환 우편 도착 · {0}	Return mail arrived · {0}	Пришла почта возврата · {0}	返还邮件已到达 · {0}	src/Client/Plugin.TabPrestige.cs:224
+프레스티지 {0:D2} → {1:D2}	Prestige {0:D2} → {1:D2}	Престиж {0:D2} → {1:D2}	声望 {0:D2} → {1:D2}	src/Client/Plugin.TabPrestige.cs:225
+ · 조준경·소음기·탄창 보존	 · scope, suppressor, magazine kept	 · прицел, глушитель, магазин сохранены	 · 保留瞄准镜、消音器、弹匣	src/Client/Plugin.TabPrestige.cs:233
+ · 방탄판 보존	 · plates kept	 · пластины сохранены	 · 保留插板	src/Client/Plugin.TabPrestige.cs:233
+메시지 → 시스템 우편에서 첨부 장비를 받으세요	Collect the attachments from Messenger → system mail	Заберите вложения в Сообщения → системная почта	请在 消息 → 系统邮件 中领取附件装备	src/Client/Plugin.TabPrestige.cs:242
+마지막으로 낸 가치까지 보장	Covered up to last paid value	Покрыто до посл. оплаты	保障到最后支付的价值	src/Client/Plugin.TabPrestige.cs:261
+가치 하락 · 환불 없음	Value fell · no refund	Ценность упала · без возврата	价值下降 · 不退款	src/Client/Plugin.TabPrestige.cs:262
+현재 가치 보장	Current value covered	Покрыта текущая ценность	保障当前价值	src/Client/Plugin.TabPrestige.cs:262
+현재 	Now 	Сейчас 	当前 	src/Client/Plugin.TabPrestige.cs:263
+이미 납부 	Paid 	Оплачено 	已支付 	src/Client/Plugin.TabPrestige.cs:264
+등록 유지 · 차액 대기	Registered · difference due	Привязано · ждёт доплаты	已登记 · 待付差价	src/Client/Plugin.TabPrestige.cs:265
+등록됨	Registered	Привязано	已登记	src/Client/Plugin.TabPrestige.cs:265
+차액 내고 갱신	Pay difference & renew	Доплатить и продлить	支付差价并更新	src/Client/Plugin.TabPrestige.cs:266
+납부 완료	Paid	Оплачено	已支付	src/Client/Plugin.TabPrestige.cs:266
+강화 성공·더 비싼 방탄판으로 풀림	Released by an upgrade or a pricier plate	Снято улучшением или более дорогой пластиной	因强化成功或更贵的插板而失效	src/Client/Plugin.TabPrestige.cs:290
+보험료 	Fee 	Взнос 	保费 	src/Client/Plugin.TabPrestige.cs:291
+이전 납부 	Paid 	Оплачено 	已支付 	src/Client/Plugin.TabPrestige.cs:292
+풀림 · 다시 가입	Released · re-enroll	Снято · оформить снова	已失效 · 重新投保	src/Client/Plugin.TabPrestige.cs:293
+가입 중	Active	Действует	投保中	src/Client/Plugin.TabPrestige.cs:293
+등록된 장비 	Registered gear 	Привязано 	已登记装备 	src/Client/Plugin.TabPrestige.cs:310
+장비 · 등급	Gear · tier	Предмет · уровень	装备 · 等级	src/Client/Plugin.TabPrestige.cs:321
+차액	Difference	Доплата	差价	src/Client/Plugin.TabPrestige.cs:323
+상태 / 갱신	Status / renew	Статус / продление	状态 / 更新	src/Client/Plugin.TabPrestige.cs:324
+등록된 장비가 없습니다.	No registered gear.	Нет привязанного снаряжения.	没有已登记的装备。	src/Client/Plugin.TabPrestige.cs:327
+강화 기록	Upgrade record	Запись улучшений	强化记录	src/Client/Plugin.TabPrestige.cs:363
+그대로 보존	Kept	Остаётся	原样保留	src/Client/Plugin.TabPrestige.cs:363
+★ 진화	★ Evolution	★ Эволюция	★ 进化	src/Client/Plugin.TabPrestige.cs:364
+초월 · 신화	Transcend · mythic	Возвышение · миф	超越 · 神话	src/Client/Plugin.TabPrestige.cs:365
+달성 기록 보존	Earned progress kept	Достижения сохраняются	保留达成记录	src/Client/Plugin.TabPrestige.cs:365
+부착물	Attachments	Обвес	配件	src/Client/Plugin.TabPrestige.cs:366
+함께 반환	Returned together	Возвращается вместе	一同返还	src/Client/Plugin.TabPrestige.cs:366
+{0}장 함께 반환	{0} returned together	{0} возвращаются вместе	{0} 块一同返还	src/Client/Plugin.TabPrestige.cs:367
+반환 시 보존	Preserved on return	Сохраняется при возврате	返还时保留	src/Client/Plugin.TabPrestige.cs:378
+프레스티지 진행	Prestige progress	Прогресс престижа	声望进度	src/Client/Plugin.TabPrestige.cs:393
+다음 단계 없음 · 작동 불가	No next stage · unavailable	Нет следующего этапа · недоступно	没有下一阶段 · 无法生效	src/Client/Plugin.TabPrestige.cs:397
+다음 단계로 넘어갈 때 1회 반환	One return on advancing to the next stage	Один возврат при переходе на следующий этап	进入下一阶段时返还 1 次	src/Client/Plugin.TabPrestige.cs:398
+★★ 진화 조건	★★ requirements	Условия ★★	★★ 进化条件	src/Client/Plugin.TabUpgrade.cs:36
+★★★ 진화 조건	★★★ requirements	Условия ★★★	★★★ 进化条件	src/Client/Plugin.TabUpgrade.cs:36
+초월 트랙	Transcendence tracks	Ветки возвышения	超越路线	src/Client/Plugin.TabUpgrade.cs:37
+강화 목록	Upgrades	Улучшения	强化列表	src/Client/Plugin.TabUpgrade.cs:37
+ · 최대	 · max	 · макс.	 · 最高	src/Client/Plugin.TabUpgrade.cs:47
+조건 충족	Met	Готово	条件已满足	src/Client/Plugin.TabUpgrade.cs:55
++{0} 필요	Needs +{0}	Нужно +{0}	需要 +{0}	src/Client/Plugin.TabUpgrade.cs:55
+★★★ 진화 후 열림	Opens after ★★★	Откроется после ★★★	★★★ 进化后解锁	src/Client/Plugin.TabUpgrade.cs:65
+탄 데미지 · 관통력	Bullet damage · penetration	Урон · пробитие пули	子弹伤害 · 穿透力	src/Client/Plugin.TabUpgrade.cs:74
+피격 피해 감소	Damage taken	Получаемый урон	受到伤害减少	src/Client/Plugin.TabUpgrade.cs:74
+추가 부위 {0}	Extra zone {0}	Доп. зона {0}	追加部位 {0}	src/Client/Plugin.TabUpgrade.cs:79
+눌러서 다시 뽑기	Click to reroll	Нажмите — перевыбор	点击重新抽取	src/Client/Plugin.TabUpgrade.cs:79
+수직·수평 반동	Vertical & horizontal	Верт. и гориз.	垂直·水平后坐力	src/Client/Plugin.TabUpgrade.cs:103
+인체공학	Ergonomics	Эргономика	人机工效	src/Client/Plugin.TabUpgrade.cs:104
+탄 퍼짐	Spread	Разброс	散布	src/Client/Plugin.TabUpgrade.cs:104
+장비 페널티	Gear penalty	Штраф снаряжения	装备惩罚	src/Client/Plugin.TabUpgrade.cs:105
+최대	Max	Макс.	最大	src/Client/Plugin.TabUpgrade.cs:121
+방어등급	Armor class	Класс брони	防护等级	src/Client/Plugin.TabUpgrade.cs:151
+고장 확률 감소	Malfunction reduction	Меньше неисправностей	故障率降低	src/Client/Plugin.TabUpgrade.cs:155
+과열 증가 감소	Overheat buildup reduction	Меньше нагрева	过热累积降低	src/Client/Plugin.TabUpgrade.cs:156
+발사속도 증가	Fire rate bonus	Скорострельность	射速提升	src/Client/Plugin.TabUpgrade.cs:159
+증가 상한	Bonus limit	Предел бонуса	提升上限	src/Client/Plugin.TabUpgrade.cs:160
+강화 효과	Effect	Эффект	强化效果	src/Client/Plugin.TabUpgrade.cs:193
+현재 → 성공 시	Now → on success	Сейчас → при успехе	当前 → 成功后	src/Client/Plugin.TabUpgrade.cs:197
+성공률	Success chance	Шанс успеха	成功率	src/Client/Plugin.TabUpgrade.cs:243
+기본 	Base 	База 	基础 	src/Client/Plugin.TabUpgrade.cs:246
++ 천장 	+ pity 	+ гарант 	+ 保底 	src/Client/Plugin.TabUpgrade.cs:247
++ 재료 	+ materials 	+ материалы 	+ 材料 	src/Client/Plugin.TabUpgrade.cs:248
+최대 단계	Max level	Макс. уровень	最高等级	src/Client/Plugin.TabUpgrade.cs:249
+재료 {0}종까지	Up to {0} kinds	До {0} видов	材料最多 {0} 种	src/Client/Plugin.TabUpgrade.cs:269
+최대 단계라 재료가 필요 없습니다	Maxed: no materials needed	Максимум: материалы не нужны	已达最高等级，无需材料	src/Client/Plugin.TabUpgrade.cs:271
+성공률 100%라 재료가 필요 없습니다	Already 100%: no materials needed	Уже 100%: материалы не нужны	成功率已为 100%，无需材料	src/Client/Plugin.TabUpgrade.cs:272
+이 시도에는 재료를 쓸 수 없습니다	No materials for this attempt	Для этой попытки материалы нельзя	此次尝试不能使用材料	src/Client/Plugin.TabUpgrade.cs:273
+선택 	Picked 	Выбрано 	已选 	src/Client/Plugin.TabUpgrade.cs:275
+개당 +{0:0.##}% · {1:N0} ₽	each +{0:0.##}% · {1:N0} ₽	за шт. +{0:0.##}% · {1:N0} ₽	每个 +{0:0.##}% · {1:N0} ₽	src/Client/Plugin.TabUpgrade.cs:302
+보유 {0:N0}	own {0:N0}	есть {0:N0}	持有 {0:N0}	src/Client/Plugin.TabUpgrade.cs:323
+독택	Dogtag	Жетон	狗牌	src/Client/Plugin.TabUpgrade.cs:335
+그래픽 카드	Graphics card	Видеокарта	显卡	src/Client/Plugin.TabUpgrade.cs:336
+비트코인	Bitcoin	Биткоин	比特币	src/Client/Plugin.TabUpgrade.cs:336
+항상 성공	Always succeeds	Всегда успех	必定成功	src/Client/Plugin.TabUpgrade.cs:371
+실패해도 방지권으로 장비 유지	Fail: ticket keeps the gear	Неудача: талон сохранит снаряжение	失败时防损毁券保留装备	src/Client/Plugin.TabUpgrade.cs:374
+실패 시 장비 파괴	Fail: gear destroyed	Неудача: уничтожение	失败时装备损毁	src/Client/Plugin.TabUpgrade.cs:375
+실패해도 보호	Fail: guarded	Неудача: защищено	失败也有保护	src/Client/Plugin.TabUpgrade.cs:381
+실패 시 파괴 {0:0.##}% · 하락 {1:0.##}%	Fail: destroy {0:0.##}% · drop {1:0.##}%	Неудача: разрушение {0:0.##}% · понижение {1:0.##}%	失败时损毁 {0:0.##}% · 降级 {1:0.##}%	src/Client/Plugin.TabUpgrade.cs:383
+실패해도 하락 방지	Fail: drop guarded	Неудача: без понижения	失败也防降级	src/Client/Plugin.TabUpgrade.cs:387
+실패 시 1단계 하락	Fail: drops one level	Неудача: −1 уровень	失败时下降 1 级	src/Client/Plugin.TabUpgrade.cs:388
+실패 시 천장 +{0:0.##}%p	Fail: pity +{0:0.##}%p	Неудача: гарант +{0:0.##} п.п.	失败时保底 +{0:0.##}%p	src/Client/Plugin.TabUpgrade.cs:390
+실패 시 비용만 소모	Fail: cost only	Неудача: только плата	失败只消耗费用	src/Client/Plugin.TabUpgrade.cs:391
+강화비 	Cost 	Стоимость 	强化费 	src/Client/Plugin.TabUpgrade.cs:403
+보호비·방탄판 차액 	Guards & plate diff. 	Защита и доплата за пластины 	保护费·插板差价 	src/Client/Plugin.TabUpgrade.cs:407
+방탄판 차액 	Plate difference 	Доплата за пластины 	插板差价 	src/Client/Plugin.TabUpgrade.cs:408
+보호비 	Guards 	Защита 	保护费 	src/Client/Plugin.TabUpgrade.cs:408
+재료 루블 	Materials 	Материалы 	材料卢布 	src/Client/Plugin.TabUpgrade.cs:412
+합계	Total	Итого	合计	src/Client/Plugin.TabUpgrade.cs:417
+보유 	Owned 	Есть 	持有 	src/Client/Plugin.TabUpgrade.cs:426
+??? 파괴 방지권 · 장비당 1장	??? destruction ticket · one per gear	Талон ??? · один на снаряжение	??? 防损毁券 · 每件装备 1 张	src/Client/Plugin.TabUpgrade.cs:451
+{0} 진화 파괴 방지권	{0} destruction ticket	Талон защиты эволюции {0}	{0} 进化防损毁券	src/Client/Plugin.TabUpgrade.cs:452
+보유 {0}장 · 구매 {1} / {2}	Held {0} · bought {1} / {2}	Есть {0} · куплено {1} / {2}	持有 {0} 张 · 已购 {1} / {2}	src/Client/Plugin.TabUpgrade.cs:454
+ (더 못 삼)	 (no more)	 (больше нельзя)	 （无法再买）	src/Client/Plugin.TabUpgrade.cs:455
+ · ★★용은 못 씀	 · ★★ tickets don't count	 · талоны ★★ не подходят	 · ★★ 用券不可用	src/Client/Plugin.TabUpgrade.cs:456
+방지권 사용\n(실패해도 ★★★ 유지)	Use the ticket\n(★★★ kept on failure)	Использовать талон\n(★★★ сохранится при неудаче)	使用防损毁券\n（失败也保持 ★★★）	src/Client/Plugin.TabUpgrade.cs:465
+방지권 사용\n(실패해도 장비 유지)	Use a ticket\n(gear kept on failure)	Использовать талон\n(снаряжение сохранится)	使用防损毁券\n（失败也保留装备）	src/Client/Plugin.TabUpgrade.cs:466
+더 살 수 없음	Sold out	Распродано	无法再购买	src/Client/Plugin.TabUpgrade.cs:470
+1장 구매 · {0:N0} ₽	Buy one · {0:N0} ₽	Купить 1 · {0:N0} ₽	购买 1 张 · {0:N0} ₽	src/Client/Plugin.TabUpgrade.cs:471
+파괴 방지	Destroy guard	Защ. от разрушения	防损毁	src/Client/Plugin.TabUpgrade.cs:485
++6부터	From +6	С +6	+6 起	src/Client/Plugin.TabUpgrade.cs:485
+하락 방지	Drop guard	Защ. от понижения	防降级	src/Client/Plugin.TabUpgrade.cs:488
+ · →4 시도에서만	 · →4 only	 · только →4	 · 仅限 →4 尝试	src/Client/Plugin.TabUpgrade.cs:496
+ · →3 시도에서만	 · →3 only	 · только →3	 · 仅限 →3 尝试	src/Client/Plugin.TabUpgrade.cs:496
+방탄판 {0}장	{0} plates	Пластин: {0}	插板 {0} 块	src/Client/Plugin.TabUpgrade.cs:520
+차액 {0:N0} ₽	Owes {0:N0} ₽	Доплата {0:N0} ₽	差价 {0:N0} ₽	src/Client/Plugin.TabUpgrade.cs:522
+미적용 {0}장	{0} not applied	Не применено: {0}	未应用 {0} 块	src/Client/Plugin.TabUpgrade.cs:522
+차액 내고 적용	Pay and apply	Доплатить	支付差价并应用	src/Client/Plugin.TabUpgrade.cs:526
+적용	Apply	Применить	应用	src/Client/Plugin.TabUpgrade.cs:526
+재료가 부족합니다: 	Missing materials: 	Не хватает материалов: 	材料不足：	src/Client/Plugin.TabUpgrade.cs:537
+기존 단계 유지 · 첫 효과 선택은 무료 · 100% 적용	Keeps old level · first effect choice is free · 100%	Уровень сохраняется · первый выбор эффекта бесплатно · 100%	保留原等级 · 首次选择效果免费 · 100% 应用	src/Client/Plugin.TabUpgrade.cs:538
+진화 시도	Evolve	Эволюция	尝试进化	src/Client/Plugin.TabUpgrade.cs:573
+초월 시도	Transcend	Возвышение	尝试超越	src/Client/Plugin.TabUpgrade.cs:573
+신화 강화	Mythic attempt	Улучшить миф	神话强化	src/Client/Plugin.TabUpgrade.cs:574
+강화 시도	Enhance	Улучшить	尝试强化	src/Client/Plugin.TabUpgrade.cs:574
+견적 확인 중	Checking quote	Проверка расчёта	正在确认报价	src/Client/Plugin.TabUpgrade.cs:578
+재료 부족	Not enough materials	Не хватает материалов	材料不足	src/Client/Plugin.TabUpgrade.cs:580
+루블·재료 부족	Not enough roubles or materials	Не хватает рублей или материалов	卢布·材料不足	src/Client/Plugin.TabUpgrade.cs:581
+기존 단계에 효과 적용 · 무료	Apply effect to old level · free	Применить эффект к уровню · бесплатно	对原等级应用效果 · 免费	src/Client/Plugin.TabUpgrade.cs:582
+이 항목은 최대 단계	Track maxed	Макс. ветка	此项目已达最高	src/Client/Plugin.TabUpgrade.cs:595
+ 완료	 done	 завершена	 完成	src/Client/Plugin.TabUpgrade.cs:596
+조건 미달	Requirements not met	Условия не выполнены	条件未满足	src/Client/Plugin.TabUpgrade.cs:596
+이 초월은 최대 단계	Track maxed	Макс. ветка	此超越已达最高	src/Client/Plugin.TabUpgrade.cs:597
+최대 신화 단계	Mythic maxed	Миф на максимуме	已达最高神话等级	src/Client/Plugin.TabUpgrade.cs:598
+3성 초월	3-star transcendence	Возвышение 3★	3星超越	src/Client/Plugin.TabUpgrade.cs:603
+2성 초월	2-star transcendence	Возвышение 2★	2星超越	src/Client/Plugin.TabUpgrade.cs:603
+수평 반동 감소	Horizontal recoil reduction	Снижение гориз. отдачи	水平后坐力降低	src/Client/Plugin.TabUpgrade.cs:606
+최대 내구도 증가	Max durability bonus	Бонус макс. прочности	最大耐久提升	src/Client/Plugin.TabUpgrade.cs:607
+방어등급 증가 · 둔탁상 감소	Armor class · blunt reduction	Класс брони · меньше запреградного	防护等级提升 · 钝伤减少	src/Client/Plugin.TabUpgrade.cs:610
+고장·과열 감소	Malfunction · overheat	Неисправности · нагрев	故障·过热降低	src/Client/Plugin.TabUpgrade.cs:618
+방어등급 · 둔탁상	Class · blunt	Класс · запрегр.	防护等级 · 钝伤	src/Client/Plugin.TabUpgrade.cs:619
+목록	MENU	МЕНЮ	列表	src/Client/Plugin.View.cs:414
+새로고침	Refresh	Обновить	刷新	src/Client/Plugin.View.cs:479
+장비가 파괴되었습니다	Gear destroyed	Уничтожено	装备已损毁	src/Client/Plugin.View.cs:525
+장비 이미지를 불러오는 중…	Loading gear image…	Загрузка изображения…	正在加载装备图片…	src/Client/Plugin.View.cs:526
+파괴됨	Destroyed	Уничтожено	已损毁	src/Client/Plugin.View.cs:539
+초월 	Transcend 	Возвыш. 	超越 	src/Client/Plugin.View.cs:546
+방어구	Armor	Броня	护甲	src/Client/Plugin.View.cs:563
+ · 방탄판 {0}장	 · {0} plates	 · пластин: {0}	 · 插板 {0} 块	src/Client/Plugin.View.cs:563
+무기	Weapon	Оружие	武器	src/Client/Plugin.View.cs:564
+ · {0} 완료	 · {0} done	 · {0} завершено	 · {0} 完成	src/Client/Plugin.View.cs:580
+ · {0} 도전 가능	 · {0} ready	 · {0} доступно	 · 可挑战 {0}	src/Client/Plugin.View.cs:581
+2성 초월 {0} · 3성 초월 {1}	2★ track {0} · 3★ track {1}	Ветка 2★ {0} · ветка 3★ {1}	2星超越 {0} · 3星超越 {1}	src/Client/Plugin.View.cs:583
+★★★ 달성 · ??? 도전 가능	★★★ reached · ??? open	★★★ получено · ??? доступно	已达成 ★★★ · 可挑战 ???	src/Client/Plugin.View.cs:586
+ · 탄 데미지·관통력 단계당 +{0:0.#}% · 탄 불이익 단계당 -{1:0.#}%	 · damage & penetration +{0:0.#}% per level · ammo penalties -{1:0.#}% per level	 · урон и пробитие +{0:0.#}% за уровень · штрафы патронов −{1:0.#}% за уровень	 · 子弹伤害·穿透力每级 +{0:0.#}% · 弹药负面效果每级 -{1:0.#}%	src/Client/Plugin.View.cs:591
+ · 받는 피해 단계당 -{0:0.#}%(머리 방어구)	 · damage taken -{0:0.#}% per level (head gear)	 · получаемый урон −{0:0.#}% за уровень (защита головы)	 · 受到伤害每级 -{0:0.#}%（头部防具）	src/Client/Plugin.View.cs:597
+ · 받는 피해 단계당 -{0:0.#}%(머리에 맞으면 절반)	 · damage taken -{0:0.#}% per level (half on head hits)	 · получаемый урон −{0:0.#}% за уровень (вдвое меньше при попадании в голову)	 · 受到伤害每级 -{0:0.#}%（头部命中减半）	src/Client/Plugin.View.cs:598
+ · 추가 보호 부위 	 · extra zones 	 · доп. зоны 	 · 追加防护部位 	src/Client/Plugin.View.cs:599
+3차 스타 강화 진화 성공!	3rd star evolved!	3-я звёздная эволюция!	第三次星级进化成功！	src/Client/ResultText.cs:10
+스타 강화 진화 성공!	Star evolved!	Звёздная эволюция!	星级进化成功！	src/Client/ResultText.cs:10
+강화 성공!	Enhanced!	Улучшено!	强化成功！	src/Client/ResultText.cs:11
+강화 단계 하락	Level dropped	Уровень понижен	强化等级下降	src/Client/ResultText.cs:13
+ 진화 완료 · 모든 강화 효과에 추가 보너스 적용	 evolved · bonus applied to every effect	 эволюция · бонус ко всем эффектам	 进化完成 · 所有强化效果获得额外加成	src/Client/ResultText.cs:17
+ 달성	 reached	 достигнуто	 达成	src/Client/ResultText.cs:18
+파괴 방지 발동 · 장비와 모든 강화 단계를 지켰습니다.	Destruction protection triggered · gear and all levels kept.	Защита от разрушения сработала · снаряжение и все уровни сохранены.	防损毁生效 · 装备和所有强化等级均已保住。	src/Client/ResultText.cs:19
+단계 하락 방지 발동 · 모든 강화 단계를 지켰습니다.	Downgrade protection triggered · all levels kept.	Защита от понижения сработала · все уровни сохранены.	防降级生效 · 所有强化等级均已保住。	src/Client/ResultText.cs:20
+장비 본체·부착물·탄창·탄약이 파괴되었습니다.	The gear, attachments, magazines and ammo were destroyed.	Снаряжение, обвес, магазины и патроны уничтожены.	装备本体、配件、弹匣和弹药已损毁。	src/Client/ResultText.cs:21
+{0} +{1}로 하락 · 다른 항목은 유지됩니다.	{0} dropped to +{1} · other tracks kept.	{0} понижено до +{1} · остальные ветки сохранены.	{0} 降至 +{1} · 其他项目保持不变。	src/Client/ResultText.cs:22
+현재 내구도 0 · 장비와 강화 단계는 유지됩니다.	Current durability 0 · gear and levels kept.	Текущая прочность 0 · снаряжение и уровни сохранены.	当前耐久为 0 · 装备和强化等级保持不变。	src/Client/ResultText.cs:24
+비용만 소모 · 장비와 강화 단계는 유지됩니다.	Fee only · gear and levels kept.	Только плата · снаряжение и уровни сохранены.	仅消耗费用 · 装备和强化等级保持不变。	src/Client/ResultText.cs:25
+신화 달성!	Mythic reached!	Миф достигнут!	达成神话！	src/Client/ResultText.cs:30
+??? 실패 · 방지권으로 ★★★ 유지	??? failed · ticket kept ★★★	??? неудача · талон сохранил ★★★	??? 失败 · 防损毁券保住了 ★★★	src/Client/ResultText.cs:31
+신화 {0}단계 달성	Mythic level {0}	Миф, уровень {0}	达成神话 {0} 级	src/Client/ResultText.cs:32
+신화 {0}단계로 하락	Mythic dropped to {0}	Миф понижен до {0}	神话降至 {0} 级	src/Client/ResultText.cs:33
+신화 강화 실패 · 천장 +{0:0.##}%p	Mythic failed · pity +{0:0.##}%p	Миф не удался · гарант +{0:0.##} п.п.	神话强化失败 · 保底 +{0:0.##}%p	src/Client/ResultText.cs:34
+추가 부위를 다시 뽑았습니다	Extra zone rerolled	Доп. зона перевыбрана	已重新抽取追加部位	src/Client/ResultText.cs:35
+초월 성공!	Transcended!	Возвышено!	超越成功！	src/Client/ResultText.cs:41
+초월 실패 · 하락 방지	Failed · downgrade prevented	Неудача · понижение предотвращено	超越失败 · 防降级	src/Client/ResultText.cs:42
+초월 단계 하락	Transcendence dropped	Возвышение понижено	超越等级下降	src/Client/ResultText.cs:43
+ · 천장 +{0:0.##}%p	 · pity +{0:0.##}%p	 · гарант +{0:0.##} п.п.	 · 保底 +{0:0.##}%p	src/Client/ResultText.cs:46
+ {0}단계 달성	 level {0} reached	 уровень {0}	 达成 {0} 级	src/Client/ResultText.cs:47
+단계 하락 방지 발동 · {0}단계 유지	Downgrade protection triggered · level {0} kept	Защита от понижения сработала · уровень {0} сохранён	防降级生效 · 保持 {0} 级	src/Client/ResultText.cs:48
+ {0}단계로 하락 · 장비 파괴 없음	 dropped to level {0} · nothing destroyed	 понижено до уровня {0} · ничего не уничтожено	 降至 {0} 级 · 装备未损毁	src/Client/ResultText.cs:49
+ {0}단계 유지 · 재료 소모	 level {0} kept · materials used	 уровень {0} сохранён · материалы потрачены	 保持 {0} 级 · 材料已消耗	src/Client/ResultText.cs:50
+ {0:N0}개	 ×{0:N0}	 ×{0:N0}	 {0:N0} 个	src/Client/ResultText.cs:77
+목 앞	Front of neck	Шея спереди	颈部前方	src/Client/ResultText.cs:88
+목 뒤	Back of neck	Шея сзади	颈部后方	src/Client/ResultText.cs:89
+위팔 (왼쪽)	Left upper arm	Левое плечо	左上臂	src/Client/ResultText.cs:90
+위팔 (오른쪽)	Right upper arm	Правое плечо	右上臂	src/Client/ResultText.cs:91
+아래팔 (왼쪽)	Left forearm	Левое предплечье	左前臂	src/Client/ResultText.cs:92
+아래팔 (오른쪽)	Right forearm	Правое предплечье	右前臂	src/Client/ResultText.cs:93
+사타구니	Groin	Пах	腹股沟	src/Client/ResultText.cs:94
+엉덩이	Buttocks	Ягодицы	臀部	src/Client/ResultText.cs:95
+허벅지 (왼쪽)	Left thigh	Левое бедро	左大腿	src/Client/ResultText.cs:96
+허벅지 (오른쪽)	Right thigh	Правое бедро	右大腿	src/Client/ResultText.cs:97
+정수리	Top of head	Макушка	头顶	src/Client/ResultText.cs:98
+뒤통수	Back of head	Затылок	后脑	src/Client/ResultText.cs:99
+귀	Ears	Уши	耳部	src/Client/ResultText.cs:100
+눈	Eyes	Глаза	眼部	src/Client/ResultText.cs:101
+턱	Jaw	Челюсть	下颌	src/Client/ResultText.cs:102
+무기 부품	Weapon parts	Оружейные детали	武器零件	src/Client/ResultText.cs:60
+화약 "Eagle"	Gunpowder "Eagle"	Порох «Орёл»	火药“Eagle”	src/Client/ResultText.cs:61
+아라미드 섬유	Aramid fiber fabric	Арамидная ткань	芳纶纤维	src/Client/ResultText.cs:62
+립스탑	Ripstop fabric	Ткань рипстоп	防撕裂布	src/Client/ResultText.cs:63
+군용 회로 기판	Military circuit board	Военная печатная плата	军用电路板	src/Client/ResultText.cs:64
+Virtex 프로세서	Virtex processor	Процессор Virtex	Virtex 处理器	src/Client/ResultText.cs:65
+수직 반동	Vertical recoil	Верт. отдача	垂直后坐力	src/Client/StatSheet.cs:68
+수평 반동	Horizontal recoil	Гориз. отдача	水平后坐力	src/Client/StatSheet.cs:69
+정확도 (MOA)	Accuracy (MOA)	Точность (MOA)	精度 (MOA)	src/Client/StatSheet.cs:71
+발사속도	Fire rate	Темп стрельбы	射速	src/Client/StatSheet.cs:72
+내구도	Durability	Прочность	耐久	src/Client/StatSheet.cs:77
+ · 판 {0}	 · plate {0}	 · пластина {0}	 · 插板 {0}	src/Client/StatSheet.cs:87
+{0}곳	{0}	{0}	{0} 处	src/Client/StatSheet.cs:89
+방어 등급	Armor class	Класс брони	防护等级	src/Client/StatSheet.cs:112
+최대 내구도	Max durability	Макс. прочность	最大耐久	src/Client/StatSheet.cs:114
+둔탁상	Blunt damage	Запреградный урон	钝伤	src/Client/StatSheet.cs:116
+받는 피해	Damage taken	Получаемый урон	受到伤害	src/Client/StatSheet.cs:117
+이동 속도	Move speed	Движение	移动速度	src/Client/StatSheet.cs:118
+회전 속도	Turn speed	Поворот	转身速度	src/Client/StatSheet.cs:119
+가격을 찾을 수 없는 아이템은 진화할 수 없습니다.	Items without a price cannot be evolved.	Предметы без цены нельзя эволюционировать.	找不到价格的物品无法进化。	src/Server/EnhanceRules.cs:10
+진화 비용이 1억 루블을 초과합니다. F12 설정을 낮춰 주세요.	The evolution cost exceeds 100,000,000 roubles. Lower the F12 settings.	Стоимость эволюции больше 100 000 000 рублей. Уменьшите настройки F12.	进化费用超过 1 亿卢布。请调低 F12 设置。	src/Server/EnhanceRules.cs:13
+가격을 찾을 수 없는 아이템은 강화할 수 없습니다.	Items without a price cannot be enhanced.	Предметы без цены нельзя улучшать.	找不到价格的物品无法强化。	src/Server/EnhanceRules.cs:20
+최대 강화 단계입니다.	Already at the maximum enhancement level.	Уже максимальный уровень улучшения.	已达最高强化等级。	src/Server/EnhanceRules.cs:22
+강화 비용이 1억 루블을 초과합니다. F12 설정을 낮춰 주세요.	The enhancement cost exceeds 100,000,000 roubles. Lower the F12 settings.	Стоимость улучшения больше 100 000 000 рублей. Уменьшите настройки F12.	强化费用超过 1 亿卢布。请调低 F12 设置。	src/Server/EnhanceRules.cs:26
+방탄판 등록비가 1억 루블을 초과합니다. F12 설정을 낮춰 주세요.	The plate registration fee exceeds 100,000,000 roubles. Lower the F12 settings.	Плата за привязку пластин больше 100 000 000 рублей. Уменьшите настройки F12.	插板登记费超过 1 亿卢布。请调低 F12 设置。	src/Server/EnhanceRules.cs:67
+보험 등급을 골라 주세요.	Choose an insurance tier.	Выберите уровень страховки.	请选择保险等级。	src/Server/EnhanceRules.cs:77
+강화 보험료가 1억 루블을 초과합니다. F12 설정을 낮춰 주세요.	The enhancement insurance fee exceeds 100,000,000 roubles. Lower the F12 settings.	Взнос за страховку улучшений больше 100 000 000 рублей. Уменьшите настройки F12.	强化保险费超过 1 亿卢布。请调低 F12 设置。	src/Server/EnhanceRules.cs:80
+강화 작업이 올바르지 않습니다.	Invalid enhancement action.	Неверное действие улучшения.	强化操作无效。	src/Server/EnhanceService.cs:130
+이 장비에 사용할 수 없는 강화 항목입니다.	This track cannot be used on this gear.	Эту ветку нельзя использовать для этого снаряжения.	此装备无法使用该强化项目。	src/Server/EnhanceService.cs:184
+강화 단계 기록이 올바르지 않습니다.	The saved enhancement level is invalid.	Сохранённый уровень улучшения неверен.	强化等级记录无效。	src/Server/EnhanceService.cs:187
+모든 항목을 최대 단계까지 강화한 뒤 스타 강화 진화를 시도해 주세요.	Max out every track before attempting star evolution.	Улучшите все ветки до максимума перед звёздной эволюцией.	请将所有项目强化至最高等级后再尝试星级进化。	src/Server/EnhanceService.cs:192
+2차 스타 진화를 완료한 장비만 3차 진화를 시도할 수 있습니다.	Only gear with a completed 2nd star evolution can attempt the 3rd.	3-ю эволюцию может пройти только снаряжение с завершённой 2-й звёздной эволюцией.	只有完成第二次星级进化的装备才能尝试第三次进化。	src/Server/EnhanceService.cs:194
+이미 2차 스타 진화를 완료한 장비입니다.	This gear already completed the 2nd star evolution.	Это снаряжение уже прошло 2-ю звёздную эволюцию.	此装备已完成第二次星级进化。	src/Server/EnhanceService.cs:195
+사용할 파괴 방지권이 없습니다. 견적을 다시 불러와 주세요.	No destruction ticket to use. Reload the quote.	Нет талона защиты для использования. Обновите расчёт.	没有可用的防损毁券。请重新获取报价。	src/Server/EnhanceService.cs:235
+단계별 성공률 감소로 이 단계의 성공률이 0%가 됐습니다. F12 개발자 옵션의 단계별 감소 또는 최대 단계를 낮춰 주세요.	The per-level chance loss brought this level's chance to 0%. Lower the per-level loss or max level in the F12 developer options.	Из-за снижения шанса за уровень шанс этого уровня стал 0%. Уменьшите снижение за уровень или макс. уровень в настройках разработчика F12.	由于每级成功率递减，此等级成功率变为 0%。请在 F12 开发者选项中调低每级递减或最高等级。	src/Server/EnhanceService.cs:243
+강화된 장비만 강화 보험 가입·방탄판 등록을 할 수 있습니다.	Only enhanced gear can be insured or have plates registered.	Страховку и привязку пластин можно оформить только для улучшенного снаряжения.	只有已强化的装备才能投保强化保险或登记插板。	src/Server/EnhanceService.cs:288
+이미 처리된 강화입니다. 결과를 확인해 주세요.	This enhancement was already processed. Check the result.	Это улучшение уже обработано. Проверьте результат.	此强化已处理。请查看结果。	src/Server/EnhanceService.cs:502
+강화 견적을 다시 불러와 주세요.	Reload the enhancement quote.	Обновите расчёт улучшения.	请重新获取强化报价。	src/Server/EnhanceService.cs:504
+견적이 만료됐습니다. 비용을 다시 확인해 주세요.	The quote expired. Check the cost again.	Срок расчёта истёк. Проверьте стоимость снова.	报价已过期。请重新确认费用。	src/Server/EnhanceService.cs:507
+SPT 아이템 응답을 준비할 수 없습니다.	Cannot prepare the SPT item response.	Не удалось подготовить ответ SPT о предметах.	无法准备 SPT 物品响应。	src/Server/EnhanceService.cs:510
+장비 상태가 바뀌었습니다. 견적을 다시 불러와 주세요.	The gear changed. Reload the quote.	Снаряжение изменилось. Обновите расчёт.	装备状态已变化。请重新获取报价。	src/Server/EnhanceService.cs:524
+지금은 이 강화 보험·방탄판 등록을 할 수 없습니다. 견적을 다시 불러와 주세요.	This insurance or plate registration is not available now. Reload the quote.	Эта страховка или привязка пластин сейчас недоступна. Обновите расчёт.	现在无法进行此强化保险投保或插板登记。请重新获取报价。	src/Server/EnhanceService.cs:527
+보험 납부 기록이 바뀌었습니다. 견적을 다시 불러와 주세요.	The insurance payment record changed. Reload the quote.	Запись платежей страховки изменилась. Обновите расчёт.	保险支付记录已变化。请重新获取报价。	src/Server/EnhanceService.cs:529
+프레스티지 보험 납부 기록이 바뀌었습니다. 견적을 다시 불러와 주세요.	The prestige insurance payment record changed. Reload the quote.	Запись платежей страховки престижа изменилась. Обновите расчёт.	声望保险支付记录已变化。请重新获取报价。	src/Server/EnhanceService.cs:531
+장비와 부착물 파괴 안내를 확인해 주세요.	Confirm the gear and attachment destruction notice.	Подтвердите предупреждение об уничтожении снаряжения и обвеса.	请确认装备和配件损毁提示。	src/Server/EnhanceService.cs:533
+창고의 루블이 부족합니다.	Not enough roubles in the stash.	Не хватает рублей в схроне.	仓库中的卢布不足。	src/Server/EnhanceService.cs:536
+PMC 프로필을 찾을 수 없습니다.	PMC profile not found.	Профиль ЧВК не найден.	找不到 PMC 档案。	src/Server/EnhanceService.cs:855
+프로필이 없습니다.	Profile not found.	Профиль не найден.	没有档案。	src/Server/EnhanceService.cs:859
+강화 기록을 읽을 수 없습니다.	Cannot read the enhancement records.	Не удалось прочитать записи улучшений.	无法读取强化记录。	src/Server/EnhanceService.cs:876
+강화 기록 형식이 다릅니다.	The enhancement record format is different.	Формат записей улучшений отличается.	强化记录格式不同。	src/Server/EnhanceService.cs:885
+이전 강화 기록이 올바르지 않습니다.	The old enhancement records are invalid.	Старые записи улучшений неверны.	之前的强化记录无效。	src/Server/EnhanceService.cs:922
+내 창고에서 아이템을 찾을 수 없습니다.	Item not found in your stash.	Предмет не найден в вашем схроне.	在你的仓库中找不到该物品。	src/Server/EnhanceService.cs:934
+장비를 장착 해제하고 창고에 넣어 주세요.	Unequip the gear and put it in your stash.	Снимите снаряжение и положите его в схрон.	请卸下装备并放入仓库。	src/Server/EnhanceService.cs:937
+장비의 내부 보관칸을 비운 뒤 강화해 주세요.	Empty the gear's storage before enhancing.	Освободите внутреннее хранилище снаряжения перед улучшением.	请先清空装备内部的存储格再强化。	src/Server/EnhanceService.cs:940
+내구도가 있는 무기 또는 방어구만 강화할 수 있습니다.	Only weapons or armor with durability can be enhanced.	Улучшать можно только оружие или броню с прочностью.	只能强化有耐久的武器或护甲。	src/Server/EnhanceService.cs:945
+방탄판·내피·헬멧 부착 방호구는 따로 강화할 수 없습니다. 방어구에 끼운 채 방어구를 강화하면 함께 적용됩니다.	Plates, soft inserts and helmet add-ons cannot be enhanced alone. Enhance the armor they are inserted in; they share its effect.	Пластины, мягкие вставки и навесы шлема нельзя улучшать отдельно. Улучшите броню, в которую они вставлены, — эффект общий.	插板、软甲内衬和头盔附加防护无法单独强化。装在护甲上强化护甲时会一同生效。	src/Server/EnhanceService.cs:947
+잠긴 장비나 부착물의 잠금을 먼저 해제해 주세요.	Unlock the locked gear or attachments first.	Сначала разблокируйте заблокированное снаряжение или обвес.	请先解除被锁定的装备或配件。	src/Server/EnhanceService.cs:950
+아이템 목록을 읽을 수 없습니다.	Cannot read the item list.	Не удалось прочитать список предметов.	无法读取物品列表。	src/Server/EnhanceService.cs:965
+창고를 찾을 수 없습니다.	Stash not found.	Схрон не найден.	找不到仓库。	src/Server/EnhanceService.cs:968
+소모 아이템 묶음의 수량이 올바르지 않습니다.	Invalid stack count on a consumed item.	Неверное количество в стопке расходуемого предмета.	消耗物品堆叠数量无效。	src/Server/EnhanceService.cs:996
+??? 는 50/50 고정이라 성공률 재료를 쓸 수 없습니다.	??? is a fixed 50/50; chance materials cannot be used.	??? — фиксированные 50/50, материалы шанса нельзя.	??? 固定为 50/50，不能使用成功率材料。	src/Server/EnhanceService.Mythic.cs:158
+성공률 재료는 {0}종까지 고를 수 있습니다.	Choose at most {0} kinds of chance material.	Можно выбрать не больше {0} видов материалов шанса.	成功率材料最多可选 {0} 种。	src/Server/EnhanceService.Mythic.cs:162
+성공률 재료 종류가 올바르지 않습니다.	Invalid chance material kind.	Неверный вид материала шанса.	成功率材料种类无效。	src/Server/EnhanceService.Mythic.cs:164
+성공률 재료 개수가 올바르지 않습니다(최대 {0}개).	Invalid chance material count (at most {0}).	Неверное количество материала шанса (не больше {0}).	成功率材料数量无效（最多 {0} 个）。	src/Server/EnhanceService.Mythic.cs:171
+성공률 재료 비용이 1억 루블을 초과합니다.	The chance material cost exceeds 100,000,000 roubles.	Стоимость материалов шанса больше 100 000 000 рублей.	成功率材料费用超过 1 亿卢布。	src/Server/EnhanceService.Mythic.cs:181
+즉시 강화는 일반 강화·초월·신화에서만 쓸 수 있습니다.	Instant is only for enhancement, transcendence and mythic attempts.	Мгновенно можно только для улучшения, возвышения и мифа.	即时强化只能用于普通强化、超越和神话。	src/Server/EnhanceService.Mythic.cs:191
+3차 스타 진화(★★★)를 마친 장비만 ??? 에 도전할 수 있습니다.	Only gear with the 3rd star evolution (★★★) can take on ???.	Испытать ??? может только снаряжение с 3-й звёздной эволюцией (★★★).	只有完成第三次星级进化（★★★）的装备才能挑战 ???。	src/Server/EnhanceService.Mythic.cs:208
+이미 신화 단계인 장비입니다.	This gear is already mythic.	Это снаряжение уже мифическое.	此装备已是神话阶段。	src/Server/EnhanceService.Mythic.cs:222
+??? 는 50/50 고정이라 재료·즉시 강화를 쓸 수 없습니다.	??? is a fixed 50/50; materials and instant cannot be used.	??? — фиксированные 50/50, материалы и мгновенно нельзя.	??? 固定为 50/50，不能使用材料和即时强化。	src/Server/EnhanceService.Mythic.cs:224
+사용할 ??? 파괴 방지권이 없습니다. 견적을 다시 불러와 주세요.	No ??? destruction ticket to use. Reload the quote.	Нет талона ??? для использования. Обновите расчёт.	没有可用的 ??? 防损毁券。请重新获取报价。	src/Server/EnhanceService.Mythic.cs:231
+??? 에 성공한 신화 장비만 신화 강화를 할 수 있습니다.	Only mythic gear (??? passed) can take mythic attempts.	Мифические попытки доступны только мифическому снаряжению (после ???).	只有 ??? 成功的神话装备才能进行神话强化。	src/Server/EnhanceService.Mythic.cs:242
+신화 단계 기록이 올바르지 않습니다.	The saved mythic level is invalid.	Сохранённый мифический уровень неверен.	神话等级记录无效。	src/Server/EnhanceService.Mythic.cs:244
+이미 최대 신화 단계입니다.	Already at the maximum mythic level.	Уже максимальный мифический уровень.	已达最高神话等级。	src/Server/EnhanceService.Mythic.cs:245
+추가 보호 부위가 있는 신화 방어구만 다시 뽑을 수 있습니다.	Only mythic armor with added zones can reroll them.	Перевыбирать зоны может только мифическая броня с доп. зонами.	只有带追加防护部位的神话护甲才能重新抽取。	src/Server/EnhanceService.Mythic.cs:260
+다시 뽑을 부위를 골라 주세요.	Choose the zone to reroll.	Выберите зону для перевыбора.	请选择要重新抽取的部位。	src/Server/EnhanceService.Mythic.cs:262
+다시 뽑을 수 있는 부위가 남아 있지 않습니다.	No zone is left to reroll into.	Не осталось зон для перевыбора.	没有可重新抽取的部位了。	src/Server/EnhanceService.Mythic.cs:265
+강화된 장비만 파괴 방지권을 살 수 있습니다.	Only enhanced gear can buy destruction tickets.	Талоны защиты может купить только улучшенное снаряжение.	只有已强化的装备才能购买防损毁券。	src/Server/EnhanceService.Mythic.cs:298
+방지권 종류(★★·★★★·???)를 골라 주세요.	Choose the ticket (★★, ★★★ or ???).	Выберите талон (★★, ★★★ или ???).	请选择防损毁券种类（★★·★★★·???）。	src/Server/EnhanceService.Mythic.cs:301
+??? 에 도전하기 전의 ★★★ 장비만 ??? 파괴 방지권을 살 수 있습니다.	Only ★★★ gear that has not passed ??? can buy the ??? ticket.	Талон ??? может купить только снаряжение ★★★, ещё не прошедшее ???.	只有尚未挑战 ??? 的 ★★★ 装备才能购买 ??? 防损毁券。	src/Server/EnhanceService.Mythic.cs:306
+★★ 장비만 ★★★ 진화용 방지권을 살 수 있습니다.	Only ★★ gear can buy ★★★ evolution tickets.	Талоны для эволюции ★★★ может купить только снаряжение ★★.	只有 ★★ 装备才能购买 ★★★ 进化用防损毁券。	src/Server/EnhanceService.Mythic.cs:310
+★★ 진화 전 장비만 ★★ 진화용 방지권을 살 수 있습니다.	Only gear before the ★★ evolution can buy ★★ evolution tickets.	Талоны для эволюции ★★ может купить только снаряжение до эволюции ★★.	只有 ★★ 进化前的装备才能购买 ★★ 进化用防损毁券。	src/Server/EnhanceService.Mythic.cs:311
+이 장비는 방지권을 더 살 수 없습니다(평생 {0}장).	This gear cannot buy more tickets (lifetime {0}).	Этому снаряжению больше талонов не купить (всего {0}).	此装备无法再购买防损毁券（终身 {0} 张）。	src/Server/EnhanceService.Mythic.cs:315
+초월 종류를 골라 주세요.	Choose a transcendence track.	Выберите ветку возвышения.	请选择超越种类。	src/Server/EnhanceService.Transcend.cs:58
+3차 스타 진화(★★★)를 마친 장비만 3성 초월을 할 수 있습니다.	Only gear with the 3rd star evolution (★★★) can take 3-star transcendence.	Возвышение 3★ доступно только снаряжению с 3-й звёздной эволюцией (★★★).	只有完成第三次星级进化（★★★）的装备才能进行 3星超越。	src/Server/EnhanceService.Transcend.cs:63
+2차 스타 진화(★★)를 마친 장비만 2성 초월을 할 수 있습니다.	Only gear with the 2nd star evolution (★★) can take 2-star transcendence.	Возвышение 2★ доступно только снаряжению со 2-й звёздной эволюцией (★★).	只有完成第二次星级进化（★★）的装备才能进行 2星超越。	src/Server/EnhanceService.Transcend.cs:64
+초월 단계 기록이 올바르지 않습니다.	The saved transcendence level is invalid.	Сохранённый уровень возвышения неверен.	超越等级记录无效。	src/Server/EnhanceService.Transcend.cs:69
+이미 최대 초월 단계입니다.	Already at the maximum transcendence level.	Уже максимальный уровень возвышения.	已达最高超越等级。	src/Server/EnhanceService.Transcend.cs:71
+창고의 재료(초월·신화·성공률 재료)가 부족합니다.	Not enough materials (transcendence, mythic or chance) in the stash.	Не хватает материалов (возвышения, мифа или шанса) в схроне.	仓库中的材料（超越·神话·成功率材料）不足。	src/Server/EnhanceService.Transcend.cs:152
+완료 기록이 없습니다. 연결 상태와 서버 로그를 확인해 주세요.	No completion record. Check the connection and server log.	Нет записи о завершении. Проверьте соединение и журнал сервера.	没有完成记录。请检查连接状态和服务器日志。	src/Server/Routes.cs:78
+방탄판 맞추기 설정을 읽을 수 없습니다.	Cannot read the plate sync settings.	Не удалось прочитать настройки синхронизации пластин.	无法读取插板同步设置。	src/Server/Routes.cs:115
+Gear Enhance 클라이언트와 서버를 모두 {0}으로 업데이트해 주세요.	Update both the Gear Enhance client and server to {0}.	Обновите клиент и сервер Gear Enhance до {0}.	请将 Gear Enhance 客户端和服务器都更新到 {0}。	src/Shared/Contracts.cs:22
+F12 설정 범위를 확인해 주세요.	Check the F12 setting ranges.	Проверьте диапазоны настроек F12.	请检查 F12 设置范围。	src/Shared/Contracts.cs:122
+강화 효과 설정이 없습니다.	Enhancement effect settings are missing.	Нет настроек эффектов улучшения.	缺少强化效果设置。	src/Shared/Contracts.cs:123
+초월 강화 설정이 없습니다.	Transcendence settings are missing.	Нет настроек возвышения.	缺少超越强化设置。	src/Shared/Contracts.cs:126
+성공률 재료 설정이 없습니다.	Chance material settings are missing.	Нет настроек материалов шанса.	缺少成功率材料设置。	src/Shared/Contracts.cs:128
+신화 설정이 없습니다.	Mythic settings are missing.	Нет настроек мифа.	缺少神话设置。	src/Shared/Contracts.cs:130
+강화 기록의 PMC 프로필이 일치하지 않습니다.	The enhancement records belong to a different PMC profile.	Записи улучшений принадлежат другому профилю ЧВК.	强化记录的 PMC 档案不一致。	src/Shared/EffectRegistry.cs:80
+PMC 프로필이 없습니다.	No PMC profile.	Нет профиля ЧВК.	没有 PMC 档案。	src/Shared/EffectRegistry.cs:151
+최대 강화 단계를 확인해 주세요.	Check the maximum enhancement level.	Проверьте максимальный уровень улучшения.	请检查最高强化等级。	src/Shared/EnhanceEffects.cs:24
+F12 강화 효과 수치 범위를 확인해 주세요.	Check the F12 effect value ranges.	Проверьте диапазоны значений эффектов F12.	请检查 F12 强化效果数值范围。	src/Shared/EnhanceEffects.cs:36
+강화 항목이 올바르지 않습니다.	Invalid enhancement track.	Неверная ветка улучшения.	强化项目无效。	src/Shared/EnhanceEffects.cs:55
+반동 제어	Recoil	Отдача	后坐力控制	src/Shared/EnhanceEffects.cs:81
+조작성	Handling	Управление	操控性	src/Shared/EnhanceEffects.cs:81
+정밀성	Precision	Точность	精准性	src/Shared/EnhanceEffects.cs:82
+내구성	Durability	Прочность	耐久性	src/Shared/EnhanceEffects.cs:82
+기동성	Mobility	Мобильность	机动性	src/Shared/EnhanceEffects.cs:83
+미선택	None	Нет	未选择	src/Shared/EnhanceEffects.cs:83
+반동 감소	Recoil reduction	Снижение отдачи	后坐力降低	src/Shared/EnhanceEffects.cs:96
+인체공학 증가	Ergonomics bonus	Бонус эргономики	人机工效提升	src/Shared/EnhanceEffects.cs:96
+탄 퍼짐 감소	Dispersion reduction	Снижение разброса	散布降低	src/Shared/EnhanceEffects.cs:97
+내구도 소모 감소	Durability loss reduction	Снижение износа	耐久消耗降低	src/Shared/EnhanceEffects.cs:97
+장비 페널티 완화	Gear penalty relief	Меньше штрафов снаряжения	装备惩罚减轻	src/Shared/EnhanceEffects.cs:98
+수직·수평 반동에 적용	Applies to vertical and horizontal recoil	Применяется к вертикальной и горизонтальной отдаче	作用于垂直·水平后坐力	src/Shared/EnhanceEffects.cs:103
+해당 무기의 인체공학에 더함 · 최종 100 상한	Added to this weapon's ergonomics · final cap 100	Добавляется к эргономике этого оружия · итоговый предел 100	加到该武器的人机工效上 · 最终上限 100	src/Shared/EnhanceEffects.cs:104
+총알 탄 퍼짐과 산탄 퍼짐에 적용	Applies to bullet and buckshot dispersion	Применяется к разбросу пуль и дроби	作用于子弹散布和霰弹散布	src/Shared/EnhanceEffects.cs:105
+피격·폭발 내구도 소모에 적용 · 등록된 방탄판·내피도 함께	Applies to durability loss from hits and blasts · registered plates/inserts too	Применяется к износу от попаданий и взрывов · также для привязанных пластин и вставок	作用于受击·爆炸造成的耐久消耗 · 已登记的插板·内衬也一同生效	src/Shared/EnhanceEffects.cs:106
+이동·회전·인체공학 페널티에 적용 · 등록된 방탄판도 함께	Applies to movement, turning and ergonomics penalties · registered plates too	Применяется к штрафам движения, поворота и эргономики · также для привязанных пластин	作用于移动·转身·人机工效惩罚 · 已登记的插板也一同生效	src/Shared/EnhanceEffects.cs:107
+일반	Basic	Базовая	基础	src/Shared/Loc.cs:103
+고급	Advanced	Расширенная	高级	src/Shared/Loc.cs:104
+프리미엄	Premium	Премиум	尊享	src/Shared/Loc.cs:105
+SPT 플리 기준가	SPT flea price	Цена барахолки SPT	SPT 跳蚤市场基准价	src/Shared/Loc.cs:121
+북밸류 (플리 가격 없음)	Handbook (no flea price)	Справочник (нет цены барахолки)	手册价（无跳蚤市场价格）	src/Shared/Loc.cs:122
+북밸류	Handbook	Справочник	手册价	src/Shared/Loc.cs:123
+F12 신화 설정 범위를 확인해 주세요.	Check the F12 mythic setting ranges.	Проверьте диапазоны мифических настроек F12.	请检查 F12 神话设置范围。	src/Shared/Mythic.cs:41
+신화 강화 비용이 1억 루블을 초과합니다. F12 설정을 낮춰 주세요.	The mythic cost exceeds 100,000,000 roubles. Lower the F12 settings.	Стоимость мифа больше 100 000 000 рублей. Уменьшите настройки F12.	神话强化费用超过 1 亿卢布。请调低 F12 设置。	src/Shared/Mythic.cs:76
+다시 뽑기 비용이 1억 루블을 초과합니다.	The reroll cost exceeds 100,000,000 roubles.	Стоимость перевыбора больше 100 000 000 рублей.	重新抽取费用超过 1 亿卢布。	src/Shared/Mythic.cs:80
+보호 비용 설정 범위를 확인해 주세요.	Check the protection fee setting ranges.	Проверьте диапазоны настроек платы за защиту.	请检查保护费用设置范围。	src/Shared/ProtectionCosts.cs:11
+보호 비용을 포함한 총액이 1억 루블을 초과합니다. 보호 옵션이나 F12 비용 설정을 낮춰 주세요.	The total including protection exceeds 100,000,000 roubles. Lower the protection options or F12 cost settings.	Итог с защитой больше 100 000 000 рублей. Уменьшите защиту или настройки стоимости F12.	含保护费用的总额超过 1 亿卢布。请降低保护选项或 F12 费用设置。	src/Shared/ProtectionCosts.cs:18
+빨간색	red	красный	红色	src/Shared/StarEvolution.cs:13
+보라색	purple	фиолетовый	紫色	src/Shared/StarEvolution.cs:13
+금색	gold	золотой	金色	src/Shared/StarEvolution.cs:13
+F12 성공률 재료 설정 범위를 확인해 주세요.	Check the F12 chance material setting ranges.	Проверьте диапазоны настроек материалов шанса F12.	请检查 F12 成功率材料设置范围。	src/Shared/SuccessBoost.cs:48
+F12 초월 강화 설정 범위를 확인해 주세요.	Check the F12 transcendence setting ranges.	Проверьте диапазоны настроек возвышения F12.	请检查 F12 超越强化设置范围。	src/Shared/Transcend.cs:59
+가격을 찾을 수 없는 아이템은 초월할 수 없습니다.	Items without a price cannot be transcended.	Предметы без цены нельзя возвышать.	找不到价格的物品无法超越。	src/Shared/Transcend.cs:98
+초월 비용이 1억 루블을 초과합니다. F12 설정을 낮춰 주세요.	The transcendence cost exceeds 100,000,000 roubles. Lower the F12 settings.	Стоимость возвышения больше 100 000 000 рублей. Уменьшите настройки F12.	超越费用超过 1 亿卢布。请调低 F12 设置。	src/Shared/Transcend.cs:101
+창고 보험 표시 모양	Stash insurance mark	Метка страховки в схроне	仓库保险标记	src/Client/DeveloperOptions.cs:190
+강화 장비 칸의 강화 보험 표시. Corner = 모서리 색 삼각형, Letter = 1.4.0 글자 칸(P·고·일·X), Dot = 작은 점, NameTag = 이름 별 뒤 [P], Off = 표시 안 함. 색: 프리미엄 금색 · 고급 파랑 · 일반 초록 · 없음 회색.	Enhancement insurance mark on enhanced gear cells. Corner = colored corner triangle, Letter = the 1.4.0 letter square (P · A · B · X), Dot = small dot, NameTag = [P] after the stars, Off = none. Colors: Premium gold · Advanced blue · Basic green · none grey.	Метка страховки улучшений на ячейках улучшенного снаряжения. Corner = цветной треугольник в углу, Letter = квадрат с буквой из 1.4.0 (P · A · B · X), Dot = маленькая точка, NameTag = [P] после звёзд, Off = нет. Цвета: Премиум золотой · Расширенная синий · Базовая зелёный · нет серый.	已强化装备格子上的强化保险标记。Corner = 角落彩色三角，Letter = 1.4.0 的字母方块（P · A · B · X），Dot = 小圆点，NameTag = 星标后的 [P]，Off = 不显示。颜色：尊享金色 · 高级蓝色 · 基础绿色 · 无 灰色。	src/Client/DeveloperOptions.cs:191
+창고 보험 표시 위치	Stash insurance mark position	Положение метки страховки	仓库保险标记位置	src/Client/DeveloperOptions.cs:193
+BottomLeft = 칸 왼쪽 아래, TopLeft = 왼쪽 위(1.4.0 자리), BesideCount = 오른쪽 아래 개수·내구도 숫자 옆. NameTag·Off에는 쓰지 않습니다.	BottomLeft = lower-left corner of the cell, TopLeft = upper left (the 1.4.0 spot), BesideCount = next to the count/durability numbers at the lower right. Not used by NameTag or Off.	BottomLeft = левый нижний угол ячейки, TopLeft = слева сверху (место из 1.4.0), BesideCount = рядом с числом количества/прочности справа снизу. Не используется для NameTag и Off.	BottomLeft = 格子左下角，TopLeft = 左上（1.4.0 的位置），BesideCount = 右下数量·耐久数字旁。NameTag 和 Off 不使用此项。	src/Client/DeveloperOptions.cs:194
+보험 없는 강화 장비에도 표시	Mark uninsured enhanced gear too	Метить и незастрахованное снаряжение	未投保的强化装备也显示	src/Client/DeveloperOptions.cs:196
+켜면 강화 보험이 없는 강화 장비에도 회색 표시를 붙입니다(글자 칸은 X, 1.4.0 방식). 끄면 보험에 든 장비만 표시합니다.	When on, enhanced gear without enhancement insurance also gets a grey mark (X in the letter square, as in 1.4.0). When off, only insured gear is marked.	Если включено, улучшенное снаряжение без страховки улучшений тоже получает серую метку (X в квадрате с буквой, как в 1.4.0). Если выключено, метится только застрахованное.	开启后，没有强化保险的强化装备也会显示灰色标记（字母方块为 X，1.4.0 的方式）。关闭后只标记已投保的装备。	src/Client/DeveloperOptions.cs:197

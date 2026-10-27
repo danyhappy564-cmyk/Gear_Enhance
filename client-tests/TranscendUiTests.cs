@@ -85,7 +85,8 @@ public sealed class TranscendUiTests : IDisposable
     public void Window_text_has_an_english_pair(string file)
     {
         var view = Source(file);
-        // Every Korean literal in the 1.4.0 window goes through Loc.L with an English partner.
+        // Every Korean literal in the 1.4.0 window goes through Loc.L with an English partner
+        // (1.4.1: Loc.F for interpolated text, so Russian and Chinese rows find it).
         foreach (Match line in Regex.Matches(view, "^.*[가-힣].*$", RegexOptions.Multiline))
         {
             var text = line.Value.Trim();
@@ -93,7 +94,8 @@ public sealed class TranscendUiTests : IDisposable
             // Font names are system names, not window text.
             if (text.StartsWith("//") || text.Contains("Logger.Log") || text.Contains("LogDetailed(") || text.Contains("\"한국어\"")
                 || text.Contains("\"Malgun Gothic\"")) continue;
-            Assert.True(text.Contains("Loc.L(") || text.Contains("Loc.Invalid(") || text.Contains("Loc.Argument(") || text.StartsWith("$\""), text);
+            Assert.True(text.Contains("Loc.L(") || text.Contains("Loc.F(") || text.Contains("Loc.Invalid(") || text.Contains("Loc.Argument(")
+                || text.Contains("Loc.InvalidF(") || text.Contains("Loc.ArgumentF(") || text.StartsWith("$\""), text);
         }
     }
 

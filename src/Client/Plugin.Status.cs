@@ -75,7 +75,7 @@ public sealed partial class Plugin
 
     private List<StatRow> StatRows()
     {
-        var key = $"{itemId}|{StatPatches.Registry.Version}|{preview?.QuoteId}|{tab}|{selectedPath}|{transcendTrack}|{Loc.English}|{boostDirtyAt >= 0}";
+        var key = $"{itemId}|{StatPatches.Registry.Version}|{preview?.QuoteId}|{tab}|{selectedPath}|{transcendTrack}|{Loc.Revision}|{boostDirtyAt >= 0}";
         if (key == statKey) return statRows;
         statKey = key;
         try

@@ -83,6 +83,7 @@ public sealed partial class Plugin
     private static readonly EnhancePath[] ArmorTracks = { EnhancePath.ArmorDurability, EnhancePath.Mobility };
     private GUI.WindowFunction drawWindow;
     private GUIStyle title, version, itemTitle, kindStyle, stars, starsExtra, mythMark, mythExtra, sub, body, bodyBold, bodyBoldCenter, small, smallRight, smallCenter, tiny, tinyRight;
+    private GUIStyle chineseCenter, koreanCenter;
     private GUIStyle number, numberBig, numberHuge, numberRight, numberCenter, costTotal, richSmall, richBody, richCenter, richSmallRight;
     private GUIStyle numberInline, numberSmallRight, costLine, costLineRight, optionLabel, materialName, stepCount, stepSign, bonusNumber, materialCost;
     private GUIStyle tabMark, tabLabel, tabSub, cardName, cardLevel, cardSub, popKicker, popTitle, popLine, wrap, wrapCenter;
@@ -97,6 +98,18 @@ public sealed partial class Plugin
             Math.Max(0, (Screen.height / scale - WindowHeight) / 2), WindowWidth, WindowHeight);
     }
 
+    // Drops the skin, its fonts and textures; EnsureSkin builds them again on the next draw (1.4.1: the
+    // window font follows the language, Windows CJK font for Chinese).
+    private void ResetSkin()
+    {
+        if (windowSkin != null) Destroy(windowSkin);
+        if (uiFont != null) Destroy(uiFont);
+        UiFonts.Unload();
+        foreach (var texture in skinTextures) if (texture != null) Destroy(texture);
+        skinTextures.Clear();
+        windowSkin = null; uiFont = null;
+    }
+
     private void EnsureSkin()
     {
         if (windowSkin != null) return;
@@ -108,8 +121,8 @@ public sealed partial class Plugin
         var fontNote = UiFonts.Load(System.IO.Path.Combine(System.IO.Path.GetDirectoryName(Info.Location) ?? "", "fonts"));
         if (fontNote != null) Logger.LogWarning(fontNote);
         else LogDetailed("강화 창 글꼴: GE Sans(Noto Sans KR) · GE Num(Rajdhani) 불러옴");
-        uiFont = UiFonts.Sans ?? Font.CreateDynamicFontFromOSFont(
-            new[] { "Malgun Gothic", "맑은 고딕", "Noto Sans CJK KR", "Segoe UI Symbol", "Arial Unicode MS" }, 16);
+        uiFont = UiFonts.Sans ?? Font.CreateDynamicFontFromOSFont(UiFonts.Cjk ? UiFonts.CjkFonts
+            : new[] { "Malgun Gothic", "맑은 고딕", "Noto Sans CJK KR", "Segoe UI Symbol", "Arial Unicode MS" }, 16);
         if (uiFont != null) { uiFont.hideFlags = HideFlags.HideAndDontSave; windowSkin.font = uiFont; }
         // Sizes and weights are the mockup CSS ones (px = window units).
         title = TextStyle(26, LightGold, FontStyle.Bold, numeric: true);
@@ -128,6 +141,8 @@ public sealed partial class Plugin
         small = TextStyle(12, Muted); small.richText = true;
         smallRight = new GUIStyle(small) { alignment = TextAnchor.MiddleRight };
         smallCenter = new GUIStyle(small) { alignment = TextAnchor.MiddleCenter };
+        chineseCenter = new GUIStyle(smallCenter) { font = UiFonts.CjkLabel ?? smallCenter.font, fontStyle = FontStyle.Normal };
+        koreanCenter = new GUIStyle(smallCenter) { font = UiFonts.HangulLabel ?? smallCenter.font };
         tiny = TextStyle(11, Muted); tiny.richText = true;
         tinyRight = new GUIStyle(tiny) { alignment = TextAnchor.MiddleRight };
         number = TextStyle(18, BarBase, FontStyle.Bold, TextAnchor.MiddleRight, true); number.richText = true;
@@ -164,7 +179,7 @@ public sealed partial class Plugin
         card = new GUIStyle(windowSkin.button) { padding = new RectOffset(), margin = new RectOffset() };
         foreach (var state in new[] { card.normal, card.hover, card.active, card.focused,
             card.onNormal, card.onHover, card.onActive, card.onFocused }) state.background = null;
-        button = new GUIStyle(card) { fontSize = 15, fontStyle = UiFonts.Loaded ? FontStyle.Normal : FontStyle.Bold, alignment = TextAnchor.MiddleCenter, richText = true, wordWrap = true };
+        button = new GUIStyle(card) { fontSize = 15, fontStyle = UiFonts.Loaded && !UiFonts.Cjk ? FontStyle.Normal : FontStyle.Bold, alignment = TextAnchor.MiddleCenter, richText = true, wordWrap = true };
         if (UiFonts.Loaded) button.font = UiFonts.SansBold;
         button.normal.textColor = button.hover.textColor = button.active.textColor = Hex(0x1a1408);
         buttonDark = new GUIStyle(button);
@@ -291,7 +306,7 @@ public sealed partial class Plugin
         var style = new GUIStyle(windowSkin.label)
         {
             font = !UiFonts.Loaded ? null : numeric ? bold ? UiFonts.NumBold : UiFonts.Num : bold ? UiFonts.SansBold : UiFonts.Sans,
-            fontSize = size, fontStyle = UiFonts.Loaded ? FontStyle.Normal : weight, alignment = alignment,
+            fontSize = size, fontStyle = UiFonts.Loaded && !(UiFonts.Cjk && !numeric) ? FontStyle.Normal : weight, alignment = alignment,
             padding = new RectOffset(), margin = new RectOffset(),
             wordWrap = false, richText = false, clipping = TextClipping.Clip
         };
@@ -465,21 +480,27 @@ public sealed partial class Plugin
         Label(BodyX + 182, 14, 80, 30, "v" + EnhanceProtocol.ModVersion, version);
         GUI.enabled = popup == PopupKind.None && !busy;
         // Language: the window switches at once (design 1); Auto stays until a choice is made.
-        var english = Loc.English;
-        var korean = new Rect(588, 12, 56, 32);
-        var en = new Rect(644, 12, 56, 32);
-        Box(new Rect(587, 11, 114, 34), Hex(0x15191d), Hex(0x333a42));
-        if (!english) Fill(korean, Hex(0x2a2416)); else Fill(en, Hex(0x2a2416));
-        if (UiButton(korean, "", card)) main.Enqueue(() => language.Value = UiLanguage.Korean);
-        if (UiButton(en, "", card)) main.Enqueue(() => language.Value = UiLanguage.English);
-        Label(korean.x, korean.y, korean.width, korean.height, "한국어", smallCenter, english ? Muted : LightGold);
-        Label(en.x, en.y, en.width, en.height, "EN", smallCenter, english ? LightGold : Muted);
+        // 1.4.1: four buttons in the old two-button box's place, grown to the left (Custom stays in F12).
+        Box(new Rect(517, 11, 184, 34), Hex(0x15191d), Hex(0x333a42));
+        LanguageButton(0, "한국어", UiLang.Korean, UiLanguage.Korean, koreanCenter);
+        LanguageButton(1, "EN", UiLang.English, UiLanguage.English, smallCenter);
+        LanguageButton(2, "RU", UiLang.Russian, UiLanguage.Russian, smallCenter);
+        LanguageButton(3, "中文", UiLang.Chinese, UiLanguage.Chinese, chineseCenter);
         // Mockup: a speaker (with waves when on, crossed when off), 44 px wide.
         IconButton(new Rect(724, 12, 40, 32), soundsEnabled.Value ? soundOnIcon : soundOffIcon, 16, () => soundsEnabled.Value = !soundsEnabled.Value);
         if (!uncertain && itemId != null) MiniButton(new Rect(772, 12, 84, 32), Loc.L("새로고침", "Refresh"), () => { ReplayMotion(); RefreshTab(); });
         GUI.enabled = popup == PopupKind.None && !attemptTimeline.Active;
         IconButton(new Rect(864, 12, 36, 32), closeIcon, 14, Close, UiInteraction.Close);
         GUI.enabled = true;
+    }
+
+    private void LanguageButton(int slot, string text, UiLang shown, UiLanguage choice, GUIStyle style)
+    {
+        var rect = new Rect(518 + slot * 45.5f, 12, 45.5f, 32);
+        var on = Loc.Language == shown;
+        if (on) Fill(rect, Hex(0x2a2416));
+        if (UiButton(rect, "", card)) main.Enqueue(() => language.Value = choice);
+        Label(rect.x, rect.y, rect.width, rect.height, text, style, on ? LightGold : Muted);
     }
 
     private void MiniButton(Rect rect, string text, Action action, UiInteraction cue = UiInteraction.Button)
@@ -560,7 +581,7 @@ public sealed partial class Plugin
     // Beside the name (mockup): the caliber of a weapon, "방어구 · 방탄판 N장" for armor.
     private string KindLine()
     {
-        if (!weapon) return Loc.L("방어구", "Armor") + (preview?.InsertedParts > 0 ? Loc.L($" · 방탄판 {preview.InsertedParts}장", $" · {preview.InsertedParts} plates") : "");
+        if (!weapon) return Loc.L("방어구", "Armor") + (preview?.InsertedParts > 0 ? Loc.F($" · 방탄판 {preview.InsertedParts}장", $" · {preview.InsertedParts} plates") : "");
         try { return CaliberText.Name(GameBridge.Get(selectedItem, "AmmoCaliber")?.ToString()) ?? Loc.L("무기", "Weapon"); }
         catch (Exception) { return Loc.L("무기", "Weapon"); }
     }
@@ -577,10 +598,10 @@ public sealed partial class Plugin
         {
             case UiTab.Star2:
             case UiTab.Star3:
-                return stars >= EvolutionStars ? levels + Loc.L($" · {StarEvolution.Stars(EvolutionStars)} 완료", $" · {StarEvolution.Stars(EvolutionStars)} done")
-                    : StatPatches.Registry.IsComplete(id) && stars == EvolutionStars - 1 ? levels + Loc.L($" · {StarEvolution.Stars(EvolutionStars)} 도전 가능", $" · {StarEvolution.Stars(EvolutionStars)} ready") : levels;
+                return stars >= EvolutionStars ? levels + Loc.F($" · {StarEvolution.Stars(EvolutionStars)} 완료", $" · {StarEvolution.Stars(EvolutionStars)} done")
+                    : StatPatches.Registry.IsComplete(id) && stars == EvolutionStars - 1 ? levels + Loc.F($" · {StarEvolution.Stars(EvolutionStars)} 도전 가능", $" · {StarEvolution.Stars(EvolutionStars)} ready") : levels;
             case UiTab.Transcend:
-                return Loc.L($"2성 초월 {StageText.Of(StatPatches.Registry.TranscendLevel(id, TranscendTrack.Second), TranscendRules.MaxLevel)} · 3성 초월 {StageText.Of(StatPatches.Registry.TranscendLevel(id, TranscendTrack.Third), TranscendRules.MaxLevel)}",
+                return Loc.F($"2성 초월 {StageText.Of(StatPatches.Registry.TranscendLevel(id, TranscendTrack.Second), TranscendRules.MaxLevel)} · 3성 초월 {StageText.Of(StatPatches.Registry.TranscendLevel(id, TranscendTrack.Third), TranscendRules.MaxLevel)}",
                     $"2★ track {StageText.Of(StatPatches.Registry.TranscendLevel(id, TranscendTrack.Second), TranscendRules.MaxLevel)} · 3★ track {StageText.Of(StatPatches.Registry.TranscendLevel(id, TranscendTrack.Third), TranscendRules.MaxLevel)}");
             case UiTab.Mythic when MythicLevel < 0:
                 return stars >= 3 ? Loc.L("★★★ 달성 · ??? 도전 가능", "★★★ reached · ??? open") : levels;
@@ -588,14 +609,14 @@ public sealed partial class Plugin
             {
                 var tuning = StatPatches.Registry.MythicTuning;
                 var head = Loc.L("신화 ", "Mythic ") + StageText.Of(MythicLevel, MythicRules.MaxLevel);
-                if (weapon) return head + Loc.L($" · 탄 데미지·관통력 단계당 +{tuning.WeaponPercentPerLevel:0.#}% · 탄 불이익 단계당 -{MythicEffects.AmmoPenaltyCut(1):0.#}%",
+                if (weapon) return head + Loc.F($" · 탄 데미지·관통력 단계당 +{tuning.WeaponPercentPerLevel:0.#}% · 탄 불이익 단계당 -{MythicEffects.AmmoPenaltyCut(1):0.#}%",
                     $" · damage & penetration +{tuning.WeaponPercentPerLevel:0.#}% per level · ammo penalties -{MythicEffects.AmmoPenaltyCut(1):0.#}% per level");
                 var zones = new List<string>();
                 foreach (var zone in StatPatches.Registry.MythicZones(id)) zones.Add(MythicText.ZoneName(zone));
                 // Body armor: 10 % a level, half on head hits. Helmets and masks: half on every hit.
                 var perLevel = MythicEffects.ArmorPercent(1, tuning, headGear);
-                return head + (headGear ? Loc.L($" · 받는 피해 단계당 -{perLevel:0.#}%(머리 방어구)", $" · damage taken -{perLevel:0.#}% per level (head gear)")
-                        : Loc.L($" · 받는 피해 단계당 -{perLevel:0.#}%(머리에 맞으면 절반)", $" · damage taken -{perLevel:0.#}% per level (half on head hits)"))
+                return head + (headGear ? Loc.F($" · 받는 피해 단계당 -{perLevel:0.#}%(머리 방어구)", $" · damage taken -{perLevel:0.#}% per level (head gear)")
+                        : Loc.F($" · 받는 피해 단계당 -{perLevel:0.#}%(머리에 맞으면 절반)", $" · damage taken -{perLevel:0.#}% per level (half on head hits)"))
                     + (zones.Count > 0 ? Loc.L(" · 추가 보호 부위 ", " · extra zones ") + string.Join(" · ", zones) : "");
             }
             default: return levels;

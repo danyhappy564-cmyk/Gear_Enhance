@@ -213,7 +213,8 @@ internal static class GameBridge
         var response = JsonConvert.DeserializeObject<ApiReply<T>>(raw ?? "");
         if (response?.Ok != true || response.Data == null)
             throw new InvalidOperationException(response == null ? Loc.L("서버 응답을 읽을 수 없습니다.", "Cannot read the server response.")
-                : Loc.English && !string.IsNullOrEmpty(response.ErrorEnglish) ? response.ErrorEnglish : response.Error);
+                : !Loc.English ? response.Error
+                : Loc.Error(response.ErrorKey, response.ErrorArgs, string.IsNullOrEmpty(response.ErrorEnglish) ? response.Error : response.ErrorEnglish));
         return response.Data;
     }
 

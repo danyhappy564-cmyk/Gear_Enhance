@@ -130,9 +130,9 @@ internal static class InsertRules
         seen.Distinct().Count(p => registry.Find(p.Armor) != null && !registry.Registered(p.Armor, p.Part));
 
     internal static string Notice(int count, bool automatic) => automatic
-        ? Loc.L($"더 비싼 방탄판 {count}개는 차액을 내야 강화 효과를 받습니다. 강화 창 → 보험·방탄판 → 차액 내고 적용",
+        ? Loc.F($"더 비싼 방탄판 {count}개는 차액을 내야 강화 효과를 받습니다. 강화 창 → 보험·방탄판 → 차액 내고 적용",
             $"{count} pricier plate(s) need the price difference paid before they share the enhancement. Enhance window → Insurance · plates → Pay difference")
-        : Loc.L($"강화된 방어구에 끼운 방탄판 {count}개가 아직 적용되지 않았습니다. 강화 창 → 보험·방탄판 → 방탄판 적용",
+        : Loc.F($"강화된 방어구에 끼운 방탄판 {count}개가 아직 적용되지 않았습니다. 강화 창 → 보험·방탄판 → 방탄판 적용",
             $"{count} plate(s) in enhanced armor are not applied yet. Enhance window → Insurance · plates → Apply plates");
 }
 

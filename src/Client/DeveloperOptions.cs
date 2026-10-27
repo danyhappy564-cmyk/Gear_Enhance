@@ -15,7 +15,8 @@ internal sealed class ConfigurationManagerAttributes
     public int? Order;
 }
 
-public enum UiLanguage { Auto, Korean, English }
+// New values go at the end: the cfg stores the name, older ones must keep reading.
+public enum UiLanguage { Auto, Korean, English, Russian, Chinese, Custom }
 
 internal sealed class DeveloperOptions
 {
@@ -78,11 +79,14 @@ internal sealed class DeveloperOptions
     }
 }
 
-// Korean F12 text → English. A missing pair falls back to Korean (checked by tests).
+// Korean F12 text → the current language's row (Loc table), else English. A missing pair falls back
+// to Korean (checked by tests).
 internal static class ConfigText
 {
     internal static string Get(string korean, bool english) =>
-        english && korean != null && English.TryGetValue(korean, out var text) ? text : korean;
+        !english || korean == null ? korean
+        : Loc.TryRow(korean, out var row) ? row
+        : English.TryGetValue(korean, out var text) ? text : korean;
     internal static bool Has(string korean) => English.ContainsKey(korean);
 
     private static readonly Dictionary<string, string> English = new Dictionary<string, string>
@@ -183,6 +187,15 @@ internal static class ConfigText
         ["비밀번호를 넣으면 확률·비용·항상 성공·실패·능력치·보호·진화·보험 밸런스 설정이 표시되고 적용됩니다. 잠겨 있으면 기본 밸런스로 강화합니다(바꿔 둔 값은 지우지 않음). 입력 후 F12 창을 닫았다 다시 열면 표시됩니다. 열어 둔 동안 한 강화는 잠그거나 게임을 다시 켜면(Alt+F4 포함) 열기 전 기록으로 되돌아갑니다(쓴 루블·재료와 파괴된 장비는 돌아오지 않음)."]
             = "Enter the password to show and apply the chance, cost, always-succeed, failure, stat, protection, evolution and insurance balance settings. While locked, enhancing uses the default balance (changed values are kept, not deleted). Close and reopen F12 after entering it. What is enhanced while it is open goes back to the records from before it opened when you lock it or start the game again (Alt+F4 included); spent roubles, materials and destroyed gear do not come back.",
         ["강화 메뉴 사용"] = "Enable the Enhance gear menu",
+        ["창고 보험 표시 모양"] = "Stash insurance mark",
+        ["강화 장비 칸의 강화 보험 표시. Corner = 모서리 색 삼각형, Letter = 1.4.0 글자 칸(P·고·일·X), Dot = 작은 점, NameTag = 이름 별 뒤 [P], Off = 표시 안 함. 색: 프리미엄 금색 · 고급 파랑 · 일반 초록 · 없음 회색."]
+            = "Enhancement insurance mark on enhanced gear cells. Corner = colored corner triangle, Letter = the 1.4.0 letter square (P · A · B · X), Dot = small dot, NameTag = [P] after the stars, Off = none. Colors: Premium gold · Advanced blue · Basic green · none grey.",
+        ["창고 보험 표시 위치"] = "Stash insurance mark position",
+        ["BottomLeft = 칸 왼쪽 아래, TopLeft = 왼쪽 위(1.4.0 자리), BesideCount = 오른쪽 아래 개수·내구도 숫자 옆. NameTag·Off에는 쓰지 않습니다."]
+            = "BottomLeft = lower-left corner of the cell, TopLeft = upper left (the 1.4.0 spot), BesideCount = next to the count/durability numbers at the lower right. Not used by NameTag or Off.",
+        ["보험 없는 강화 장비에도 표시"] = "Mark uninsured enhanced gear too",
+        ["켜면 강화 보험이 없는 강화 장비에도 회색 표시를 붙입니다(글자 칸은 X, 1.4.0 방식). 끄면 보험에 든 장비만 표시합니다."]
+            = "When on, enhanced gear without enhancement insurance also gets a grey mark (X in the letter square, as in 1.4.0). When off, only insured gear is marked.",
         ["창고의 무기·방어구 우클릭에 장비 강화를 표시합니다. 방탄판·내피는 방어구와 함께 강화되므로 표시하지 않습니다."]
             = "Adds \"Enhance gear\" to the right-click menu of weapons and armor in the stash. Plates and inserts are enhanced with their armor, so they do not get it.",
         ["성공률 (%)"] = "Success chance (%)",

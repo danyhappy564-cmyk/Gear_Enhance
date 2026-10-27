@@ -228,7 +228,7 @@ public sealed class TranscendTests
         Assert.Throws<ArgumentException>(() => new EnhanceSettings { Transcend = new() { HorizontalRecoilPerLevel = 17 } }.Validate());
         Assert.Throws<ArgumentException>(() => new EnhanceSettings { Transcend = null! }.Validate());
         new EnhanceSettings().Validate();
-        Assert.Equal(12, EnhanceProtocol.Version);
+        Assert.Equal(13, EnhanceProtocol.Version);
     }
 
     [Fact]

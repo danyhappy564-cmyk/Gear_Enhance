@@ -15,7 +15,9 @@ public sealed partial class Plugin : BaseUnityPlugin
     internal static Plugin Instance;
     private Harmony harmony;
     private bool patched;
-    private ConfigEntry<bool> menuEnabled, soundsEnabled, providedSounds, detailedLogging;
+    private ConfigEntry<bool> menuEnabled, soundsEnabled, providedSounds, detailedLogging, insuranceUninsured;
+    private ConfigEntry<InsuranceMark> insuranceMark;
+    private ConfigEntry<InsuranceMarkPlace> insurancePlace;
     private ConfigEntry<float> soundVolume;
     private ConfigEntry<string> developerPassword, developerSavePassword;
     // Developer balance settings: saved values apply only while the password unlocks them.
@@ -26,6 +28,7 @@ public sealed partial class Plugin : BaseUnityPlugin
     private DevSetting<float> evolutionChance, evolutionPrice, thirdStarChance, thirdStarBonus;
     private DevSetting<float> basicReturn, advancedReturn, premiumReturn, basicFee, advancedFee, premiumFee, prestigeFee;
     private ConfigEntry<UiLanguage> language;
+    private ConfigEntry<string> customLanguage;
     private readonly DeveloperOptions developerOptions = new DeveloperOptions();
     private DevSetting<int> maxLevel, minimum;
     private DevSetting<PriceBasis> price;
@@ -76,8 +79,14 @@ public sealed partial class Plugin : BaseUnityPlugin
         Instance = this;
         // Bound first so every later F12 entry and window text starts in the chosen language.
         language = Config.Bind("0. Language · 언어", "Language · 언어", UiLanguage.Auto, new ConfigDescription(
-            "Auto: Korean Windows → 한국어, otherwise English. Close and reopen F12 to refresh its text.\n"
-            + "Auto: 한국어 윈도우면 한국어, 그 외는 영어. F12 글자는 창을 닫았다 다시 열면 바뀝니다."));
+            "Auto: Korean Windows → 한국어, Russian → Русский, Chinese → 中文, otherwise English. Custom = your own file in "
+            + "BepInEx/plugins/GearEnhance/lang (see the next setting). Close and reopen F12 to refresh its text.\n"
+            + "Auto: 한국어 윈도우면 한국어, 러시아어면 러시아어, 중국어면 중국어, 그 외는 영어. Custom = 직접 만든 번역 파일. "
+            + "F12 글자는 창을 닫았다 다시 열면 바뀝니다."));
+        customLanguage = Config.Bind("0. Language · 언어", "Custom language file · 사용자 번역 파일", "custom.tsv", new ConfigDescription(
+            "Used when Language = Custom: a file in BepInEx/plugins/GearEnhance/lang. Copy template.tsv there, fill the third column, "
+            + "and type its name here (for example de.tsv). Rows left empty show English. ru.tsv / zh.tsv there override the built-in Russian / Chinese.\n"
+            + "Language = Custom일 때 쓰는 lang 폴더의 파일 이름. template.tsv를 복사해 세 번째 칸을 채우면 됩니다. 빈 줄은 영어로 나옵니다."));
         ApplyLanguage();
         developerPassword = BindGeneral(DeveloperOptions.DeveloperSection, "개발자 옵션 비밀번호", "",
             "비밀번호를 넣으면 확률·비용·항상 성공·실패·능력치·보호·진화·보험 밸런스 설정이 표시되고 적용됩니다. 잠겨 있으면 기본 밸런스로 강화합니다(바꿔 둔 값은 지우지 않음). 입력 후 F12 창을 닫았다 다시 열면 표시됩니다. 열어 둔 동안 한 강화는 잠그거나 게임을 다시 켜면(Alt+F4 포함) 열기 전 기록으로 되돌아갑니다(쓴 루블·재료와 파괴된 장비는 돌아오지 않음).");
@@ -96,6 +105,14 @@ public sealed partial class Plugin : BaseUnityPlugin
         always = BindDeveloper(DeveloperOptions.QuickSection, "확률 100% (항상 성공)", false,
             "강화·진화·초월·신화·??? 가 항상 성공합니다. 비용은 그대로 듭니다(위 두 설정과 따로).");
         menuEnabled = BindGeneral("1. 기본", "강화 메뉴 사용", true, "창고의 무기·방어구 우클릭에 장비 강화를 표시합니다. 방탄판·내피는 방어구와 함께 강화되므로 표시하지 않습니다.");
+        // 1.4.1 (player feedback "the insurance icon is in the way"): shape, place and the grey X.
+        insuranceMark = BindGeneral("1. 기본", "창고 보험 표시 모양", InsuranceMark.Corner,
+            "강화 장비 칸의 강화 보험 표시. Corner = 모서리 색 삼각형, Letter = 1.4.0 글자 칸(P·고·일·X), Dot = 작은 점, NameTag = 이름 별 뒤 [P], Off = 표시 안 함. 색: 프리미엄 금색 · 고급 파랑 · 일반 초록 · 없음 회색.");
+        insurancePlace = BindGeneral("1. 기본", "창고 보험 표시 위치", InsuranceMarkPlace.BottomLeft,
+            "BottomLeft = 칸 왼쪽 아래, TopLeft = 왼쪽 위(1.4.0 자리), BesideCount = 오른쪽 아래 개수·내구도 숫자 옆. NameTag·Off에는 쓰지 않습니다.");
+        insuranceUninsured = BindGeneral("1. 기본", "보험 없는 강화 장비에도 표시", false,
+            "켜면 강화 보험이 없는 강화 장비에도 회색 표시를 붙입니다(글자 칸은 X, 1.4.0 방식). 끄면 보험에 든 장비만 표시합니다.");
+        ApplyInsuranceMark();
         BindInserts();
         chance = BindDeveloper("2. 확률", "성공률 (%)", 75f, new ConfigDescription("+0에서 +1로 강화할 때 성공률. 이후 현재 단계 × 단계별 감소량만큼 줄어듭니다.", new AcceptableValueRange<float>(0, 100)));
         chanceLoss = BindDeveloper("2. 확률", "단계별 성공률 감소 (%p)", 5f, new ConfigDescription("기본: +1 시도 75%, +10 시도 30%. 0이면 같은 확률을 유지합니다.", new AcceptableValueRange<float>(0, 100)));
@@ -186,7 +203,14 @@ public sealed partial class Plugin : BaseUnityPlugin
                 LogDetailed($"강화 상세 로그 ON: 효과음={soundsEnabled.Value}, 전용={providedSounds.Value}, 음량={soundVolume.Value:0.##}%");
                 return;
             }
-            if (ReferenceEquals(args.ChangedSetting, language))
+            if (ReferenceEquals(args.ChangedSetting, insuranceMark) || ReferenceEquals(args.ChangedSetting, insurancePlace)
+                || ReferenceEquals(args.ChangedSetting, insuranceUninsured))
+            {
+                ApplyInsuranceMark();
+                ItemMarkers.RefreshAll();
+                return;
+            }
+            if (ReferenceEquals(args.ChangedSetting, language) || ReferenceEquals(args.ChangedSetting, customLanguage))
             {
                 ApplyLanguage();
                 ItemMarkers.RefreshAll();
@@ -268,10 +292,36 @@ public sealed partial class Plugin : BaseUnityPlugin
 
     private void ApplyLanguage()
     {
-        Loc.English = language.Value == UiLanguage.English
-            || language.Value == UiLanguage.Auto && Application.systemLanguage != SystemLanguage.Korean;
+        var chosen = Chosen(language.Value);
+        var rows = LangFiles.Load(chosen, System.IO.Path.GetDirectoryName(Info.Location), customLanguage?.Value, out var note);
+        if (note != null) Logger.LogWarning("Gear Enhance: 번역 파일을 읽지 못해 영어로 표시합니다 / translation file not usable, showing English: " + note);
+        Loc.Set(chosen, rows);
         developerOptions.SetLanguage(Loc.English);
+        // GE Sans has no Chinese glyphs: the window switches to the Windows CJK font (rebuilt on the next draw).
+        var cjk = LangFiles.NeedsCjkFont(chosen, rows);
+        if (cjk != UiFonts.Cjk) { UiFonts.Cjk = cjk; ResetSkin(); }
     }
+
+    private void ApplyInsuranceMark()
+    {
+        InsuranceMarks.Shape = insuranceMark.Value;
+        InsuranceMarks.Place = insurancePlace.Value;
+        InsuranceMarks.ShowUninsured = insuranceUninsured.Value;
+    }
+
+    // Auto: the Windows language (Ukrainian and Belarusian read Russian).
+    private static UiLang Chosen(UiLanguage value) => value switch
+    {
+        UiLanguage.Korean => UiLang.Korean, UiLanguage.English => UiLang.English, UiLanguage.Russian => UiLang.Russian,
+        UiLanguage.Chinese => UiLang.Chinese, UiLanguage.Custom => UiLang.Custom,
+        _ => Application.systemLanguage switch
+        {
+            SystemLanguage.Korean => UiLang.Korean,
+            SystemLanguage.Russian or SystemLanguage.Ukrainian or SystemLanguage.Belarusian => UiLang.Russian,
+            SystemLanguage.Chinese or SystemLanguage.ChineseSimplified or SystemLanguage.ChineseTraditional => UiLang.Chinese,
+            _ => UiLang.English
+        }
+    };
 
     private void LogDetailed(string text)
     {
@@ -580,10 +630,7 @@ public sealed partial class Plugin : BaseUnityPlugin
         syncGeneration++;
         Close(); harmony?.UnpatchSelf(); StatPatches.Registry.Clear(); ItemMarkers.Clear();
         feedbackAudio?.Dispose(); feedbackAudio = null;
-        if (windowSkin != null) Destroy(windowSkin);
-        if (uiFont != null) Destroy(uiFont);
-        foreach (var texture in skinTextures) if (texture != null) Destroy(texture);
-        skinTextures.Clear();
+        ResetSkin();
         if (Instance == this) Instance = null;
     }
 }

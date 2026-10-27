@@ -143,6 +143,8 @@ internal static class ItemMarkers
             // User 2026-10-26: mythic gear gets a larger caption; the stage tag is its own text (StashLine).
             if (StatPatches.Registry.MythicLevel(owner) >= 0) __result = "<size=120%>" + __result + " <color=#FF6AD5><b>" + badge + "</b></color></size>";
             else __result += " <color=" + StarEvolution.ColorHex(StatPatches.Registry.StarLevel(owner)) + ">" + badge + "</color>";
+            // 1.4.1 F12 "name tag" insurance mark: the gear itself only, as with the cell badge.
+            if (owner == id && !GameBridge.IsArmorPart(item)) __result += InsuranceMarks.NameTag(StatPatches.Registry.Coverage(id));
         }
         catch (Exception ex) { Report(ex); }
     }

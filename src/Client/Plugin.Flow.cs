@@ -57,17 +57,17 @@ public sealed partial class Plugin
             Sub = stars >= 3 ? Loc.L("진화 완료", "Evolved") : Loc.L("진화 · 효과 ×3", "Evolve · ×3") };
         yield return new TabEntry { Tab = UiTab.Transcend, Mark = "◆", Color = Cyan, Open = stars >= 2, Label = Loc.L("초월", "Transcend"),
             Sub = stars < 2 ? Loc.L("★★ 이후 열림", "Opens after ★★")
-                : Loc.L($"2성 {StatPatches.Registry.TranscendLevel(id, TranscendTrack.Second)}/5 · 3성 {StatPatches.Registry.TranscendLevel(id, TranscendTrack.Third)}/5",
+                : Loc.F($"2성 {StatPatches.Registry.TranscendLevel(id, TranscendTrack.Second)}/5 · 3성 {StatPatches.Registry.TranscendLevel(id, TranscendTrack.Third)}/5",
                     $"2★ {StatPatches.Registry.TranscendLevel(id, TranscendTrack.Second)}/5 · 3★ {StatPatches.Registry.TranscendLevel(id, TranscendTrack.Third)}/5") };
         yield return new TabEntry { Tab = UiTab.Mythic, Mark = mythic >= 0 ? "✦" : "◈", Color = Myth, Open = stars >= 3,
             Label = mythic >= 0 ? Loc.L("신화", "Mythic") : "???",
             Sub = stars < 3 ? Loc.L("★★★ 이후 열림", "Opens after ★★★") : mythic < 0 ? "50 / 50"
-                : weapon ? Loc.L($"데미지·관통 {mythic}/5", $"Dmg · pen {mythic}/5")
-                : Loc.L($"추가 부위 {StatPatches.Registry.MythicZones(id).Length}곳 · {mythic}/5", $"+{StatPatches.Registry.MythicZones(id).Length} zones · {mythic}/5") };
+                : weapon ? Loc.F($"데미지·관통 {mythic}/5", $"Dmg · pen {mythic}/5")
+                : Loc.F($"추가 부위 {StatPatches.Registry.MythicZones(id).Length}곳 · {mythic}/5", $"+{StatPatches.Registry.MythicZones(id).Length} zones · {mythic}/5") };
         var renew = RenewCount();
         yield return new TabEntry { Tab = UiTab.Insurance, Mark = "P", Color = tier == InsuranceTier.None ? Hex(0xffc46b) : TierColor(tier), Open = true,
             Label = Loc.L("보험", "Insurance"), Ring = tier == InsuranceTier.None ? Color.clear : TierColor(tier), Glow = renew > 0 ? TabGlow.Due : TabGlow.None,
-            Sub = renew > 0 ? Loc.L($"다시 가입 {renew}개", $"Renew {renew}")
+            Sub = renew > 0 ? Loc.F($"다시 가입 {renew}개", $"Renew {renew}")
                 : tier == InsuranceTier.None ? Loc.L("미가입", "None") : Loc.TierName(tier) + $" {StatPatches.Registry.CoveragePercent(id):0.##}%" };
         var policies = StatPatches.Registry.Policies;
         var mail = policies.PrestigeReturns?.Length ?? 0;
@@ -75,9 +75,9 @@ public sealed partial class Plugin
         var due = PrestigeDueCount();
         yield return new TabEntry { Tab = UiTab.Prestige, Mark = "P+", Color = Gold, Open = true, Label = Loc.L("프레스티지", "Prestige"),
             Glow = mail > 0 ? TabGlow.Mail : due > 0 ? TabGlow.Due : TabGlow.None,
-            Sub = mail > 0 ? Loc.L($"보험 · 반환 {mail}개", $"Ins. · {mail} to collect") : PrestigeAtMax ? Loc.L("보험 · 최대 단계", "Ins. · max stage")
-                : due > 0 ? Loc.L($"보험 · 차액 {due}개", $"Ins. · due {due}")
-                : registered > 0 ? Loc.L($"보험 · 등록 {registered}", $"Ins. · {registered} registered") : Loc.L("보험 · 미등록", "Ins. · none") };
+            Sub = mail > 0 ? Loc.F($"보험 · 반환 {mail}개", $"Ins. · {mail} to collect") : PrestigeAtMax ? Loc.L("보험 · 최대 단계", "Ins. · max stage")
+                : due > 0 ? Loc.F($"보험 · 차액 {due}개", $"Ins. · due {due}")
+                : registered > 0 ? Loc.F($"보험 · 등록 {registered}", $"Ins. · {registered} registered") : Loc.L("보험 · 미등록", "Ins. · none") };
         yield return new TabEntry { Tab = UiTab.Help, Mark = "?", Color = Muted, Open = true, Label = Loc.L("도움말", "Help"), Sub = Loc.L("규칙 요약", "Rules") };
     }
 
@@ -140,7 +140,7 @@ public sealed partial class Plugin
                 if (stars >= EvolutionStars) return StarEvolution.Stars(EvolutionStars) + Loc.L(" 진화를 마쳤습니다.", " evolution complete.");
                 if (stars < EvolutionStars - 1) return Loc.L("★★ 진화를 먼저 마쳐 주세요.", "Finish the ★★ evolution first.");
                 return StatPatches.Registry.IsComplete(id) ? null
-                    : Loc.L($"모든 항목을 +{maxLevel.Value}까지 강화하면 도전할 수 있습니다.", $"Max every track to +{maxLevel.Value} to try.");
+                    : Loc.F($"모든 항목을 +{maxLevel.Value}까지 강화하면 도전할 수 있습니다.", $"Max every track to +{maxLevel.Value} to try.");
             case UiTab.Transcend:
                 if (stars < TranscendRules.StarsNeeded(transcendTrack)) return Loc.L("이 초월은 아직 잠겨 있습니다.", "This transcendence is still locked.");
                 return StatPatches.Registry.TranscendLevel(id, transcendTrack) >= TranscendRules.MaxLevel
@@ -434,7 +434,7 @@ public sealed partial class Plugin
         if (purchase == null) { RefreshQuote(); return; }
         if (purchase.Cost != shown.TicketPrice)
         {
-            LoadQuote(Loc.L($"방지권 가격이 {purchase.Cost:N0} ₽로 바뀌었습니다. 확인하고 다시 눌러 주세요.", $"The ticket price changed to {purchase.Cost:N0} ₽. Check it and press again."));
+            LoadQuote(Loc.F($"방지권 가격이 {purchase.Cost:N0} ₽로 바뀌었습니다. 확인하고 다시 눌러 주세요.", $"The ticket price changed to {purchase.Cost:N0} ₽. Check it and press again."));
             return;
         }
         RunManaged(purchase, Loc.L("파괴 방지권 1장 구매", "Bought one destruction ticket"), false);
@@ -482,7 +482,7 @@ public sealed partial class Plugin
             var receipt = await GameBridge.WithTimeout(GameBridge.Query<EnhanceReceipt>("/rf/gear-enhance/receipt",
                 new { ProtocolVersion = EnhanceProtocol.Version, view.QuoteId }));
             StatPatches.Registry.ApplyReceipt(receipt, GameBridge.ProfileId(session));
-            result = done + Loc.L($" · {receipt.Paid:N0} ₽ 소모", $" · spent {receipt.Paid:N0} ₽");
+            result = done + Loc.F($" · {receipt.Paid:N0} ₽ 소모", $" · spent {receipt.Paid:N0} ₽");
             // The game's own "insured" sound, as in the trader insurance screen.
             if (view.Action == EnhanceAction.Insure || view.Action == EnhanceAction.PrestigeInsure) main.Enqueue(PlayInsured);
             if (showResult) ShowResult(receipt, view);

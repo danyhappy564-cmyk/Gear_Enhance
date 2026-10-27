@@ -84,9 +84,9 @@ internal static class StatSheet
         {
             var body = raw.ArmorClass > 0 ? TranscendEffects.ArmorClass(at.Third, raw.ArmorClass).ToString() : "—";
             var plate = TranscendEffects.ArmorClass(at.Third, raw.PlateClass);
-            return body + (raw.PlateClass > 0 ? Loc.L($" · 판 {plate}", $" · plate {plate}") : "");
+            return body + (raw.PlateClass > 0 ? Loc.F($" · 판 {plate}", $" · plate {plate}") : "");
         }
-        string Zones(GearLevels at) => raw.Zones < 0 ? "—" : Loc.L($"{raw.Zones + at.Zones}곳", $"{raw.Zones + at.Zones}");
+        string Zones(GearLevels at) => raw.Zones < 0 ? "—" : Loc.F($"{raw.Zones + at.Zones}곳", $"{raw.Zones + at.Zones}");
         string Max(GearLevels at)
         {
             if (raw.Parts == null) return Number(raw.TemplateMax * (1 + TranscendEffects.MaxDurability(at.Second, transcend) / 100), "0.#");

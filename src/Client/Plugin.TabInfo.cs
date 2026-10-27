@@ -34,13 +34,13 @@ public sealed partial class Plugin
         Label(lose.x, lose.y + 10, lose.width, 18, guarded ? Loc.L("실패 · ★★★ 유지", "Fail · ★★★ kept") : Loc.L("파괴", "Destroyed"), smallCenter);
         Label(lose.x, lose.y + 32, lose.width, 50, $"{100 - chance:0.##}%", numberCenter, guarded ? Good : Loss);
         var zones = view?.ZoneOptions?.Length ?? 0;
-        var extra = weapon ? "" : "\n" + Loc.L($"추가로 막을 수 있는 부위 {zones}곳 · 성공하면 무작위 {Math.Min(MythicTuned.ExtraZones, zones)}곳",
+        var extra = weapon ? "" : "\n" + Loc.F($"추가로 막을 수 있는 부위 {zones}곳 · 성공하면 무작위 {Math.Min(MythicTuned.ExtraZones, zones)}곳",
             $"{zones} zone(s) it can still cover · success adds {Math.Min(MythicTuned.ExtraZones, zones)} at random");
         Label(60, panel.y + 340, BodyWidth - 120, 60, Loc.L("성공률 올리기·즉시 강화는 쓸 수 없습니다. ??? 파괴 방지권(장비당 1장)을 쓰면 실패해도 장비가 남습니다. 성공하면 신화 단계가 열립니다.",
             "No boosts or instant. The ??? ticket (one per gear) keeps the gear on a failure. Success unlocks the Mythic stage.") + extra, wrapCenter);
         var ledx = view?.Materials?.Length > 0 ? view.Materials[0] : null;
         Label(0, panel.y + 410, BodyWidth, 22, Loc.L("비용 ", "Cost ") + Paint(view == null ? $"{MythicTuned.MysteryCost:N0} ₽" : $"{view.Cost:N0} ₽", Text)
-            + (ledx == null ? "" : " · " + Paint($"LEDX {ledx.Count}", ledx.Owned >= ledx.Count ? Good : Loss) + Loc.L($" (보유 {ledx.Owned:N0})", $" (own {ledx.Owned:N0})")), richCenter);
+            + (ledx == null ? "" : " · " + Paint($"LEDX {ledx.Count}", ledx.Owned >= ledx.Count ? Good : Loss) + Loc.F($" (보유 {ledx.Owned:N0})", $" (own {ledx.Owned:N0})")), richCenter);
         GUI.BeginGroup(new Rect(20, panel.y + 446, BodyWidth - 40, 44));
         midWidth = BodyWidth - 40;
         DrawTickets(0);
@@ -87,7 +87,7 @@ public sealed partial class Plugin
         Label(16, y + 10, half - 32, 18, Loc.L("지금 가입", "Current"), small);
         var tier = shown?.CurrentInsurance ?? StatPatches.Registry.Coverage(itemId ?? "");
         var percent = shown?.CurrentInsurancePercent ?? StatPatches.Registry.CoveragePercent(itemId ?? "");
-        Label(16, y + 30, half - 32, 32, tier == InsuranceTier.None ? Loc.L("미가입", "None") : Loc.TierName(tier) + Loc.L($" · 반환 {percent:0.##}%", $" · return {percent:0.##}%"),
+        Label(16, y + 30, half - 32, 32, tier == InsuranceTier.None ? Loc.L("미가입", "None") : Loc.TierName(tier) + Loc.F($" · 반환 {percent:0.##}%", $" · return {percent:0.##}%"),
             new GUIStyle(itemTitle) { fontSize = 22 }, TierColor(tier));
         var value = new Rect(half + 10, y, half, 72);
         Box(value, Section, Line);
@@ -125,11 +125,11 @@ public sealed partial class Plugin
         GUI.enabled = !busy && popup == PopupKind.None && !uncertain && shown?.CanBuyInsurance == true;
         var tierName = Loc.TierName(insuranceTier);
         var caption = shown == null ? Loc.L("견적 확인 중…", "Checking quote…")
-            : shown.CanBuyInsurance ? Loc.L($"{tierName} 보험 가입 · {shown.Cost:N0} ₽", $"Buy {tierName} · {shown.Cost:N0} ₽")
+            : shown.CanBuyInsurance ? Loc.F($"{tierName} 보험 가입 · {shown.Cost:N0} ₽", $"Buy {tierName} · {shown.Cost:N0} ₽")
             : shown.RegistrationFee > 0 ? Loc.L("방탄판 차액을 먼저 내 주세요", "Pay the plate difference first")
             : Loc.L("이미 같은 등급 이상 가입됨", "Already insured at this tier or higher");
         if (BigButton(new Rect(BodyX + 243, ButtonY, BodyWidth - 243, ButtonHeight), caption, ButtonKind.Gold) && shown != null)
-            main.Enqueue(() => RunManaged(shown, Loc.L($"{tierName} 강화 보험 가입 완료", $"{tierName} insurance purchased"), false));
+            main.Enqueue(() => RunManaged(shown, Loc.F($"{tierName} 강화 보험 가입 완료", $"{tierName} insurance purchased"), false));
         GUI.enabled = true;
     }
 
@@ -155,7 +155,7 @@ public sealed partial class Plugin
     }
 
     private static string ReturnDelay(double hours) => hours <= 0 ? Loc.L("즉시", "Instant")
-        : hours % 24 == 0 ? Loc.L($"{hours / 24:0}일 뒤", $"After {hours / 24:0} day(s)") : Loc.L($"{hours:0.#}시간 뒤", $"After {hours:0.#} h");
+        : hours % 24 == 0 ? Loc.F($"{hours / 24:0}일 뒤", $"After {hours / 24:0} day(s)") : Loc.F($"{hours:0.#}시간 뒤", $"After {hours:0.#} h");
 
     // Design 13: insured gear on its way back (this window's kind only), minutes left and a bar.
     private float DrawReturning(float y)
@@ -187,7 +187,7 @@ public sealed partial class Plugin
             Label(320, top, 120, 18, Loc.TierName(entry.Tier), small, color);
             // A return with no delay (Premium) is mailed at once; it never shows a countdown.
             var instant = entry.DueUnixSeconds <= entry.StartUnixSeconds;
-            Label(midWidth - 214, top, 200, 18, instant ? Loc.L("즉시", "Instant") : left <= 0 ? Loc.L("도착 처리 중", "Arriving") : Loc.L($"{left / 3600}시간 {left % 3600 / 60}분 남음", $"{left / 3600} h {left % 3600 / 60} min left"), smallRight, Text);
+            Label(midWidth - 214, top, 200, 18, instant ? Loc.L("즉시", "Instant") : left <= 0 ? Loc.L("도착 처리 중", "Arriving") : Loc.F($"{left / 3600}시간 {left % 3600 / 60}분 남음", $"{left / 3600} h {left % 3600 / 60} min left"), smallRight, Text);
             Bar(new Rect(14, top + 21, midWidth - 28, 6), 0, instant ? 1 : 1 - left / (double)span, 1, BarNow, color);
         }
         return y + height;
@@ -197,18 +197,18 @@ public sealed partial class Plugin
     {
         var height = 86f;
         Box(new Rect(0, y, midWidth, height), Section, Line);
-        Label(14, y + 8, midWidth - 28, 20, view == null ? Loc.L("방탄판", "Plates") : Loc.L($"끼운 방탄판·내피 {view.InsertedParts}개 · ", $"Inserted plates/inserts: {view.InsertedParts} · ")
+        Label(14, y + 8, midWidth - 28, 20, view == null ? Loc.L("방탄판", "Plates") : Loc.F($"끼운 방탄판·내피 {view.InsertedParts}개 · ", $"Inserted plates/inserts: {view.InsertedParts} · ")
             + (view.UnregisteredParts == 0 ? Paint(Loc.L("모두 적용됨", "All applied"), Good)
-                : view.RegistrationFee > 0 ? Paint(Loc.L($"더 비싼 방탄판 · 차액 {view.RegistrationFee:N0} ₽ 필요", $"Pricier plates · {view.RegistrationFee:N0} ₽ difference due"), Caution)
-                : Paint(Loc.L($"미적용 {view.UnregisteredParts}개", $"Not applied: {view.UnregisteredParts}"), Caution))
-            + (view.DurabilityPending > 0 ? Paint(Loc.L($" · 최대 내구도 초월 효과가 빠진 부품 {view.DurabilityPending}개", $" · {view.DurabilityPending} part(s) missing the max durability bonus"), Caution) : ""), body);
+                : view.RegistrationFee > 0 ? Paint(Loc.F($"더 비싼 방탄판 · 차액 {view.RegistrationFee:N0} ₽ 필요", $"Pricier plates · {view.RegistrationFee:N0} ₽ difference due"), Caution)
+                : Paint(Loc.F($"미적용 {view.UnregisteredParts}개", $"Not applied: {view.UnregisteredParts}"), Caution))
+            + (view.DurabilityPending > 0 ? Paint(Loc.F($" · 최대 내구도 초월 효과가 빠진 부품 {view.DurabilityPending}개", $" · {view.DurabilityPending} part(s) missing the max durability bonus"), Caution) : ""), body);
         Label(14, y + 30, midWidth - 28, 18, Loc.L("값을 치른 방탄판 이하라면 끼우는 즉시 무료로 적용됩니다. 더 비싼 방탄판만 차액을 냅니다.",
             "Plates worth no more than those paid for apply for free at once. Only pricier plates pay the difference."), small);
         GUI.enabled = !busy && !uncertain && popup == PopupKind.None && view?.CanRegister == true;
         // A registered plate taken out and put back returns without the 2-star max durability.
         var caption = view == null ? "—" : view.UnregisteredParts == 0 && view.DurabilityPending > 0 ? Loc.L("최대 내구도 다시 맞추기 · 무료", "Restore max durability · free")
             : view.UnregisteredParts == 0 ? Loc.L("모두 적용됨", "All applied")
-            : view.RegistrationFee > 0 ? Loc.L($"차액 내고 적용 · {view.RegistrationFee:N0} ₽", $"Pay difference and apply · {view.RegistrationFee:N0} ₽")
+            : view.RegistrationFee > 0 ? Loc.F($"차액 내고 적용 · {view.RegistrationFee:N0} ₽", $"Pay difference and apply · {view.RegistrationFee:N0} ₽")
             : Loc.L("방탄판 적용 · 무료", "Apply plates · free");
         MiniButton(new Rect(14, y + 52, midWidth - 28, 28), caption, RegisterParts);
         GUI.enabled = true;

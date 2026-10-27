@@ -159,7 +159,7 @@ public sealed partial class EnhanceService
         // A guaranteed attempt (or one that is not rolled) buys nothing, like 1.3.0.
         if (!quote.BoostAvailable) return;
         if (chosen.Length > tuning.MaxKinds)
-            throw Loc.Invalid($"성공률 재료는 {tuning.MaxKinds}종까지 고를 수 있습니다.", $"Choose at most {tuning.MaxKinds} kinds of chance material.");
+            throw Loc.InvalidF($"성공률 재료는 {tuning.MaxKinds}종까지 고를 수 있습니다.", $"Choose at most {tuning.MaxKinds} kinds of chance material.");
         if (chosen.Any(c => !SuccessBoost.Valid(c.Kind)) || chosen.Select(c => c.Kind).Distinct().Count() != chosen.Length)
             throw Loc.Argument("성공률 재료 종류가 올바르지 않습니다.", "Invalid chance material kind.");
         var lines = new List<BoostLine>();
@@ -168,7 +168,7 @@ public sealed partial class EnhanceService
         {
             var max = SuccessBoost.MaxCount(choice.Kind, tuning);
             if (choice.Count < 1 || choice.Count > max)
-                throw Loc.Invalid($"성공률 재료 개수가 올바르지 않습니다(최대 {max}개).", $"Invalid chance material count (at most {max}).");
+                throw Loc.InvalidF($"성공률 재료 개수가 올바르지 않습니다(최대 {max}개).", $"Invalid chance material count (at most {max}).");
             var line = new BoostLine
             {
                 Kind = choice.Kind, Count = choice.Count, MaxCount = max, Points = SuccessBoost.Points(choice.Kind, choice.Count, tuning),
@@ -312,7 +312,7 @@ public sealed partial class EnhanceService
         var bought = state.Tickets.GetValueOrDefault(itemId)?.Bought(ticketStars) ?? 0;
         var max = settings.TicketMax(ticketStars);
         if (bought >= max)
-            throw Loc.Invalid($"이 장비는 방지권을 더 살 수 없습니다(평생 {max}장).", $"This gear cannot buy more tickets (lifetime {max}).");
+            throw Loc.InvalidF($"이 장비는 방지권을 더 살 수 없습니다(평생 {max}장).", $"This gear cannot buy more tickets (lifetime {max}).");
         var quote = new EnhanceQuote
         {
             QuoteId = Guid.NewGuid().ToString("N"), ItemId = itemId, Action = EnhanceAction.BuyTicket, IsWeapon = weapon,

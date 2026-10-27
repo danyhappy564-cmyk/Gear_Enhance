@@ -11,7 +11,7 @@ internal readonly struct PrestigeState
     public PrestigeState(int level, int max) { Level = Math.Max(0, level); Max = Math.Max(0, max); }
     public PrestigeState(EnhanceSnapshot snapshot) : this(snapshot?.PrestigeLevel ?? 0, snapshot?.PrestigeMax ?? 0) { }
     public bool AtMax => Max > 0 && Level >= Max;
-    public string Progress => AtMax ? Loc.L($"{Level:D2} · 최대", $"{Level:D2} · MAX") : $"{Level:D2} → {Level + 1:D2}";
+    public string Progress => AtMax ? Loc.F($"{Level:D2} · 최대", $"{Level:D2} · MAX") : $"{Level:D2} → {Level + 1:D2}";
 }
 
 // 1.4.0 prestige insurance tab (mockup "프레스티지 보험") and the registered-gear lists of both
@@ -22,8 +22,8 @@ public sealed partial class Plugin
     private GUIStyle policyNumRight, policyStage, policyCount, policyHint, policyProgress, policyMessage, policySideValue;
     // Rows rebuilt only when the state sync, the language or what they depend on changes (not per frame).
     private List<PolicyRow> prestigeRowCache, insuranceRowCache;
-    private (int Version, bool English, bool Max) prestigeRowKey;
-    private (int Version, bool English, InsuranceTier Tier) insuranceRowKey;
+    private (int Version, int Language, bool Max) prestigeRowKey;
+    private (int Version, int Language, InsuranceTier Tier) insuranceRowKey;
     private readonly GUIContent policyContent = new GUIContent();
     private static readonly Color MailBorder = Hex(0x6b4760), MailFill = Hex(0x1a1119), IntroBorder = Hex(0x6b5836);
 
@@ -80,10 +80,10 @@ public sealed partial class Plugin
 
     private static string GradeText(string id, int stars, int mythic)
     {
-        if (mythic >= 0) return Loc.L($"✦ 신화 {mythic}", $"✦ Mythic {mythic}");
+        if (mythic >= 0) return Loc.F($"✦ 신화 {mythic}", $"✦ Mythic {mythic}");
         var text = StarEvolution.Stars(Math.Max(1, stars));
         var transcend = StatPatches.Registry.TranscendTotal(id);
-        if (transcend > 0) text += Loc.L($" · 초월 {transcend}", $" · Transcend {transcend}");
+        if (transcend > 0) text += Loc.F($" · 초월 {transcend}", $" · Transcend {transcend}");
         var best = StatPatches.Registry.Find(id);
         if (best != null) text += $" · +{best.Level}";
         return text;
@@ -120,7 +120,7 @@ public sealed partial class Plugin
 
         if (atMax)
         {
-            var warn = Loc.L($"최대 프레스티지({stage.Max})에서는 다음 단계가 없어 보험이 작동하지 않습니다",
+            var warn = Loc.F($"최대 프레스티지({stage.Max})에서는 다음 단계가 없어 보험이 작동하지 않습니다",
                 $"At maximum prestige ({stage.Max}), there is no next stage, so this insurance does not work.");
             var warnHeight = 24 + TextHeight(policyText, warn, width);
             Box(new Rect(0, y, midWidth, warnHeight), Hex(0x221a10), Hex(0x7a5a30));
@@ -156,7 +156,7 @@ public sealed partial class Plugin
         // Already paid │ fee at today's value │ difference due.
         var third = (width - 20) / 3;
         Box(new Rect(0, y, midWidth, 112), Section, Line);
-        var rate = Loc.L($"장비 가치 × {prestigeFee.Value:0.##}% · F12 설정", $"Gear value × {prestigeFee.Value:0.##}% · F12 setting");
+        var rate = Loc.F($"장비 가치 × {prestigeFee.Value:0.##}% · F12 설정", $"Gear value × {prestigeFee.Value:0.##}% · F12 setting");
         var calc = atMax ? Loc.L("다음 단계 없음", "No next stage") : shown == null ? "" : $"{shown.PrestigeFee:N0} − {shown.PrestigePaid:N0}" + Loc.L(" · 최소 0", " · min 0");
         PaymentCell(14, y, third, Loc.L("이미 낸 금액", "Already paid"), shown == null ? "—" : Cash(shown.PrestigePaid), Loc.L("누적 납부 기준", "Cumulative payment"), LightGold);
         PaymentCell(24 + third, y, third, Loc.L("현재 가치 보험료", "Fee at current value"), shown == null || atMax ? "—" : Cash(shown.PrestigeFee), rate, LightGold);
@@ -173,7 +173,7 @@ public sealed partial class Plugin
             (Loc.L("추가 강화·방탄판 교체에도 등록 유지. 가치가 오르면 차액만 냅니다.", "Registration survives upgrades and plate swaps. Pay only the difference when value rises."), Soft),
             (Loc.L("가치가 내려가면 추가 납부 0 ₽. 이미 낸 금액은 환불하지 않습니다.", "If value falls, the extra fee is 0 ₽. Prior payments are not refunded."), Soft),
             (UnpaidCoverage, Soft),
-            (Loc.L($"최대 프레스티지({(stage.Max > 0 ? stage.Max : 6)})에서는 다음 단계가 없어 작동하지 않습니다. 레이드에서 잃은 장비는 강화 보험이 맡습니다.",
+            (Loc.F($"최대 프레스티지({(stage.Max > 0 ? stage.Max : 6)})에서는 다음 단계가 없어 작동하지 않습니다. 레이드에서 잃은 장비는 강화 보험이 맡습니다.",
                 $"It does not work at maximum prestige ({(stage.Max > 0 ? stage.Max : 6)}): there is no next stage. Gear lost in raids is covered by the enhancement insurance."), Soft),
             (ReturnEnds, Gold)
         };
@@ -217,12 +217,12 @@ public sealed partial class Plugin
         if (mail.Length == 0) return y;
         var level = mail[0].Level;
         var width = midWidth - 28;
-        var intro = Loc.L($"프레스티지 {level:D2}{ToStage(level)} 넘어오기 전에 등록한 장비입니다. 받으면 창고로 들어옵니다.",
+        var intro = Loc.F($"프레스티지 {level:D2}{ToStage(level)} 넘어오기 전에 등록한 장비입니다. 받으면 창고로 들어옵니다.",
             $"Gear registered before advancing to prestige {level:D2}. Collecting puts it in your stash.");
         var height = 12 + 26 + TextHeight(policyText, intro, width) + mail.Length * 38 + 10 + 32 + 8 + TextHeight(policyNote, ReturnEnds, width) + 12;
         Box(new Rect(0, y, midWidth, height), MailFill, MailBorder);
-        Label(14, y + 10, width, 20, Loc.L($"반환 우편 도착 · {mail.Length}", $"Return mail arrived · {mail.Length}"), policyHead, Heading);
-        Label(14, y + 10, width, 20, Loc.L($"프레스티지 {Math.Max(0, level - 1):D2} → {level:D2}", $"Prestige {Math.Max(0, level - 1):D2} → {level:D2}"),
+        Label(14, y + 10, width, 20, Loc.F($"반환 우편 도착 · {mail.Length}", $"Return mail arrived · {mail.Length}"), policyHead, Heading);
+        Label(14, y + 10, width, 20, Loc.F($"프레스티지 {Math.Max(0, level - 1):D2} → {level:D2}", $"Prestige {Math.Max(0, level - 1):D2} → {level:D2}"),
             policyStage, MythGold);
         var row = y + 38 + Paragraph(14, y + 38, width, intro, policyText, Soft) + 4;
         foreach (var entry in mail)
@@ -246,7 +246,7 @@ public sealed partial class Plugin
 
     private List<PolicyRow> PrestigeRows(EnhanceSnapshot policies, bool atMax)
     {
-        var key = (StatPatches.Registry.Version, Loc.English, atMax);
+        var key = (StatPatches.Registry.Version, Loc.Revision, atMax);
         if (prestigeRowCache != null && prestigeRowKey == key) return prestigeRowCache;
         prestigeRowKey = key;
         var rows = prestigeRowCache = new List<PolicyRow>();
@@ -272,7 +272,7 @@ public sealed partial class Plugin
 
     private List<PolicyRow> InsuranceRows()
     {
-        var key = (StatPatches.Registry.Version, Loc.English, insuranceTier);
+        var key = (StatPatches.Registry.Version, Loc.Revision, insuranceTier);
         if (insuranceRowCache != null && insuranceRowKey == key) return insuranceRowCache;
         insuranceRowKey = key;
         var rows = insuranceRowCache = new List<PolicyRow>();
@@ -364,7 +364,7 @@ public sealed partial class Plugin
             (Loc.L("★ 진화", "★ Evolution"), mythic >= 0 ? Loc.L("✦ 신화", "✦ Mythic") : StarEvolution.Stars(StarCount), mythic >= 0 ? Myth : Gold),
             (Loc.L("초월 · 신화", "Transcend · mythic"), Loc.L("달성 기록 보존", "Earned progress kept"), Myth),
             (Loc.L("부착물", "Attachments"), weapon ? Loc.L("함께 반환", "Returned together") : "—", Good),
-            (Loc.L("방탄판", "Armor plates"), weapon ? "—" : plates > 0 ? Loc.L($"{plates}장 함께 반환", $"{plates} returned together") : Loc.L("함께 반환", "Returned together"), Good)
+            (Loc.L("방탄판", "Armor plates"), weapon ? "—" : plates > 0 ? Loc.F($"{plates}장 함께 반환", $"{plates} returned together") : Loc.L("함께 반환", "Returned together"), Good)
         };
         var height = 56 + 14 + 26 + preserved.Length * 31 + 20 + 1 + 20 + 24 + 44 + 40;
         Box(new Rect(x, 0, StatusWidth, height), Panel, Edge);

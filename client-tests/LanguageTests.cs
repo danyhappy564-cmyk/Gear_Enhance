@@ -78,12 +78,10 @@ public sealed class LanguageTests : IDisposable
         Assert.Contains("Destruction protection", ResultText.Detail(new() { DestructionPrevented = true }));
         Assert.Equal("Recoil reduction", EnhanceEffects.StatName(EnhancePath.Recoil));
         Assert.Equal("반동 감소", EnhanceEffects.KoreanStatName(EnhancePath.Recoil));
-        Assert.Equal("2nd", Loc.Tier(2)); Assert.Equal("3rd", Loc.Tier(3)); Assert.Equal("11th", Loc.Tier(11));
         Assert.Equal("Handbook (no flea price)", Loc.PriceSource("북밸류 (플리 가격 없음)"));
         var error = Loc.Invalid("한국어", "English");
         Assert.Equal("English", error.Message); Assert.Equal("English", Loc.EnglishOf(error));
         Loc.English = false;
-        Assert.Equal("2차", Loc.Tier(2));
         Assert.Equal("강화 성공!", ResultText.Title(new() { Success = true }, false));
         Assert.Equal("한국어", Loc.Invalid("한국어", "English").Message);
     }

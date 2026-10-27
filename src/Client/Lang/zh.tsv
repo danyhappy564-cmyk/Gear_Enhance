@@ -1,0 +1,826 @@
+﻿# Gear Enhance translation file / 번역 파일. UTF-8, tab-separated: ko, en, text.
+# Fill the third column ("text"). Keep {0}, {1:N0} ... and the leading/trailing spaces of a cell.
+# \n is a line break. An empty cell or "-" shows English. Lines starting with # are notes.
+# Your own language: copy template.tsv to a new name (for example de.tsv), fill it, then pick
+# F12 → Gear Enhance → Language = Custom and type the file name in "Custom language file".
+# Files shipped with the mod (ru.tsv, zh.tsv) are overwritten by updates; keep your edits under another name.
+# 简体中文
+ko	en	text
+99. 개발자 옵션	99. Developer options	99. 开发者选项
+0. 빠른 설정	0. Quick switches	0. 快捷开关
+모든 강화 루블 필요 없음	No roubles for anything	
+강화·진화·초월·신화·방지권·보험·방탄판 차액에 루블을 받지 않습니다. 개발자 옵션을 잠그면 꺼집니다.	Enhancing, evolving, transcending, mythic, tickets, insurance and plate differences cost no roubles. Off while the developer options are locked.	
+모든 강화 재료 필요 없음	No materials for anything	
+초월 재료·LEDX·그래픽 카드와 성공률 재료(독택·그래픽 카드·비트코인)를 가져가지 않습니다. 성공률 재료는 없어도 고를 수 있습니다.	Transcendence materials, LEDX, graphics cards and chance materials (dogtags, graphics cards, bitcoin) are not taken; chance materials can be picked without owning them.	
+확률 100% (항상 성공)	100% chance (always succeed)	
+강화·진화·초월·신화·??? 가 항상 성공합니다. 비용은 그대로 듭니다(위 두 설정과 따로).	Enhancing, evolving, transcending, mythic and ??? always succeed. Costs still apply (separate from the two above).	
+1. 기본	1. General	1. 常规
+2. 확률	2. Chance	2. 成功率
+3. 비용	3. Cost	3. 费用
+4. 실패	4. Failure	4. 失败
+5. 무기 효과	5. Weapon effects	5. 武器效果
+6. 방어구 효과	6. Armor effects	6. 护甲效果
+7. 피드백	7. Feedback	7. 反馈
+8. 완성 보너스	8. Completion bonus	8. 完成奖励
+9. 강화 보호	9. Protection	9. 强化保护
+10. 스타 강화 진화	10. Star evolution	10. 星级进化
+11. 3차 스타 진화	11. 3rd star evolution	11. 第三次星级进化
+12. 강화 보험	12. Enhancement insurance	12. 强化保险
+13. 초월 강화	13. Transcendence	13. 超越强化
+방탄판 자동 등록	Auto-register plates	自动登记插板
+강화된 방어구에 방탄판·내피·바이저를 끼우면 바로 그 방어구 단계를 받습니다(같거나 더 싼 방탄판, 무료). 더 비싼 방탄판은 보험·방탄판 창에서 차액을 내고 등록합니다. 끄면 모두 버튼으로 등록합니다.	Plates, soft inserts and visors put into enhanced armor get its level at once (same or cheaper plates, free). Pricier plates are registered in the insurance · plates window for the price difference. When off, every plate is registered with the button.	在已强化的护甲中装入插板、软甲内衬或面罩时，立即获得该护甲的强化等级（相同或更便宜的插板免费）。更贵的插板需在“保险 · 插板”窗口支付差价后登记。关闭后所有插板都需用按钮登记。
+방탄판 차액 배율 (%)	Plate price difference multiplier (%)	
+더 비싼 방탄판 차액 = 가격 차이 × 가진 단계마다 (그 단계 비용 비율 × 평균 시도 횟수) × 이 값/100. 100이면 처음부터 그 방탄판으로 강화한 평균 비용과 같습니다.	Pricier plate fee = price difference × for each held level (that level's cost ratio × average attempts) × this/100. At 100 it equals the average cost of enhancing with that plate from the start.	
+2성 초월 성공률 (→1~→5, %)	2-star transcendence chance (→1 to →5, %)	
+3성 초월 성공률 (→1~→5, %)	3-star transcendence chance (→1 to →5, %)	
+다섯 숫자를 쉼표로 구분합니다. 형식이 틀리면 기본값을 씁니다.	Five numbers separated by commas. A wrong format uses the defaults.	
+2성 천장 (실패당 %p)	2-star pity (%p per failure)	
+3성 천장 (실패당 %p)	3-star pity (%p per failure)	
+실패할 때마다 그 장비의 다음 2성 초월 성공률에 더합니다. 성공하면 0으로 돌아갑니다.	Each failure adds this to that gear's next 2-star chance. A success resets it to 0.	
+실패할 때마다 그 장비의 다음 3성 초월 성공률에 더합니다. 성공하면 0으로 돌아갑니다.	Each failure adds this to that gear's next 3-star chance. A success resets it to 0.	
+천장 최대 (%p)	Pity cap (%p)	
+쌓이는 천장의 최대치입니다.	The most pity that can build up.	
+2성 비용 (기준가 대비 %)	2-star cost (% of base price)	
+3성 비용 (기준가 대비 %)	3-star cost (% of base price)	
+비용 = 최소 비용과 기준가 × 이 값/100 × 배수^현재단계 중 큰 값. 방어구는 끼운 부품 가격을 더합니다. 최대 1억 루블.	Cost = the larger of the minimum cost and base price × this/100 × multiplier^current level. Armor adds its inserted parts. Max 100,000,000 roubles.	
+2성 최소 비용 (루블)	2-star minimum cost (roubles)	
+3성 최소 비용 (루블)	3-star minimum cost (roubles)	
+한 번 시도의 최소 비용입니다.	Minimum cost of one attempt.	
+초월 단계별 비용 배수	Transcendence cost multiplier per level	
+단계가 오를수록 비용에 곱하는 배수입니다.	Multiplied into the cost for each level already held.	
+초월 하락 방지 비용 (기본 비용 대비 %)	Transcendence downgrade protection (% of base cost)	
+→4 시도에만 씁니다(→5는 방지 불가). 추가 비용 = 이번 초월 기본 비용 × 이 값/100(단계 제곱 없음). 100이면 하락 방지를 켰을 때 비용이 2배.	Level 4 and 5 attempts only. Extra fee = this attempt's base cost × this/100 (no level squared). At 100, protection doubles the cost.	
+초월 재료 요구	Require transcendence materials	
+끄면 재료 없이 루블만 냅니다. 재료는 성공·실패와 관계없이 소모됩니다.	When off, only roubles are paid. Materials are used up on success and failure alike.	
+수평 반동 감소 / 단계 (%)	Horizontal recoil reduction / level (%)	
+총기 2성 초월. 뒤로 차는 힘과 좌우로 튀는 각도를 함께 줄입니다. 반동 제어 강화와 합쳐 최대 80%.	Weapon 2-star transcendence. Reduces the backward kick and the left/right kick angle. At most 80% together with the recoil track.	
+최대 내구도 증가 / 단계 (%)	Max durability bonus / level (%)	
+방어구 2성 초월. 원래 최대 내구도 기준. 바꾸면 다음 강화·초월·등록 때 다시 맞춰집니다.	Armor 2-star transcendence. Based on the original max durability. A change applies at the next enhancement, transcendence or registration.	
+발사속도 증가 / 단계 (%)	Fire rate bonus / level (%)	
+총기 3성 초월(연사·점사 가능 총). 아래 상한과 비교해 작은 값을 더합니다.	Weapon 3-star transcendence (guns with auto or burst). Adds the smaller of this and the limit below.	
+발사속도 증가 상한 / 단계 (rpm)	Fire rate bonus limit / level (rpm)	
+단계당 더하는 발사속도의 최대치입니다.	The most fire rate added per level.	
+고장 확률 감소 / 단계 (%)	Malfunction chance reduction / level (%)	
+총기 3성 초월(반자동·볼트액션 총).	Weapon 3-star transcendence (semi-auto and bolt-action guns).	
+과열 증가 감소 / 단계 (%)	Overheat buildup reduction / level (%)	
+총기 3성 초월(반자동·볼트액션 총). 한 발당 쌓이는 과열을 줄입니다.	Weapon 3-star transcendence (semi-auto and bolt-action guns). Less overheat per shot.	
+둔탁상 감소 / 단계 (%)	Blunt damage reduction / level (%)	
+방어구 3성 초월. 막았을 때 몸에 들어오는 피해를 줄입니다. 3단계 +1클, 5단계 +2클(최대 6클).	Armor 3-star transcendence. Less damage gets through when the armor stops a hit. +1 class at level 3, +2 at level 5 (max class 6).	
+6클 대체 둔탁상 감소 / 클 (%)	Class 6 substitute blunt reduction / class (%)	
+이미 6클 이상이라 등급을 못 올리는 부품이 1클 대신 받는 둔탁상 감소입니다.	Blunt reduction a part at class 6 or above gets for each class it cannot gain.	
+일반 보험 반환 확률 (%)	Basic insurance return chance (%)	
+고급 보험 반환 확률 (%)	Advanced insurance return chance (%)	
+프리미엄 보험 반환 확률 (%)	Premium insurance return chance (%)	
+레이드에서 잃은 강화 장비가 강화된 상태로 우편 반환될 확률. 가입할 때의 값으로 고정됩니다.	Chance that enhanced gear lost in a raid is mailed back still enhanced. Locked in when the insurance is bought.	
+일반 보험료 (강화 가치 대비 %)	Basic insurance fee (% of value)	
+고급 보험료 (강화 가치 대비 %)	Advanced insurance fee (% of value)	
+프리미엄 보험료 (강화 가치 대비 %)	Premium insurance fee (% of value)	
+프레스티지 보험료 (강화 가치 대비 %)	Prestige insurance fee (% of value)	
+프레스티지를 달성해 다음 단계로 넘어갈 때만 등록한 장비를 우편으로 돌려줍니다. 가치가 오르면 차액만 냅니다. 최대 프레스티지에서는 등록할 수 없습니다.	Registered gear is mailed back only when you achieve prestige and advance to the next stage. When its value rises only the difference is paid. It cannot be registered at the maximum prestige.	
+강화 가치 = 지금 단계·스타까지 강화하는 데 드는 기본 비용 합계(방어구는 등록한 방탄판 가격 포함). 최소 비용 이상.	Enhancement value = the base cost of reaching the current levels and stars (armor includes its registered plates). At least the minimum cost.	
+개발자 옵션 비밀번호	Developer options password	开发者选项密码
+개발자 저장 비밀번호	Developer save password	开发者保存密码
+개발자 옵션을 연 상태에서 이 비밀번호를 넣으면 그동안 한 강화가 되돌아가지 않고 저장됩니다. 비우면 다시 잠그거나 게임을 다시 켤 때 되돌아갑니다.	With the developer options open, this password keeps what you enhance instead of rolling it back. Leave it empty to roll back on lock or on the next launch.	开发者选项开启时输入此密码，期间的强化会被保存而不会回滚。留空则在重新锁定或下次启动游戏时回滚。
+비밀번호를 넣으면 확률·비용·항상 성공·실패·능력치·보호·진화·보험 밸런스 설정이 표시되고 적용됩니다. 잠겨 있으면 기본 밸런스로 강화합니다(바꿔 둔 값은 지우지 않음). 입력 후 F12 창을 닫았다 다시 열면 표시됩니다. 열어 둔 동안 한 강화는 잠그거나 게임을 다시 켜면(Alt+F4 포함) 열기 전 기록으로 되돌아갑니다(쓴 루블·재료와 파괴된 장비는 돌아오지 않음).	Enter the password to show and apply the chance, cost, always-succeed, failure, stat, protection, evolution and insurance balance settings. While locked, enhancing uses the default balance (changed values are kept, not deleted). Close and reopen F12 after entering it. What is enhanced while it is open goes back to the records from before it opened when you lock it or start the game again (Alt+F4 included); spent roubles, materials and destroyed gear do not come back.	输入密码后会显示并应用成功率、费用、必定成功、失败、属性、保护、进化和保险的平衡设置。锁定时按默认平衡强化（已修改的值不会被删除）。输入后请关闭并重新打开 F12。开启期间进行的强化在重新锁定或重启游戏（包括 Alt+F4）时会回到开启前的记录；已花费的卢布、材料和被摧毁的装备不会返还。
+강화 메뉴 사용	Enable the Enhance gear menu	启用“装备强化”菜单
+창고의 무기·방어구 우클릭에 장비 강화를 표시합니다. 방탄판·내피는 방어구와 함께 강화되므로 표시하지 않습니다.	Adds "Enhance gear" to the right-click menu of weapons and armor in the stash. Plates and inserts are enhanced with their armor, so they do not get it.	在仓库中右键武器和护甲时显示“装备强化”。插板和软甲内衬随护甲一起强化，因此不显示。
+성공률 (%)	Success chance (%)	
++0에서 +1로 강화할 때 성공률. 이후 현재 단계 × 단계별 감소량만큼 줄어듭니다.	Chance for +0 → +1. It then drops by current level × per-level loss.	
+단계별 성공률 감소 (%p)	Chance loss per level (%p)	
+기본: +1 시도 75%, +10 시도 30%. 0이면 같은 확률을 유지합니다.	Default: 75% for +1, 30% for +10. 0 keeps the same chance.	
+항상 성공 (100%)	Always succeed (100%)	
+켜면 성공률 설정 대신 100%를 적용합니다. 비용은 소모됩니다.	Uses 100% instead of the chance settings. The cost is still paid.	
+최대 강화 단계	Max level	
+각 항목 최대 단계. 효과 곡선·1차 스타 진화 조건도 함께 바뀝니다. 고위험 시작은 선택 항목 +6 시도(+5→+6)로 고정됩니다.	Max level of each track. Also changes the effect curve and the 1st star evolution condition. High risk always starts at the +6 attempt (+5 → +6).	
+기준 가격	Base price	
+Handbook = 북밸류, Flea = SPT 플리 기준가. 무기는 본체만, 방어구는 슬롯에 끼운 방탄판·삽입물·바이저 가격을 더합니다.	Handbook = handbook value, Flea = SPT flea price. Weapons count the body only; armor adds the plates, inserts and visors in its slots.	
+기준 가격 대비 비용 (%)	Cost (% of base price)	
+0이면 최소 비용만 적용됩니다.	0 uses only the minimum cost.	
+단계별 비용 배수	Cost multiplier per level	
+기준가 × 비용 비율 × 배수^현재단계. 최대 1억 루블.	Base price × cost % × multiplier^current level. Max 100,000,000 roubles.	
+최소 비용 (루블)	Minimum cost (roubles)	
+창고 안의 잠기지 않은 루블을 사용합니다.	Uses unlocked roubles in the stash.	
+실패 처리	On failure	
+일반 구간 실패 처리. KeepItem: 비용만 / ZeroDurability: 현재 내구도 0 / Destroy: 본체·부착물·탄약 삭제 / Downgrade: 선택 항목 -1. 고위험 구간에서는 아래 파괴·하락 규칙이 우선합니다.	Failure outside the high-risk range. KeepItem: fee only / ZeroDurability: current durability 0 / Destroy: delete gear, mods and ammo / Downgrade: selected track -1. In the high-risk range the destruction/downgrade rules below apply instead.	
+고위험 강화 (무기·방어구)	High risk (weapons and armor)	
+선택한 항목의 다음 단계가 +6 이상이면(+5→+6부터) 실패 시 파괴 또는 해당 항목 -1. 1.4.0부터 방어구도 같습니다. 다른 항목 단계는 무관합니다.	When the selected track's next level is +6 or more (from +5 → +6), failure destroys the gear or drops that track by 1. From 1.4.0 armor works the same. Other tracks do not matter.	
+고위험 실패 중 파괴 확률 (%)	Destruction share of high-risk failures (%)	
+성공 판정과 별도입니다. 고위험 실패 중 이 확률로 본체·부착물·탄약 파괴, 나머지는 선택 항목 -1. 0은 하락만, 100은 파괴만.	Rolled separately from success. This share of high-risk failures destroys the gear, mods and ammo; the rest drop the selected track by 1. 0 = downgrade only, 100 = destruction only.	
+반동 감소 / 단계 (%)	Recoil reduction / level (%)	
+반동 감소 상한 (%)	Recoil reduction cap (%)	
+인체공학 증가 / 단계	Ergonomics bonus / level	
+인체공학 증가 상한	Ergonomics bonus cap	
+탄 퍼짐 감소 / 단계 (%)	Dispersion reduction / level (%)	
+탄 퍼짐 감소 상한 (%)	Dispersion reduction cap (%)	
+내구도 소모 감소 / 단계 (%)	Durability loss reduction / level (%)	
+내구도 소모 감소 상한 (%)	Durability loss reduction cap (%)	
+장비 페널티 완화 / 단계 (%)	Gear penalty relief / level (%)	
+장비 페널티 완화 상한 (%)	Gear penalty relief cap (%)	
+최대 효과 기준 = 이 값 × 최대 단계와 효과 상한 중 작은 값. 실제 단계별 증가량은 후반 1→4배 곡선으로 배분됩니다. 기존 장비에도 적용됩니다.	Max effect = the smaller of this value × max level and the effect cap. Per-level gains grow toward later levels (up to 4x). Also applies to existing gear.	
+진화 보너스 적용 전 상한. 보너스 후 안전 한계는 감소율 80%, 인체공학 추가 50입니다.	Cap before the evolution bonus. After the bonus the safety limits are 80% reduction and +50 ergonomics.	
+자세한 로그 남기기	Detailed logging	详细日志
+체크한 동안 효과음 설정·재생·대체 경로, 강화 창 UI CPU, 초월 발사속도 실측, 은신처 장비 연결 진단을 LogOutput.log에 남깁니다. 실제 오류·경고는 체크와 관계없이 기록합니다.	While on, writes sound setup/playback/fallback, window UI CPU, measured transcendence fire rate and hideout gear link diagnostics to LogOutput.log. Real errors and warnings are always logged.	开启时，将音效设置/播放/替代路径、强化窗口界面 CPU、超越射速实测和藏身处装备关联诊断写入 LogOutput.log。真正的错误和警告始终会记录。
+강화 효과음	Enhancement sounds	强化音效
+강화 중·결과·버튼·항목·체크박스·창 여닫기에 효과음을 재생합니다. 끄더라도 게이지 시간은 유지합니다.	Plays sounds for charging, results, buttons, tracks, check boxes and opening/closing the window. The gauge time stays the same when off.	为蓄力、结果、按钮、项目、复选框和窗口开关播放音效。关闭后蓄力时间不变。
+전용 강화 음원 사용	Use bundled enhancement sounds	使用专用强化音效
+사용자 제공 음원6개 사용. 끄면 기존 게임 UI 소리를 사용합니다. 전용 음원 오류 시에도 기본음으로 대체합니다.	Uses the 6 bundled sounds. When off, the game's own UI sounds are used. Also falls back to them if the bundled sounds fail.	使用内置的 6 个音效。关闭后使用游戏自带的界面音效。内置音效出错时也会改用游戏音效。
+전용 음원 음량 (%)	Bundled sound volume (%)	专用音效音量 (%)
+게임의 마스터/인터페이스 음량에 추가로 곱합니다. 0이면 전용 음원 무음. 기본 게임음 모드에서는 게임 소리 설정을 사용합니다.	Multiplied on top of the game's master/interface volume. 0 mutes the bundled sounds. Game-sound mode uses the game's sound settings.	在游戏的主音量/界面音量基础上再相乘。0 为静音。使用游戏音效时按游戏的声音设置。
+전 항목 완성 추가 효과 (%)	2nd star bonus effect (%)	
+2차 스타 성공 시 기본 강화 효과의2배(+100%). 반동15%→30%, 인체공학+10→+20. 감소율80%/추가인체공학50 상한. 일반 최대 단계만으로 자동 적용되지 않습니다.	On 2nd star success, 2x the base effect (+100%). Recoil 15% → 30%, ergonomics +10 → +20. Capped at 80% reduction / +50 ergonomics. Not applied just by maxing levels.	
+파괴 방지 비용 계수 (%)	Destruction protection fee (%)	
+추가 비용 = 기본 강화 비용 × 이 값/100 × 시도 단계². 해당 파괴 위험이 있을 때만 부과합니다.	Extra cost = base cost × this/100 × attempted level². Charged only when destruction is possible.	
+단계 하락 방지 비용 계수 (%)	Downgrade protection fee (%)	
+추가 비용 = 기본 강화 비용 × 이 값/100 × 시도 단계². 하락 위험이 있을 때만 부과합니다. 보호비도 성공/실패와 관계없이 소모됩니다.	Extra cost = base cost × this/100 × attempted level². Charged only when a downgrade is possible. Paid on success and failure alike.	
+진화 성공률 (%)	Evolution chance (%)	
+1차 스타 전 항목 최대 달성 후 별도 진화 창에서 사용합니다. 실패 시 파괴, 보호 불가.	Used in the separate evolution window after every 1st star track is maxed. Failure destroys the gear; no protection.	
+진화 기준가 대비 비용 (%)	Evolution cost (% of base price)	
+진화 비용 = 최소 200만 루블과 본체 기준가 × 이 값/100 중 큰 값. 기본3배, 1회 최대1억 루블.	Evolution cost = the larger of 2,000,000 roubles and base price × this/100. Default 3x, max 100,000,000 roubles per try.	
+3차 스타 성공률 (%)	3rd star chance (%)	
+2차 스타 성공 및 전 항목 최대인 장비만 시도. 실패 시 보호 없이 파괴합니다.	Only gear with a 2nd star and every track maxed. Failure destroys it with no protection.	
+3차 스타 총 추가 효과 (%)	3rd star total bonus (%)	
+3차 스타 성공 시 기본 강화 효과의3배(+200%). 2차 배율에 중첩하지 않습니다. 반동15%→45%, 인체공학+10→+30. 감소율80%/추가인체공학50 상한, 빨간색 ★★★.	On 3rd star success, 3x the base effect (+200%). Does not stack with the 2nd star. Recoil 15% → 45%, ergonomics +10 → +30. Capped at 80% reduction / +50 ergonomics, red ★★★.	
+연출 줄이기	Reduce motion	减少动画
+켜면 상태창 떨어짐·막대 채움·창 흔들림·신화 섬광·빛 고리·불꽃을 끄고 바로 보여 줍니다.	Turns off the stat drop-in, bar fills, shake, mythic flash, rings and sparks; everything shows at once.	关闭属性面板掉落、进度条填充、窗口震动、神话闪光、光环和火花，直接显示结果。
+창고 신화 칸 반짝임	Stash mythic shimmer	仓库神话格子闪烁
+창고에서 신화 장비 칸 테두리가 분홍↔금빛으로 반짝입니다. 끄면 고정된 분홍 테두리만 보입니다.	Mythic gear cells in the stash shimmer pink and gold. Off: a steady pink border.	仓库中神话装备格子的边框在粉色和金色间闪烁。关闭后为固定的粉色边框。
+파괴 확인 창	Destruction prompt	损毁确认窗口
+파괴될 수 있는 시도(파괴 방지 없는 +6 이상, 스타 진화) 전에 한 번 더 묻습니다. ??? 는 이 설정과 관계없이 항상 묻습니다.	Asks once more before an attempt that can destroy the gear (unguarded +6 and up, star evolution). ??? always asks.	在可能损毁装备的尝试（无保护的 +6 及以上、星级进化）前再确认一次。??? 无论此设置如何始终会确认。
+14. 성공률 재료	14. Chance materials	14. 成功率材料
+15. 즉시 강화 · 파괴 방지권	15. Instant · destruction tickets	15. 即时强化 · 防损毁券
+16. ??? · 신화	16. ??? · Mythic	16. ??? · 神话
+일반 보험 돌아오는 시간 (시간)	Basic insurance return delay (hours)	
+고급 보험 돌아오는 시간 (시간)	Advanced insurance return delay (hours)	
+프리미엄 보험 돌아오는 시간 (시간)	Premium insurance return delay (hours)	
+레이드에서 잃은 장비가 강화 보험으로 돌아올 때 우편이 오기까지의 실제 시간입니다. 0이면 즉시. 가입할 때 값으로 고정됩니다.	Real hours until gear lost in a raid and returned by enhancement insurance arrives by mail. 0 = at once. Fixed when the insurance is bought.	
+재료 1개가 더하는 성공률입니다. 2종까지 고를 수 있고 성공률은 100%를 넘지 않습니다.	Chance one item adds. Up to two kinds per attempt; the chance never exceeds 100%.	
+이 재료로 올릴 수 있는 최대 성공률입니다. 최대 개수 = 최대 ÷ 개당.	Most chance this material can add. Max count = max ÷ per item.	
+재료 1개마다 함께 내는 루블입니다. 재료와 루블은 성공·실패와 관계없이 소모됩니다.	Roubles paid with each item. Items and roubles are spent on success or failure.	
+독택 개당 성공률 (%p)	Dogtag chance per item (%p)	
+독택 최대 (%p)	Dogtag max (%p)	
+독택 개당 비용 (루블)	Dogtag cost per item (roubles)	
+그래픽 카드 개당 성공률 (%p)	Graphics card chance per item (%p)	
+그래픽 카드 최대 (%p)	Graphics card max (%p)	
+그래픽 카드 개당 비용 (루블)	Graphics card cost per item (roubles)	
+비트코인 개당 성공률 (%p)	Bitcoin chance per item (%p)	
+비트코인 최대 (%p)	Bitcoin max (%p)	
+비트코인 개당 비용 (루블)	Bitcoin cost per item (roubles)	
+한 번에 쓸 재료 종류 (최대)	Material kinds per attempt (max)	
+한 시도에 고를 수 있는 재료 종류 수입니다. ??? 에는 재료를 쓸 수 없습니다.	How many material kinds one attempt can use. ??? takes no materials.	
+즉시 강화 비용 (루블)	Instant fee (roubles)	
+충전 게이지 없이 바로 결과를 봅니다. 일반 강화·초월·신화에만 있고 스타 진화·??? 에는 없습니다.	Skip the charge gauge and see the result at once. Enhancement, transcendence and mythic only; not star evolution or ???.	
+장비 하나가 평생 살 수 있는 장수입니다. 다 사면 더 살 수 없습니다.	Tickets one gear can ever buy. None more once they are all bought.	
+방지권 1장 가격입니다. 쓰면 진화 시도마다 1장 소모, 실패해도 장비가 남습니다.	Price of one ticket. Using it spends one per evolution attempt; a failure keeps the gear.	
+★★ 진화 방지권 최대 (장)	★★ evolution tickets (max)	
+★★ 진화 방지권 가격 (루블)	★★ evolution ticket price (roubles)	
+★★★ 진화 방지권 최대 (장)	★★★ evolution tickets (max)	
+★★★ 진화 방지권 가격 (루블)	★★★ evolution ticket price (roubles)	
+??? 방지권 최대 (장)	??? tickets (max)	
+??? 방지권 가격 (루블)	??? ticket price (roubles)	
+★★★ 장비 하나가 평생 살 수 있는 ??? 파괴 방지권 장수입니다. 기본 1장(추가 구매 불가).	??? destruction tickets one ★★★ gear can ever buy. Default 1 (no more after it).	
+??? 파괴 방지권 1장 가격입니다. 쓰면 그 ??? 시도에 1장 소모, 실패해도 ★★★ 장비가 그대로 남습니다.	Price of one ??? ticket. Using it spends it on that ??? try; a failure keeps the ★★★ gear.	
+??? 성공 확률 (%)	??? success chance (%)	
+★★★ 장비만 도전합니다. 실패하면 장비·부착물·기록이 파괴됩니다(??? 방지권을 쓰면 유지). 재료·즉시 강화는 쓸 수 없습니다.	★★★ gear only. Failure destroys the gear, its attachments and records (kept with the ??? ticket). No materials or instant.	
+??? 비용 (루블)	??? cost (roubles)	
+??? 한 번 도전 비용입니다.	Cost of one ??? attempt.	
+??? LEDX (개)	??? LEDX (items)	
+??? 한 번에 필요한 LEDX 수입니다.	LEDX needed for one ??? attempt.	
+신화 성공률 (→1~→5, %)	Mythic chance (→1 to →5, %)	
+신화 천장 (실패당 %p)	Mythic pity (%p per failure)	
+실패할 때마다 그 장비의 다음 신화 성공률에 더합니다. 성공하면 0으로 돌아갑니다.	Added to that gear's next mythic chance after every failure. Resets to 0 on success.	
+신화 천장 최대 (%p)	Mythic pity max (%p)	
+신화 기본 비용 (루블)	Mythic base cost (roubles)	
+→1 시도 비용입니다. 단계마다 아래 배수를 곱합니다.	Cost of the →1 attempt. Each level multiplies it by the factor below.	
+신화 단계별 비용 배수	Mythic cost multiplier per level	
+기본 1.1: 500만 → 550만 → 605만 → 665.5만 → 732.05만.	Default 1.1: 5,000,000 → 5,500,000 → 6,050,000 → 6,655,000 → 7,320,500.	
+신화 LEDX (개)	Mythic LEDX (items)	
+신화 강화 한 번에 필요한 LEDX 수입니다.	LEDX needed for one mythic attempt.	
+신화 재료 요구	Require mythic materials	
+끄면 ???·신화·다시 뽑기에 LEDX·그래픽 카드 없이 루블만 냅니다.	Off: ???, mythic attempts and rerolls cost roubles only, no LEDX or graphics card.	
+신화 하락 방지 비용 (기본 비용 대비 %)	Mythic downgrade protection (% of base cost)	
+→3 시도에만 씁니다. →3·→4·→5는 실패하면 1단계 하락하고, →4·→5는 방지할 수 없습니다. 방지하면 이 비율만큼 더 냅니다.	Only for the →3 attempt. →3, →4 and →5 drop one level on failure; →4 and →5 cannot be protected. Protection costs this share extra.	
+신화 무기 탄 데미지·관통 / 단계 (%)	Mythic weapon damage · penetration per level (%)	
+그 총으로 쏜 탄에만 붙습니다. 스타 배율을 받지 않습니다.	Only bullets fired from that gun. No star multiplier.	
+신화 방어구 받는 피해 감소 / 단계 (%)	Mythic armor damage taken reduction per level (%)	
+신화 방어구·헬멧을 입은 플레이어가 받는 피해를 줄입니다. 머리에 맞으면 절반만 줄입니다.	Reduces the damage the player wearing mythic armor or a mythic helmet takes. Hits to the head are reduced by half as much.	
+신화 방어구 추가 부위 (곳)	Mythic armor extra zones	
+??? 성공 때 아직 못 막는 부위 중 무작위로 더 막는 곳의 수입니다.	Zones the gear does not protect yet that a ??? success adds at random.	
+다시 뽑기 기본 비용 (루블)	Reroll base cost (roubles)	
+추가 부위 한 곳을 다시 뽑는 첫 비용입니다. 그 장비에서 뽑을 때마다 아래 배수를 곱합니다.	First cost to reroll one added zone. Every reroll on that gear multiplies it by the factor below.	
+다시 뽑기 비용 배수	Reroll cost multiplier	
+기본 1.5: 200만 → 300만 → 450만 → 675만.	Default 1.5: 2,000,000 → 3,000,000 → 4,500,000 → 6,750,000.	
+다시 뽑기 그래픽 카드 (개)	Reroll graphics cards (items)	
+다시 뽑기 한 번에 필요한 그래픽 카드 수입니다.	Graphics cards needed for one reroll.	
+장비 강화	Enhance gear	装备强化
+기존 인벤토리 작업의 응답 시간이 초과됐습니다.	Pending inventory actions timed out.	等待中的物品栏操作超时。
+기존 인벤토리 작업을 완료하지 못했습니다.	Pending inventory actions failed.	等待中的物品栏操作未能完成。
+서버 응답을 읽을 수 없습니다.	Cannot read the server response.	无法读取服务器响应。
+서버 응답 시간이 초과됐습니다.	The server response timed out.	服务器响应超时。
+장비 상태	Gear stats	装备属性
+탄 비교	Ammo	弹药对比
+장전 탄	Loaded	已装填
+없음	None	无
+원래	Base	原始
+지금 {0}	Now {0}	当前 {0}
+지금	Now	当前
+다음 {0}	Next {0}	下一级 {0}
+총에 장전된 탄이 없습니다.\n약실이나 탄창에 탄을 넣으면 비교해 보여 줍니다.	No round is loaded.\nPut rounds in the chamber or magazine to compare.	枪内没有装填弹药。\n在枪膛或弹匣中装入弹药后即可对比。
+신화 무기만 탄이 바뀝니다(??? 성공 후).	Only a mythic gun changes its rounds (after ???).	只有神话武器会改变弹药（??? 成功后）。
+이 총에 든 탄·이 총으로 쏘는 탄에만 적용 · 창고의 같은 탄은 그대로	Only rounds in or fired from this gun · the same rounds elsewhere stay	仅对此枪内及由此枪射出的子弹生效 · 仓库中相同弹药不变
+탄 데미지	Damage	伤害
+관통력	Penetration	穿透力
+명중률	Accuracy	精度
+반동	Recoil	后坐力
+내구도 소모	Wear	耐久消耗
+과열	Heat	过热
+불발 확률	Misfire	哑火率
+고장(불발)	Malf. misfire	故障(哑火)
+고장(급탄)	Malf. feed	故障(供弹)
+불이익	Penalties	负面效果
+결과 미확정: 재시도하지 말고 게임 종료 후 재접속하여 장비·루블을 확인해 주세요.	Result unknown: do not retry. Close the game, reconnect and check your gear and roubles.	结果未确定：请勿重试。请退出游戏后重新连接，检查装备和卢布。
+설정이 바뀌었습니다. 견적을 다시 불러와 주세요.	Settings changed. Reload the quote.	设置已更改。请重新获取报价。
+열림	Unlocked	已解锁
+잠김	Locked	已锁定
+저장	Saving	保存
+꺼짐	Off	关闭
+PMC 세션이 없습니다.	No PMC session.	没有 PMC 会话。
+아이템 ID가 없습니다.	No item ID.	没有物品 ID。
+본체·부착물·탄창·탄약이 함께 파괴됩니다.	Gear, attachments, magazines and ammo are destroyed together.	本体、配件、弹匣和弹药将一同损毁。
+본체·부품의 현재 내구도 0 · 최대 내구도 유지	Gear and parts drop to 0 durability · max durability kept	本体和部件当前耐久降为 0 · 最大耐久保留
+선택 항목의 강화 단계 -1 · 다른 항목과 장비 유지	Selected track -1 · other tracks and gear kept	所选项目强化等级 -1 · 其他项目和装备保留
+비용만 소모 · 장비와 기존 강화 단계 유지	Fee only · gear and levels kept	仅消耗费用 · 装备和已有强化等级保留
+일반 강화	Enhance	普通强化
+항목별 +10	Each to +10	每项至 +10
+★★성	★★ Star	★★星
+진화 완료	Evolved	进化完成
+진화 · 효과 ×2	Evolve · ×2	进化 · 效果 ×2
+★★★성	★★★ Star	★★★星
+진화 · 효과 ×3	Evolve · ×3	进化 · 效果 ×3
+초월	Transcend	超越
+★★ 이후 열림	Opens after ★★	★★ 后解锁
+2성 {0}/5 · 3성 {1}/5	2★ {0}/5 · 3★ {1}/5	2星 {0}/5 · 3星 {1}/5
+신화	Mythic	神话
+★★★ 이후 열림	Opens after ★★★	★★★ 后解锁
+데미지·관통 {0}/5	Dmg · pen {0}/5	伤害·穿透 {0}/5
+추가 부위 {0}곳 · {1}/5	+{0} zones · {1}/5	追加部位 {0} 处 · {1}/5
+보험	Insurance	保险
+다시 가입 {0}개	Renew {0}	重新投保 {0} 件
+미가입	None	未投保
+프레스티지	Prestige	声望
+보험 · 반환 {0}개	Ins. · {0} to collect	保险 · 待领取 {0} 件
+보험 · 최대 단계	Ins. · max stage	保险 · 最高阶段
+보험 · 차액 {0}개	Ins. · due {0}	保险 · 差价 {0} 件
+보험 · 등록 {0}	Ins. · {0} registered	保险 · 已登记 {0}
+보험 · 미등록	Ins. · none	保险 · 未登记
+도움말	Help	帮助
+규칙 요약	Rules	规则摘要
+이 항목은 최대 단계입니다. 다른 항목을 선택해 주세요.	This track is at the maximum level. Choose another track.	此项目已达最高等级。请选择其他项目。
+ 진화를 마쳤습니다.	 evolution complete.	 进化已完成。
+★★ 진화를 먼저 마쳐 주세요.	Finish the ★★ evolution first.	请先完成 ★★ 进化。
+모든 항목을 +{0}까지 강화하면 도전할 수 있습니다.	Max every track to +{0} to try.	将所有项目强化至 +{0} 后即可挑战。
+이 초월은 아직 잠겨 있습니다.	This transcendence is still locked.	此超越尚未解锁。
+이 초월은 최대 단계입니다. 다른 트랙을 골라 주세요.	This track is at the maximum level. Choose the other one.	此超越已达最高等级。请选择另一条路线。
+★★★ 진화 후 열립니다.	Opens after ★★★.	★★★ 进化后解锁。
+최대 신화 단계입니다.	Maximum mythic level.	已达最高神话等级。
+견적을 불러오는 중입니다…	Loading quote…	正在获取报价…
+강화 기록을 동기화하지 못했습니다. 서버 모드 버전과 연결을 확인하고 다시 불러와 주세요.	Could not sync enhancement records. Check the server mod version and connection, then reload.	无法同步强化记录。请检查服务器模组版本和连接后重新获取。
+견적 유효 시간이 얼마 남지 않아 새로 불러왔습니다. 비용을 확인하고 다시 눌러 주세요.	The quote was about to expire, so it was reloaded. Check the cost and press again.	报价即将过期，已重新获取。请确认费用后再按一次。
+즉시 강화 준비 중…	Preparing instant…	正在准备即时强化…
+비용이나 확률이 바뀌었습니다. 확인하고 다시 눌러 주세요.	The cost or chance changed. Check it and press again.	费用或成功率已变化。请确认后再按一次。
+강화 준비 중 설정이나 화면이 바뀌었습니다. 견적을 다시 불러와 주세요.	Settings or screen changed while preparing. Reload the quote.	准备期间设置或界面发生变化。请重新获取报价。
+강화 준비가 취소됐습니다. 견적을 다시 불러와 주세요.	Preparation was cancelled. Reload the quote.	准备已取消。请重新获取报价。
+강화 결과를 확인하는 중입니다…	Checking the result…	正在确认结果…
+강화가 거절됐습니다. 서버 오류 안내를 확인하고 견적을 다시 불러와 주세요.	The enhancement was rejected. Check the server error notice and reload the quote.	强化被拒绝。请查看服务器错误提示并重新获取报价。
+\n아직 강화를 전송하지 않았습니다.	\nThe enhancement was not sent yet.	\n强化尚未发送。
+방지권 가격이 {0:N0} ₽로 바뀌었습니다. 확인하고 다시 눌러 주세요.	The ticket price changed to {0:N0} ₽. Check it and press again.	防损毁券价格已变为 {0:N0} ₽。请确认后再按一次。
+파괴 방지권 1장 구매	Bought one destruction ticket	已购买 1 张防损毁券
+서버가 거절했습니다. 서버 오류 안내를 확인해 주세요.	The server rejected it. Check the server error notice.	服务器拒绝了请求。请查看服务器错误提示。
+ · {0:N0} ₽ 소모	 · spent {0:N0} ₽	 · 消耗 {0:N0} ₽
+더 비싼 방탄판 {0}개는 차액을 내야 강화 효과를 받습니다. 강화 창 → 보험·방탄판 → 차액 내고 적용	{0} pricier plate(s) need the price difference paid before they share the enhancement. Enhance window → Insurance · plates → Pay difference	{0} 块更贵的插板需支付差价才能获得强化效果。强化窗口 → 保险 · 插板 → 支付差价并应用
+강화된 방어구에 끼운 방탄판 {0}개가 아직 적용되지 않았습니다. 강화 창 → 보험·방탄판 → 방탄판 적용	{0} plate(s) in enhanced armor are not applied yet. Enhance window → Insurance · plates → Apply plates	装在已强化护甲中的 {0} 块插板尚未应用。强化窗口 → 保险 · 插板 → 应用插板
+보험이 풀렸습니다. 다시 가입하세요	Insurance has lapsed. Please insure again.	保险已失效。请重新投保。
+이전 납부 {0:N0} ₽ 차감	Previous payment {0:N0} ₽ credited	已抵扣之前支付的 {0:N0} ₽
+보험 견적을 불러오는 중입니다…	Loading insurance quote…	正在获取保险报价…
+강화된 장비만 프레스티지 보험에 등록할 수 있습니다.	Only enhanced gear can be registered for prestige insurance.	只有已强化的装备才能登记声望保险。
+강화된 장비만 강화 보험에 가입할 수 있습니다.	Only enhanced gear can be insured.	只有已强化的装备才能投保强化保险。
+등록비가 {0:N0} ₽로 바뀌었습니다. 확인하고 다시 눌러 주세요.	The registration fee changed to {0:N0} ₽. Check it and press again.	登记费已变为 {0:N0} ₽。请确认后再按一次。
+끼운 방탄판 적용 완료	Inserted plates applied	已应用装入的插板
+금액이 {0:N0} ₽로 바뀌었습니다. 확인하고 다시 눌러 주세요.	The amount changed to {0:N0} ₽. Check it and press again.	金额已变为 {0:N0} ₽。请确认后再按一次。
+지금은 갱신할 수 없습니다. 목록을 확인해 주세요.	It cannot be renewed now. Check the list.	现在无法续保。请查看列表。
+프레스티지 보험 갱신 완료	Prestige insurance renewed	声望保险已续保
+{0} 강화 보험 다시 가입	{0} insurance renewed	已重新投保 {0} 强化保险
+부위 다시 뽑기 완료	Zone rerolled	部位已重新抽取
+장비	Gear	装备
+즉시 강화	Instant	即时强化
+{0}와 부착물·탄창이 사라졌습니다	{0}, its attachments and magazines are gone	{0} 及其配件、弹匣已消失
+방탄판	Plates	插板
+현재 강화에 맞게 방탄판을 적용했습니다	Plates now match the current enhancement	已按当前强化应用插板
+신화 달성	Mythic reached	达成神话
+신화 단계가 열렸습니다	The Mythic stage is open	神话阶段已解锁
+추가 보호 부위: 	Extra zones: 	追加防护部位：
+단계당 +{0:0.#}%	+{0:0.#}% per level	每级 +{0:0.#}%
+탄 불이익 감소	Ammo penalties cut	弹药负面效果减少
+단계당 -{0:0.#}%	-{0:0.#}% per level	每级 -{0:0.#}%
+신화 1단계부터 이 총에 든 탄의 불이익이 단계당 {0:0.#}%씩 줄어듭니다	From Mythic 1 the rounds in this gun lose {0:0.#}% of their penalties per level	从神话 1 级起，此枪内弹药的负面效果每级减少 {0:0.#}%
+보호 부위	Protected zones	防护部位
+기존	Before	原有
++{0}곳	+{0}	+{0} 处
+??? 실패 · 파괴 방지권 사용	??? failed · ticket used	??? 失败 · 已使用防损毁券
+{0} ★★★ 그대로 남았습니다	{0} stays ★★★	{0} 保持 ★★★
+??? 파괴 방지권 1장을 썼습니다 · 장비당 1장이라 더 살 수 없습니다	The ??? ticket was used · one per gear, no more to buy	已使用 1 张 ??? 防损毁券 · 每件装备限 1 张，无法再购买
+??? 실패 · 장비 파괴	??? failed · destroyed	??? 失败 · 装备损毁
+{0:0.##}% 판정에서 부서졌습니다	It broke on the roll	在 {0:0.##}% 的判定中损毁
+신화 강화 성공	Mythic level up	神话强化成功
+신화  	Mythic  	神话 
+신화 · 추가 보호 부위	Mythic · extra zones	神话 · 追加防护部位
+추가 보호 부위	Extra zone	追加防护部位
+초월 성공	Transcended	超越成功
+둔탁상 감소	Blunt reduction	钝伤减少
+{0} 진화	{0} evolution	{0} 进化
+{0} 진화 성공	{0} evolved	{0} 进化成功
+모든 항목 효과 ×{0:0.##}	Every effect ×{0:0.##}	所有项目效果 ×{0:0.##}
+파괴 방지권 1장 사용 · 남은 {0}장	Used one ticket · {0} left	使用 1 张防损毁券 · 剩余 {0} 张
+남은 {0}용 방지권 {1}장은 사라졌습니다	{0} unused {1} ticket(s) are gone	剩余的 {0} 用防损毁券 {1} 张已消失
+진화 실패 · 파괴 방지권 사용	Evolution failed · ticket used	进化失败 · 已使用防损毁券
+{0} 유지 · 단계 그대로	{0} kept · levels unchanged	保持 {0} · 等级不变
+파괴 방지권 1장을 썼습니다 · 남은 {0}장	One ticket used · {0} left	已使用 1 张防损毁券 · 剩余 {0} 张
+진화 실패 · 장비 파괴	Evolution failed · destroyed	进化失败 · 装备损毁
+진화 실패는 파괴 방지권으로만 막을 수 있습니다	Only a destruction ticket protects an evolution	进化失败只能用防损毁券防止
+ · 고위험	 · high risk	 · 高风险
+기존 단계 복원	Old level restored	已恢复原等级
+강화 성공	Enhanced	强化成功
+강화 실패 · 보호 발동	Failed · guard triggered	强化失败 · 保护生效
+  +{0} 유지	  +{0} kept	  保持 +{0}
+파괴 방지가 장비를 지켰습니다	The destroy guard saved the gear	防损毁保护保住了装备
+하락 방지가 단계를 지켰습니다	The drop guard kept the level	防降级保护保住了等级
+단계 하락	Level dropped	等级下降
+장비 파괴	Gear destroyed	装备损毁
+강화 기록과 강화 보험도 함께 사라집니다	Its records and enhancement insurance are gone too	强化记录和强化保险也一并消失
+강화 실패	Enhancement failed	强化失败
+다음 성공률 +{0:0.##}%p (누적 +{1:0.##}%p)	Next chance +{0:0.##}%p (total +{1:0.##}%p)	下次成功率 +{0:0.##}%p（累计 +{1:0.##}%p）
+실패 · 하락 방지	Failed · drop guarded	失败 · 防降级
+  {0} 유지	  {0} kept	  保持 {0}
+신화 강화 실패	Mythic attempt failed	神话强化失败
+초월 실패	Transcendence failed	超越失败
+줄어드는 탄 값: 명중률 −, 반동 +, 내구도 소모 +, 과열 +, 고장 확률 · 장전한 탄은 '탄 비교' 탭에서	Ammo values cut: accuracy −, recoil +, wear +, heat +, malfunction chance · loaded rounds in the 'Ammo' tab	降低的弹药数值：精度 −、后坐力 +、耐久消耗 +、过热 +、故障率 · 已装填弹药见“弹药对比”页
+받는 피해 감소	Damage taken reduction	受到伤害减少
+소모 	Spent 	消耗 
+신화 	Mythic 	神话 
+진행 중…	In progress…	进行中…
+판정 중…	Rolling…	判定中…
+장비가 파괴될 수 있습니다	The gear can be destroyed	装备可能会损毁
+이번 시도 파괴 확률 {0:0.##}% · 본체와 부착물 {1}개(탄약 포함)	Destruction chance this try {0:0.##}% · gear and {1} attachment(s) incl. ammo	本次损毁概率 {0:0.##}% · 本体和配件 {1} 个（含弹药）
+ · 즉시 강화	 · instant	 · 即时强化
+{0:0.##}% 확률로 성공 · 실패해도 파괴 방지권으로 ★★★ 장비가 남습니다.	{0:0.##}% to succeed · on a failure the ticket keeps the ★★★ gear.	成功率 {0:0.##}% · 即使失败，防损毁券也会保住 ★★★ 装备。
+{0:0.##}/{1:0.##} 확률로 무기가 성공하거나 부서집니다.	At {0:0.##}/{1:0.##} the weapon succeeds or breaks.	武器将以 {0:0.##}/{1:0.##} 的概率成功或损毁。
+{0:0.##}/{1:0.##} 확률로 방어구가 성공하거나 부서집니다.	At {0:0.##}/{1:0.##} the armor succeeds or breaks.	护甲将以 {0:0.##}/{1:0.##} 的概率成功或损毁。
+ · ??? 방지권 1장	 · 1 ??? ticket	 · ??? 防损毁券 1 张
+진행하시겠습니까?	Proceed?	确定要继续吗？
+부위 다시 뽑기	Reroll a zone	重新抽取部位
+ → 남은 {0}곳 중 무작위	 → one of {0} at random	 → 从剩余 {0} 处中随机
+되돌릴 수 없습니다. 다음 다시 뽑기는 ×1.5	Cannot be undone. The next reroll costs ×1.5	无法撤销。下次重新抽取费用 ×1.5
+확인	OK	确定
+이 창을 닫을 때까지 다시 묻지 않기	Don't ask again until this window closes	关闭此窗口前不再询问
+취소	Cancel	取消
+진행	Proceed	继续
+★★ 진화	★★ evolution	★★ 进化
+★★★ 진화	★★★ evolution	★★★ 进化
+원본	Base	原始
+강화 후	Enhanced	强化后
+✦ 신화	✦ Mythic	✦ 神话
+★★★ 장비만 도전할 수 있는 마지막 단계입니다.	The final step, open only to ★★★ gear.	仅 ★★★ 装备可挑战的最终阶段。
+성공	Success	成功
+실패 · ★★★ 유지	Fail · ★★★ kept	失败 · 保持 ★★★
+파괴	Destroyed	损毁
+추가로 막을 수 있는 부위 {0}곳 · 성공하면 무작위 {1}곳	{0} zone(s) it can still cover · success adds {1} at random	还可追加防护 {0} 处 · 成功后随机追加 {1} 处
+성공률 올리기·즉시 강화는 쓸 수 없습니다. ??? 파괴 방지권(장비당 1장)을 쓰면 실패해도 장비가 남습니다. 성공하면 신화 단계가 열립니다.	No boosts or instant. The ??? ticket (one per gear) keeps the gear on a failure. Success unlocks the Mythic stage.	无法使用成功率加成或即时强化。使用 ??? 防损毁券（每件装备 1 张）即使失败装备也会保留。成功后解锁神话阶段。
+비용 	Cost 	费用 
+ (보유 {0:N0})	 (own {0:N0})	 （持有 {0:N0}）
+닫기	Close	关闭
+처리 중…	Working…	处理中…
+견적 다시 불러오기	Reload quote	重新获取报价
+루블·LEDX 부족	Not enough roubles or LEDX	卢布或 LEDX 不足
+도전하기	Challenge	挑战
+강화 보험	Enhancement insurance	强化保险
+지금 가입	Current	当前投保
+ · 반환 {0:0.##}%	 · return {0:0.##}%	 · 返还 {0:0.##}%
+강화 가치	Enhanced value	强化价值
+풀린 장비도 표시	Released policies included	也显示已失效的
+현재 가치	Current value	当前价值
+강화 성공·더 비싼 방탄판 교체 시 풀림. 재가입료 = 새 보험료 − 이전 납부액 (최소 0 ₽).	A successful upgrade or a more expensive plate releases the policy. Re-enrollment = new fee − prior payment (minimum 0 ₽).	强化成功或换上更贵的插板时保险失效。重新投保费 = 新保费 − 之前已付金额（最低 0 ₽）。
+레이드에서 잃으면 확률만큼 강화된 채 우편으로 돌아옵니다. 한 번 쓰면 소모되고, 강화에 성공하거나 더 비싼 방탄판 차액을 내면 다시 가입해야 합니다. 상인 보험은 강화를 지켜 주지 않습니다(돌아와도 +0).	If lost in a raid, it comes back enhanced by mail at this chance. Used up once it pays out; a successful upgrade or a paid plate difference needs a new policy. Trader insurance does not keep enhancements (returns +0).	在战局中丢失时，按此概率以强化状态通过邮件返还。使用一次即消耗；强化成功或支付插板差价后需重新投保。商人保险不会保留强化（返还为 +0）。
+견적 확인 중…	Checking quote…	正在确认报价…
+{0} 보험 가입 · {1:N0} ₽	Buy {0} · {1:N0} ₽	投保 {0} · {1:N0} ₽
+방탄판 차액을 먼저 내 주세요	Pay the plate difference first	请先支付插板差价
+이미 같은 등급 이상 가입됨	Already insured at this tier or higher	已投保同等级或更高等级
+{0} 강화 보험 가입 완료	{0} insurance purchased	已投保 {0} 强化保险
+가입됨	Owned	已投保
+강화된 채 반환	Returned enhanced	强化状态返还
+보험료	Fee	保费
+돌아오는 시간	Return time	返还时间
+즉시	Instant	即时
+{0:0}일 뒤	After {0:0} day(s)	{0:0} 天后
+{0:0.#}시간 뒤	After {0:0.#} h	{0:0.#} 小时后
+돌아오는 중	On the way back	返还中
+레이드에서 잃은 강화 장비 · 우편 도착까지	Enhanced gear lost in raids · until the mail arrives	在战局中丢失的强化装备 · 距邮件到达
+없음 · 프리미엄은 잃으면 레이드 직후 바로 우편으로 돌아옵니다(기다리는 시간 없음)	None · Premium mails lost gear back right after the raid (no wait)	无 · 尊享保险在战局结束后立即通过邮件返还（无需等待）
+도착 처리 중	Arriving	到达处理中
+{0}시간 {1}분 남음	{0} h {1} min left	剩余 {0} 小时 {1} 分
+끼운 방탄판·내피 {0}개 · 	Inserted plates/inserts: {0} · 	已装入插板·内衬 {0} 个 · 
+모두 적용됨	All applied	全部已应用
+더 비싼 방탄판 · 차액 {0:N0} ₽ 필요	Pricier plates · {0:N0} ₽ difference due	更贵的插板 · 需差价 {0:N0} ₽
+미적용 {0}개	Not applied: {0}	未应用 {0} 个
+ · 최대 내구도 초월 효과가 빠진 부품 {0}개	 · {0} part(s) missing the max durability bonus	 · {0} 个部件缺少最大耐久超越效果
+값을 치른 방탄판 이하라면 끼우는 즉시 무료로 적용됩니다. 더 비싼 방탄판만 차액을 냅니다.	Plates worth no more than those paid for apply for free at once. Only pricier plates pay the difference.	不超过已付价值的插板装入后立即免费应用。只有更贵的插板需支付差价。
+최대 내구도 다시 맞추기 · 무료	Restore max durability · free	重新校正最大耐久 · 免费
+차액 내고 적용 · {0:N0} ₽	Pay difference and apply · {0:N0} ₽	支付差价并应用 · {0:N0} ₽
+방탄판 적용 · 무료	Apply plates · free	应用插板 · 免费
+항목마다 +10까지 따로 올립니다.\n성공률 75%에서 단계마다 5%p씩 내려갑니다.\n+5까지는 실패해도 비용만 나갑니다.	Each item goes up to +10 on its own.\nThe chance starts at 75% and drops 5%p per level.\nUp to +5, a failure only costs money.	每个项目分别强化至 +10。\n成功率从 75% 开始，每级降低 5%p。\n+5 以前失败只消耗费用。
+고위험 구간 (+6 시도부터)	High risk (attempts from +6)	高风险区间（从 +6 尝试开始）
+무기·방어구 모두, 실패하면 그중 25%는 파괴, 75%는 1단계 하락입니다.\n파괴 방지·하락 방지로 각각 막을 수 있습니다. 추가 비용은 기본 강화 비용 × 시도 단계² × 파괴 방지 10% / 하락 방지 7% (예: +6 시도 = 기본 비용의 3.6배 / 2.52배).\n파괴될 수 있는 시도(파괴 방지 없이 +6 이상, 스타 진화)는 한 번 더 묻습니다. 창을 닫을 때까지 끌 수 있습니다.	For weapons and armor, a failure destroys the item 25% of the time and drops one level 75% of the time.\nDestroy guard and drop guard block each one. They cost the base cost × attempt level² × 10% (destroy) / 7% (drop), e.g. a +6 attempt adds 3.6× / 2.52× the base cost.\nAn attempt that can destroy the item (unguarded +6 and up, star evolution) asks once more; you can silence it until the window closes.	武器和护甲失败时，25% 损毁，75% 下降 1 级。\n防损毁和防降级可分别阻止。额外费用 = 基础强化费用 × 尝试等级² × 防损毁 10% / 防降级 7%（例：+6 尝试 = 基础费用的 3.6 倍 / 2.52 倍）。\n可能损毁的尝试（无防损毁的 +6 及以上、星级进化）会再确认一次，可在关闭窗口前关闭此提示。
+성공률 올리기	Boost chance	提高成功率
+재료를 넣은 개수만큼 성공률이 오릅니다. 재료는 2종까지 고를 수 있습니다.\n독택 개당 +0.1% (최대 5%) · 그래픽 카드 개당 +1% (최대 10%) · 비트코인 개당 +5% (최대 20%).\n재료마다 개당 루블도 함께 냅니다. 재료와 루블은 성공·실패와 관계없이 소모됩니다.	Each piece adds chance. Pick up to 2 kinds.\nDogtag +0.1% each (max 5%) · Graphics card +1% each (max 10%) · Bitcoin +5% each (max 20%).\nEach piece also costs roubles. Materials and roubles are spent on success or failure.	按放入的材料数量提高成功率。最多可选 2 种。\n狗牌每个 +0.1%（最多 5%）· 显卡每个 +1%（最多 10%）· 比特币每个 +5%（最多 20%）。\n每个材料还需支付卢布。无论成功或失败，材料和卢布都会消耗。
+충전 게이지 없이 바로 결과를 봅니다.\n한 번에 50,000 ₽가 더 들고, 확률은 같습니다.\n일반 강화·초월·신화에서 쓸 수 있고, ★★·★★★ 진화와 ??? 에는 없습니다.	Skips the charge gauge and shows the result at once.\nCosts 50,000 ₽ more per use; the chance is the same.\nAvailable for enhancing, transcending and mythic attempts, not for ★★ / ★★★ evolution or ???.	跳过蓄力进度条，直接查看结果。\n每次多花 50,000 ₽，成功率不变。\n可用于普通强化、超越和神话，不能用于 ★★ / ★★★ 进化和 ???。
+방어구 방탄판	Armor plates	护甲插板
+방어구에 끼운 방탄판도 방어구 강화를 함께 받습니다.\n값을 치른 방탄판 이하라면 끼우는 즉시 무료로 적용되고, 더 비싼 방탄판만 차액을 한 번 냅니다.	Plates in the armor share its enhancement.\nPlates worth no more than those paid for apply for free; only a pricier plate needs the difference paid once.	装在护甲中的插板也会获得护甲的强化。\n不超过已付价值的插板装入后立即免费应用，只有更贵的插板需支付一次差价。
+★★ / ★★★ 진화	★★ / ★★★ evolution	★★ / ★★★ 进化
+모든 항목이 +10이면 도전합니다.\n성공률 30% / 10%, 실패하면 장비가 파괴됩니다.\n성공하면 강화 효과 ×2 / ×3.\n파괴 방지권: 쓰면 시도할 때마다(성공·실패 관계없이) 1장 소모, 실패해도 장비가 남습니다. ★★용과 ★★★용은 따로이고, ★★ 성공 뒤 남은 ★★용은 사라집니다. 장비마다 ★★용 최대 3장(1장 100만 ₽), ★★★용 최대 2장(1장 270만 ₽)만 살 수 있고, 다 사면 더 살 수 없습니다.	Open when every item is +10.\n30% / 10% chance; a failure destroys the item.\nSuccess multiplies the effects ×2 / ×3.\nDestruction ticket: one is spent on every attempt it is used for (success or failure); on failure the item stays. ★★ and ★★★ tickets are separate, and ★★ tickets left after the ★★ success are gone. Per item you can buy at most 3 for ★★ (1,000,000 ₽ each) and 2 for ★★★ (2,700,000 ₽ each), never more.	所有项目达到 +10 时可以挑战。\n成功率 30% / 10%，失败则装备损毁。\n成功后强化效果 ×2 / ×3。\n防损毁券：使用时每次尝试（无论成功或失败）消耗 1 张，失败装备也会保留。★★ 用和 ★★★ 用分开，★★ 成功后剩余的 ★★ 用券会消失。每件装备 ★★ 用最多 3 张（每张 100 万 ₽），★★★ 用最多 2 张（每张 270 万 ₽），买完后不能再买。
+★★ 이상 장비의 추가 트랙(각 5단계)입니다.\n파괴는 없고, 실패할수록 다음 성공률이 오릅니다(최대 +30%p).\n→4·→5는 실패 시 1단계 하락합니다. 하락 방지권은 →4 시도에만 쓸 수 있습니다.	Extra tracks (5 levels each) for ★★ gear and up.\nNo destruction; each failure raises the next chance (up to +30%p).\n→4 and →5 drop one level on failure. Drop protection is for the →4 attempt only.	★★ 及以上装备的追加路线（各 5 级）。\n不会损毁，每次失败都会提高下次成功率（最多 +30%p）。\n→4 和 →5 失败时下降 1 级。防降级券只能用于 →4 尝试。
+??? / 신화	??? / Mythic	??? / 神话
+★★★ 장비에만 ??? 칸이 열립니다. 50% 성공 / 50% 파괴, 도전 비용은 8,000,000 ₽ + LEDX 1개입니다.\n??? 파괴 방지권: 장비당 1장만(추가 구매 불가), 1장 5,000,000 ₽. 쓰면 그 시도에 1장 소모되고, 실패해도 ★★★ 장비가 그대로 남습니다(성공률은 그대로 50%).\n성공하면 별 대신 ✦ 신화 표시가 붙고 신화 단계(0~5)가 열립니다. 성공률 40·30·20·15·10%, 실패할 때마다 +3%p(최대 +30%p). 비용은 500만 ₽에서 단계마다 ×1.1 + LEDX 1개. →3·→4·→5는 실패 시 1단계 하락하고, 하락 방지권은 →3 시도에만 쓸 수 있습니다.\n무기: 탄 데미지·관통력 단계당 +3% (최대 15%), 이 총에 든 탄의 불이익(명중률 −·반동 +·내구도 소모 +·과열 +·고장 확률) 단계당 16% 감소(최대 80%). 이 총으로 쏠 때만 적용됩니다.\n방탄복: 아직 못 막는 부위 중 무작위 2곳을 더 막고, 신화 단계마다 받는 피해 -10% (최대 50%, 머리에 맞으면 절반). 헬멧·마스크: 단계마다 -5% (최대 25%).\n추가 부위는 한 곳씩 다시 뽑을 수 있습니다: 200만 ₽ + 그래픽 카드 1개, 다시 뽑을 때마다 ×1.5.	The ??? slot opens only on ★★★ gear. 50% success / 50% destroyed; a try costs 8,000,000 ₽ + 1 LEDX.\n??? ticket: one per gear, ever, 5,000,000 ₽. Using it spends it on that try; a failure then keeps the ★★★ gear (the chance stays 50%).\nSuccess swaps the stars for a ✦ Mythic mark and opens Mythic levels 0-5: 40·30·20·15·10%, +3%p per failure (up to +30%p), 5,000,000 ₽ ×1.1 per level + 1 LEDX. →3, →4 and →5 drop one level on failure; drop protection is for the →3 attempt only.\nWeapons: bullet damage and penetration +3% per level (max 15%), and the rounds in this gun lose 16% of their penalties (accuracy −, recoil +, wear +, heat +, malfunction chance) per level (max 80%), only when fired from this gun.\nBody armor: two random zones it did not cover become covered, then damage taken -10% per level (max 50%, half on head hits). Helmets and masks: -5% per level (max 25%).\nEach extra zone can be rerolled: 2,000,000 ₽ + 1 graphics card, ×1.5 per reroll.	只有 ★★★ 装备会开启 ??? 栏。50% 成功 / 50% 损毁，挑战费用为 8,000,000 ₽ + LEDX 1 个。\n??? 防损毁券：每件装备仅限 1 张（不可追加购买），每张 5,000,000 ₽。使用时该次尝试消耗 1 张，即使失败 ★★★ 装备也会保留（成功率仍为 50%）。\n成功后星标变为 ✦ 神话标记，并开启神话等级（0~5）。成功率 40·30·20·15·10%，每次失败 +3%p（最多 +30%p）。费用从 500 万 ₽ 起每级 ×1.1 + LEDX 1 个。→3·→4·→5 失败时下降 1 级，防降级券只能用于 →3 尝试。\n武器：子弹伤害和穿透力每级 +3%（最多 15%），此枪内弹药的负面效果（精度 −·后坐力 +·耐久消耗 +·过热 +·故障率）每级减少 16%（最多 80%）。仅在用此枪射击时生效。\n防弹衣：在尚未防护的部位中随机追加 2 处，每个神话等级受到伤害 -10%（最多 50%，头部命中减半）。头盔·面具：每级 -5%（最多 25%）。\n追加部位可逐个重新抽取：200 万 ₽ + 显卡 1 个，每次重新抽取 ×1.5。
+레이드에서 잃었을 때 확률만큼 강화된 채 우편으로 돌아옵니다.\n일반 20% · 1일 뒤 / 고급 55% · 12시간 뒤 / 프리미엄 99% · 즉시.\n한 번 쓰면 소모되고, 강화하면 다시 가입해야 합니다.	If lost in a raid, the gear comes back enhanced by mail at the tier chance.\nBasic 20% · after 1 day / Advanced 55% · after 12 h / Premium 99% · instant.\nUsed up once it pays out; enhancing again needs a new policy.	在战局中丢失时，按等级概率以强化状态通过邮件返还。\n基础 20% · 1 天后 / 高级 55% · 12 小时后 / 尊享 99% · 即时。\n使用一次即消耗，再次强化后需重新投保。
+프레스티지 보험	Prestige insurance	声望保险
+프레스티지를 달성해 다음 단계로 넘어갈 때만, 등록한 강화 장비가 강화된 채 우편으로 돌아옵니다. 레이드에서 죽거나 잃은 장비는 돌려주지 않습니다.\n보험료는 장비 가치 × 10%(F12 설정). 추가 강화·방탄판 교체에도 등록은 유지되고, 가치가 오르면 차액만 냅니다. 차액을 안 내면 마지막으로 낸 가치(그때의 강화 단계)까지만 보장합니다. 가치가 내려가도 환불은 없습니다.\n반환되면 등록이 끝나므로 다음 프레스티지에 받으려면 다시 등록하세요. 최대 프레스티지에서는 다음 단계가 없어 등록할 수 없습니다.	Registered enhanced gear comes back by mail, still enhanced, only when you achieve prestige and advance to the next stage. Gear lost on death or in a raid is not returned.\nThe fee is the gear value × 10% (F12 setting). Registration survives upgrades and plate swaps; when the value rises you pay only the difference. Without it the gear is covered up to the last paid value (its levels at that payment). A lower value is not refunded.\nA return ends the registration, so register again for the next prestige. At the maximum prestige there is no next stage, so it cannot be registered.	只有在达成声望并进入下一阶段时，已登记的强化装备才会以强化状态通过邮件返还。在战局中阵亡或丢失的装备不会返还。\n保费 = 装备价值 × 10%（F12 设置）。追加强化或更换插板后登记仍然保留，价值上升时只需支付差价。不支付差价则只保障到最后一次支付时的价值（当时的强化等级）。价值下降时不退款。\n返还后登记即结束，想在下次声望时领取需重新登记。最高声望没有下一阶段，无法登记。
+접기	Hide	收起
+열기	Show	展开
+{0:D2} · 최대	{0:D2} · MAX	{0:D2} · 最高
+✦ 신화 {0}	✦ Mythic {0}	✦ 神话 {0}
+ · 초월 {0}	 · Transcend {0}	 · 超越 {0}
+반환되면 등록·납부 기록은 끝납니다. 다음 반환을 받으려면 다시 등록하세요.	Return ends the registration and payment record. Register again for the next return.	返还后登记和支付记录即结束。想再次领取请重新登记。
+차액을 안 낸 장비는 마지막으로 낸 가치까지 보장합니다.	Without paying the difference, coverage is capped at the last paid value.	未支付差价的装备只保障到最后一次支付的价值。
+프레스티지를 달성해 다음 단계로 넘어갈 때만, 등록한 장비가 우편으로 돌아옵니다.	Registered gear returns by mail only when you achieve prestige and advance to the next stage.	只有在达成声望并进入下一阶段时，已登记的装备才会通过邮件返还。
+레이드에서 죽거나 잃어버린 장비는 돌려주지 않습니다.	Gear lost on death or in a raid is not returned.	在战局中阵亡或丢失的装备不会返还。
+최대 프레스티지({0})에서는 다음 단계가 없어 보험이 작동하지 않습니다	At maximum prestige ({0}), there is no next stage, so this insurance does not work.	最高声望（{0}）没有下一阶段，保险不会生效
+작동 불가 · 최대 단계	Unavailable · maximum stage	无法生效 · 最高阶段
+등록 유지 · 차액 발생	Registered · difference due	已登记 · 产生差价
+등록됨 · 납부 완료	Registered · paid	已登记 · 已支付
+미등록	Unregistered	未登记
+다음 프레스티지 단계가 없습니다.	There is no next prestige stage.	没有下一个声望阶段。
+추가 강화해도 등록은 유지됩니다.	Registration stays after further upgrades.	追加强化后登记仍然保留。
+다음 프레스티지 반환을 받으려면 등록하세요.	Register for a return at the next prestige.	想在下次声望时领取返还请登记。
+마지막 납부 가치 	Last paid value 	最后支付价值 
+장비·강화·부착물 포함	Gear, upgrades and attachments included	包括装备、强化和配件
+지금 장비 · 	Current gear · 	当前装备 · 
+장비 가치 × {0:0.##}% · F12 설정	Gear value × {0:0.##}% · F12 setting	装备价值 × {0:0.##}% · F12 设置
+다음 단계 없음	No next stage	没有下一阶段
+ · 최소 0	 · min 0	 · 最低 0
+이미 낸 금액	Already paid	已支付金额
+누적 납부 기준	Cumulative payment	按累计支付计算
+현재 가치 보험료	Fee at current value	按当前价值的保费
+지금 낼 차액	Difference due	现在需支付的差价
+차액 = 현재 보험료 − 이미 낸 금액 (최소 0 ₽)	Difference = current fee − amount paid (minimum 0 ₽)	差价 = 当前保费 − 已支付金额（最低 0 ₽）
+장비별 차액만 납부	Pay only the difference per item	只需按装备支付差价
+마지막 납부 가치	Last paid value	最后支付价值
+추가 강화·방탄판 교체에도 등록 유지. 가치가 오르면 차액만 냅니다.	Registration survives upgrades and plate swaps. Pay only the difference when value rises.	追加强化或更换插板后登记仍然保留。价值上升时只需支付差价。
+가치가 내려가면 추가 납부 0 ₽. 이미 낸 금액은 환불하지 않습니다.	If value falls, the extra fee is 0 ₽. Prior payments are not refunded.	价值下降时追加费用为 0 ₽。已支付的金额不退款。
+최대 프레스티지({0})에서는 다음 단계가 없어 작동하지 않습니다. 레이드에서 잃은 장비는 강화 보험이 맡습니다.	It does not work at maximum prestige ({0}): there is no next stage. Gear lost in raids is covered by the enhancement insurance.	最高声望（{0}）没有下一阶段，因此不会生效。在战局中丢失的装备由强化保险负责。
+등록 · 반환 규칙	Registration · return rules	登记 · 返还规则
+최대 단계 · 등록 불가	Maximum stage · unavailable	最高阶段 · 无法登记
+등록됨 · 추가 납부 없음	Registered · nothing due	已登记 · 无需追加支付
+차액 내고 갱신 · 	Pay difference & renew · 	支付差价并更新 · 
+등록 · 	Register · 	登记 · 
+프레스티지 보험 차액 납부	Prestige insurance difference paid	已支付声望保险差价
+프레스티지 보험 등록	Registered for prestige insurance	已登记声望保险
+프레스티지 {0:D2}{1} 넘어오기 전에 등록한 장비입니다. 받으면 창고로 들어옵니다.	Gear registered before advancing to prestige {0:D2}. Collecting puts it in your stash.	这是进入声望 {0:D2} 之前登记的装备。领取后会放入仓库。
+반환 우편 도착 · {0}	Return mail arrived · {0}	返还邮件已到达 · {0}
+프레스티지 {0:D2} → {1:D2}	Prestige {0:D2} → {1:D2}	声望 {0:D2} → {1:D2}
+ · 조준경·소음기·탄창 보존	 · scope, suppressor, magazine kept	 · 保留瞄准镜、消音器、弹匣
+ · 방탄판 보존	 · plates kept	 · 保留插板
+메시지 → 시스템 우편에서 첨부 장비를 받으세요	Collect the attachments from Messenger → system mail	请在 消息 → 系统邮件 中领取附件装备
+마지막으로 낸 가치까지 보장	Covered up to last paid value	保障到最后支付的价值
+가치 하락 · 환불 없음	Value fell · no refund	价值下降 · 不退款
+현재 가치 보장	Current value covered	保障当前价值
+현재 	Now 	当前 
+이미 납부 	Paid 	已支付 
+등록 유지 · 차액 대기	Registered · difference due	已登记 · 待付差价
+등록됨	Registered	已登记
+차액 내고 갱신	Pay difference & renew	支付差价并更新
+납부 완료	Paid	已支付
+강화 성공·더 비싼 방탄판으로 풀림	Released by an upgrade or a pricier plate	因强化成功或更贵的插板而失效
+보험료 	Fee 	保费 
+이전 납부 	Paid 	已支付 
+풀림 · 다시 가입	Released · re-enroll	已失效 · 重新投保
+가입 중	Active	投保中
+등록된 장비 	Registered gear 	已登记装备 
+장비 · 등급	Gear · tier	装备 · 等级
+차액	Difference	差价
+상태 / 갱신	Status / renew	状态 / 更新
+등록된 장비가 없습니다.	No registered gear.	没有已登记的装备。
+강화 기록	Upgrade record	强化记录
+그대로 보존	Kept	原样保留
+★ 진화	★ Evolution	★ 进化
+초월 · 신화	Transcend · mythic	超越 · 神话
+달성 기록 보존	Earned progress kept	保留达成记录
+부착물	Attachments	配件
+함께 반환	Returned together	一同返还
+{0}장 함께 반환	{0} returned together	{0} 块一同返还
+반환 시 보존	Preserved on return	返还时保留
+프레스티지 진행	Prestige progress	声望进度
+다음 단계 없음 · 작동 불가	No next stage · unavailable	没有下一阶段 · 无法生效
+다음 단계로 넘어갈 때 1회 반환	One return on advancing to the next stage	进入下一阶段时返还 1 次
+★★ 진화 조건	★★ requirements	★★ 进化条件
+★★★ 진화 조건	★★★ requirements	★★★ 进化条件
+초월 트랙	Transcendence tracks	超越路线
+강화 목록	Upgrades	强化列表
+ · 최대	 · max	 · 最高
+조건 충족	Met	条件已满足
++{0} 필요	Needs +{0}	需要 +{0}
+★★★ 진화 후 열림	Opens after ★★★	★★★ 进化后解锁
+탄 데미지 · 관통력	Bullet damage · penetration	子弹伤害 · 穿透力
+피격 피해 감소	Damage taken	受到伤害减少
+추가 부위 {0}	Extra zone {0}	追加部位 {0}
+눌러서 다시 뽑기	Click to reroll	点击重新抽取
+수직·수평 반동	Vertical & horizontal	垂直·水平后坐力
+인체공학	Ergonomics	人机工效
+탄 퍼짐	Spread	散布
+장비 페널티	Gear penalty	装备惩罚
+최대	Max	最大
+방어등급	Armor class	防护等级
+고장 확률 감소	Malfunction reduction	故障率降低
+과열 증가 감소	Overheat buildup reduction	过热累积降低
+발사속도 증가	Fire rate bonus	射速提升
+증가 상한	Bonus limit	提升上限
+강화 효과	Effect	强化效果
+현재 → 성공 시	Now → on success	当前 → 成功后
+성공률	Success chance	成功率
+기본 	Base 	基础 
++ 천장 	+ pity 	+ 保底 
++ 재료 	+ materials 	+ 材料 
+최대 단계	Max level	最高等级
+재료 {0}종까지	Up to {0} kinds	材料最多 {0} 种
+최대 단계라 재료가 필요 없습니다	Maxed: no materials needed	已达最高等级，无需材料
+성공률 100%라 재료가 필요 없습니다	Already 100%: no materials needed	成功率已为 100%，无需材料
+이 시도에는 재료를 쓸 수 없습니다	No materials for this attempt	此次尝试不能使用材料
+선택 	Picked 	已选 
+개당 +{0:0.##}% · {1:N0} ₽	each +{0:0.##}% · {1:N0} ₽	每个 +{0:0.##}% · {1:N0} ₽
+보유 {0:N0}	own {0:N0}	持有 {0:N0}
+독택	Dogtag	狗牌
+그래픽 카드	Graphics card	显卡
+비트코인	Bitcoin	比特币
+항상 성공	Always succeeds	必定成功
+실패해도 방지권으로 장비 유지	Fail: ticket keeps the gear	失败时防损毁券保留装备
+실패 시 장비 파괴	Fail: gear destroyed	失败时装备损毁
+실패해도 보호	Fail: guarded	失败也有保护
+실패 시 파괴 {0:0.##}% · 하락 {1:0.##}%	Fail: destroy {0:0.##}% · drop {1:0.##}%	失败时损毁 {0:0.##}% · 降级 {1:0.##}%
+실패해도 하락 방지	Fail: drop guarded	失败也防降级
+실패 시 1단계 하락	Fail: drops one level	失败时下降 1 级
+실패 시 천장 +{0:0.##}%p	Fail: pity +{0:0.##}%p	失败时保底 +{0:0.##}%p
+실패 시 비용만 소모	Fail: cost only	失败只消耗费用
+강화비 	Cost 	强化费 
+보호비·방탄판 차액 	Guards & plate diff. 	保护费·插板差价 
+방탄판 차액 	Plate difference 	插板差价 
+보호비 	Guards 	保护费 
+재료 루블 	Materials 	材料卢布 
+합계	Total	合计
+보유 	Owned 	持有 
+??? 파괴 방지권 · 장비당 1장	??? destruction ticket · one per gear	??? 防损毁券 · 每件装备 1 张
+{0} 진화 파괴 방지권	{0} destruction ticket	{0} 进化防损毁券
+보유 {0}장 · 구매 {1} / {2}	Held {0} · bought {1} / {2}	持有 {0} 张 · 已购 {1} / {2}
+ (더 못 삼)	 (no more)	 （无法再买）
+ · ★★용은 못 씀	 · ★★ tickets don't count	 · ★★ 用券不可用
+방지권 사용\n(실패해도 ★★★ 유지)	Use the ticket\n(★★★ kept on failure)	使用防损毁券\n（失败也保持 ★★★）
+방지권 사용\n(실패해도 장비 유지)	Use a ticket\n(gear kept on failure)	使用防损毁券\n（失败也保留装备）
+더 살 수 없음	Sold out	无法再购买
+1장 구매 · {0:N0} ₽	Buy one · {0:N0} ₽	购买 1 张 · {0:N0} ₽
+파괴 방지	Destroy guard	防损毁
++6부터	From +6	+6 起
+하락 방지	Drop guard	防降级
+ · →4 시도에서만	 · →4 only	 · 仅限 →4 尝试
+ · →3 시도에서만	 · →3 only	 · 仅限 →3 尝试
+방탄판 {0}장	{0} plates	插板 {0} 块
+차액 {0:N0} ₽	Owes {0:N0} ₽	差价 {0:N0} ₽
+미적용 {0}장	{0} not applied	未应用 {0} 块
+차액 내고 적용	Pay and apply	支付差价并应用
+적용	Apply	应用
+재료가 부족합니다: 	Missing materials: 	材料不足：
+기존 단계 유지 · 첫 효과 선택은 무료 · 100% 적용	Keeps old level · first effect choice is free · 100%	保留原等级 · 首次选择效果免费 · 100% 应用
+진화 시도	Evolve	尝试进化
+초월 시도	Transcend	尝试超越
+신화 강화	Mythic attempt	神话强化
+강화 시도	Enhance	尝试强化
+견적 확인 중	Checking quote	正在确认报价
+재료 부족	Not enough materials	材料不足
+루블·재료 부족	Not enough roubles or materials	卢布·材料不足
+기존 단계에 효과 적용 · 무료	Apply effect to old level · free	对原等级应用效果 · 免费
+이 항목은 최대 단계	Track maxed	此项目已达最高
+ 완료	 done	 完成
+조건 미달	Requirements not met	条件未满足
+이 초월은 최대 단계	Track maxed	此超越已达最高
+최대 신화 단계	Mythic maxed	已达最高神话等级
+3성 초월	3-star transcendence	3星超越
+2성 초월	2-star transcendence	2星超越
+수평 반동 감소	Horizontal recoil reduction	水平后坐力降低
+최대 내구도 증가	Max durability bonus	最大耐久提升
+방어등급 증가 · 둔탁상 감소	Armor class · blunt reduction	防护等级提升 · 钝伤减少
+고장·과열 감소	Malfunction · overheat	故障·过热降低
+방어등급 · 둔탁상	Class · blunt	防护等级 · 钝伤
+목록	MENU	列表
+새로고침	Refresh	刷新
+장비가 파괴되었습니다	Gear destroyed	装备已损毁
+장비 이미지를 불러오는 중…	Loading gear image…	正在加载装备图片…
+파괴됨	Destroyed	已损毁
+초월 	Transcend 	超越 
+방어구	Armor	护甲
+ · 방탄판 {0}장	 · {0} plates	 · 插板 {0} 块
+무기	Weapon	武器
+ · {0} 완료	 · {0} done	 · {0} 完成
+ · {0} 도전 가능	 · {0} ready	 · 可挑战 {0}
+2성 초월 {0} · 3성 초월 {1}	2★ track {0} · 3★ track {1}	2星超越 {0} · 3星超越 {1}
+★★★ 달성 · ??? 도전 가능	★★★ reached · ??? open	已达成 ★★★ · 可挑战 ???
+ · 탄 데미지·관통력 단계당 +{0:0.#}% · 탄 불이익 단계당 -{1:0.#}%	 · damage & penetration +{0:0.#}% per level · ammo penalties -{1:0.#}% per level	 · 子弹伤害·穿透力每级 +{0:0.#}% · 弹药负面效果每级 -{1:0.#}%
+ · 받는 피해 단계당 -{0:0.#}%(머리 방어구)	 · damage taken -{0:0.#}% per level (head gear)	 · 受到伤害每级 -{0:0.#}%（头部防具）
+ · 받는 피해 단계당 -{0:0.#}%(머리에 맞으면 절반)	 · damage taken -{0:0.#}% per level (half on head hits)	 · 受到伤害每级 -{0:0.#}%（头部命中减半）
+ · 추가 보호 부위 	 · extra zones 	 · 追加防护部位 
+3차 스타 강화 진화 성공!	3rd star evolved!	第三次星级进化成功！
+스타 강화 진화 성공!	Star evolved!	星级进化成功！
+강화 성공!	Enhanced!	强化成功！
+강화 단계 하락	Level dropped	强化等级下降
+ 진화 완료 · 모든 강화 효과에 추가 보너스 적용	 evolved · bonus applied to every effect	 进化完成 · 所有强化效果获得额外加成
+ 달성	 reached	 达成
+파괴 방지 발동 · 장비와 모든 강화 단계를 지켰습니다.	Destruction protection triggered · gear and all levels kept.	防损毁生效 · 装备和所有强化等级均已保住。
+단계 하락 방지 발동 · 모든 강화 단계를 지켰습니다.	Downgrade protection triggered · all levels kept.	防降级生效 · 所有强化等级均已保住。
+장비 본체·부착물·탄창·탄약이 파괴되었습니다.	The gear, attachments, magazines and ammo were destroyed.	装备本体、配件、弹匣和弹药已损毁。
+{0} +{1}로 하락 · 다른 항목은 유지됩니다.	{0} dropped to +{1} · other tracks kept.	{0} 降至 +{1} · 其他项目保持不变。
+현재 내구도 0 · 장비와 강화 단계는 유지됩니다.	Current durability 0 · gear and levels kept.	当前耐久为 0 · 装备和强化等级保持不变。
+비용만 소모 · 장비와 강화 단계는 유지됩니다.	Fee only · gear and levels kept.	仅消耗费用 · 装备和强化等级保持不变。
+신화 달성!	Mythic reached!	达成神话！
+??? 실패 · 방지권으로 ★★★ 유지	??? failed · ticket kept ★★★	??? 失败 · 防损毁券保住了 ★★★
+신화 {0}단계 달성	Mythic level {0}	达成神话 {0} 级
+신화 {0}단계로 하락	Mythic dropped to {0}	神话降至 {0} 级
+신화 강화 실패 · 천장 +{0:0.##}%p	Mythic failed · pity +{0:0.##}%p	神话强化失败 · 保底 +{0:0.##}%p
+추가 부위를 다시 뽑았습니다	Extra zone rerolled	已重新抽取追加部位
+초월 성공!	Transcended!	超越成功！
+초월 실패 · 하락 방지	Failed · downgrade prevented	超越失败 · 防降级
+초월 단계 하락	Transcendence dropped	超越等级下降
+ · 천장 +{0:0.##}%p	 · pity +{0:0.##}%p	 · 保底 +{0:0.##}%p
+ {0}단계 달성	 level {0} reached	 达成 {0} 级
+단계 하락 방지 발동 · {0}단계 유지	Downgrade protection triggered · level {0} kept	防降级生效 · 保持 {0} 级
+ {0}단계로 하락 · 장비 파괴 없음	 dropped to level {0} · nothing destroyed	 降至 {0} 级 · 装备未损毁
+ {0}단계 유지 · 재료 소모	 level {0} kept · materials used	 保持 {0} 级 · 材料已消耗
+ {0:N0}개	 ×{0:N0}	 {0:N0} 个
+목 앞	Front of neck	颈部前方
+목 뒤	Back of neck	颈部后方
+위팔 (왼쪽)	Left upper arm	左上臂
+위팔 (오른쪽)	Right upper arm	右上臂
+아래팔 (왼쪽)	Left forearm	左前臂
+아래팔 (오른쪽)	Right forearm	右前臂
+사타구니	Groin	腹股沟
+엉덩이	Buttocks	臀部
+허벅지 (왼쪽)	Left thigh	左大腿
+허벅지 (오른쪽)	Right thigh	右大腿
+정수리	Top of head	头顶
+뒤통수	Back of head	后脑
+귀	Ears	耳部
+눈	Eyes	眼部
+턱	Jaw	下颌
+무기 부품	Weapon parts	武器零件
+화약 "Eagle"	Gunpowder "Eagle"	火药“Eagle”
+아라미드 섬유	Aramid fiber fabric	芳纶纤维
+립스탑	Ripstop fabric	防撕裂布
+군용 회로 기판	Military circuit board	军用电路板
+Virtex 프로세서	Virtex processor	Virtex 处理器
+수직 반동	Vertical recoil	垂直后坐力
+수평 반동	Horizontal recoil	水平后坐力
+정확도 (MOA)	Accuracy (MOA)	精度 (MOA)
+발사속도	Fire rate	射速
+내구도	Durability	耐久
+ · 판 {0}	 · plate {0}	 · 插板 {0}
+{0}곳	{0}	{0} 处
+방어 등급	Armor class	防护等级
+최대 내구도	Max durability	最大耐久
+둔탁상	Blunt damage	钝伤
+받는 피해	Damage taken	受到伤害
+이동 속도	Move speed	移动速度
+회전 속도	Turn speed	转身速度
+가격을 찾을 수 없는 아이템은 진화할 수 없습니다.	Items without a price cannot be evolved.	找不到价格的物品无法进化。
+진화 비용이 1억 루블을 초과합니다. F12 설정을 낮춰 주세요.	The evolution cost exceeds 100,000,000 roubles. Lower the F12 settings.	进化费用超过 1 亿卢布。请调低 F12 设置。
+가격을 찾을 수 없는 아이템은 강화할 수 없습니다.	Items without a price cannot be enhanced.	找不到价格的物品无法强化。
+최대 강화 단계입니다.	Already at the maximum enhancement level.	已达最高强化等级。
+강화 비용이 1억 루블을 초과합니다. F12 설정을 낮춰 주세요.	The enhancement cost exceeds 100,000,000 roubles. Lower the F12 settings.	强化费用超过 1 亿卢布。请调低 F12 设置。
+방탄판 등록비가 1억 루블을 초과합니다. F12 설정을 낮춰 주세요.	The plate registration fee exceeds 100,000,000 roubles. Lower the F12 settings.	插板登记费超过 1 亿卢布。请调低 F12 设置。
+보험 등급을 골라 주세요.	Choose an insurance tier.	请选择保险等级。
+강화 보험료가 1억 루블을 초과합니다. F12 설정을 낮춰 주세요.	The enhancement insurance fee exceeds 100,000,000 roubles. Lower the F12 settings.	强化保险费超过 1 亿卢布。请调低 F12 设置。
+강화 작업이 올바르지 않습니다.	Invalid enhancement action.	强化操作无效。
+이 장비에 사용할 수 없는 강화 항목입니다.	This track cannot be used on this gear.	此装备无法使用该强化项目。
+강화 단계 기록이 올바르지 않습니다.	The saved enhancement level is invalid.	强化等级记录无效。
+모든 항목을 최대 단계까지 강화한 뒤 스타 강화 진화를 시도해 주세요.	Max out every track before attempting star evolution.	请将所有项目强化至最高等级后再尝试星级进化。
+2차 스타 진화를 완료한 장비만 3차 진화를 시도할 수 있습니다.	Only gear with a completed 2nd star evolution can attempt the 3rd.	只有完成第二次星级进化的装备才能尝试第三次进化。
+이미 2차 스타 진화를 완료한 장비입니다.	This gear already completed the 2nd star evolution.	此装备已完成第二次星级进化。
+사용할 파괴 방지권이 없습니다. 견적을 다시 불러와 주세요.	No destruction ticket to use. Reload the quote.	没有可用的防损毁券。请重新获取报价。
+단계별 성공률 감소로 이 단계의 성공률이 0%가 됐습니다. F12 개발자 옵션의 단계별 감소 또는 최대 단계를 낮춰 주세요.	The per-level chance loss brought this level's chance to 0%. Lower the per-level loss or max level in the F12 developer options.	由于每级成功率递减，此等级成功率变为 0%。请在 F12 开发者选项中调低每级递减或最高等级。
+강화된 장비만 강화 보험 가입·방탄판 등록을 할 수 있습니다.	Only enhanced gear can be insured or have plates registered.	只有已强化的装备才能投保强化保险或登记插板。
+이미 처리된 강화입니다. 결과를 확인해 주세요.	This enhancement was already processed. Check the result.	此强化已处理。请查看结果。
+강화 견적을 다시 불러와 주세요.	Reload the enhancement quote.	请重新获取强化报价。
+견적이 만료됐습니다. 비용을 다시 확인해 주세요.	The quote expired. Check the cost again.	报价已过期。请重新确认费用。
+SPT 아이템 응답을 준비할 수 없습니다.	Cannot prepare the SPT item response.	无法准备 SPT 物品响应。
+장비 상태가 바뀌었습니다. 견적을 다시 불러와 주세요.	The gear changed. Reload the quote.	装备状态已变化。请重新获取报价。
+지금은 이 강화 보험·방탄판 등록을 할 수 없습니다. 견적을 다시 불러와 주세요.	This insurance or plate registration is not available now. Reload the quote.	现在无法进行此强化保险投保或插板登记。请重新获取报价。
+보험 납부 기록이 바뀌었습니다. 견적을 다시 불러와 주세요.	The insurance payment record changed. Reload the quote.	保险支付记录已变化。请重新获取报价。
+프레스티지 보험 납부 기록이 바뀌었습니다. 견적을 다시 불러와 주세요.	The prestige insurance payment record changed. Reload the quote.	声望保险支付记录已变化。请重新获取报价。
+장비와 부착물 파괴 안내를 확인해 주세요.	Confirm the gear and attachment destruction notice.	请确认装备和配件损毁提示。
+창고의 루블이 부족합니다.	Not enough roubles in the stash.	仓库中的卢布不足。
+PMC 프로필을 찾을 수 없습니다.	PMC profile not found.	找不到 PMC 档案。
+프로필이 없습니다.	Profile not found.	没有档案。
+강화 기록을 읽을 수 없습니다.	Cannot read the enhancement records.	无法读取强化记录。
+강화 기록 형식이 다릅니다.	The enhancement record format is different.	强化记录格式不同。
+이전 강화 기록이 올바르지 않습니다.	The old enhancement records are invalid.	之前的强化记录无效。
+내 창고에서 아이템을 찾을 수 없습니다.	Item not found in your stash.	在你的仓库中找不到该物品。
+장비를 장착 해제하고 창고에 넣어 주세요.	Unequip the gear and put it in your stash.	请卸下装备并放入仓库。
+장비의 내부 보관칸을 비운 뒤 강화해 주세요.	Empty the gear's storage before enhancing.	请先清空装备内部的存储格再强化。
+내구도가 있는 무기 또는 방어구만 강화할 수 있습니다.	Only weapons or armor with durability can be enhanced.	只能强化有耐久的武器或护甲。
+방탄판·내피·헬멧 부착 방호구는 따로 강화할 수 없습니다. 방어구에 끼운 채 방어구를 강화하면 함께 적용됩니다.	Plates, soft inserts and helmet add-ons cannot be enhanced alone. Enhance the armor they are inserted in; they share its effect.	插板、软甲内衬和头盔附加防护无法单独强化。装在护甲上强化护甲时会一同生效。
+잠긴 장비나 부착물의 잠금을 먼저 해제해 주세요.	Unlock the locked gear or attachments first.	请先解除被锁定的装备或配件。
+아이템 목록을 읽을 수 없습니다.	Cannot read the item list.	无法读取物品列表。
+창고를 찾을 수 없습니다.	Stash not found.	找不到仓库。
+소모 아이템 묶음의 수량이 올바르지 않습니다.	Invalid stack count on a consumed item.	消耗物品堆叠数量无效。
+??? 는 50/50 고정이라 성공률 재료를 쓸 수 없습니다.	??? is a fixed 50/50; chance materials cannot be used.	??? 固定为 50/50，不能使用成功率材料。
+성공률 재료는 {0}종까지 고를 수 있습니다.	Choose at most {0} kinds of chance material.	成功率材料最多可选 {0} 种。
+성공률 재료 종류가 올바르지 않습니다.	Invalid chance material kind.	成功率材料种类无效。
+성공률 재료 개수가 올바르지 않습니다(최대 {0}개).	Invalid chance material count (at most {0}).	成功率材料数量无效（最多 {0} 个）。
+성공률 재료 비용이 1억 루블을 초과합니다.	The chance material cost exceeds 100,000,000 roubles.	成功率材料费用超过 1 亿卢布。
+즉시 강화는 일반 강화·초월·신화에서만 쓸 수 있습니다.	Instant is only for enhancement, transcendence and mythic attempts.	即时强化只能用于普通强化、超越和神话。
+3차 스타 진화(★★★)를 마친 장비만 ??? 에 도전할 수 있습니다.	Only gear with the 3rd star evolution (★★★) can take on ???.	只有完成第三次星级进化（★★★）的装备才能挑战 ???。
+이미 신화 단계인 장비입니다.	This gear is already mythic.	此装备已是神话阶段。
+??? 는 50/50 고정이라 재료·즉시 강화를 쓸 수 없습니다.	??? is a fixed 50/50; materials and instant cannot be used.	??? 固定为 50/50，不能使用材料和即时强化。
+사용할 ??? 파괴 방지권이 없습니다. 견적을 다시 불러와 주세요.	No ??? destruction ticket to use. Reload the quote.	没有可用的 ??? 防损毁券。请重新获取报价。
+??? 에 성공한 신화 장비만 신화 강화를 할 수 있습니다.	Only mythic gear (??? passed) can take mythic attempts.	只有 ??? 成功的神话装备才能进行神话强化。
+신화 단계 기록이 올바르지 않습니다.	The saved mythic level is invalid.	神话等级记录无效。
+이미 최대 신화 단계입니다.	Already at the maximum mythic level.	已达最高神话等级。
+추가 보호 부위가 있는 신화 방어구만 다시 뽑을 수 있습니다.	Only mythic armor with added zones can reroll them.	只有带追加防护部位的神话护甲才能重新抽取。
+다시 뽑을 부위를 골라 주세요.	Choose the zone to reroll.	请选择要重新抽取的部位。
+다시 뽑을 수 있는 부위가 남아 있지 않습니다.	No zone is left to reroll into.	没有可重新抽取的部位了。
+강화된 장비만 파괴 방지권을 살 수 있습니다.	Only enhanced gear can buy destruction tickets.	只有已强化的装备才能购买防损毁券。
+방지권 종류(★★·★★★·???)를 골라 주세요.	Choose the ticket (★★, ★★★ or ???).	请选择防损毁券种类（★★·★★★·???）。
+??? 에 도전하기 전의 ★★★ 장비만 ??? 파괴 방지권을 살 수 있습니다.	Only ★★★ gear that has not passed ??? can buy the ??? ticket.	只有尚未挑战 ??? 的 ★★★ 装备才能购买 ??? 防损毁券。
+★★ 장비만 ★★★ 진화용 방지권을 살 수 있습니다.	Only ★★ gear can buy ★★★ evolution tickets.	只有 ★★ 装备才能购买 ★★★ 进化用防损毁券。
+★★ 진화 전 장비만 ★★ 진화용 방지권을 살 수 있습니다.	Only gear before the ★★ evolution can buy ★★ evolution tickets.	只有 ★★ 进化前的装备才能购买 ★★ 进化用防损毁券。
+이 장비는 방지권을 더 살 수 없습니다(평생 {0}장).	This gear cannot buy more tickets (lifetime {0}).	此装备无法再购买防损毁券（终身 {0} 张）。
+초월 종류를 골라 주세요.	Choose a transcendence track.	请选择超越种类。
+3차 스타 진화(★★★)를 마친 장비만 3성 초월을 할 수 있습니다.	Only gear with the 3rd star evolution (★★★) can take 3-star transcendence.	只有完成第三次星级进化（★★★）的装备才能进行 3星超越。
+2차 스타 진화(★★)를 마친 장비만 2성 초월을 할 수 있습니다.	Only gear with the 2nd star evolution (★★) can take 2-star transcendence.	只有完成第二次星级进化（★★）的装备才能进行 2星超越。
+초월 단계 기록이 올바르지 않습니다.	The saved transcendence level is invalid.	超越等级记录无效。
+이미 최대 초월 단계입니다.	Already at the maximum transcendence level.	已达最高超越等级。
+창고의 재료(초월·신화·성공률 재료)가 부족합니다.	Not enough materials (transcendence, mythic or chance) in the stash.	仓库中的材料（超越·神话·成功率材料）不足。
+완료 기록이 없습니다. 연결 상태와 서버 로그를 확인해 주세요.	No completion record. Check the connection and server log.	没有完成记录。请检查连接状态和服务器日志。
+방탄판 맞추기 설정을 읽을 수 없습니다.	Cannot read the plate sync settings.	无法读取插板同步设置。
+Gear Enhance 클라이언트와 서버를 모두 {0}으로 업데이트해 주세요.	Update both the Gear Enhance client and server to {0}.	请将 Gear Enhance 客户端和服务器都更新到 {0}。
+F12 설정 범위를 확인해 주세요.	Check the F12 setting ranges.	请检查 F12 设置范围。
+강화 효과 설정이 없습니다.	Enhancement effect settings are missing.	缺少强化效果设置。
+초월 강화 설정이 없습니다.	Transcendence settings are missing.	缺少超越强化设置。
+성공률 재료 설정이 없습니다.	Chance material settings are missing.	缺少成功率材料设置。
+신화 설정이 없습니다.	Mythic settings are missing.	缺少神话设置。
+강화 기록의 PMC 프로필이 일치하지 않습니다.	The enhancement records belong to a different PMC profile.	强化记录的 PMC 档案不一致。
+PMC 프로필이 없습니다.	No PMC profile.	没有 PMC 档案。
+최대 강화 단계를 확인해 주세요.	Check the maximum enhancement level.	请检查最高强化等级。
+F12 강화 효과 수치 범위를 확인해 주세요.	Check the F12 effect value ranges.	请检查 F12 强化效果数值范围。
+강화 항목이 올바르지 않습니다.	Invalid enhancement track.	强化项目无效。
+반동 제어	Recoil	后坐力控制
+조작성	Handling	操控性
+정밀성	Precision	精准性
+내구성	Durability	耐久性
+기동성	Mobility	机动性
+미선택	None	未选择
+반동 감소	Recoil reduction	后坐力降低
+인체공학 증가	Ergonomics bonus	人机工效提升
+탄 퍼짐 감소	Dispersion reduction	散布降低
+내구도 소모 감소	Durability loss reduction	耐久消耗降低
+장비 페널티 완화	Gear penalty relief	装备惩罚减轻
+수직·수평 반동에 적용	Applies to vertical and horizontal recoil	作用于垂直·水平后坐力
+해당 무기의 인체공학에 더함 · 최종 100 상한	Added to this weapon's ergonomics · final cap 100	加到该武器的人机工效上 · 最终上限 100
+총알 탄 퍼짐과 산탄 퍼짐에 적용	Applies to bullet and buckshot dispersion	作用于子弹散布和霰弹散布
+피격·폭발 내구도 소모에 적용 · 등록된 방탄판·내피도 함께	Applies to durability loss from hits and blasts · registered plates/inserts too	作用于受击·爆炸造成的耐久消耗 · 已登记的插板·内衬也一同生效
+이동·회전·인체공학 페널티에 적용 · 등록된 방탄판도 함께	Applies to movement, turning and ergonomics penalties · registered plates too	作用于移动·转身·人机工效惩罚 · 已登记的插板也一同生效
+일반	Basic	基础
+고급	Advanced	高级
+프리미엄	Premium	尊享
+SPT 플리 기준가	SPT flea price	SPT 跳蚤市场基准价
+북밸류 (플리 가격 없음)	Handbook (no flea price)	手册价（无跳蚤市场价格）
+북밸류	Handbook	手册价
+F12 신화 설정 범위를 확인해 주세요.	Check the F12 mythic setting ranges.	请检查 F12 神话设置范围。
+신화 강화 비용이 1억 루블을 초과합니다. F12 설정을 낮춰 주세요.	The mythic cost exceeds 100,000,000 roubles. Lower the F12 settings.	神话强化费用超过 1 亿卢布。请调低 F12 设置。
+다시 뽑기 비용이 1억 루블을 초과합니다.	The reroll cost exceeds 100,000,000 roubles.	重新抽取费用超过 1 亿卢布。
+보호 비용 설정 범위를 확인해 주세요.	Check the protection fee setting ranges.	请检查保护费用设置范围。
+보호 비용을 포함한 총액이 1억 루블을 초과합니다. 보호 옵션이나 F12 비용 설정을 낮춰 주세요.	The total including protection exceeds 100,000,000 roubles. Lower the protection options or F12 cost settings.	含保护费用的总额超过 1 亿卢布。请降低保护选项或 F12 费用设置。
+빨간색	red	红色
+보라색	purple	紫色
+금색	gold	金色
+F12 성공률 재료 설정 범위를 확인해 주세요.	Check the F12 chance material setting ranges.	请检查 F12 成功率材料设置范围。
+F12 초월 강화 설정 범위를 확인해 주세요.	Check the F12 transcendence setting ranges.	请检查 F12 超越强化设置范围。
+가격을 찾을 수 없는 아이템은 초월할 수 없습니다.	Items without a price cannot be transcended.	找不到价格的物品无法超越。
+초월 비용이 1억 루블을 초과합니다. F12 설정을 낮춰 주세요.	The transcendence cost exceeds 100,000,000 roubles. Lower the F12 settings.	超越费用超过 1 亿卢布。请调低 F12 设置。
+창고 보험 표시 모양	Stash insurance mark	仓库保险标记
+강화 장비 칸의 강화 보험 표시. Corner = 모서리 색 삼각형, Letter = 1.4.0 글자 칸(P·고·일·X), Dot = 작은 점, NameTag = 이름 별 뒤 [P], Off = 표시 안 함. 색: 프리미엄 금색 · 고급 파랑 · 일반 초록 · 없음 회색.	Enhancement insurance mark on enhanced gear cells. Corner = colored corner triangle, Letter = the 1.4.0 letter square (P · A · B · X), Dot = small dot, NameTag = [P] after the stars, Off = none. Colors: Premium gold · Advanced blue · Basic green · none grey.	已强化装备格子上的强化保险标记。Corner = 角落彩色三角，Letter = 1.4.0 的字母方块（P · A · B · X），Dot = 小圆点，NameTag = 星标后的 [P]，Off = 不显示。颜色：尊享金色 · 高级蓝色 · 基础绿色 · 无 灰色。
+창고 보험 표시 위치	Stash insurance mark position	仓库保险标记位置
+BottomLeft = 칸 왼쪽 아래, TopLeft = 왼쪽 위(1.4.0 자리), BesideCount = 오른쪽 아래 개수·내구도 숫자 옆. NameTag·Off에는 쓰지 않습니다.	BottomLeft = lower-left corner of the cell, TopLeft = upper left (the 1.4.0 spot), BesideCount = next to the count/durability numbers at the lower right. Not used by NameTag or Off.	BottomLeft = 格子左下角，TopLeft = 左上（1.4.0 的位置），BesideCount = 右下数量·耐久数字旁。NameTag 和 Off 不使用此项。
+보험 없는 강화 장비에도 표시	Mark uninsured enhanced gear too	未投保的强化装备也显示
+켜면 강화 보험이 없는 강화 장비에도 회색 표시를 붙입니다(글자 칸은 X, 1.4.0 방식). 끄면 보험에 든 장비만 표시합니다.	When on, enhanced gear without enhancement insurance also gets a grey mark (X in the letter square, as in 1.4.0). When off, only insured gear is marked.	开启后，没有强化保险的强化装备也会显示灰色标记（字母方块为 X，1.4.0 的方式）。关闭后只标记已投保的装备。

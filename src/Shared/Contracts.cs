@@ -14,12 +14,13 @@ public enum InsuranceTier { None, Basic, Advanced, Premium }
 
 public static class EnhanceProtocol
 {
-    public const int Version = 12;
-    public const string ModVersion = "1.4.0";
+    // 13 (1.4.1): replies carry the error's translation key and arguments.
+    public const int Version = 13;
+    public const string ModVersion = "1.4.1";
     public static void Validate(int version)
     {
         if (version != Version)
-            throw Loc.Argument($"Gear Enhance 클라이언트와 서버를 모두 {ModVersion}으로 업데이트해 주세요.",
+            throw Loc.ArgumentF($"Gear Enhance 클라이언트와 서버를 모두 {ModVersion}으로 업데이트해 주세요.",
                 $"Update both the Gear Enhance client and server to {ModVersion}.");
     }
 }
@@ -434,5 +435,9 @@ public sealed class ApiReply<T> where T : class
     public string Error { get; set; } = "";
     // Added in 1.1.0. Older servers leave it empty and the Korean text is shown.
     public string ErrorEnglish { get; set; } = "";
+    // 1.4.1: the Korean text (or its format) and the formatted arguments, so the client shows the error
+    // in Russian, Chinese or a player's own file (Loc.Error).
+    public string? ErrorKey { get; set; }
+    public string[]? ErrorArgs { get; set; }
     public T? Data { get; set; }
 }

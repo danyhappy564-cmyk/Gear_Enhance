@@ -11,6 +11,13 @@ namespace GearEnhance;
 internal static class UiFonts
 {
     internal static Font Sans, SansBold, Num, NumBold;
+    // 1.4.1: Chinese (or a CJK custom file) draws text with the Windows CJK font; Unity bolds it.
+    internal static bool Cjk;
+    // The header's "中文" button in every language (GE Sans has no Chinese glyphs).
+    internal static Font CjkLabel;
+    // While Cjk: GE Sans kept for the header's "한국어" button (the CJK font may lack Hangul).
+    internal static Font HangulLabel;
+    internal static readonly string[] CjkFonts = { "Microsoft YaHei UI", "Microsoft YaHei", "SimHei", "Noto Sans CJK SC", "SimSun", "Arial Unicode MS" };
     internal static bool Loaded => Sans != null && SansBold != null && Num != null && NumBold != null;
 
     internal static string Load(string folder)
@@ -22,6 +29,18 @@ internal static class UiFonts
             SansBold = Open(folder, "GESans-Bold.ttf", '가', why);
             Num = Open(folder, "GENum-SemiBold.ttf", '5', why);
             NumBold = Open(folder, "GENum-Bold.ttf", '5', why);
+            CjkLabel = Font.CreateDynamicFontFromOSFont(CjkFonts, 14);
+            if (CjkLabel != null) CjkLabel.hideFlags = HideFlags.HideAndDontSave;
+            if (Cjk && Sans != null)
+            {
+                var cjk = Font.CreateDynamicFontFromOSFont(CjkFonts, 16);
+                if (cjk != null)
+                {
+                    cjk.hideFlags = HideFlags.HideAndDontSave;
+                    HangulLabel = Sans; Destroy(SansBold);
+                    Sans = SansBold = cjk;
+                }
+            }
             if (Loaded) return null;
             Sans = SansBold = Num = NumBold = null;
             return "글꼴을 쓰지 못해 Windows 글꼴로 표시합니다 / mockup fonts not usable, using the Windows font: " + folder + " (" + string.Join(", ", why) + ")";
@@ -31,6 +50,17 @@ internal static class UiFonts
             Sans = SansBold = Num = NumBold = null;
             return "글꼴을 읽지 못해 Windows 글꼴로 표시합니다 / could not load the mockup fonts: " + ex.GetBaseException().Message;
         }
+    }
+
+    internal static void Unload()
+    {
+        Destroy(Sans); Destroy(SansBold); Destroy(Num); Destroy(NumBold); Destroy(CjkLabel); Destroy(HangulLabel);
+        Sans = SansBold = Num = NumBold = CjkLabel = HangulLabel = null;
+    }
+
+    private static void Destroy(Font font)
+    {
+        if (font != null) UnityEngine.Object.Destroy(font);
     }
 
     private static Font Open(string folder, string file, char probe, System.Collections.Generic.List<string> why)

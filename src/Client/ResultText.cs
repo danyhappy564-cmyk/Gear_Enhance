@@ -19,8 +19,8 @@ internal static class ResultText
         : receipt.DestructionPrevented ? Loc.L("파괴 방지 발동 · 장비와 모든 강화 단계를 지켰습니다.", "Destruction protection triggered · gear and all levels kept.")
         : receipt.DowngradePrevented ? Loc.L("단계 하락 방지 발동 · 모든 강화 단계를 지켰습니다.", "Downgrade protection triggered · all levels kept.")
         : receipt.FailureMode == FailureMode.Destroy ? Loc.L("장비 본체·부착물·탄창·탄약이 파괴되었습니다.", "The gear, attachments, magazines and ammo were destroyed.")
-        : receipt.FailureMode == FailureMode.Downgrade ? Loc.L(EnhanceEffects.Name(receipt.Path) + " +" + receipt.Level + "로 하락 · 다른 항목은 유지됩니다.",
-            EnhanceEffects.Name(receipt.Path) + " dropped to +" + receipt.Level + " · other tracks kept.")
+        : receipt.FailureMode == FailureMode.Downgrade ? Loc.F($"{EnhanceEffects.Name(receipt.Path)} +{receipt.Level}로 하락 · 다른 항목은 유지됩니다.",
+            $"{EnhanceEffects.Name(receipt.Path)} dropped to +{receipt.Level} · other tracks kept.")
         : receipt.FailureMode == FailureMode.ZeroDurability ? Loc.L("현재 내구도 0 · 장비와 강화 단계는 유지됩니다.", "Current durability 0 · gear and levels kept.")
         : Loc.L("비용만 소모 · 장비와 강화 단계는 유지됩니다.", "Fee only · gear and levels kept.");
 
@@ -29,12 +29,12 @@ internal static class ResultText
     {
         EnhanceAction.Mystery => receipt.Success ? Loc.L("신화 달성!", "Mythic reached!")
             : receipt.TicketUsed ? Loc.L("??? 실패 · 방지권으로 ★★★ 유지", "??? failed · ticket kept ★★★") : Loc.L("??? 실패 · 장비 파괴", "??? failed · gear destroyed"),
-        EnhanceAction.Mythic => receipt.Success ? Loc.L($"신화 {receipt.Level}단계 달성", $"Mythic level {receipt.Level}")
-            : receipt.FailureMode == FailureMode.Downgrade ? Loc.L($"신화 {receipt.Level}단계로 하락", $"Mythic dropped to {receipt.Level}")
-            : Loc.L($"신화 강화 실패 · 천장 +{receipt.Pity:0.##}%p", $"Mythic failed · pity +{receipt.Pity:0.##}%p"),
+        EnhanceAction.Mythic => receipt.Success ? Loc.F($"신화 {receipt.Level}단계 달성", $"Mythic level {receipt.Level}")
+            : receipt.FailureMode == FailureMode.Downgrade ? Loc.F($"신화 {receipt.Level}단계로 하락", $"Mythic dropped to {receipt.Level}")
+            : Loc.F($"신화 강화 실패 · 천장 +{receipt.Pity:0.##}%p", $"Mythic failed · pity +{receipt.Pity:0.##}%p"),
         EnhanceAction.Reroll => Loc.L("추가 부위를 다시 뽑았습니다", "Extra zone rerolled"),
         _ => Title(receipt, receipt.IsEvolution && receipt.Success) + " · " + Detail(receipt)
-    } + Loc.L($" · {receipt.Paid:N0} ₽ 소모", $" · spent {receipt.Paid:N0} ₽");
+    } + Loc.F($" · {receipt.Paid:N0} ₽ 소모", $" · spent {receipt.Paid:N0} ₽");
 
     // 1.3.0 transcendence: never destroys; a failure keeps or drops one level and raises pity.
     internal static string Track(TranscendTrack track) => track == TranscendTrack.Third ? Loc.L("3성 초월", "3-star transcendence") : Loc.L("2성 초월", "2-star transcendence");
@@ -43,11 +43,11 @@ internal static class ResultText
         : receipt.FailureMode == FailureMode.Downgrade ? Loc.L("초월 단계 하락", "Transcendence dropped") : Loc.L("초월 실패", "Transcendence failed");
     private static string TranscendDetail(EnhanceReceipt receipt)
     {
-        var pity = Loc.L($" · 천장 +{receipt.Pity:0.##}%p", $" · pity +{receipt.Pity:0.##}%p");
-        return receipt.Success ? Track(receipt.Transcend) + Loc.L($" {receipt.Level}단계 달성", $" level {receipt.Level} reached")
-            : receipt.DowngradePrevented ? Loc.L($"단계 하락 방지 발동 · {receipt.Level}단계 유지", $"Downgrade protection triggered · level {receipt.Level} kept") + pity
-            : receipt.FailureMode == FailureMode.Downgrade ? Track(receipt.Transcend) + Loc.L($" {receipt.Level}단계로 하락 · 장비 파괴 없음", $" dropped to level {receipt.Level} · nothing destroyed") + pity
-            : Track(receipt.Transcend) + Loc.L($" {receipt.Level}단계 유지 · 재료 소모", $" level {receipt.Level} kept · materials used") + pity;
+        var pity = Loc.F($" · 천장 +{receipt.Pity:0.##}%p", $" · pity +{receipt.Pity:0.##}%p");
+        return receipt.Success ? Track(receipt.Transcend) + Loc.F($" {receipt.Level}단계 달성", $" level {receipt.Level} reached")
+            : receipt.DowngradePrevented ? Loc.F($"단계 하락 방지 발동 · {receipt.Level}단계 유지", $"Downgrade protection triggered · level {receipt.Level} kept") + pity
+            : receipt.FailureMode == FailureMode.Downgrade ? Track(receipt.Transcend) + Loc.F($" {receipt.Level}단계로 하락 · 장비 파괴 없음", $" dropped to level {receipt.Level} · nothing destroyed") + pity
+            : Track(receipt.Transcend) + Loc.F($" {receipt.Level}단계 유지 · 재료 소모", $" level {receipt.Level} kept · materials used") + pity;
     }
 }
 
@@ -74,7 +74,7 @@ internal static class TranscendText
         var parts = new List<string>();
         foreach (var material in view.Materials)
             if (material != null && material.Owned < material.Count)
-                parts.Add(MaterialName(material.Template) + Loc.L($" {material.Count - material.Owned:N0}개", $" ×{material.Count - material.Owned:N0}"));
+                parts.Add(MaterialName(material.Template) + Loc.F($" {material.Count - material.Owned:N0}개", $" ×{material.Count - material.Owned:N0}"));
         return string.Join(", ", parts);
     }
 }

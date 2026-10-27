@@ -3,6 +3,7 @@ import argparse
 import os
 from pathlib import Path
 import subprocess
+import sys
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -24,6 +25,8 @@ def main():
     def run(*arguments):
         subprocess.run(arguments, cwd=ROOT, env=environ, check=True)
 
+    # 1.4.1: every window/F12/server text has its Russian and Chinese rows (tools/lang.py).
+    run(sys.executable, "tools/lang.py", "--check")
     run("dotnet", "restore", "GearEnhance.Package.csproj", "--locked-mode", f"-p:SptRoot={game}")
     run("dotnet", "restore", "tests/GearEnhance.Tests.csproj", "--locked-mode")
     run("dotnet", "restore", "client-tests/GearEnhance.ClientTests.csproj", "--locked-mode", f"-p:SptRoot={game}")

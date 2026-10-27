@@ -91,12 +91,12 @@ public static class EnhanceEffects
         EnhancePath.Mobility => "장비 페널티 완화", _ => ""
     };
 
-    public static string StatName(EnhancePath path) => Loc.L(KoreanStatName(path), path switch
+    public static string StatName(EnhancePath path) => path switch
     {
-        EnhancePath.Recoil => "Recoil reduction", EnhancePath.Ergonomics => "Ergonomics bonus",
-        EnhancePath.Precision => "Dispersion reduction", EnhancePath.ArmorDurability => "Durability loss reduction",
-        EnhancePath.Mobility => "Gear penalty relief", _ => ""
-    });
+        EnhancePath.Recoil => Loc.L("반동 감소", "Recoil reduction"), EnhancePath.Ergonomics => Loc.L("인체공학 증가", "Ergonomics bonus"),
+        EnhancePath.Precision => Loc.L("탄 퍼짐 감소", "Dispersion reduction"), EnhancePath.ArmorDurability => Loc.L("내구도 소모 감소", "Durability loss reduction"),
+        EnhancePath.Mobility => Loc.L("장비 페널티 완화", "Gear penalty relief"), _ => ""
+    };
 
     public static string Description(EnhancePath path) => path switch
     {

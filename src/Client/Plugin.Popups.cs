@@ -132,7 +132,7 @@ public sealed partial class Plugin
             if (line != null) spent.Add(BoostName(line.Kind) + $" {line.Count}");
         if (receipt.Instant) spent.Add(Loc.L("즉시 강화", "Instant"));
         result.Cost = string.Join(" · ", spent);
-        var destroyedLine = Loc.L($"{gear}와 부착물·탄창이 사라졌습니다", $"{gear}, its attachments and magazines are gone");
+        var destroyedLine = Loc.F($"{gear}와 부착물·탄창이 사라졌습니다", $"{gear}, its attachments and magazines are gone");
         switch (receipt.Action)
         {
             case EnhanceAction.RegisterInserts:
@@ -151,28 +151,28 @@ public sealed partial class Plugin
                         : Loc.L("추가 보호 부위: ", "Extra zones: ") + string.Join(" · ", zones);
                     if (weapon)
                     {
-                        var perLevel = Loc.L($"단계당 +{MythicTuned.WeaponPercentPerLevel:0.#}%", $"+{MythicTuned.WeaponPercentPerLevel:0.#}% per level");
+                        var perLevel = Loc.F($"단계당 +{MythicTuned.WeaponPercentPerLevel:0.#}%", $"+{MythicTuned.WeaponPercentPerLevel:0.#}% per level");
                         (result.EffectLabel, result.EffectNow, result.EffectNext) = (Loc.L("탄 데미지", "Bullet damage"), "???", perLevel);
                         (result.EffectLabel2, result.EffectNow2, result.EffectNext2) = (Loc.L("관통력", "Penetration"), "???", perLevel);
                         (result.EffectLabel3, result.EffectNow3, result.EffectNext3) = (Loc.L("탄 불이익 감소", "Ammo penalties cut"), "???",
-                            Loc.L($"단계당 -{MythicEffects.AmmoPenaltyCut(1):0.#}%", $"-{MythicEffects.AmmoPenaltyCut(1):0.#}% per level"));
-                        result.Note = Loc.L($"신화 1단계부터 이 총에 든 탄의 불이익이 단계당 {MythicEffects.AmmoPenaltyCut(1):0.#}%씩 줄어듭니다",
+                            Loc.F($"단계당 -{MythicEffects.AmmoPenaltyCut(1):0.#}%", $"-{MythicEffects.AmmoPenaltyCut(1):0.#}% per level"));
+                        result.Note = Loc.F($"신화 1단계부터 이 총에 든 탄의 불이익이 단계당 {MythicEffects.AmmoPenaltyCut(1):0.#}%씩 줄어듭니다",
                             $"From Mythic 1 the rounds in this gun lose {MythicEffects.AmmoPenaltyCut(1):0.#}% of their penalties per level"); result.NoteColor = Soft;
                     }
                     else (result.EffectLabel, result.EffectNow, result.EffectNext) = (Loc.L("보호 부위", "Protected zones"),
-                        Loc.L("기존", "Before"), Loc.L($"+{zones.Count}곳", $"+{zones.Count}"));
+                        Loc.L("기존", "Before"), Loc.F($"+{zones.Count}곳", $"+{zones.Count}"));
                 }
                 else if (receipt.TicketUsed)
                 {
                     result.Title = Loc.L("??? 실패 · 파괴 방지권 사용", "??? failed · ticket used"); result.Tint = Good;
-                    result.Line = Loc.L($"{gear} ★★★ 그대로 남았습니다", $"{gear} stays ★★★");
+                    result.Line = Loc.F($"{gear} ★★★ 그대로 남았습니다", $"{gear} stays ★★★");
                     result.Note = Loc.L("??? 파괴 방지권 1장을 썼습니다 · 장비당 1장이라 더 살 수 없습니다", "The ??? ticket was used · one per gear, no more to buy");
                     result.NoteColor = Good;
                 }
                 else
                 {
                     result.Title = Loc.L("??? 실패 · 장비 파괴", "??? failed · destroyed"); result.Tint = Danger; result.Shatter = true;
-                    result.Line = destroyedLine; result.Note = Loc.L($"{100 - (attempt?.SuccessPercent ?? 50):0.##}% 판정에서 부서졌습니다", "It broke on the roll");
+                    result.Line = destroyedLine; result.Note = Loc.F($"{100 - (attempt?.SuccessPercent ?? 50):0.##}% 판정에서 부서졌습니다", $"It broke on the roll");
                 }
                 break;
             case EnhanceAction.Mythic:
@@ -223,26 +223,26 @@ public sealed partial class Plugin
             case EnhanceAction.EvolveThird:
             {
                 var target = receipt.Action == EnhanceAction.EvolveThird ? 3 : 2;
-                result.Kicker = Loc.L($"{StarEvolution.Stars(target)} 진화", $"{StarEvolution.Stars(target)} evolution");
+                result.Kicker = Loc.F($"{StarEvolution.Stars(target)} 진화", $"{StarEvolution.Stars(target)} evolution");
                 if (receipt.Success)
                 {
-                    result.Title = Loc.L($"{StarEvolution.Stars(target)} 진화 성공", $"{StarEvolution.Stars(target)} evolved"); result.Tint = StarTint(target);
+                    result.Title = Loc.F($"{StarEvolution.Stars(target)} 진화 성공", $"{StarEvolution.Stars(target)} evolved"); result.Tint = StarTint(target);
                     result.Glow = result.LateGlow = true;
-                    result.Line = Loc.L($"모든 항목 효과 ×{StarMultiplier(target):0.##}", $"Every effect ×{StarMultiplier(target):0.##}");
+                    result.Line = Loc.F($"모든 항목 효과 ×{StarMultiplier(target):0.##}", $"Every effect ×{StarMultiplier(target):0.##}");
                     var path = weapon ? EnhancePath.Recoil : EnhancePath.ArmorDurability;
                     var level = StatPatches.Registry.Find(itemId ?? "", path)?.Level ?? maxLevel.Value;
                     (result.EffectLabel, result.EffectNow, result.EffectNext) = (EnhanceEffects.StatName(path),
                         EnhanceEffects.Format(path, EnhanceEffects.Amount(path, level, Tuning(), target - 1)), EnhanceEffects.Format(path, EnhanceEffects.Amount(path, level, Tuning(), target)));
                     var notes = new List<string>();
-                    if (receipt.TicketUsed) notes.Add(Loc.L($"파괴 방지권 1장 사용 · 남은 {receipt.TicketsLeft}장", $"Used one ticket · {receipt.TicketsLeft} left"));
-                    if (receipt.TicketsVoided > 0) notes.Add(Loc.L($"남은 {StarEvolution.Stars(target)}용 방지권 {receipt.TicketsVoided}장은 사라졌습니다", $"{receipt.TicketsVoided} unused {StarEvolution.Stars(target)} ticket(s) are gone"));
+                    if (receipt.TicketUsed) notes.Add(Loc.F($"파괴 방지권 1장 사용 · 남은 {receipt.TicketsLeft}장", $"Used one ticket · {receipt.TicketsLeft} left"));
+                    if (receipt.TicketsVoided > 0) notes.Add(Loc.F($"남은 {StarEvolution.Stars(target)}용 방지권 {receipt.TicketsVoided}장은 사라졌습니다", $"{receipt.TicketsVoided} unused {StarEvolution.Stars(target)} ticket(s) are gone"));
                     if (notes.Count > 0) result.Note = string.Join(" · ", notes);
                 }
                 else if (receipt.TicketUsed)
                 {
                     result.Title = Loc.L("진화 실패 · 파괴 방지권 사용", "Evolution failed · ticket used"); result.Tint = Good;
-                    result.Line = Loc.L($"{gear} 유지 · 단계 그대로", $"{gear} kept · levels unchanged");
-                    result.Note = Loc.L($"파괴 방지권 1장을 썼습니다 · 남은 {receipt.TicketsLeft}장", $"One ticket used · {receipt.TicketsLeft} left"); result.NoteColor = Good;
+                    result.Line = Loc.F($"{gear} 유지 · 단계 그대로", $"{gear} kept · levels unchanged");
+                    result.Note = Loc.F($"파괴 방지권 1장을 썼습니다 · 남은 {receipt.TicketsLeft}장", $"One ticket used · {receipt.TicketsLeft} left"); result.NoteColor = Good;
                 }
                 else
                 {
@@ -267,7 +267,7 @@ public sealed partial class Plugin
                 else if (receipt.DestructionPrevented || receipt.DowngradePrevented)
                 {
                     result.Title = Loc.L("강화 실패 · 보호 발동", "Failed · guard triggered"); result.Tint = Good;
-                    result.Line = EnhanceEffects.Name(path) + Loc.L($"  +{from} 유지", $"  +{from} kept");
+                    result.Line = EnhanceEffects.Name(path) + Loc.F($"  +{from} 유지", $"  +{from} kept");
                     result.Note = receipt.DestructionPrevented ? Loc.L("파괴 방지가 장비를 지켰습니다", "The destroy guard saved the gear")
                         : Loc.L("하락 방지가 단계를 지켰습니다", "The drop guard kept the level"); result.NoteColor = Good;
                 }
@@ -287,7 +287,7 @@ public sealed partial class Plugin
                 else
                 {
                     result.Title = Loc.L("강화 실패", "Enhancement failed"); result.Tint = Hex(0xe07a6e);
-                    result.Line = EnhanceEffects.Name(path) + Loc.L($"  +{from} 유지", $"  +{from} kept");
+                    result.Line = EnhanceEffects.Name(path) + Loc.F($"  +{from} 유지", $"  +{from} kept");
                     result.Note = ResultText.Detail(receipt);
                 }
                 break;
@@ -299,11 +299,11 @@ public sealed partial class Plugin
     // Failed transcendence or mythic attempt: kept, dropped, or saved by the guard; pity grows.
     private void Fallback(Look result, EnhanceReceipt receipt, EnhanceQuote attempt, string track, int from)
     {
-        var pity = Loc.L($"다음 성공률 +{attempt?.PityStep ?? 0:0.##}%p (누적 +{receipt.Pity:0.##}%p)", $"Next chance +{attempt?.PityStep ?? 0:0.##}%p (total +{receipt.Pity:0.##}%p)");
+        var pity = Loc.F($"다음 성공률 +{attempt?.PityStep ?? 0:0.##}%p (누적 +{receipt.Pity:0.##}%p)", $"Next chance +{attempt?.PityStep ?? 0:0.##}%p (total +{receipt.Pity:0.##}%p)");
         if (receipt.DowngradePrevented)
         {
             result.Title = Loc.L("실패 · 하락 방지", "Failed · drop guarded"); result.Tint = Good;
-            result.Line = track + Loc.L($"  {from} 유지", $"  {from} kept");
+            result.Line = track + Loc.F($"  {from} 유지", $"  {from} kept");
         }
         else if (receipt.FailureMode == FailureMode.Downgrade)
         {
@@ -314,7 +314,7 @@ public sealed partial class Plugin
         {
             result.Title = receipt.Action == EnhanceAction.Mythic ? Loc.L("신화 강화 실패", "Mythic attempt failed") : Loc.L("초월 실패", "Transcendence failed");
             result.Tint = Hex(0x7fb7b2);
-            result.Line = track + Loc.L($"  {from} 유지", $"  {from} kept");
+            result.Line = track + Loc.F($"  {from} 유지", $"  {from} kept");
         }
         result.Note = pity;
     }
@@ -503,7 +503,7 @@ public sealed partial class Plugin
                 return new Look
                 {
                     Kicker = ActionName(subject), Title = Loc.L("장비가 파괴될 수 있습니다", "The gear can be destroyed"), Tint = Danger,
-                    Line = Loc.L($"이번 시도 파괴 확률 {destroy:0.##}% · 본체와 부착물 {subject.AttachedItems}개(탄약 포함)", $"Destruction chance this try {destroy:0.##}% · gear and {subject.AttachedItems} attachment(s) incl. ammo"),
+                    Line = Loc.F($"이번 시도 파괴 확률 {destroy:0.##}% · 본체와 부착물 {subject.AttachedItems}개(탄약 포함)", $"Destruction chance this try {destroy:0.##}% · gear and {subject.AttachedItems} attachment(s) incl. ammo"),
                     Cost = $"{subject.Cost:N0} ₽" + (confirmInstant ? Loc.L(" · 즉시 강화", " · instant") : "")
                 };
             }
@@ -513,9 +513,9 @@ public sealed partial class Plugin
                 {
                     Kicker = "???", Title = "???", Tint = Myth, Glow = true,
                     Line = subject.UseTicket
-                        ? Loc.L($"{subject.SuccessPercent:0.##}% 확률로 성공 · 실패해도 파괴 방지권으로 ★★★ 장비가 남습니다.", $"{subject.SuccessPercent:0.##}% to succeed · on a failure the ticket keeps the ★★★ gear.")
-                        : weapon ? Loc.L($"{subject.SuccessPercent:0.##}/{100 - subject.SuccessPercent:0.##} 확률로 무기가 성공하거나 부서집니다.", $"At {subject.SuccessPercent:0.##}/{100 - subject.SuccessPercent:0.##} the weapon succeeds or breaks.")
-                        : Loc.L($"{subject.SuccessPercent:0.##}/{100 - subject.SuccessPercent:0.##} 확률로 방어구가 성공하거나 부서집니다.", $"At {subject.SuccessPercent:0.##}/{100 - subject.SuccessPercent:0.##} the armor succeeds or breaks."),
+                        ? Loc.F($"{subject.SuccessPercent:0.##}% 확률로 성공 · 실패해도 파괴 방지권으로 ★★★ 장비가 남습니다.", $"{subject.SuccessPercent:0.##}% to succeed · on a failure the ticket keeps the ★★★ gear.")
+                        : weapon ? Loc.F($"{subject.SuccessPercent:0.##}/{100 - subject.SuccessPercent:0.##} 확률로 무기가 성공하거나 부서집니다.", $"At {subject.SuccessPercent:0.##}/{100 - subject.SuccessPercent:0.##} the weapon succeeds or breaks.")
+                        : Loc.F($"{subject.SuccessPercent:0.##}/{100 - subject.SuccessPercent:0.##} 확률로 방어구가 성공하거나 부서집니다.", $"At {subject.SuccessPercent:0.##}/{100 - subject.SuccessPercent:0.##} the armor succeeds or breaks."),
                     Cost = $"{subject.Cost:N0} ₽" + (subject.Materials?.Length > 0 ? $" · LEDX {subject.Materials[0].Count}" : "")
                         + (subject.UseTicket ? Loc.L(" · ??? 방지권 1장", " · 1 ??? ticket") : ""),
                     Note = Loc.L("진행하시겠습니까?", "Proceed?"), NoteColor = Text
@@ -526,7 +526,7 @@ public sealed partial class Plugin
                 return new Look
                 {
                     Kicker = Loc.L("신화 · 추가 보호 부위", "Mythic · extra zones"), Title = Loc.L("부위 다시 뽑기", "Reroll a zone"), Tint = Myth,
-                    Line = (subject.Slot < zones.Length ? ZoneName(zones[subject.Slot]) : "?") + Loc.L($" → 남은 {subject.ZoneOptions.Length}곳 중 무작위", $" → one of {subject.ZoneOptions.Length} at random"),
+                    Line = (subject.Slot < zones.Length ? ZoneName(zones[subject.Slot]) : "?") + Loc.F($" → 남은 {subject.ZoneOptions.Length}곳 중 무작위", $" → one of {subject.ZoneOptions.Length} at random"),
                     Cost = $"{subject.Cost:N0} ₽" + (subject.Materials?.Length > 0 ? " · " + TranscendText.MaterialName(subject.Materials[0].Template) + $" {subject.Materials[0].Count}" : ""),
                     Note = Loc.L("되돌릴 수 없습니다. 다음 다시 뽑기는 ×1.5", "Cannot be undone. The next reroll costs ×1.5"), NoteColor = Caution
                 };

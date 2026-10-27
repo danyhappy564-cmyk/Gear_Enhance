@@ -50,8 +50,8 @@ public sealed partial class Plugin
         var mid = StatusWidth - 16;
         Label(x + 16, y, 80, 20, "", tiny);
         Label(x + mid - 168, y, 52, 20, Loc.L("원래", "Base"), tinyRight);
-        Label(x + mid - 110, y, 52, 20, level >= 0 ? Loc.L($"지금 {level}", $"Now {level}") : Loc.L("지금", "Now"), tinyRight, Myth);
-        Label(x + mid - 52, y, 52, 20, level >= 0 && level < MythicRules.MaxLevel ? Loc.L($"다음 {level + 1}", $"Next {level + 1}") : "", tinyRight, Blue);
+        Label(x + mid - 110, y, 52, 20, level >= 0 ? Loc.F($"지금 {level}", $"Now {level}") : Loc.L("지금", "Now"), tinyRight, Myth);
+        Label(x + mid - 52, y, 52, 20, level >= 0 && level < MythicRules.MaxLevel ? Loc.F($"다음 {level + 1}", $"Next {level + 1}") : "", tinyRight, Blue);
         y += 22;
         if (ammoRows.Count == 0)
         {
@@ -89,7 +89,7 @@ public sealed partial class Plugin
         try { round = LoadedRound(selectedItem); }
         catch (Exception ex) { LogDetailed("장전 탄 읽기 실패: " + ex.GetBaseException().Message); }
         var level = MythicLevel;
-        var key = (round == null ? "" : GameBridge.Get(round, "TemplateId")?.ToString()) + "|" + level + "|" + StatPatches.Registry.Version + "|" + Loc.English;
+        var key = (round == null ? "" : GameBridge.Get(round, "TemplateId")?.ToString()) + "|" + level + "|" + StatPatches.Registry.Version + "|" + Loc.Revision;
         if (key == ammoKey) return;
         ammoKey = key;
         ammoRows.Clear();

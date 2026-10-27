@@ -52,7 +52,7 @@ public sealed partial class Plugin
             {
                 var level = StatPatches.Registry.Find(id, path)?.Level ?? 0;
                 var met = level >= maxLevel.Value;
-                cards.Add((EnhanceEffects.Name(path), $"+{level}", met ? Loc.L("조건 충족", "Met") : Loc.L($"+{maxLevel.Value} 필요", $"Needs +{maxLevel.Value}"),
+                cards.Add((EnhanceEffects.Name(path), $"+{level}", met ? Loc.L("조건 충족", "Met") : Loc.F($"+{maxLevel.Value} 필요", $"Needs +{maxLevel.Value}"),
                     false, met, null, Gold));
             }
         else if (tab == UiTab.Transcend)
@@ -76,7 +76,7 @@ public sealed partial class Plugin
             for (var slot = 0; slot < zones.Length && !weapon; slot++)
             {
                 var picked = slot;
-                cards.Add((Loc.L($"추가 부위 {slot + 1}", $"Extra zone {slot + 1}"), ZoneName(zones[slot]), Loc.L("눌러서 다시 뽑기", "Click to reroll"),
+                cards.Add((Loc.F($"추가 부위 {slot + 1}", $"Extra zone {slot + 1}"), ZoneName(zones[slot]), Loc.L("눌러서 다시 뽑기", "Click to reroll"),
                     false, false, () => AskReroll(picked), Myth));
             }
         }
@@ -266,7 +266,7 @@ public sealed partial class Plugin
         foreach (var on in boostOn) if (on) picked++;
         var tuning = BoostTuning();
         Label(14, top, 120, 20, Loc.L("성공률 올리기", "Boost chance"), bodyBold);
-        Label(110, top, 200, 20, Loc.L($"재료 {tuning.MaxKinds}종까지", $"Up to {tuning.MaxKinds} kinds"), small);
+        Label(110, top, 200, 20, Loc.F($"재료 {tuning.MaxKinds}종까지", $"Up to {tuning.MaxKinds} kinds"), small);
         // Why the rows cannot be picked, in place of the count (a maxed track has no quote, 100% needs nothing).
         var why = preview == null ? maxed ? Loc.L("최대 단계라 재료가 필요 없습니다", "Maxed: no materials needed") : ""
             : preview.BoostAvailable ? "" : preview.BaseSuccessPercent >= 100 ? Loc.L("성공률 100%라 재료가 필요 없습니다", "Already 100%: no materials needed")
@@ -299,7 +299,7 @@ public sealed partial class Plugin
         var toggled = UiToggle(new Rect(name.x, rect.y + 10, 18, 18), on, "", name);
         if (toggled != on) main.Enqueue(() => ToggleBoost(kind));
         Label(name.x + 26, rect.y + 2, 170, 20, BoostName(kind), materialName, Text);
-        Label(name.x + 26, rect.y + 21, 170, 15, Loc.L($"개당 +{SuccessBoost.PointsEach(kind, tuning):0.##}% · {SuccessBoost.RoublesEach(kind, tuning):N0} ₽",
+        Label(name.x + 26, rect.y + 21, 170, 15, Loc.F($"개당 +{SuccessBoost.PointsEach(kind, tuning):0.##}% · {SuccessBoost.RoublesEach(kind, tuning):N0} ₽",
             $"each +{SuccessBoost.PointsEach(kind, tuning):0.##}% · {SuccessBoost.RoublesEach(kind, tuning):N0} ₽"), tiny);
         // Stepper: one box with − count + (mockup .step).
         var step = new Rect(name.xMax + 10, rect.y + 2, 116, rect.height - 4);
@@ -320,7 +320,7 @@ public sealed partial class Plugin
         Label(bonusX + bonusWidth + 4, rect.y + 6, 60, 13, Loc.L("최대", "max"), tiny);
         Label(bonusX + bonusWidth + 4, rect.y + 19, 60, 13, $"{SuccessBoost.Cap(kind, tuning):0.##}%", tiny);
         Label(rect.xMax - 12 - 64 - 10 - 104, rect.y, 104, rect.height, on ? $"{(long)count * SuccessBoost.RoublesEach(kind, tuning):N0} ₽" : "—", materialCost, on ? Text : Muted);
-        Label(rect.xMax - 12 - 64, rect.y, 64, rect.height, Loc.L($"보유 {owned:N0}", $"own {owned:N0}"), tinyRight, on && owned < count ? Loss : Muted);
+        Label(rect.xMax - 12 - 64, rect.y, 64, rect.height, Loc.F($"보유 {owned:N0}", $"own {owned:N0}"), tinyRight, on && owned < count ? Loss : Muted);
         GUI.color = old;
     }
 
@@ -380,14 +380,14 @@ public sealed partial class Plugin
             var drop = view.Protection.Downgrade ? 0 : 100 - view.DestructionPercent;
             if (destroy == 0 && drop == 0) { color = Good; return Loc.L("실패해도 보호", "Fail: guarded"); }
             color = destroy > 0 ? Loss : Caution;
-            return Loc.L($"실패 시 파괴 {destroy:0.##}% · 하락 {drop:0.##}%", $"Fail: destroy {destroy:0.##}% · drop {drop:0.##}%");
+            return Loc.F($"실패 시 파괴 {destroy:0.##}% · 하락 {drop:0.##}%", $"Fail: destroy {destroy:0.##}% · drop {drop:0.##}%");
         }
         if (view.FailureMode == FailureMode.Downgrade)
         {
             if (view.Protection.Downgrade) { color = Good; return Loc.L("실패해도 하락 방지", "Fail: drop guarded"); }
             color = Caution; return Loc.L("실패 시 1단계 하락", "Fail: drops one level");
         }
-        if (view.PityStep > 0) return Loc.L($"실패 시 천장 +{view.PityStep:0.##}%p", $"Fail: pity +{view.PityStep:0.##}%p");
+        if (view.PityStep > 0) return Loc.F($"실패 시 천장 +{view.PityStep:0.##}%p", $"Fail: pity +{view.PityStep:0.##}%p");
         return view.FailureMode == FailureMode.KeepItem ? Loc.L("실패 시 비용만 소모", "Fail: cost only") : FailureText(view.FailureMode);
     }
 
@@ -449,9 +449,9 @@ public sealed partial class Plugin
         var chip = new Rect(0, y, midWidth * 0.42f, 44);
         Box(chip, Inner, Hex(0x3d5a42));
         Label(chip.x + 10, chip.y + 4, chip.width - 20, 18, mystery ? Loc.L("??? 파괴 방지권 · 장비당 1장", "??? destruction ticket · one per gear")
-            : Loc.L($"{StarEvolution.Stars(target)} 진화 파괴 방지권", $"{StarEvolution.Stars(target)} destruction ticket"), bodyBold, Text);
+            : Loc.F($"{StarEvolution.Stars(target)} 진화 파괴 방지권", $"{StarEvolution.Stars(target)} destruction ticket"), bodyBold, Text);
         var state = view == null || view.TicketStars != target ? "—"
-            : Loc.L($"보유 {view.TicketsHeld}장 · 구매 {view.TicketsBought} / {view.TicketMax}", $"Held {view.TicketsHeld} · bought {view.TicketsBought} / {view.TicketMax}")
+            : Loc.F($"보유 {view.TicketsHeld}장 · 구매 {view.TicketsBought} / {view.TicketMax}", $"Held {view.TicketsHeld} · bought {view.TicketsBought} / {view.TicketMax}")
               + (view.TicketsBought >= view.TicketMax ? Loc.L(" (더 못 삼)", " (no more)") : "")
               + (target == 3 ? Loc.L(" · ★★용은 못 씀", " · ★★ tickets don't count") : "");
         Label(chip.x + 10, chip.y + 23, chip.width - 20, 16, state, tiny);
@@ -468,7 +468,7 @@ public sealed partial class Plugin
         GUI.enabled = view != null && view.TicketStars == target && view.TicketsBought < view.TicketMax && view.AvailableRoubles >= view.TicketPrice
             && Steady && popup == PopupKind.None && !uncertain;
         MiniButton(buy, view == null ? "—" : view.TicketsBought >= view.TicketMax ? Loc.L("더 살 수 없음", "Sold out")
-            : Loc.L($"1장 구매 · {view.TicketPrice:N0} ₽", $"Buy one · {view.TicketPrice:N0} ₽"), BuyTicket);
+            : Loc.F($"1장 구매 · {view.TicketPrice:N0} ₽", $"Buy one · {view.TicketPrice:N0} ₽"), BuyTicket);
         GUI.enabled = true;
         return y + 44;
     }
@@ -517,9 +517,9 @@ public sealed partial class Plugin
         var chip = new Rect(rect.x, rect.y, rect.width * 0.55f, rect.height);
         var owes = view != null && view.UnregisteredParts > 0;
         Box(chip, owes ? Hex(0x1f1a12) : Inner, owes ? Hex(0x8a6a3b) : Line);
-        Label(chip.x + 10, chip.y + 4, chip.width - 16, 18, Loc.L($"방탄판 {view?.InsertedParts ?? 0}장", $"{view?.InsertedParts ?? 0} plates"), bodyBold, Text);
+        Label(chip.x + 10, chip.y + 4, chip.width - 16, 18, Loc.F($"방탄판 {view?.InsertedParts ?? 0}장", $"{view?.InsertedParts ?? 0} plates"), bodyBold, Text);
         Label(chip.x + 10, chip.y + 23, chip.width - 16, 16, view == null ? "—" : !owes ? Loc.L("모두 적용됨", "All applied")
-            : view.InsertSurcharge > 0 ? Loc.L($"차액 {view.InsertSurcharge:N0} ₽", $"Owes {view.InsertSurcharge:N0} ₽") : Loc.L($"미적용 {view.UnregisteredParts}장", $"{view.UnregisteredParts} not applied"),
+            : view.InsertSurcharge > 0 ? Loc.F($"차액 {view.InsertSurcharge:N0} ₽", $"Owes {view.InsertSurcharge:N0} ₽") : Loc.F($"미적용 {view.UnregisteredParts}장", $"{view.UnregisteredParts} not applied"),
             tiny, owes ? Caution : Muted);
         GUI.enabled = usable && owes;
         MiniButton(new Rect(chip.xMax + 8, rect.y, rect.width - chip.width - 8, rect.height),

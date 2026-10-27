@@ -83,7 +83,7 @@ public sealed class EnhanceQueries(JsonUtil json, EnhanceService service) : Stat
         ApiReply<T> response;
         try { response = new() { Ok = true, Data = action() }; }
         catch (Exception ex) when (ex is ArgumentException or InvalidOperationException)
-        { response = new() { Error = ex.Message, ErrorEnglish = Loc.EnglishOf(ex) ?? ex.Message }; }
+        { response = new() { Error = ex.Message, ErrorEnglish = Loc.EnglishOf(ex) ?? ex.Message, ErrorKey = Loc.KeyOf(ex), ErrorArgs = Loc.ArgsOf(ex) }; }
         // Quote/state/receipt never pay. Report anything else as text so the
         // client shows and logs the cause instead of an unreadable response.
         catch (Exception ex)

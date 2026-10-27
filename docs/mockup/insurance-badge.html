@@ -1,0 +1,288 @@
+<title>보험 배지 위치 시안</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&amp;family=Rajdhani:wght@600;700&amp;display=swap" rel="stylesheet">
+<style>
+  /* 게임 창고 화면 하나에 맞춘 어두운 단일 테마. 왼쪽 미리보기(창고·장비 칸) + 오른쪽 F12 흉내 패널, 아래에 안별 설명. */
+  :root {
+    color-scheme: dark;
+    --page: #07090b; --panel: #111417; --control: #15191d; --line: #2a3037; --line-strong: #333a42;
+    --text: #e6e2d8; --heading: #f3e3bf; --muted: #9aa1a8; --accent: #d9b36c; --accent-bg: #2a2416;
+    --premium: #ffc46b; --advanced: #7fb2ff; --basic: #8fd694; --uninsured: #9aa1a8;
+    --one-bg: rgba(217,179,108,.13); --one-border: #8a7444; --one-star: #d9b36c;
+    --two-bg: rgba(180,156,255,.15); --two-border: #6f5fa8; --two-star: #b49cff;
+    --three-bg: rgba(255,107,107,.13); --three-border: #9a4a46; --three-star: #ff7b74;
+    --none-bg: #15191d; --none-border: #2a3037;
+    --grid-line: rgba(255,255,255,.055); --art: #6a737c; --art-mid: #5a626b; --art-dark: #4a5158; --shadow: rgba(0,0,0,.85);
+    --ok: #8fd694; --warn: #ffb26b;
+    --font-body: 'Noto Sans KR', 'Malgun Gothic', sans-serif;
+    --font-num: 'Rajdhani', 'Noto Sans KR', sans-serif;
+    --cell: 64px;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--page); color: var(--text); font: 13px/1.6 var(--font-body); }
+  main { max-width: 1240px; margin: 0 auto; padding-block: 28px 40px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: flex; flex-direction: column; gap: 22px; }
+  h1 { margin: 0; color: var(--heading); font-size: 26px; text-wrap: balance; }
+  h2 { margin: 0; font-size: 15px; color: var(--heading); }
+  p { margin: 0; }
+  .muted { color: var(--muted); }
+  .quote { display: flex; flex-direction: column; gap: 4px; padding: 12px 16px; border: 1px solid var(--line); border-left: 3px solid var(--accent); background: var(--panel); }
+  .quote b { color: var(--heading); }
+  .workspace { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 24px; align-items: start; }
+  .previews { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
+  .head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin-bottom: 8px; flex-wrap: wrap; }
+  .head small { color: var(--muted); font-size: 11px; }
+  .scroller { overflow-x: auto; max-width: 100%; }
+  .frame { width: fit-content; padding: 1px; border: 1px solid var(--line); background: var(--panel); }
+  .grid { display: grid; grid-template-columns: repeat(10, var(--cell)); grid-template-rows: repeat(6, var(--cell)); background-color: var(--page);
+    background-image: linear-gradient(var(--grid-line) 1px, transparent 1px), linear-gradient(90deg, var(--grid-line) 1px, transparent 1px); background-size: var(--cell) var(--cell); }
+  .slots { display: flex; gap: 14px; flex-wrap: wrap; }
+  .slot { display: flex; flex-direction: column; gap: 4px; }
+  .slot-label { font-size: 11px; color: var(--muted); letter-spacing: .04em; }
+  .slot .item { position: relative; }
+  .item { position: relative; overflow: hidden; background-color: var(--none-bg); border: 1px solid var(--none-border); --star: var(--accent);
+    background-image: linear-gradient(var(--grid-line) 1px, transparent 1px), linear-gradient(90deg, var(--grid-line) 1px, transparent 1px); background-size: var(--cell) var(--cell); }
+  .item[data-stage="one"] { background-color: var(--one-bg); border-color: var(--one-border); --star: var(--one-star); }
+  .item[data-stage="two"] { background-color: var(--two-bg); border-color: var(--two-border); --star: var(--two-star); }
+  .item[data-stage="three"] { background-color: var(--three-bg); border-color: var(--three-border); --star: var(--three-star); }
+  .item:hover { outline: 1px solid var(--accent); outline-offset: -1px; z-index: 1; }
+  .name { position: absolute; top: 2px; right: 5px; left: 3px; display: flex; justify-content: flex-end; align-items: baseline; gap: 5px; z-index: 2; white-space: nowrap; overflow: hidden; font-size: 12px; font-weight: 700; text-shadow: 0 1px 2px var(--shadow); }
+  .stars { color: var(--star); }
+  .art { position: absolute; width: 88%; height: 70%; left: 6%; top: 20%; color: var(--art); pointer-events: none; }
+  .foot { position: absolute; right: 5px; bottom: 1px; display: flex; gap: 6px; align-items: center; z-index: 2; }
+  .count { font: 700 17px/1.2 var(--font-num); text-shadow: 0 1px 2px var(--shadow); }
+  .slotnum { position: absolute; left: 4px; top: 2px; font: 700 13px/1.2 var(--font-num); color: var(--muted); z-index: 2; }
+  .ins { color: var(--tier); flex-shrink: 0; pointer-events: none; }
+  .t-premium { --tier: var(--premium); } .t-advanced { --tier: var(--advanced); } .t-basic { --tier: var(--basic); } .t-none { --tier: var(--uninsured); }
+  .mark { position: absolute; z-index: 3; }
+  .mark.letter { display: flex; width: 18px; height: 18px; border: 1px solid var(--page); align-items: center; justify-content: center; background: var(--tier); color: var(--panel); font: 700 12px/1 var(--font-body); }
+  .mark.corner { width: 11px; height: 11px; background: var(--tier); }
+  .mark.dot { width: 7px; height: 7px; border-radius: 50%; background: var(--tier); box-shadow: 0 0 0 1px var(--page); }
+  .mark.letter.top-left { left: 3px; top: 23px; }
+  .mark.corner.top-left { left: 0; top: 0; clip-path: polygon(0 0, 100% 0, 0 100%); }
+  .mark.dot.top-left { left: 5px; top: 6px; }
+  .mark.letter.bottom-left { left: 3px; bottom: 3px; }
+  .mark.corner.bottom-left { left: 0; bottom: 0; clip-path: polygon(0 0, 0 100%, 100% 100%); }
+  .mark.dot.bottom-left { left: 5px; bottom: 6px; }
+  .foot .mark { position: static; }
+  .foot .mark.corner { clip-path: polygon(100% 0, 100% 100%, 0 100%); }
+  .inline { font-size: 11px; text-shadow: none; }
+  .hover-only .item:not(:hover) .ins { visibility: hidden; }
+  .settings { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 12px); display: flex; flex-direction: column; gap: 14px; padding: 16px; border: 1px solid var(--line); background: var(--panel); }
+  .settings-title { display: flex; align-items: center; gap: 9px; padding-bottom: 12px; border-bottom: 1px solid var(--line); }
+  kbd { padding: 1px 7px; border: 1px solid var(--one-border); color: var(--accent); font: 700 16px var(--font-num); }
+  .presets { display: flex; gap: 8px; flex-wrap: wrap; }
+  .preset { flex: 1 1 140px; padding: 8px 10px; border: 1px solid var(--line-strong); background: var(--control); color: var(--muted); font: 700 12px var(--font-body); cursor: pointer; text-align: left; }
+  .preset span { display: block; font-weight: 400; font-size: 11px; }
+  .preset.on { border-color: var(--accent); background: var(--accent-bg); color: var(--heading); }
+  .preset:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  fieldset { border: 0; padding: 0; margin: 0; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+  legend { padding: 0; margin-bottom: 4px; font-weight: 700; }
+  .choice { display: flex; align-items: center; gap: 8px; padding: 4px 0; cursor: pointer; }
+  .choice small { margin-left: auto; font-size: 10px; color: var(--muted); text-align: right; }
+  input { accent-color: var(--accent); margin: 0; width: 14px; height: 14px; flex-shrink: 0; }
+  .row { display: flex; flex-wrap: wrap; gap: 0 14px; }
+  fieldset:disabled { opacity: .4; }
+  .toggles { padding-top: 10px; border-top: 1px solid var(--line); }
+  .tag { display: inline-block; padding: 0 5px; font-size: 10px; font-weight: 700; border: 1px solid currentColor; }
+  .tag.ok { color: var(--ok); } .tag.warn { color: var(--warn); }
+  .status { padding: 8px 10px; border-left: 2px solid var(--accent); background: var(--control); font-size: 12px; color: var(--muted); }
+  .legend { display: flex; align-items: center; flex-wrap: wrap; gap: 10px 22px; padding-top: 16px; border-top: 1px solid var(--line); }
+  .legend-entry { display: inline-flex; align-items: center; gap: 7px; color: var(--muted); font-size: 12px; }
+  .legend-mark { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; background: var(--tier); color: var(--panel); font-size: 11px; font-weight: 700; }
+  .notes { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
+  .note { display: flex; flex-direction: column; gap: 6px; padding: 12px 14px; border: 1px solid var(--line); background: var(--panel); min-width: 0; }
+  .note h3 { margin: 0; font-size: 13px; color: var(--heading); display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .note p { color: var(--muted); font-size: 12px; }
+  .svg-lib { position: absolute; width: 0; height: 0; overflow: hidden; }
+  @media (max-width: 1100px) { .workspace { grid-template-columns: 1fr; } .settings { position: static; } }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<svg class="svg-lib" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs>
+  <symbol id="art-gun" viewBox="0 0 300 110"><path d="M8 38h62v25H8z" fill="var(--art-mid)"/><path d="M8 34h14v37H8z" fill="var(--art-dark)"/><path d="M70 31h118v32H70z" fill="currentColor"/><path d="M106 19h44v12h-44z" fill="var(--art-mid)"/><path d="M188 37h72v22h-72z" fill="var(--art-mid)"/><path d="M260 44h36v7h-36zM118 63h24l6 36h-22zM88 63h16l-4 27H86z" fill="var(--art-dark)"/></symbol>
+  <symbol id="art-vest" viewBox="0 0 120 120"><path d="M30 8h18v16h24V8h18v22l12 12v70H18V42l12-12z" fill="var(--art-mid)"/><path d="M36 42h48v40H36z" fill="currentColor"/><path d="M24 90h72v16H24z" fill="var(--art-dark)"/></symbol>
+  <symbol id="art-helmet" viewBox="0 0 120 110"><path d="M14 72Q14 14 60 12Q106 14 106 72V86H14Z" fill="currentColor"/><path d="M10 82h100v10H10zM30 52h60v22H30z" fill="var(--art-dark)"/></symbol>
+  <symbol id="art-ammo" viewBox="0 0 60 60"><path d="M12 45V20l5-12 5 12v25zm15 0V20l5-12 5 12v25zm15 0V20l5-12 5 12v25z" fill="var(--art-mid)"/><path d="M10 43h14v5H10zm15 0h14v5H25zm15 0h14v5H40z" fill="currentColor"/></symbol>
+  <symbol id="art-med" viewBox="0 0 60 90"><rect x="10" y="15" width="40" height="62" rx="5" fill="var(--art-mid)"/><path d="M26 31h8v10h10v8H34v10h-8V49H16v-8h10z" fill="currentColor"/><path d="M15 19h30v5H15zM15 68h30v4H15z" fill="var(--art-dark)"/></symbol>
+</defs></svg>
+
+<main>
+  <header style="display:flex;flex-direction:column;gap:6px">
+    <h1>창고 보험 배지 · 위치와 표시 옵션</h1>
+    <p class="muted">Gear Enhance 1.4.1 시안. 오른쪽 설정을 바꾸면 창고와 장비 칸이 바로 바뀝니다. 장비 이름·숫자는 예시입니다.</p>
+  </header>
+
+  <div class="quote">
+    <b>받은 의견</b>
+    <span>“보험 아이콘 위치가 좀 거슬립니다. 끌 수 있는 버튼이 있거나 다른 곳으로 옮길 수 있으면 좋겠습니다.”</span>
+    <span class="muted">지금(1.4.0)은 강화한 장비마다 왼쪽에 18px 글자 칸이 붙고, 보험이 없는 장비에도 회색 X가 붙습니다. 그래서 강화 장비가 많을수록 창고가 지저분해 보입니다.</span>
+  </div>
+
+  <div class="workspace">
+    <div class="previews">
+      <section aria-labelledby="stash-title">
+        <div class="head"><h2 id="stash-title">창고</h2><small>10 × 6칸 · 한 칸 64px</small></div>
+        <div class="scroller"><div class="frame"><div class="grid" id="stash" aria-label="예시 창고"></div></div></div>
+      </section>
+      <section aria-labelledby="slot-title">
+        <div class="head"><h2 id="slot-title">장비 칸 (캐릭터 화면)</h2><small>이름이 잘리는 좁은 칸에도 같은 표시가 붙습니다</small></div>
+        <div class="slots" id="slots"></div>
+      </section>
+    </div>
+
+    <aside class="settings" aria-labelledby="settings-title">
+      <div class="settings-title"><kbd>F12</kbd><h2 id="settings-title">1. 기본 · 창고 보험 표시</h2></div>
+      <div class="presets" role="group" aria-label="빠른 선택">
+        <button type="button" class="preset" id="preset-rec" data-preset="rec">추천 조합<span>모서리 삼각형 · 왼쪽 아래 · X 숨김</span></button>
+        <button type="button" class="preset" id="preset-now" data-preset="now">1.4.0 그대로<span>글자 배지 · 왼쪽 위 · X 표시</span></button>
+      </div>
+      <form id="settings">
+        <fieldset>
+          <legend>표시 모양</legend>
+          <label class="choice"><input type="radio" id="shape-letter" name="shape" value="letter">글자 배지 <small>지금 · 18px · P 고 일 X</small></label>
+          <label class="choice"><input type="radio" id="shape-corner" name="shape" value="corner">모서리 삼각형 <small>11px · 색만</small></label>
+          <label class="choice"><input type="radio" id="shape-dot" name="shape" value="dot">작은 점 <small>7px · 색만</small></label>
+          <label class="choice"><input type="radio" id="shape-inline" name="shape" value="inline">이름 옆 글자 <small>별 뒤에 [P]</small></label>
+          <label class="choice"><input type="radio" id="shape-off" name="shape" value="off">끄기</label>
+        </fieldset>
+        <fieldset id="position-set" style="margin-top:12px">
+          <legend>위치 <small class="muted" style="font-weight:400">(이름 옆 글자·끄기는 해당 없음)</small></legend>
+          <div class="row">
+            <label class="choice"><input type="radio" id="pos-tl" name="position" value="top-left">왼쪽 위</label>
+            <label class="choice"><input type="radio" id="pos-bl" name="position" value="bottom-left">왼쪽 아래</label>
+            <label class="choice"><input type="radio" id="pos-br" name="position" value="bottom-right">개수 숫자 옆</label>
+          </div>
+        </fieldset>
+        <div class="toggles">
+          <label class="choice"><input type="checkbox" id="show-x">보험 없는 강화 장비에도 X 표시</label>
+          <label class="choice"><input type="checkbox" id="hover-only">마우스를 올렸을 때만 표시 <small><span class="tag warn">패치 추가</span></small></label>
+        </div>
+      </form>
+      <div class="status" id="status" role="status" aria-live="polite"></div>
+      <p class="muted" style="font-size:11px">실제 F12에서는 모양·위치가 목록 상자로, 나머지는 체크 상자로 나옵니다. 바꾸면 창고를 다시 열지 않아도 바로 적용되게 만들 예정입니다.</p>
+    </aside>
+  </div>
+
+  <div class="legend" aria-label="보험 등급 색">
+    <h2>보험 등급 색</h2>
+    <span class="legend-entry"><span class="legend-mark t-premium">P</span>프리미엄 99%</span>
+    <span class="legend-entry"><span class="legend-mark t-advanced">고</span>고급 55%</span>
+    <span class="legend-entry"><span class="legend-mark t-basic">일</span>일반 20%</span>
+    <span class="legend-entry"><span class="legend-mark t-none">X</span>보험 없음</span>
+    <span class="muted" style="font-size:12px">영어·러시아어·중국어에서는 글자가 P · A · B · X로 바뀝니다.</span>
+  </div>
+
+  <section class="notes" aria-label="안별 설명">
+    <div class="note"><h3>글자 배지 <span class="tag ok">지금 있음</span></h3><p>등급을 글자로 바로 읽을 수 있습니다. 대신 장비 그림을 가장 많이 가립니다. 위치만 바꿔도 거슬림이 줄어듭니다.</p></div>
+    <div class="note"><h3>모서리 삼각형 <span class="tag ok">추천</span></h3><p>칸 모서리를 색으로만 접은 모양이라 그림을 거의 가리지 않습니다. 색 네 가지만 알면 되고, 왼쪽 아래는 게임이 다른 표시를 쓰지 않는 자리입니다.</p></div>
+    <div class="note"><h3>작은 점</h3><p>가장 작습니다. 어두운 칸 배경에서는 잘 안 보일 수 있어 테두리를 한 줄 둘렀습니다.</p></div>
+    <div class="note"><h3>이름 옆 글자</h3><p>칸 위쪽 이름 줄(별 뒤)에 붙습니다. 그림은 안 가리지만, 좁은 장비 칸에서는 이름과 함께 잘릴 수 있습니다.</p></div>
+    <div class="note"><h3>X 숨김 <span class="tag ok">추천</span></h3><p>보험에 든 장비만 표시합니다. 의견의 원인이 이것일 가능성이 큽니다. 보험 없음은 강화 창 보험 탭에서 그대로 확인할 수 있습니다.</p></div>
+    <div class="note"><h3>마우스 올렸을 때만 <span class="tag warn">패치 추가</span></h3><p>평소에는 숨기고 마우스를 올린 칸에만 보입니다. 게임의 마우스 이벤트에 패치를 하나 더 걸어야 해서 문제가 생길 곳이 늘어납니다.</p></div>
+  </section>
+</main>
+
+<script>
+  // 예시 데이터: col/row는 시작 칸, w/h는 차지하는 칸 수.
+  const stashItems = [
+    { name: 'K2', stage: 'one', stars: '★ +5', tier: 'none', count: '30/30', art: 'gun', col: 1, row: 1, w: 5, h: 2 },
+    { name: 'M4A1', stage: 'two', stars: '★★', tier: 'advanced', count: '30/30', art: 'gun', col: 6, row: 1, w: 5, h: 2 },
+    { name: 'AK-74N', stage: 'three', stars: '★★★', tier: 'premium', count: '30/30', art: 'gun', col: 1, row: 3, w: 5, h: 2 },
+    { name: 'Gen4', stage: 'two', stars: '★★', tier: 'basic', count: '64/64', art: 'vest', col: 6, row: 3, w: 3, h: 3 },
+    { name: 'Altyn', stage: 'one', stars: '★ +3', tier: 'none', count: '40/40', art: 'helmet', col: 9, row: 3, w: 2, h: 2 },
+    { name: 'IFAK', stage: 'none', count: '300', art: 'med', col: 1, row: 5, w: 1, h: 2 },
+    { name: 'AI-2', stage: 'none', count: '100', art: 'med', col: 2, row: 5, w: 1, h: 1 },
+    { name: 'M855', stage: 'none', count: '60', art: 'ammo', col: 3, row: 5, w: 1, h: 1 },
+    { name: '5.45 PS', stage: 'none', count: '60', art: 'ammo', col: 4, row: 5, w: 1, h: 1 },
+    { name: 'M855A1', stage: 'none', count: '42', art: 'ammo', col: 9, row: 5, w: 1, h: 1 },
+    { name: '붕대', stage: 'none', count: '2/2', art: 'med', col: 10, row: 5, w: 1, h: 1 },
+    { name: 'Esmarch', stage: 'none', count: '1/1', art: 'med', col: 3, row: 6, w: 1, h: 1 }
+  ];
+  const slotItems = [
+    { label: '주 무기', name: 'AK-74N', stage: 'three', stars: '★★★', tier: 'premium', count: '30/30', art: 'gun', w: 5, h: 2, num: '1' },
+    { label: '방탄 조끼', name: 'Gen4', stage: 'two', stars: '★★', tier: 'basic', count: '64/64', art: 'vest', w: 2, h: 2 },
+    { label: '헬멧', name: 'Altyn', stage: 'one', stars: '★ +3', tier: 'none', count: '40/40', art: 'helmet', w: 2, h: 2 }
+  ];
+  const tiers = { premium: ['P', '프리미엄'], advanced: ['고', '고급'], basic: ['일', '일반'], none: ['X', '없음'] };
+  const shapeNames = { letter: '글자 배지', corner: '모서리 삼각형', dot: '작은 점', inline: '이름 옆 글자', off: '끄기' };
+  const posNames = { 'top-left': '왼쪽 위', 'bottom-left': '왼쪽 아래', 'bottom-right': '개수 숫자 옆' };
+  const presets = { rec: { shape: 'corner', position: 'bottom-left', x: false, hover: false }, now: { shape: 'letter', position: 'top-left', x: true, hover: false } };
+  const form = document.getElementById('settings');
+
+  function cell(item, opt) {
+    const el = document.createElement('div');
+    el.className = 'item';
+    el.dataset.stage = item.stage;
+    const tier = tiers[item.tier];
+    el.title = item.name + (item.stars ? ' ' + item.stars : '') + (tier ? ' · 강화 보험: ' + tier[1] : ' · 강화 안 함');
+    el.innerHTML = '<svg class="art" aria-hidden="true"><use href="#art-' + item.art + '"></use></svg>'
+      + (item.num ? '<span class="slotnum">' + item.num + '</span>' : '')
+      + '<div class="name"><span>' + item.name + '</span>' + (item.stars ? '<span class="stars">' + item.stars + '</span>' : '') + '</div>'
+      + '<div class="foot"><span class="count">' + item.count + '</span></div>';
+    if (tier && opt.shape !== 'off' && (item.tier !== 'none' || opt.x)) {
+      const mark = document.createElement('span');
+      mark.className = 'ins t-' + item.tier;
+      mark.setAttribute('aria-label', '강화 보험: ' + tier[1]);
+      if (opt.shape === 'inline') {
+        mark.classList.add('inline');
+        mark.textContent = '[' + tier[0] + ']';
+        el.querySelector('.name').append(mark);
+      } else {
+        mark.classList.add('mark', opt.shape, opt.position);
+        if (opt.shape === 'letter') mark.textContent = tier[0];
+        if (opt.position === 'bottom-right') el.querySelector('.foot').prepend(mark); else el.append(mark);
+      }
+    }
+    return el;
+  }
+
+  function read() {
+    return { shape: form.elements.shape.value, position: form.elements.position.value,
+      x: document.getElementById('show-x').checked, hover: document.getElementById('hover-only').checked };
+  }
+
+  function render() {
+    const opt = read();
+    document.getElementById('position-set').disabled = opt.shape === 'inline' || opt.shape === 'off';
+    const stash = document.getElementById('stash');
+    stash.classList.toggle('hover-only', opt.hover);
+    stash.replaceChildren(...stashItems.map(item => {
+      const el = cell(item, opt);
+      el.style.gridArea = item.row + ' / ' + item.col + ' / span ' + item.h + ' / span ' + item.w;
+      return el;
+    }));
+    const slots = document.getElementById('slots');
+    slots.classList.toggle('hover-only', opt.hover);
+    slots.replaceChildren(...slotItems.map(item => {
+      const wrap = document.createElement('div');
+      wrap.className = 'slot';
+      const el = cell(item, opt);
+      el.style.width = item.w * 64 + 'px'; el.style.height = item.h * 64 + 'px';
+      wrap.innerHTML = '<span class="slot-label">' + item.label + '</span>';
+      wrap.append(el);
+      return wrap;
+    }));
+    const parts = [shapeNames[opt.shape]];
+    if (opt.shape !== 'inline' && opt.shape !== 'off') parts.push(posNames[opt.position]);
+    if (opt.shape !== 'off') { parts.push(opt.x ? 'X 표시' : 'X 숨김'); if (opt.hover) parts.push('마우스 올릴 때만'); }
+    document.getElementById('status').textContent = '지금 보는 조합: ' + parts.join(' · ');
+    for (const [key, p] of Object.entries(presets)) {
+      const on = p.shape === opt.shape && p.position === opt.position && p.x === opt.x && p.hover === opt.hover;
+      document.querySelector('[data-preset="' + key + '"]').classList.toggle('on', on);
+    }
+  }
+
+  function apply(p) {
+    form.elements.shape.value = p.shape;
+    form.elements.position.value = p.position;
+    document.getElementById('show-x').checked = p.x;
+    document.getElementById('hover-only').checked = p.hover;
+    render();
+  }
+
+  form.addEventListener('change', render);
+  form.addEventListener('submit', e => e.preventDefault());
+  document.querySelectorAll('.preset').forEach(b => b.addEventListener('click', () => apply(presets[b.dataset.preset])));
+  apply(presets.rec);
+</script>

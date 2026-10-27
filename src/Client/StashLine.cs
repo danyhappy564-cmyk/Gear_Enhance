@@ -11,7 +11,7 @@ namespace GearEnhance;
 // cell it would cover.
 internal static class StashLine
 {
-    private const string LineName = "GearEnhanceLine";
+    internal const string LineName = "GearEnhanceLine";
     private const float Scale = 0.86f;
     private static MethodInfo forceMesh;
 
@@ -73,7 +73,7 @@ internal static class StashLine
     }
 
     // The drawn text of a TextMeshPro label in the cell's space (y up), or null when it shows nothing.
-    private static Rect? Bounds(Component label, Transform cell)
+    internal static Rect? Bounds(Component label, Transform cell)
     {
         if (!label.gameObject.activeInHierarchy || !(GameBridge.Get(label, "text") is string text) || text.Trim().Length == 0) return null;
         forceMesh ??= label.GetType().GetMethod("ForceMeshUpdate", new[] { typeof(bool), typeof(bool) });
