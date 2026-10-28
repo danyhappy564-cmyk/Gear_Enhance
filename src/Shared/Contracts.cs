@@ -16,7 +16,7 @@ public static class EnhanceProtocol
 {
     // 13 (1.4.1): replies carry the error's translation key and arguments.
     public const int Version = 13;
-    public const string ModVersion = "1.4.1";
+    public const string ModVersion = "1.4.2";
     public static void Validate(int version)
     {
         if (version != Version)

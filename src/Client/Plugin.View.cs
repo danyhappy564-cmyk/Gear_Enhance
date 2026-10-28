@@ -10,8 +10,14 @@ public sealed partial class Plugin
 {
     private bool UiButton(Rect rect, string text, GUIStyle style, UiInteraction cue = UiInteraction.Button)
     {
-        if (InputLocked) { Locked(() => GUI.Button(rect, text, style)); return false; }
-        if (!GUI.Button(rect, text, style)) return false;
+        var size = style.fontSize;
+        style.fontSize = FitSize(text, style, rect.width - style.padding.horizontal);
+        try
+        {
+            if (InputLocked) { Locked(() => GUI.Button(rect, text, style)); return false; }
+            if (!GUI.Button(rect, text, style)) return false;
+        }
+        finally { style.fontSize = size; }
         PlayInteraction(cue); return true;
     }
     private bool UiButton(Rect rect, GUIContent content, GUIStyle style)
@@ -102,6 +108,7 @@ public sealed partial class Plugin
     // window font follows the language, Windows CJK font for Chinese).
     private void ResetSkin()
     {
+        fitted.Clear();
         if (windowSkin != null) Destroy(windowSkin);
         if (uiFont != null) Destroy(uiFont);
         UiFonts.Unload();
@@ -331,15 +338,54 @@ public sealed partial class Plugin
     private void Label(float x, float y, float width, float height, string text, GUIStyle style)
     {
         // Labels retain their control IDs on every event; Unity draws them only on Repaint.
-        GUI.Label(new Rect(x, y, width, height), text, style);
+        var size = style.fontSize;
+        style.fontSize = FitSize(text, style, width);
+        GUI.Label(Unclipped(new Rect(x, y, width, height), style), text, style);
+        style.fontSize = size;
     }
     // GUI.color would multiply the style's own color; swap the style's color for this one label.
     private void Label(float x, float y, float width, float height, string text, GUIStyle style, Color color)
     {
         var old = style.normal.textColor;
         style.normal.textColor = color;
-        GUI.Label(new Rect(x, y, width, height), text, style);
+        Label(x, y, width, height, text, style);
         style.normal.textColor = old;
+    }
+
+    // User 2026-10-28: some English, Russian and Chinese text was cut off at the end of its box, and
+    // Latin descenders at the bottom (the "y" of MYTHIC). Korean was laid out to fit. One-line text
+    // wider than its box shrinks (down to 70 %); the clip box grows up and down without moving the text.
+    private const float SmallestFit = 0.7f;
+    private readonly Dictionary<(string, GUIStyle, int), int> fitted = new Dictionary<(string, GUIStyle, int), int>();
+    private readonly GUIContent fitContent = new GUIContent();
+
+    private int FitSize(string text, GUIStyle style, float width)
+    {
+        var size = style.fontSize;
+        if (size <= 0 || style.wordWrap || string.IsNullOrEmpty(text) || width <= 0) return size;
+        var key = (text, style, (int)width);
+        if (fitted.TryGetValue(key, out var known)) return known;
+        if (fitted.Count >= 4096) fitted.Clear();
+        fitContent.text = text;
+        var smallest = Mathf.CeilToInt(size * SmallestFit);
+        var fit = size;
+        while (fit > smallest && style.CalcSize(fitContent).x > width + 0.5f) style.fontSize = --fit;
+        style.fontSize = size;
+        return fitted[key] = fit;
+    }
+
+    private static Rect Unclipped(Rect rect, GUIStyle style)
+    {
+        var pad = Mathf.Ceil(Math.Max(style.fontSize, 12) * 0.35f);
+        switch (style.alignment)
+        {
+            case TextAnchor.UpperLeft: case TextAnchor.UpperCenter: case TextAnchor.UpperRight:
+                return new Rect(rect.x, rect.y, rect.width, rect.height + pad);
+            case TextAnchor.LowerLeft: case TextAnchor.LowerCenter: case TextAnchor.LowerRight:
+                return new Rect(rect.x, rect.y - pad, rect.width, rect.height + pad);
+            default:
+                return new Rect(rect.x, rect.y - pad, rect.width, rect.height + 2 * pad);
+        }
     }
     // Two-layer bar (mockup .bar): the grey "now" part over the blue "after" part, both filling in.
     // `key` names the bar so a changed value slides there (Tween) instead of jumping.

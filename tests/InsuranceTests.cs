@@ -561,10 +561,22 @@ public sealed class InsuranceTests
         var names = target!.GetParameters().Select(p => p.Name).ToArray();
         Assert.Contains("sessionId", names);
         Assert.Contains("request", names);
+        // Bound by name in the prefix: a Terminal raid is left to Manimal Terminal's restore.
+        Assert.Contains("locationName", names);
         // The insurance packages are queued inside it, so the postfix can strip them.
         using var core = Mono.Cecil.AssemblyDefinition.ReadAssembly(target.DeclaringType!.Assembly.Location);
         var method = core.MainModule.GetType(target.DeclaringType.FullName).Methods.Single(m => m.Name == "HandlePostRaidPmc");
         Assert.Contains(method.Body.Instructions, i => i.Operand is Mono.Cecil.MethodReference m && m.Name == "HandleInsuredItemLostEvent");
         Assert.Contains(method.Body.Instructions, i => i.Operand is Mono.Cecil.MethodReference m && m.Name == "DeleteInventory");
+    }
+
+    // User 2026-10-28: only Manimal Terminal's own map restore skips the raid end; without the mod
+    // (as in this test host) a "terminal" raid is handled like any other.
+    [Fact]
+    public void Raid_end_is_skipped_only_for_a_terminal_restore()
+    {
+        Assert.False(RaidEndPatch.TerminalRestores(Session, "factory4_day"));
+        Assert.False(RaidEndPatch.TerminalRestores(Session, null));
+        Assert.False(RaidEndPatch.TerminalRestores(Session, "terminal"));
     }
 }

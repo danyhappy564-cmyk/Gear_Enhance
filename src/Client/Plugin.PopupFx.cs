@@ -136,6 +136,14 @@ public sealed partial class Plugin
     private void GradientLabel(Rect rect, string text, GUIStyle style, double elapsed)
     {
         if (Event.current.type != EventType.Repaint) { Label(rect.x, rect.y, rect.width, rect.height, text, style); return; }
+        var size = style.fontSize;
+        style.fontSize = FitSize(text, style, rect.width);
+        try { GradientSlices(rect, text, style, elapsed); }
+        finally { style.fontSize = size; }
+    }
+
+    private void GradientSlices(Rect rect, string text, GUIStyle style, double elapsed)
+    {
         fxContent.text = text;
         var width = style.CalcSize(fxContent).x;
         var left = TextCenter(rect, new Vector2(width, 0), style.alignment).x - width / 2;
@@ -148,8 +156,10 @@ public sealed partial class Plugin
             var at = (float)(((index + 0.5) / slices / 3 + shift) % 1) * 4;
             var segment = Math.Min(3, (int)at);
             var color = Color.Lerp(TitleGradient[segment], TitleGradient[segment + 1], at - segment);
-            GUI.BeginClip(new Rect(x, rect.y, slice + 0.6f, rect.height));
-            Label(rect.x - x, 0, rect.width, rect.height, text, style, color);
+            // Taller than the title box: descenders (the "y" of Mythic) are not cut off.
+            var pad = Mathf.Ceil(style.fontSize * 0.35f);
+            GUI.BeginClip(new Rect(x, rect.y - pad, slice + 0.6f, rect.height + 2 * pad));
+            Label(rect.x - x, pad, rect.width, rect.height, text, style, color);
             GUI.EndClip();
         }
     }

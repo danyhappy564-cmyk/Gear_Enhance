@@ -196,5 +196,5 @@ internal static class ItemMarkers
         }
         return false;
     }
-    internal static void Clear() { views.Clear(); unknown.Clear(); MythicFrame.Clear(); }
+    internal static void Clear() { views.Clear(); unknown.Clear(); MythicFrame.Clear(); StashLine.Drop(); }
 }

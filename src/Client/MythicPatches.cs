@@ -132,8 +132,22 @@ internal static class MythicPatches
             var zone = __args[0]?.ToString();
             if (zone == null || Array.IndexOf(Registry.MythicZones(holder), zone) < 0) return;
             __result = true;
+            Noted(zone);
         }
         catch (Exception ex) { Report(ex); }
+    }
+
+    // User 2026-10-28: the game's inspect window lists only the template's zones, so LogOutput.log
+    // shows that an extra zone took a hit (once per zone every 5 s; one shot checks several parts).
+    // Set by Plugin: the tests run these hooks without Unity.
+    internal static Action<string> Note;
+    private static readonly Dictionary<string, int> noted = new Dictionary<string, int>();
+    private static void Noted(string zone)
+    {
+        var now = Environment.TickCount;
+        if (Note == null || noted.TryGetValue(zone, out var at) && unchecked(now - at) < 5000) return;
+        noted[zone] = now;
+        Note("신화 추가 보호 부위가 피격을 막음 / Mythic extra zone took the hit: " + zone);
     }
 
     // Id of the mythic armor whose extra zones this component carries, or null. The carrier is

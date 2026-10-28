@@ -39,6 +39,11 @@ public sealed class EffectTuning
 
 public static class EnhanceEffects
 {
+    // 1.4.2 (user 2026-10-28): armor whose worn total has no movement, turning or ergonomics penalty
+    // turns its Mobility track into impact absorption (blunt damage reduction, same amounts). The
+    // client sets this for the gear open in the window; the server never does.
+    public static bool ImpactMobility { get; set; }
+
     public static bool IsWeaponPath(EnhancePath path) => path == EnhancePath.Recoil
         || path == EnhancePath.Ergonomics || path == EnhancePath.Precision;
 
@@ -80,7 +85,7 @@ public static class EnhanceEffects
     {
         EnhancePath.Recoil => Loc.L("반동 제어", "Recoil"), EnhancePath.Ergonomics => Loc.L("조작성", "Handling"),
         EnhancePath.Precision => Loc.L("정밀성", "Precision"), EnhancePath.ArmorDurability => Loc.L("내구성", "Durability"),
-        EnhancePath.Mobility => Loc.L("기동성", "Mobility"), _ => Loc.L("미선택", "None")
+        EnhancePath.Mobility => ImpactMobility ? Loc.L("충격 흡수", "Impact absorption") : Loc.L("기동성", "Mobility"), _ => Loc.L("미선택", "None")
     };
 
     // F12 cfg keys are built from this Korean text and must never change with language.
@@ -95,7 +100,7 @@ public static class EnhanceEffects
     {
         EnhancePath.Recoil => Loc.L("반동 감소", "Recoil reduction"), EnhancePath.Ergonomics => Loc.L("인체공학 증가", "Ergonomics bonus"),
         EnhancePath.Precision => Loc.L("탄 퍼짐 감소", "Dispersion reduction"), EnhancePath.ArmorDurability => Loc.L("내구도 소모 감소", "Durability loss reduction"),
-        EnhancePath.Mobility => Loc.L("장비 페널티 완화", "Gear penalty relief"), _ => ""
+        EnhancePath.Mobility => ImpactMobility ? Loc.L("둔탁상 감소", "Blunt reduction") : Loc.L("장비 페널티 완화", "Gear penalty relief"), _ => ""
     };
 
     public static string Description(EnhancePath path) => path switch
@@ -104,7 +109,9 @@ public static class EnhanceEffects
         EnhancePath.Ergonomics => Loc.L("해당 무기의 인체공학에 더함 · 최종 100 상한", "Added to this weapon's ergonomics · final cap 100"),
         EnhancePath.Precision => Loc.L("총알 탄 퍼짐과 산탄 퍼짐에 적용", "Applies to bullet and buckshot dispersion"),
         EnhancePath.ArmorDurability => Loc.L("피격·폭발 내구도 소모에 적용 · 등록된 방탄판·내피도 함께", "Applies to durability loss from hits and blasts · registered plates/inserts too"),
-        EnhancePath.Mobility => Loc.L("이동·회전·인체공학 페널티에 적용 · 등록된 방탄판도 함께", "Applies to movement, turning and ergonomics penalties · registered plates too"),
+        EnhancePath.Mobility => ImpactMobility
+            ? Loc.L("관통되지 않은 피격의 둔탁상 피해에 적용 · 장비 페널티가 없는 방어구", "Applies to blunt damage from hits that do not penetrate · armor with no gear penalty")
+            : Loc.L("이동·회전·인체공학 페널티에 적용 · 등록된 방탄판도 함께", "Applies to movement, turning and ergonomics penalties · registered plates too"),
         _ => ""
     };
 

@@ -260,6 +260,8 @@ public sealed partial class Plugin : BaseUnityPlugin
             // Each transcendence effect stands alone: a missing hook disables only that effect.
             foreach (var failed in TranscendPatches.Install(harmony))
                 Logger.LogError("Gear Enhance: 초월 효과 연결 실패(나머지 기능은 정상) / transcendence hook failed: " + failed);
+            // Only with "자세한 로그 남기기" (user 2026-10-28).
+            MythicPatches.Note = LogInfo;
             foreach (var failed in MythicPatches.Install(harmony))
                 Logger.LogError("Gear Enhance: 신화 효과 연결 실패(나머지 기능은 정상) / mythic hook failed: " + failed);
             ItemMarkers.Install(harmony);
@@ -432,7 +434,14 @@ public sealed partial class Plugin : BaseUnityPlugin
             itemId = GameBridge.Get(item, "Id")?.ToString() ?? throw Loc.Invalid("아이템 ID가 없습니다.", "No item ID.");
             weapon = GameBridge.IsWeapon(item);
             // Helmets, masks and visors show (and get) half the mythic damage reduction.
-            try { headGear = !weapon && ArmorStatus.Read(item).HeadGear; }
+            // 1.4.2: penalty-free armor shows its Mobility track as impact absorption.
+            EnhanceEffects.ImpactMobility = false;
+            try
+            {
+                var armor = weapon ? null : ArmorStatus.Read(item);
+                headGear = armor?.HeadGear == true;
+                EnhanceEffects.ImpactMobility = armor != null && StatSheet.NoPenalty(armor);
+            }
             catch (Exception ex) { headGear = false; Logger.LogWarning("머리 방어구 판정 실패: " + ex.GetBaseException().Message); }
             tab = UiTab.Enhance; skipRiskConfirm = false; midScroll = Vector2.zero;
             selectedPath = StatPatches.Registry.Find(itemId)?.Path ?? (weapon ? EnhancePath.Recoil : EnhancePath.ArmorDurability);
@@ -568,6 +577,9 @@ public sealed partial class Plugin : BaseUnityPlugin
         if (MythicFrame.Count > 0)
             try { MythicFrame.Tick(Clock, mythicShimmer.Value && !reducedMotion.Value); }
             catch (Exception ex) { MythicFrame.Clear(); Logger.LogWarning("신화 칸 반짝임 중단: " + ex.GetBaseException().Message); }
+        if (StashLine.Waiting > 0)
+            try { StashLine.Tick(Time.unscaledTime); }
+            catch (Exception ex) { StashLine.Drop(); Logger.LogWarning("창고 단계 표시 재배치 중단: " + ex.GetBaseException().Message); }
         try { feedbackAudio?.Tick(); }
         catch (Exception ex) { ProvidedAudioFailed(ex); }
         if (pendingAttempt != null && (attemptTimeline.TryComplete(AttemptClock) || AudioClockStalled() && attemptTimeline.ForceComplete()))
@@ -615,6 +627,7 @@ public sealed partial class Plugin : BaseUnityPlugin
             Logger.LogInfo($"강화 창 UI CPU: Repaint {repaintCount}회, 평균 {repaintTicks * 1000.0 / System.Diagnostics.Stopwatch.Frequency / repaintCount:0.00}ms, 최대 {maximumRepaintTicks * 1000.0 / System.Diagnostics.Stopwatch.Frequency:0.00}ms (GPU/FPS 측정 아님)");
         repaintCount = repaintTicks = maximumRepaintTicks = 0;
         visible = false; quote = preview = null; session = uiContext = selectedItem = itemIcon = null; generation++;
+        EnhanceEffects.ImpactMobility = false;
         insuranceQuote = null; insuranceMessage = "";
         itemId = null;
         attemptTimeline.Reset(); pendingAttempt = null;

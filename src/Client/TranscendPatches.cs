@@ -443,8 +443,13 @@ internal static class TranscendPatches
     // Replaces the template blunt throughput read inside the armor damage code.
     internal static float Blunt(object component, float value)
     {
-        if (!Registry.HasTranscend || value <= 0) return value;
-        var level = ArmorLevel(GameBridge.Get(component, "Item"));
+        if (value <= 0) return value;
+        var item = GameBridge.Get(component, "Item");
+        // 1.4.2: penalty-free armor's Mobility track (impact absorption).
+        var relief = StatPatches.BluntRelief(item);
+        if (relief > 0) value = EnhanceEffects.Reduce(value, relief);
+        if (!Registry.HasTranscend) return value;
+        var level = ArmorLevel(item);
         if (level <= 0) return value;
         return value * (float)(1 - TranscendEffects.Blunt(level, TemplateClass(GameBridge.Get(component, "Template")), Tuning) / 100);
     }

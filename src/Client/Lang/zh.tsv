@@ -824,3 +824,5 @@ F12 초월 강화 설정 범위를 확인해 주세요.	Check the F12 transcende
 BottomLeft = 칸 왼쪽 아래, TopLeft = 왼쪽 위(1.4.0 자리), BesideCount = 오른쪽 아래 개수·내구도 숫자 옆. NameTag·Off에는 쓰지 않습니다.	BottomLeft = lower-left corner of the cell, TopLeft = upper left (the 1.4.0 spot), BesideCount = next to the count/durability numbers at the lower right. Not used by NameTag or Off.	BottomLeft = 格子左下角，TopLeft = 左上（1.4.0 的位置），BesideCount = 右下数量·耐久数字旁。NameTag 和 Off 不使用此项。
 보험 없는 강화 장비에도 표시	Mark uninsured enhanced gear too	未投保的强化装备也显示
 켜면 강화 보험이 없는 강화 장비에도 회색 표시를 붙입니다(글자 칸은 X, 1.4.0 방식). 끄면 보험에 든 장비만 표시합니다.	When on, enhanced gear without enhancement insurance also gets a grey mark (X in the letter square, as in 1.4.0). When off, only insured gear is marked.	开启后，没有强化保险的强化装备也会显示灰色标记（字母方块为 X，1.4.0 的方式）。关闭后只标记已投保的装备。
+충격 흡수	Impact absorption	冲击吸收
+관통되지 않은 피격의 둔탁상 피해에 적용 · 장비 페널티가 없는 방어구	Applies to blunt damage from hits that do not penetrate · armor with no gear penalty	作用于未击穿命中的钝伤 · 无装备惩罚的护甲

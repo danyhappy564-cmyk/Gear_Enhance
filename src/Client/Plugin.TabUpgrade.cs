@@ -102,7 +102,8 @@ public sealed partial class Plugin
 
     private static string TrackHint(EnhancePath path) => path == EnhancePath.Recoil ? Loc.L("수직·수평 반동", "Vertical & horizontal")
         : path == EnhancePath.Ergonomics ? Loc.L("인체공학", "Ergonomics") : path == EnhancePath.Precision ? Loc.L("탄 퍼짐", "Spread")
-        : path == EnhancePath.ArmorDurability ? Loc.L("내구도 소모", "Durability loss") : Loc.L("장비 페널티", "Gear penalty");
+        : path == EnhancePath.ArmorDurability ? Loc.L("내구도 소모", "Durability loss")
+        : EnhanceEffects.ImpactMobility ? Loc.L("둔탁상", "Blunt damage") : Loc.L("장비 페널티", "Gear penalty");
 
     // ---- effects -----------------------------------------------------------------------
 

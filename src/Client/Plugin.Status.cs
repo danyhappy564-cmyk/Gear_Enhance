@@ -85,9 +85,14 @@ public sealed partial class Plugin
             {
                 var now = Levels(false);
                 var next = NextLevels(now);
-                statRows = weapon
-                    ? StatSheet.Weapon(ReadWeapon(selectedItem), now, next, Tuned, MythicTuned)
-                    : StatSheet.Armor(ReadArmor(selectedItem), now, next, Tuned, MythicTuned);
+                if (weapon) statRows = StatSheet.Weapon(ReadWeapon(selectedItem), now, next, Tuned, MythicTuned);
+                else
+                {
+                    var armor = ReadArmor(selectedItem);
+                    // Plates changed since the window opened switch the Mobility track's meaning too.
+                    EnhanceEffects.ImpactMobility = StatSheet.NoPenalty(armor);
+                    statRows = StatSheet.Armor(armor, now, next, Tuned, MythicTuned);
+                }
             }
         }
         catch (Exception ex)

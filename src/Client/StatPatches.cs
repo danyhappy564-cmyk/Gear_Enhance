@@ -90,6 +90,38 @@ internal static class StatPatches
         }
         return owner;
     }
+    // 1.4.2: the Mobility track of armor with no gear penalty (StatSheet.NoPenalty) cuts blunt damage
+    // instead (TranscendPatches.Blunt). Plates registered to it share it, like the penalty relief.
+    internal static double BluntRelief(object item)
+    {
+        var best = 0.0;
+        string origin = null;
+        for (var depth = 0; item != null && depth < 64; depth++)
+        {
+            var id = CloneLinks.EffectId(item);
+            if (id == null) break;
+            origin ??= id;
+            if (Registry.Find(id, EnhancePath.Mobility) != null && (depth == 0 || Registry.Registered(id, origin)) && PenaltyFree(item))
+                best = Math.Max(best, Registry.Amount(id, EnhancePath.Mobility));
+            var parent = GameBridge.SlotParent(item);
+            if (ReferenceEquals(item, parent)) break;
+            item = parent;
+        }
+        return best;
+    }
+
+    // Read at most once a second per armor: one shotgun blast is many hits.
+    private static readonly Dictionary<object, (int At, bool Free)> penaltyFree = new Dictionary<object, (int, bool)>();
+    internal static bool PenaltyFree(object armor)
+    {
+        var now = Environment.TickCount;
+        if (penaltyFree.TryGetValue(armor, out var known) && unchecked(now - known.At) < 1000) return known.Free;
+        if (penaltyFree.Count >= 256) penaltyFree.Clear();
+        var free = StatSheet.NoPenalty(ArmorStatus.Read(armor));
+        penaltyFree[armor] = (now, free);
+        return free;
+    }
+
     private static int ArmorLevel(string id) => (Registry.Find(id, EnhancePath.ArmorDurability)?.Level ?? 0)
         + (Registry.Find(id, EnhancePath.Mobility)?.Level ?? 0);
 

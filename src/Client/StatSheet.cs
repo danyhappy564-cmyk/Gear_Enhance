@@ -47,6 +47,10 @@ internal struct GearLevels
 
 internal static class StatSheet
 {
+    // 1.4.2: no movement, turning or ergonomics penalty on the armor as worn (EnhanceEffects.ImpactMobility).
+    internal static bool NoPenalty(ArmorStats raw) => Free(raw.Speed) && Free(raw.Turn) && Free(raw.Ergonomics);
+    private static bool Free(float value) => float.IsNaN(value) || Math.Abs(value) < 0.001f;
+
     // 1 MOA at 100 m is 2.9089 cm; the game's center of impact is in that unit.
     private const double MoaPerUnit = 100 / 2.9089;
 
@@ -102,7 +106,10 @@ internal static class StatSheet
             return Number(total, "0.#");
         }
         string Loss(GearLevels at) => Number(100 - at.ArmorDurability, "0.#") + "%";
-        string Blunt(GearLevels at) => Number(100 - TranscendEffects.Blunt(at.Third, Math.Max(1, raw.ArmorClass), transcend), "0.#") + "%";
+        // Penalty-free armor: its Mobility track cuts blunt damage too, before the transcendence cut (TranscendPatches.Blunt).
+        var impact = NoPenalty(raw);
+        string Blunt(GearLevels at) => Number((100 - TranscendEffects.Blunt(at.Third, Math.Max(1, raw.ArmorClass), transcend))
+            * (impact ? 1 - Math.Max(0, Math.Min(80, at.Mobility)) / 100 : 1), "0.#") + "%";
         string Taken(GearLevels at) => Number(100 - MythicEffects.ArmorPercent(at.Mythic, mythic, raw.HeadGear), "0.#") + "%";
         string Penalty(float value, GearLevels at, string unit, string format) =>
             float.IsNaN(value) || float.IsInfinity(value) ? "—" : Number(value < 0 && at.Mobility > 0 ? EnhanceEffects.Reduce(value, at.Mobility) : value, format) + unit;

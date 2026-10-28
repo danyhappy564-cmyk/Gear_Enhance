@@ -47,6 +47,31 @@ public sealed class ArmorStatusTests : IDisposable
         Assert.Equal("—", rows[0].Now);
     }
 
+    // 1.4.2 (user 2026-10-28): armor with no gear penalty turns its Mobility track into impact
+    // absorption, the same amount as blunt damage reduction.
+    [Fact]
+    public void Penalty_free_armor_shows_mobility_as_blunt_reduction()
+    {
+        var free = new ArmorStats { ArmorClass = 4, Speed = 0, Turn = 0, Ergonomics = 0 };
+        var heavy = new ArmorStats { ArmorClass = 4, Speed = -3, Turn = 0, Ergonomics = 0 };
+        Assert.True(StatSheet.NoPenalty(free));
+        Assert.True(StatSheet.NoPenalty(new ArmorStats()));
+        Assert.False(StatSheet.NoPenalty(heavy));
+        var now = new GearLevels { Mythic = -1, Mobility = 10 };
+        Assert.Equal("90%", StatSheet.Armor(free, now, null, new(), new())[4].Now);
+        Assert.Equal("100%", StatSheet.Armor(heavy, now, null, new(), new())[4].Now);
+        try
+        {
+            EnhanceEffects.ImpactMobility = true;
+            Assert.Equal("충격 흡수", EnhanceEffects.Name(EnhancePath.Mobility));
+            Assert.Equal("둔탁상 감소", EnhanceEffects.StatName(EnhancePath.Mobility));
+            // The F12 cfg key never changes.
+            Assert.Equal("장비 페널티 완화", EnhanceEffects.KoreanStatName(EnhancePath.Mobility));
+        }
+        finally { EnhanceEffects.ImpactMobility = false; }
+        Assert.Equal("기동성", EnhanceEffects.Name(EnhancePath.Mobility));
+    }
+
     [Fact]
     public void Modular_armor_reads_derived_components_locked_soft_inserts_and_unique_plate_zones_once()
     {

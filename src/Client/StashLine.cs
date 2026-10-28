@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Reflection;
 using UnityEngine;
 
@@ -8,16 +9,30 @@ namespace GearEnhance;
 // caption (GridItemView.Caption, TextMeshPro) placed below it. Appending "\n…" to the name did not
 // work: the game's caption is one line and cut the second line off. User 2026-10-26: in equipment
 // slots the line under the name is the loaded ammo, so the tag moves below any other text of the
-// cell it would cover.
+// cell it would cover. User 2026-10-28: in equipment slots it still covered the ammo until the cell was
+// redrawn (opening the enhancement window): the game fills that line after UpdateInfo, so the tag looks
+// again a few times in the next two seconds.
 internal static class StashLine
 {
     internal const string LineName = "GearEnhanceLine";
     private const float Scale = 0.86f;
     private static MethodInfo forceMesh;
+    private static readonly float[] Rechecks = { 0.05f, 0.2f, 0.6f, 2f };
+    private static readonly List<Pending> pending = new List<Pending>();
+    internal static int Waiting => pending.Count;
+
+    private sealed class Pending
+    {
+        internal Component Cell, Caption, Label;
+        internal RectTransform Target;
+        internal float Size, Since;
+        internal int Step;
+    }
 
     internal static void Hide(object view)
     {
         if (!(view is Component component) || component == null) return;
+        pending.RemoveAll(entry => ReferenceEquals(entry.Cell, component));
         var caption = GameBridge.Get(view, "Caption") as Component;
         caption?.transform.parent?.Find(LineName)?.gameObject.SetActive(false);
     }
@@ -47,8 +62,32 @@ internal static class StashLine
         GameBridge.Set(label, "raycastTarget", false);
         line.gameObject.SetActive(true);
         line.SetAsLastSibling();
-        target.anchoredPosition = source.anchoredPosition - new Vector2(0, size + 1);
-        Clear(component.transform, caption, label, target);
+        Place(component.transform, caption, label, target, size);
+        pending.RemoveAll(entry => ReferenceEquals(entry.Cell, component));
+        // Bounded: drop the oldest when a huge stash opens at once.
+        if (pending.Count >= 512) pending.RemoveAt(0);
+        pending.Add(new Pending { Cell = component, Caption = caption, Label = label, Target = target, Size = size, Since = Time.unscaledTime });
+    }
+
+    internal static void Tick(float now)
+    {
+        for (var index = pending.Count - 1; index >= 0; index--)
+        {
+            var entry = pending[index];
+            if (entry.Cell == null || entry.Caption == null || entry.Label == null || entry.Target == null) { pending.RemoveAt(index); continue; }
+            if (now - entry.Since < Rechecks[entry.Step]) continue;
+            if (entry.Label.gameObject.activeInHierarchy) Place(entry.Cell.transform, entry.Caption, entry.Label, entry.Target, entry.Size);
+            if (++entry.Step >= Rechecks.Length) pending.RemoveAt(index);
+        }
+    }
+
+    internal static void Drop() => pending.Clear();
+
+    // Under the name, then down past any text it covers.
+    private static void Place(Transform cell, Component caption, Component label, RectTransform target, float size)
+    {
+        target.anchoredPosition = ((RectTransform)caption.transform).anchoredPosition - new Vector2(0, size + 1);
+        Clear(cell, caption, label, target);
     }
 
     // Moves the tag down until its drawn text covers no other text of the cell (at most 3 steps).
