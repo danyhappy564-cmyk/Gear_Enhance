@@ -571,6 +571,27 @@ public sealed class TranscendTests
         Assert.False(GrantIndex.TryGet(Plate.ToString(), out _));
     }
 
+    // User 2026-10-31: EquipmentIsEternal puts the gear back with its ids; the trader's
+    // insurance copy is a duplicate and only that copy loses the added durability.
+    [Fact]
+    public void Gear_restored_by_equipment_is_eternal_keeps_its_grant_and_the_trader_copy_drops_it()
+    {
+        var rig = new Rig();
+        rig.Transcend(TranscendTrack.Second, 2);
+        var capture = rig.Service.BeginRaidEnd(Session);
+        var lost = rig.Lose();
+        rig.Backend.Saved.InsuranceList!.Add(new Insurance { TraderId = new MongoId(), Items = Json.Deserialize<List<Item>>(Json.Serialize(lost)!)! });
+        var restored = lost.Select(i => i.Id.ToString()).ToHashSet();
+        Assert.Equal((0, 0), rig.Service.CompleteRaidEnd(Session, capture!, null, restored));
+        var package = rig.Backend.Saved.InsuranceList.Single().Items!;
+        Assert.Equal(50d, package.Single(i => i.Id == Vest).Upd!.Repairable!.MaxDurability!.Value, 6);
+        Assert.Equal(30d, package.Single(i => i.Id == Plate).Upd!.Repairable!.MaxDurability!.Value, 6);
+        Assert.Equal(33.6d, lost.Single(i => i.Id == Plate).Upd!.Repairable!.MaxDurability!.Value, 6);
+        Assert.True(rig.State.Grants.ContainsKey(Plate.ToString()));
+        Assert.True(rig.State.Transcend.ContainsKey(Vest.ToString()));
+        Assert.True(GrantIndex.TryGet(Plate.ToString(), out _));
+    }
+
     [Fact]
     public void Enhancement_insurance_return_keeps_transcendence_and_grants_on_the_new_ids()
     {

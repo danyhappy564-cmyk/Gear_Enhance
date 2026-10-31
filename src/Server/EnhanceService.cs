@@ -739,7 +739,9 @@ public sealed partial class EnhanceService(SptEnhanceBackend backend, JsonUtil s
     // After it: recorded gear that is gone was lost in the raid. Enhancement insurance
     // rolls its tier's chance to mail it back enhanced (then traders do not return a
     // second copy). Otherwise the enhancement is forfeited; a trader may return it as +0.
-    public (int Returned, int Forfeited) CompleteRaidEnd(MongoId session, RaidCapture capture, PmcData? postRaid)
+    // restored: ids another mod puts back after this (EquipmentIsEternal); they count as kept.
+    public (int Returned, int Forfeited) CompleteRaidEnd(MongoId session, RaidCapture capture, PmcData? postRaid,
+        IReadOnlySet<string>? restored = null)
     {
         lock (sync)
         {
@@ -748,6 +750,13 @@ public sealed partial class EnhanceService(SptEnhanceBackend backend, JsonUtil s
             if (items == null) return (0, 0);
             var state = State(session);
             var owned = items.Select(i => i.Id.ToString()).ToHashSet();
+            if (restored != null)
+            {
+                // SPT still queued trader insurance for them: that copy is a duplicate and
+                // must not carry added max durability.
+                StripGrants(saved!, capture.InsuranceCount, restored.Where(id => !owned.Contains(id)), state, keep: true);
+                owned.UnionWith(restored);
+            }
             var after = postRaid?.Inventory?.Items;
             var handled = new HashSet<string>();
             var (returned, forfeited) = (0, 0);

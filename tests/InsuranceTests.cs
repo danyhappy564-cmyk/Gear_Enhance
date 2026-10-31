@@ -570,6 +570,28 @@ public sealed class InsuranceTests
         Assert.Contains(method.Body.Instructions, i => i.Operand is Mono.Cecil.MethodReference m && m.Name == "DeleteInventory");
     }
 
+    // User 2026-10-31: gear EquipmentIsEternal puts back after a death keeps its enhancement and
+    // cover; insurance neither mails a copy nor touches the trader package.
+    [Fact]
+    public void Gear_restored_by_equipment_is_eternal_is_not_lost()
+    {
+        var rig = new Rig();
+        rig.Upgrade(3);
+        rig.Pay(rig.Quote(EnhanceAction.Insure, InsuranceTier.Premium));
+        var capture = rig.Service.BeginRaidEnd(Session);
+        var lost = rig.Lose();
+        rig.Backend.Saved.InsuranceList!.Add(new Insurance { TraderId = new MongoId(), Items = lost });
+
+        rig.Backend.DrawValue = 0.85;
+        var restored = lost.Select(i => i.Id.ToString()).ToHashSet();
+        Assert.Equal((0, 0), rig.Service.CompleteRaidEnd(Session, capture!, null, restored));
+        Assert.Empty(rig.Backend.Mailed);
+        Assert.Equal(3, rig.State.Tracks[Vest.ToString()][EnhancePath.ArmorDurability]);
+        Assert.True(rig.State.Coverage.ContainsKey(Vest.ToString()));
+        Assert.DoesNotContain(Vest.ToString(), rig.State.Forfeited);
+        Assert.Equal(2, rig.Backend.Saved.InsuranceList.Single().Items!.Count);
+    }
+
     // User 2026-10-28: only Manimal Terminal's own map restore skips the raid end; without the mod
     // (as in this test host) a "terminal" raid is handled like any other.
     [Fact]

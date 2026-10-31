@@ -69,7 +69,15 @@ public sealed class RaidEndPatch : AbstractPatch
         try
         {
             if (captured is not { } value || value.Session != sessionId || Service == null) return;
-            var (returned, forfeited) = Service.CompleteRaidEnd(sessionId, value.Capture, request?.Results?.Profile);
+            // Queued by EquipmentIsEternal's prefix on this same method when the player died.
+            var restored = EternalRestores.Pending(sessionId, message => Logger?.Warning(message));
+            if (restored != null)
+            {
+                var kept = value.Capture.Gear.Count(g => restored.Contains(g.Root));
+                Logger?.Info($"Gear Enhance: EquipmentIsEternal이 사망 후 장비를 되돌립니다 — 강화 장비 {kept}개 기록 유지. "
+                    + $"EquipmentIsEternal restores gear after death: {kept} enhanced items keep their records.");
+            }
+            var (returned, forfeited) = Service.CompleteRaidEnd(sessionId, value.Capture, request?.Results?.Profile, restored);
             if (returned + forfeited > 0)
                 Logger?.Info($"Gear Enhance: 레이드에서 잃은 강화 장비 — 강화 보험으로 반환 {returned}개, 강화 소멸 {forfeited}개. "
                     + $"Lost enhanced gear: {returned} returned by enhancement insurance, {forfeited} lost their enhancement.");

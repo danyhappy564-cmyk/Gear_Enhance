@@ -345,7 +345,8 @@ public sealed partial class EnhanceService
 
     // A trader return is the plain item: take the added maximum off the queued insurance
     // copies, then drop the records (also for gear lost without trader insurance).
-    private static void StripGrants(SptProfile saved, int from, IEnumerable<string> ids, EnhanceState state)
+    // keep: the item itself is still owned (EquipmentIsEternal puts it back); only the trader copy loses it.
+    private static void StripGrants(SptProfile saved, int from, IEnumerable<string> ids, EnhanceState state, bool keep = false)
     {
         var lost = ids.Where(state.Grants.ContainsKey).ToHashSet();
         if (lost.Count == 0) return;
@@ -354,7 +355,8 @@ public sealed partial class EnhanceService
             foreach (var item in list[index]?.Items ?? new())
                 if (lost.Contains(item.Id.ToString()) && item.Upd?.Repairable != null)
                     Grant(item.Upd.Repairable, -state.Grants[item.Id.ToString()].Amount);
-        foreach (var id in lost) RemoveGrant(state, id);
+        if (!keep)
+            foreach (var id in lost) RemoveGrant(state, id);
     }
 
     private static void SetGrant(EnhanceState state, string id, DurabilityGrant grant)
