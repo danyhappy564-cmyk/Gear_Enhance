@@ -4,7 +4,7 @@
     <TargetFramework>netstandard2.1</TargetFramework>
     <LangVersion>latest</LangVersion>
     <AssemblyName>GearEnhance.Client</AssemblyName>
-    <Version>1.4.2</Version>
+    <Version>1.4.3</Version>
     <SptRoot Condition="'$(SptRoot)' == '' and '$(SPT_ROOT)' != ''">$(SPT_ROOT)</SptRoot>
     <SptRoot Condition="'$(SptRoot)' == ''">E:\SPT 4.1</SptRoot>
     <Managed>$(SptRoot)/EscapeFromTarkov_Data/Managed</Managed>
