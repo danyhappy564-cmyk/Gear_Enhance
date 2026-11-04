@@ -1,8 +1,11 @@
+<p align="center">
+  <a href="README.md"><img alt="한국어 (현재 문서)" src="https://img.shields.io/badge/%ED%95%9C%EA%B5%AD%EC%96%B4-%ED%98%84%EC%9E%AC%20%EB%AC%B8%EC%84%9C-1f6feb?style=for-the-badge"></a>
+  <a href="README.en.md"><img alt="English" src="https://img.shields.io/badge/English-Read%20in%20English-6e7681?style=for-the-badge"></a>
+</p>
+
 ## 변경 이력
 
-- 2026-10-31 22:36 — 1.4.3 릴리즈(제작자 게임 확인): **EquipmentIsEternal 호환** — 이 모드는 죽으면 레이드 시작 때 장비를 그대로 되돌려 주는데, 그보다 먼저 강화 보험이 그 장비를 '잃었다'고 처리해 강화가 풀린 채 돌아오고 강화 보험 반환 우편으로 같은 장비가 하나 더 오던 문제를 고쳤습니다. 서버에 EquipmentIsEternal이 깔려 있을 때만 작동하며, 그 모드가 실제로 되돌려 줄 장비(설정의 '보험 든 것만 복구'·완장·칼집·보안 컨테이너·특수 칸 범위 그대로)만 강화 기록과 강화 보험을 그대로 둡니다. 레이드에서 새로 주운 장비 등 되돌아오지 않는 장비는 지금처럼 강화 보험이 처리합니다. 서버 파일만 바뀌었고 통신 버전은 13 그대로입니다. 상인 보험으로 같은 장비(+0)가 하나 더 오는 것은 EquipmentIsEternal과 SPT 기본 보험 사이의 일이라 이 모드가 막지 않으니, 그 모드를 쓰는 분이 감수해 주세요(그 사본에는 초월로 늘어난 최대 내구도가 붙지 않습니다). 기본 설정의 EquipmentIsEternal로 죽었을 때 무기·장비·가방 안 물건이 강화된 채 돌아오는 것을 게임에서 확인했습니다(상인 보험 사본은 확인 못 함).
-
-전체 변경 이력 47개는 [`changelog/`](changelog/) 폴더에 10개씩 나눠 있습니다 (번호가 클수록 최신, 지금 마지막 파일: [`CHANGELOG-005.md`](changelog/CHANGELOG-005.md)).
+전체 변경 이력 47개는 [`changelog/`](changelog/) 폴더에 10개씩 나눠 있습니다 (번호가 클수록 최신, 최신 파일: [`CHANGELOG-005.md`](changelog/CHANGELOG-005.md)). 릴리즈별 요약은 [Releases](../../releases).
 
 # 장비 강화 — Gear Enhance 1.4.3
 
